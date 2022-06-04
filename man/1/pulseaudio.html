@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pulseaudio</title><meta name="description" content="Linux command pulseaudio The PulseAudio Sound System"><meta name="keywords" content="linux, command, pulseaudio, bsd, The PulseAudio Sound System"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pulseaudio - The PulseAudio Sound System</p>
+<h1>SYNOPSIS</h1>
+<p><strong>pulseaudio [</strong><em>options</em><strong>]</strong></p>
+<p>pulseaudio --help</p>
+<p>pulseaudio --version</p>
+<p>pulseaudio --dump-conf</p>
+<p>pulseaudio --dump-modules</p>
+<p>pulseaudio --dump-resample-methods</p>
+<p>pulseaudio --cleanup-shm</p>
+<p>pulseaudio --start</p>
+<p>pulseaudio --kill</p>
+<p>pulseaudio --check</p>
+<h1>DESCRIPTION</h1>
+<p>PulseAudio is a networked low-latency sound server for Linux, POSIX and Windows systems.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-h | --help</strong></dt>
+<dd><p>Show help.</p>
+</dd>
+<dt><strong>--version</strong></dt>
+<dd><p>Show version information.</p>
+</dd>
+<dt><strong>--dump-conf</strong></dt>
+<dd><p>Load the daemon configuration file <em>daemon.conf</em> (see below), parse remaining configuration options on the command line and dump the resulting daemon configuration, in a format that is compatible with <em>daemon.conf</em>.</p>
+</dd>
+<dt><strong>--dump-modules</strong></dt>
+<dd><p>List available loadable modules. Combine with <strong>-v</strong> for a more elaborate listing.</p>
+</dd>
+<dt><strong>--dump-resample-methods</strong></dt>
+<dd><p>List available audio resamplers.</p>
+</dd>
+<dt><strong>--cleanup-shm</strong></dt>
+<dd><p>Identify stale PulseAudio POSIX shared memory segments in <em>/dev/shm</em> and remove them if possible. This is done implicitly whenever a new daemon starts up or a client tries to connect to a daemon. It should normally not be necessary to issue this command by hand. Only available on systems with POSIX shared memory segments implemented via a virtual file system mounted to <em>/dev/shm</em> (e.g. Linux).</p>
+</dd>
+<dt><strong>--start</strong></dt>
+<dd><p>Start PulseAudio if it is not running yet. This is different from starting PulseAudio without <strong>--start</strong> which would fail if PA is already running. PulseAudio is guaranteed to be fully initialized when this call returns. Implies <strong>--daemonize</strong>.</p>
+</dd>
+<dt><strong>-k | --kill</strong></dt>
+<dd><p>Kill an already running PulseAudio daemon of the calling user (Equivalent to sending a SIGTERM).</p>
+</dd>
+<dt><strong>--check</strong></dt>
+<dd><p>Return 0 as return code when the PulseAudio daemon is already running for the calling user, or non-zero otherwise. Produces no output on the console except for errors to stderr.</p>
+</dd>
+</dl>
+<p>Note that a non-zero return value doesn't necessarily mean that PulseAudio is not usable. Even if the server is not running, it may get automatically started via PulseAudio's autospawning mechanism or systemd's socket activation, or the environment might be such that checking for processes doesn't work (for example, the running server might not show up in a container, even if the server is accessible via a socket). Also disabling PID files with <strong>--use-pid-file=no</strong> prevents <strong>--check</strong> from detecting running servers.</p>
+<p>A more robust check in most situations would be to try establishing a client connection to the server. Unfortunately there's currently no <strong>--check-connection</strong> option to replace <strong>--check</strong>, but running "pactl info" could be a pretty good substitute.</p>
+<dl>
+<dt><strong>--system</strong><em>[=BOOL]</em></dt>
+<dd><p>Run as system-wide instance instead of per-user. Please note that this disables certain features of PulseAudio and is generally not recommended unless the system knows no local users (e.g. is a thin client). This feature needs special configuration and a dedicated UNIX user set up. It is highly recommended to combine this with <strong>--disallow-module-loading</strong> (see below).</p>
+</dd>
+<dt><strong>-D | --daemonize</strong><em>[=BOOL]</em></dt>
+<dd><p>Daemonize after startup, i.e. detach from the terminal. Note that when running as a systemd service you should use <strong>--daemonize=no</strong> for systemd notification to work. </p>
+</dd>
+<dt><strong>--fail</strong><em>[=BOOL]</em></dt>
+<dd><p>Fail startup when any of the commands specified in the startup script <em>default.pa</em> (see below) fails.</p>
+</dd>
+<dt><strong>--high-priority</strong><em>[=BOOL]</em></dt>
+<dd><p>Try to acquire a high Unix nice level. This will only succeed if the calling user has a non-zero RLIMIT_NICE resource limit set (on systems that support this), or we're configured to be run as system daemon (see <em>--system</em> above). It is recommended to enable this, since it is only a negligible security risk (see below).</p>
+</dd>
+<dt><strong>--realtime</strong><em>[=BOOL]</em></dt>
+<dd><p>Try to acquire a real-time scheduling for PulseAudio's I/O threads. This will only succeed if the calling user has a non-zero RLIMIT_RTPRIO resource limit set (on systems that support this), or rtkit is available and allows PulseAudio to enable real-time scheduling, or we are configured to be run as system daemon (see <em>--system</em> above).</p>
+</dd>
+<dt><strong>--disallow-module-loading</strong><em>[=BOOL]</em></dt>
+<dd><p>Disallow module loading after startup. This is a security feature since it disallows additional module loading during runtime and on user request. It is highly recommended when <em>--system</em> is used (see above). Note however, that this breaks certain features like automatic module loading on hot plug.</p>
+</dd>
+<dt><strong>--disallow-exit</strong><em>[=BOOL]</em></dt>
+<dd><p>Disallow user requested exit</p>
+</dd>
+<dt><strong>--exit-idle-time</strong><em>=SECS</em></dt>
+<dd><p>Terminate the daemon after the last client quit and this time in seconds passed. Use a negative value to disable this feature. Defaults to 20.</p>
+</dd>
+</dl>
+<p>When PulseAudio runs in the per-user mode and detects a login session, then any positive value will be reset to 0 so that PulseAudio will terminate immediately on logout. A positive value therefore has effect only in environments where there's no support for login session tracking (or if the user is logged in without a session spawned, a.k.a. lingering). A negative value can still be used to disable any automatic exit.</p>
+<p>When PulseAudio runs in the system mode, automatic exit is always disabled, so this option does nothing.</p>
+<dl>
+<dt><strong>--scache-idle-time</strong><em>=SECS</em></dt>
+<dd><p>Unload autoloaded samples from the cache when they haven't been used for the specified number of seconds.</p>
+</dd>
+<dt><strong>--log-level</strong><em>[=LEVEL]</em></dt>
+<dd><p>If an argument is passed, set the log level to the specified value, otherwise increase the configured verbosity level by one. The log levels are numerical from 0 to 4, corresponding to <em>error</em>, <em>warn</em>, <em>notice</em>, <em>info</em>, <em>debug</em>. Default log level is <em>notice</em>, i.e. all log messages with lower log levels are printed: <em>error</em>, <em>warn</em>, <em>notice</em>.</p>
+</dd>
+<dt><strong>-v | --verbose</strong></dt>
+<dd><p>Increase the configured verbosity level by one (see <strong>--log-level</strong> above). Specify multiple times to increase log level multiple times.</p>
+</dd>
+<dt><strong>--log-target</strong><em>={auto,syslog,journal,stderr,file:PATH,newfile:PATH}</em></dt>
+<dd><p>Specify the log target. If set to <em>auto</em> (which is the default), then logging is directed to syslog when <strong>--daemonize</strong> is passed, otherwise to STDERR. If set to <em>journal</em> logging is directed to the systemd journal. If set to <em>file:PATH</em>, logging is directed to the file indicated by PATH. <em>newfile:PATH</em> is otherwise the same as file:PATH, but existing files are never overwritten. If the specified file already exists, a suffix is added to the file name to avoid overwriting.</p>
+</dd>
+<dt><strong>--log-meta</strong><em>[=BOOL]</em></dt>
+<dd><p>Show source code location in log messages.</p>
+</dd>
+<dt><strong>--log-time</strong><em>[=BOOL]</em></dt>
+<dd><p>Show timestamps in log messages.</p>
+</dd>
+<dt><strong>--log-backtrace</strong><em>=FRAMES</em></dt>
+<dd><p>When FRAMES is greater than 0, log for each message a stack trace up to the number of specified stack frames.</p>
+</dd>
+<dt><strong>-p | --dl-search-path</strong><em>=PATH</em></dt>
+<dd><p>Set the search path for dynamic shared objects (plugins).</p>
+</dd>
+<dt><strong>--resample-method</strong><em>=METHOD</em></dt>
+<dd><p>Use the specified resampler by default (See <strong>--dump-resample-methods</strong> above for possible values).</p>
+</dd>
+<dt><strong>--use-pid-file</strong><em>[=BOOL]</em></dt>
+<dd><p>Create a PID file. If this options is disabled it is possible to run multiple sound servers per user.</p>
+</dd>
+<dt><strong>--no-cpu-limit</strong><em>[=BOOL]</em></dt>
+<dd><p>Do not install CPU load limiter on platforms that support it. By default, PulseAudio will terminate itself when it notices that it takes up too much CPU time. This is useful as a protection against system lockups when real-time scheduling is used (see below). Disabling this mechanism is useful when debugging PulseAudio with tools like <strong>valgrind(1)</strong> which slow down execution.</p>
+</dd>
+<dt><strong>--disable-shm</strong><em>[=BOOL]</em></dt>
+<dd><p>PulseAudio clients and the server can exchange audio data via POSIX or memfd shared memory segments (on systems that support this). If disabled PulseAudio will communicate exclusively over sockets. Please note that data transfer via shared memory segments is always disabled when PulseAudio is running with <strong>--system</strong> enabled (see above).</p>
+</dd>
+<dt><strong>--enable-memfd</strong><em>[=BOOL]</em></dt>
+<dd><p>PulseAudio clients and the server can exchange audio data via memfds - the anonymous Linux Kernel shared memory mechanism (on kernels that support this). If disabled PulseAudio will communicate via POSIX shared memory.</p>
+</dd>
+<dt><strong>-L | --load</strong><em>="MODULE ARGUMENTS"</em></dt>
+<dd><p>Load the specified plugin module with the specified arguments.</p>
+</dd>
+<dt><strong>-F | --file</strong><em>=FILENAME</em></dt>
+<dd><p>Run the specified script on startup. May be specified multiple times to specify multiple scripts to be run in order. Combine with <strong>-n</strong> to disable loading of the default script <em>default.pa</em> (see below).</p>
+</dd>
+<dt><strong>-C</strong></dt>
+<dd><p>Open a command interpreter on STDIN/STDOUT after startup. This may be used to configure PulseAudio dynamically during runtime. Equivalent to <strong>--load</strong><em>=module-cli</em>.</p>
+</dd>
+<dt><strong>-n</strong></dt>
+<dd><p>Don't load default script file <em>default.pa</em> (see below) on startup. Useful in conjunction with <strong>-C</strong> or <strong>--file</strong>.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<p><em>~/.config/pulse/daemon.conf</em>, <em>/etc/pulse/daemon.conf</em>: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See <strong>pulse-daemon.conf(5)</strong> for more information.</p>
+<p><em>~/.config/pulse/default.pa</em>, <em>/etc/pulse/default.pa</em>: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See <strong>default.pa(5)</strong> for more information.</p>
+<p><em>~/.config/pulse/client.conf</em>, <em>/etc/pulse/client.conf</em>: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See <strong>pulse-client.conf(5)</strong> for more information.</p>
+<h1>SIGNALS</h1>
+<p><em>SIGINT, SIGTERM</em>: the PulseAudio daemon will shut down (Same as <strong>--kill</strong>).</p>
+<p><em>SIGHUP</em>: dump a long status report to STDOUT or syslog, depending on the configuration.</p>
+<p><em>SIGUSR1</em>: load module-cli, allowing runtime reconfiguration via STDIN/STDOUT.</p>
+<p><em>SIGUSR2</em>: load module-cli-protocol-unix, allowing runtime reconfiguration via a AF_UNIX socket. See <strong>pacmd(1)</strong> for more information.</p>
+<h1>UNIX GROUPS AND USERS</h1>
+<p>Group <em>pulse-access</em>: if PulseAudio is running as a system daemon (see <strong>--system</strong> above) access is granted to members of this group when they connect via AF_UNIX sockets. If PulseAudio is running as a user daemon this group has no meaning.</p>
+<p>User <em>pulse</em>, group <em>pulse</em>: if PulseAudio is running as a system daemon (see <strong>--system</strong> above) and is started as root the daemon will drop privileges and become a normal user process using this user and group. If PulseAudio is running as a user daemon this user and group has no meaning.</p>
+<h1>REAL-TIME AND HIGH-PRIORITY SCHEDULING</h1>
+<p>To minimize the risk of drop-outs during playback it is recommended to run PulseAudio with real-time scheduling if the underlying platform supports it. This decouples the scheduling latency of the PulseAudio daemon from the system load and is thus the best way to make sure that PulseAudio always gets CPU time when it needs it to refill the hardware playback buffers. Unfortunately this can be a security risk on some systems, since PulseAudio runs as user process, and giving realtime scheduling privileges to a user always comes with the risk that the user misuses it to lock up the system -- which is possible since making a process real-time effectively disables preemption. To solve this problem, PulseAudio uses rtkit to safely acquire real-time scheduling when available.</p>
+<p>If the risk of locking up the machine is considered too big to enable real-time scheduling, high-priority scheduling can be enabled instead (i.e. negative nice level). This can be enabled by passing <strong>--high-priority</strong> (see above) when starting PulseAudio and may also be enabled with the appropriate option in <em>daemon.conf</em>. Negative nice levels can only be enabled when the appropriate resource limit RLIMIT_NICE is set (see <strong>setrlimit(2)</strong> for more information), possibly configured in <em>/etc/security/limits.conf</em>. A resource limit of 31 (corresponding with nice level -11) is recommended.</p>
+<h1>ENVIRONMENT VARIABLES</h1>
+<p>The PulseAudio client libraries check for the existence of the following environment variables and change their local configuration accordingly:</p>
+<p><em>$PULSE_SERVER</em>: the server string specifying the server to connect to when a client asks for a sound server connection and doesn't explicitly ask for a specific server. The server string is a list of server addresses separated by whitespace which are tried in turn. A server address consists of an optional address type specifier (unix:, tcp:, tcp4:, tcp6:), followed by a path or host address. A host address may include an optional port number. A server address may be prefixed by a string enclosed in {}. In this case the following server address is ignored unless the prefix string equals the local hostname or the machine id (/etc/machine-id).</p>
+<p><em>$PULSE_SINK</em>: the symbolic name of the sink to connect to when a client creates a playback stream and doesn't explicitly ask for a specific sink.</p>
+<p><em>$PULSE_SOURCE</em>: the symbolic name of the source to connect to when a client creates a record stream and doesn't explicitly ask for a specific source.</p>
+<p><em>$PULSE_BINARY</em>: path of PulseAudio executable to run when server auto-spawning is used.</p>
+<p><em>$PULSE_CLIENTCONFIG</em>: path of file that shall be read instead of <em>client.conf</em> (see above) for client configuration.</p>
+<p><em>$PULSE_COOKIE</em>: path of file that contains the PulseAudio authentication cookie. Defaults to <em>~/.config/pulse/cookie</em>.</p>
+<p>These environment settings take precedence -- if set -- over the configuration settings from <em>client.conf</em> (see above).</p>
+<h1>AUTHORS</h1>
+<p>The PulseAudio Developers &lt;pulseaudio-discuss (at) lists (dot) freedesktop (dot) org&gt;; PulseAudio is available from <strong>http://pulseaudio.org/</strong></p>
+<h1>SEE ALSO</h1>
+<p><strong>pulse-daemon.conf(5)</strong>, <strong>default.pa(5)</strong>, <strong>pulse-client.conf(5)</strong>, <strong>pacmd(1)</strong></p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

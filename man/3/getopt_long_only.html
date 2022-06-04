@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command getopt_long_only</title><meta name="description" content="Linux command getopt_long_only Parse command-line options"><meta name="keywords" content="linux, command, getopt_long_only, bsd, Parse command-line options"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getopt, getopt_long, getopt_long_only, optarg, optind, opterr, optopt - Parse command-line options</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+
+int getopt(int argc, char * const argv[],
+ const char *optstring);
+
+extern char *optarg;
+extern int optind, opterr, optopt;
+
+#include &lt;getopt.h&gt;
+
+int getopt_long(int argc, char * const argv[],
+ const char *optstring,
+ const struct option *longopts, int *longindex);
+
+int getopt_long_only(int argc, char * const argv[],
+ const char *optstring,
+ const struct option *longopts, int *longindex);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>getopt</strong>(): _POSIX_C_SOURCE &gt;= 2 || _XOPEN_SOURCE<br />
+<strong>getopt_long</strong>(), <strong>getopt_long_only</strong>(): _GNU_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>getopt</strong>() function parses the command-line arguments. Its arguments <em>argc</em> and <em>argv</em> are the argument count and array as passed to the <em>main</em>() function on program invocation. An element of <em>argv</em> that starts with '-' (and is not exactly "-" or "--") is an option element. The characters of this element (aside from the initial '-') are option characters. If <strong>getopt</strong>() is called repeatedly, it returns successively each of the option characters from each of the option elements.</p>
+<p>The variable <em>optind</em> is the index of the next element to be processed in <em>argv</em>. The system initializes this value to 1. The caller can reset it to 1 to restart scanning of the same <em>argv</em>, or when scanning a new argument vector.</p>
+<p>If <strong>getopt</strong>() finds another option character, it returns that character, updating the external variable <em>optind</em> and a static variable <em>nextchar</em> so that the next call to <strong>getopt</strong>() can resume the scan with the following option character or <em>argv</em>-element.</p>
+<p>If there are no more option characters, <strong>getopt</strong>() returns -1. Then <em>optind</em> is the index in <em>argv</em> of the first <em>argv</em>-element that is not an option.</p>
+<p><em>optstring</em> is a string containing the legitimate option characters. If such a character is followed by a colon, the option requires an argument, so <strong>getopt</strong>() places a pointer to the following text in the same <em>argv</em>-element, or the text of the following <em>argv</em>-element, in <em>optarg</em>. Two colons mean an option takes an optional arg; if there is text in the current <em>argv</em>-element (i.e., in the same word as the option name itself, for example, "-oarg"), then it is returned in <em>optarg</em>, otherwise <em>optarg</em> is set to zero. This is a GNU extension. If <em>optstring</em> contains <strong>W</strong> followed by a semicolon, then <strong>-W foo</strong> is treated as the long option <strong>--foo</strong>. (The <strong>-W</strong> option is reserved by POSIX.2 for implementation extensions.) This behavior is a GNU extension, not available with libraries before glibc 2.</p>
+<p>By default, <strong>getopt</strong>() permutes the contents of <em>argv</em> as it scans, so that eventually all the nonoptions are at the end. Two other scanning modes are also implemented. If the first character of <em>optstring</em> is '+' or the environment variable <strong>POSIXLY_CORRECT</strong> is set, then option processing stops as soon as a nonoption argument is encountered. If the first character of <em>optstring</em> is '-', then each nonoption <em>argv</em>-element is handled as if it were the argument of an option with character code 1. (This is used by programs that were written to expect options and other <em>argv</em>-elements in any order and that care about the ordering of the two.) The special argument "--" forces an end of option-scanning regardless of the scanning mode.</p>
+<p>While processing the option list, <strong>getopt</strong>() can detect two kinds of errors: (1) an option character that was not specified in <em>optstring</em> and (2) a missing option argument (i.e., an option at the end of the command line without an expected argument). Such errors are handled and reported as follows:</p>
+<ul>
+<li><p>By default, <strong>getopt</strong>() prints an error message on standard error, places the erroneous option character in <em>optopt</em>, and returns '?' as the function result.</p></li>
+<li><p>If the caller has set the global variable <em>opterr</em> to zero, then <strong>getopt</strong>() does not print an error message. The caller can determine that there was an error by testing whether the function return value is '?'. (By default, <em>opterr</em> has a nonzero value.)</p></li>
+<li><p>If the first character (following any optional '+' or '-' described above) of <em>optstring</em> is a colon (':'), then <strong>getopt</strong>() likewise does not print an error message. In addition, it returns ':' instead of '?' to indicate a missing option argument. This allows the caller to distinguish the two different types of errors.</p></li>
+</ul>
+<h2>getopt_long() and getopt_long_only()</h2>
+<p>The <strong>getopt_long</strong>() function works like <strong>getopt</strong>() except that it also accepts long options, started with two dashes. (If the program accepts only long options, then <em>optstring</em> should be specified as an empty string (""), not NULL.) Long option names may be abbreviated if the abbreviation is unique or is an exact match for some defined option. A long option may take a parameter, of the form <strong>--arg=param</strong> or <strong>--arg param</strong>.</p>
+<p><em>longopts</em> is a pointer to the first element of an array of <em>struct option</em> declared in <em>&lt;getopt.h&gt;</em> as</p>
+<pre><code>struct option {
+    const char *name;
+    int         has_arg;
+    int        *flag;
+    int         val;
+};</code></pre>
+<p>The meanings of the different fields are:</p>
+<dl>
+<dt><em>name</em></dt>
+<dd><p>is the name of the long option.</p>
+</dd>
+<dt><em>has_arg</em></dt>
+<dd><p>is: <strong>no_argument</strong> (or 0) if the option does not take an argument; <strong>required_argument</strong> (or 1) if the option requires an argument; or <strong>optional_argument</strong> (or 2) if the option takes an optional argument.</p>
+</dd>
+<dt><em>flag</em></dt>
+<dd><p>specifies how results are returned for a long option. If <em>flag</em> is NULL, then <strong>getopt_long</strong>() returns <em>val</em>. (For example, the calling program may set <em>val</em> to the equivalent short option character.) Otherwise, <strong>getopt_long</strong>() returns 0, and <em>flag</em> points to a variable which is set to <em>val</em> if the option is found, but left unchanged if the option is not found.</p>
+</dd>
+<dt><em>val</em></dt>
+<dd><p>is the value to return, or to load into the variable pointed to by <em>flag</em>.</p>
+</dd>
+</dl>
+<p>The last element of the array has to be filled with zeros.</p>
+<p>If <em>longindex</em> is not NULL, it points to a variable which is set to the index of the long option relative to <em>longopts</em>.</p>
+<p><strong>getopt_long_only</strong>() is like <strong>getopt_long</strong>(), but '-' as well as "--" can indicate a long option. If an option that starts with '-' (not "--") doesn't match a long option, but does match a short option, it is parsed as a short option instead.</p>
+<h1>RETURN VALUE</h1>
+<p>If an option was successfully found, then <strong>getopt</strong>() returns the option character. If all command-line options have been parsed, then <strong>getopt</strong>() returns -1. If <strong>getopt</strong>() encounters an option character that was not in <em>optstring</em>, then '?' is returned. If <strong>getopt</strong>() encounters an option with a missing argument, then the return value depends on the first character in <em>optstring</em>: if it is ':', then ':' is returned; otherwise '?' is returned.</p>
+<p><strong>getopt_long</strong>() and <strong>getopt_long_only</strong>() also return the option character when a short option is recognized. For a long option, they return <em>val</em> if <em>flag</em> is NULL, and 0 otherwise. Error and -1 returns are the same as for <strong>getopt</strong>(), plus '?' for an ambiguous match or an extraneous parameter.</p>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>POSIXLY_CORRECT</strong></dt>
+<dd><p>If this is set, then option processing stops as soon as a nonoption argument is encountered.</p>
+</dd>
+<dt><strong>_&lt;PID&gt;_GNU_nonoption_argv_flags_</strong></dt>
+<dd><p>This variable was used by <strong>bash</strong>(1) 2.0 to communicate to glibc which arguments are the results of wildcard expansion and so should not be considered as options. This behavior was removed in <strong>bash</strong>(1) version 2.01, but the support remains in glibc.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getopt</strong>(), <strong>getopt_long</strong>(), <strong>getopt_long_only</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:getopt env</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<dl>
+<dt><strong>getopt</strong>():</dt>
+<dd><p>POSIX.1-2001, POSIX.1-2008, and POSIX.2, provided the environment variable <strong>POSIXLY_CORRECT</strong> is set. Otherwise, the elements of <em>argv</em> aren't really <em>const</em>, because these functions permute them. Nevertheless, <em>const</em> is used in the prototype to be compatible with other systems.</p>
+<p>The use of '+' and '-' in <em>optstring</em> is a GNU extension.</p>
+<p>On some older implementations, <strong>getopt</strong>() was declared in <em>&lt;stdio.h&gt;</em>. SUSv1 permitted the declaration to appear in either <em>&lt;unistd.h&gt;</em> or <em>&lt;stdio.h&gt;</em>. POSIX.1-1996 marked the use of <em>&lt;stdio.h&gt;</em> for this purpose as LEGACY. POSIX.1-2001 does not require the declaration to appear in <em>&lt;stdio.h&gt;</em>.</p>
+</dd>
+<dt><strong>getopt_long</strong>() and <strong>getopt_long_only</strong>():</dt>
+<dd><p>These functions are GNU extensions.</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>A program that scans multiple argument vectors, or rescans the same vector more than once, and wants to make use of GNU extensions such as '+' and '-' at the start of <em>optstring</em>, or changes the value of <strong>POSIXLY_CORRECT</strong> between scans, must reinitialize <strong>getopt</strong>() by resetting <em>optind</em> to 0, rather than the traditional value of 1. (Resetting to 0 forces the invocation of an internal initialization routine that rechecks <strong>POSIXLY_CORRECT</strong> and checks for GNU extensions in <em>optstring</em>.)</p>
+<h1>EXAMPLES</h1>
+<h2>getopt()</h2>
+<p>The following trivial example program uses <strong>getopt</strong>() to handle two program options: <em>-n</em>, with no associated value; and <em>-t val</em>, which expects an associated value.</p>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    int flags, opt;
+    int nsecs, tfnd;
+
+    nsecs = 0;
+    tfnd = 0;
+    flags = 0;
+    while ((opt = getopt(argc, argv, &quot;nt:&quot;)) != -1) {
+        switch (opt) {
+        case &#39;n&#39;:
+            flags = 1;
+            break;
+        case &#39;t&#39;:
+            nsecs = atoi(optarg);
+            tfnd = 1;
+            break;
+        default: /* &#39;?&#39; */
+            fprintf(stderr, &quot;Usage: %s [-t nsecs] [-n] name\n&quot;,
+                    argv[0]);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    printf(&quot;flags=%d; tfnd=%d; nsecs=%d; optind=%d\n&quot;,
+            flags, tfnd, nsecs, optind);
+
+    if (optind &gt;= argc) {
+        fprintf(stderr, &quot;Expected argument after options\n&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    printf(&quot;name argument = %s\n&quot;, argv[optind]);
+
+    /* Other code omitted */
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h2>getopt_long()</h2>
+<p>The following example program illustrates the use of <strong>getopt_long</strong>() with most of its features.</p>
+<pre><code>#include &lt;stdio.h&gt;     /* for printf */
+#include &lt;stdlib.h&gt;    /* for exit */
+#include &lt;getopt.h&gt;
+
+int
+main(int argc, char **argv)
+{
+    int c;
+    int digit_optind = 0;
+
+    while (1) {
+        int this_option_optind = optind ? optind : 1;
+        int option_index = 0;
+        static struct option long_options[] = {
+            {&quot;add&quot;,     required_argument, 0,  0 },
+            {&quot;append&quot;,  no_argument,       0,  0 },
+            {&quot;delete&quot;,  required_argument, 0,  0 },
+            {&quot;verbose&quot;, no_argument,       0,  0 },
+            {&quot;create&quot;,  required_argument, 0, &#39;c&#39;},
+            {&quot;file&quot;,    required_argument, 0,  0 },
+            {0,         0,                 0,  0 }
+        };
+
+        c = getopt_long(argc, argv, &quot;abc:d:012&quot;,
+                 long_options, &amp;option_index);
+        if (c == -1)
+            break;
+
+        switch (c) {
+        case 0:
+            printf(&quot;option %s&quot;, long_options[option_index].name);
+            if (optarg)
+                printf(&quot; with arg %s&quot;, optarg);
+            printf(&quot;\n&quot;);
+            break;
+
+        case &#39;0&#39;:
+        case &#39;1&#39;:
+        case &#39;2&#39;:
+            if (digit_optind != 0 &amp;&amp; digit_optind != this_option_optind)
+              printf(&quot;digits occur in two different argv-elements.\n&quot;);
+            digit_optind = this_option_optind;
+            printf(&quot;option %c\n&quot;, c);
+            break;
+
+        case &#39;a&#39;:
+            printf(&quot;option a\n&quot;);
+            break;
+
+        case &#39;b&#39;:
+            printf(&quot;option b\n&quot;);
+            break;
+
+        case &#39;c&#39;:
+            printf(&quot;option c with value &#39;%s&#39;\n&quot;, optarg);
+            break;
+
+        case &#39;d&#39;:
+            printf(&quot;option d with value &#39;%s&#39;\n&quot;, optarg);
+            break;
+
+        case &#39;?&#39;:
+            break;
+
+        default:
+            printf(&quot;?? getopt returned character code 0%o ??\n&quot;, c);
+        }
+    }
+
+    if (optind &lt; argc) {
+        printf(&quot;non-option ARGV-elements: &quot;);
+        while (optind &lt; argc)
+            printf(&quot;%s &quot;, argv[optind++]);
+        printf(&quot;\n&quot;);
+    }
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>getopt</strong>(1), <strong>getsubopt</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

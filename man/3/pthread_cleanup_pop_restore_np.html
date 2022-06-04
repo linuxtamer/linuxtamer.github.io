@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pthread_cleanup_pop_restore_np</title><meta name="description" content="Linux command pthread_cleanup_pop_restore_np push and pop thread cancellation clean-up handlers while saving cancelability type"><meta name="keywords" content="linux, command, pthread_cleanup_pop_restore_np, bsd, push and pop thread cancellation clean-up handlers while saving cancelability type"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pthread_cleanup_push_defer_np, pthread_cleanup_pop_restore_np - push and pop thread cancellation clean-up handlers while saving cancelability type</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;pthread.h&gt;
+
+void pthread_cleanup_push_defer_np(void (*routine)(void *),
+ void *arg);
+void pthread_cleanup_pop_restore_np(int execute);</code></pre>
+<p>Compile and link with <em>-pthread</em>.</p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>pthread_cleanup_push_defer_np</strong>(), <strong>pthread_cleanup_pop_defer_np</strong>():</p>
+<blockquote>
+<p>_GNU_SOURCE</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>These functions are the same as <strong>pthread_cleanup_push</strong>(3) and <strong>pthread_cleanup_pop</strong>(3), except for the differences noted on this page.</p>
+<p>Like <strong>pthread_cleanup_push</strong>(3), <strong>pthread_cleanup_push_defer_np</strong>() pushes <em>routine</em> onto the thread's stack of cancellation clean-up handlers. In addition, it also saves the thread's current cancelability type, and sets the cancelability type to "deferred" (see <strong>pthread_setcanceltype</strong>(3)); this ensures that cancellation clean-up will occur even if the thread's cancelability type was "asynchronous" before the call.</p>
+<p>Like <strong>pthread_cleanup_pop</strong>(3), <strong>pthread_cleanup_pop_restore_np</strong>() pops the top-most clean-up handler from the thread's stack of cancellation clean-up handlers. In addition, it restores the thread's cancelability type to its value at the time of the matching <strong>pthread_cleanup_push_defer_np</strong>().</p>
+<p>The caller must ensure that calls to these functions are paired within the same function, and at the same lexical nesting level. Other restrictions apply, as described in <strong>pthread_cleanup_push</strong>(3).</p>
+<p>This sequence of calls:</p>
+<pre><code>pthread_cleanup_push_defer_np(routine, arg);
+pthread_cleanup_pop_restore_np(execute);</code></pre>
+<p>is equivalent to (but shorter and more efficient than):</p>
+<pre><code>int oldtype;
+
+pthread_cleanup_push(routine, arg);
+pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &amp;oldtype);
+...
+pthread_setcanceltype(oldtype, NULL);
+pthread_cleanup_pop(execute);</code></pre>
+<h1>CONFORMING TO</h1>
+<p>These functions are nonstandard GNU extensions; hence the suffix "_np" (nonportable) in the names.</p>
+<h1>SEE ALSO</h1>
+<p><strong>pthread_cancel</strong>(3), <strong>pthread_cleanup_push</strong>(3), <strong>pthread_setcancelstate</strong>(3), <strong>pthread_testcancel</strong>(3), <strong>pthreads</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-police</title><meta name="description" content="Linux command tc-police policing action"><meta name="keywords" content="linux, command, tc-police, bsd, policing action"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>police - policing action</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc</strong> ... <strong>action police</strong> <strong>rate</strong><em> RATE </em><strong>burst</strong> <em>BYTES</em>[<strong>/</strong><em>BYTES</em>] [ <strong>mtu</strong> <em>BYTES</em>[<strong>/</strong><em>BYTES</em>] ] [ <strong>peakrate</strong><em> RATE</em> ] [ <strong>overhead</strong><em> BYTES</em> ] [ <strong>linklayer</strong><em> TYPE</em> ] [ <em>CONTROL</em> ]</p>
+<p><strong>tc</strong> ... <strong>filter</strong> ... [ <strong>estimator</strong> <em>SAMPLE AVERAGE </em>] <strong>action police avrate</strong> <em>RATE</em> [ <em>CONTROL</em> ]</p>
+<p><em>CONTROL</em> := <strong>conform-exceed</strong><em> EXCEEDACT[<strong>/</strong><em>NOTEXCEEDACT</em></em></p>
+<p><em>EXCEEDACT/NOTEXCEEDACT</em> := { <strong>pipe</strong> | <strong>ok</strong> | <strong>reclassify</strong> | <strong>drop</strong> | <strong>continue</strong> | <strong>goto</strong> <strong>chain</strong> <strong>CHAIN_INDEX</strong> }</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>police</strong> action allows to limit bandwidth of traffic matched by the filter it is attached to. Basically there are two different algorithms available to measure the packet rate: The first one uses an internal dual token bucket and is configured using the <strong>rate</strong>, <strong>burst</strong>, <strong>mtu</strong>, <strong>peakrate</strong>, <strong>overhead</strong> and <strong>linklayer</strong> parameters. The second one uses an in-kernel sampling mechanism. It can be fine-tuned using the <strong>estimator</strong> filter parameter.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>rate</strong><em> RATE</em></dt>
+<dd><p>The maximum traffic rate of packets passing this action. Those exceeding it will be treated as defined by the <strong>conform-exceed</strong> option.</p>
+</dd>
+<dt><strong>burst</strong><em> BYTES[<strong>/</strong><em>BYTES</em>]</em></dt>
+<dd><p>Set the maximum allowed burst in bytes, optionally followed by a slash ('/') sign and cell size which must be a power of 2.</p>
+</dd>
+<dt><strong>mtu</strong><em> BYTES[<strong>/</strong><em>BYTES</em>]</em></dt>
+<dd><p>This is the maximum packet size handled by the policer (larger ones will be handled like they exceeded the configured rate). Setting this value correctly will improve the scheduler's precision. Value formatting is identical to <strong>burst</strong> above. Defaults to unlimited.</p>
+</dd>
+<dt><strong>peakrate</strong><em> RATE</em></dt>
+<dd><p>Set the maximum bucket depletion rate, exceeding <strong>rate</strong>.</p>
+</dd>
+<dt><strong>avrate</strong><em> RATE</em></dt>
+<dd><p>Make use of an in-kernel bandwidth rate estimator and match the given <em>RATE</em> against it.</p>
+</dd>
+<dt><strong>overhead</strong><em> BYTES</em></dt>
+<dd><p>Account for protocol overhead of encapsulating output devices when computing <strong>rate</strong> and <strong>peakrate</strong>.</p>
+</dd>
+<dt><strong>linklayer</strong><em> TYPE</em></dt>
+<dd><p>Specify the link layer type. <em>TYPE</em> may be one of <strong>ethernet</strong> (the default), <strong>atm</strong> or <strong>adsl</strong> (which are synonyms). It is used to align the precomputed rate tables to ATM cell sizes, for <strong>ethernet</strong> no action is taken.</p>
+</dd>
+<dt><strong>estimator</strong><em> SAMPLE AVERAGE</em></dt>
+<dd><p>Fine-tune the in-kernel packet rate estimator. <em>SAMPLE</em> and <em>AVERAGE</em> are time values and control the frequency in which samples are taken and over what timespan an average is built.</p>
+</dd>
+<dt><strong>conform-exceed</strong><em> EXCEEDACT[<strong>/</strong><em>NOTEXCEEDACT</em>]</em></dt>
+<dd><p>Define how to handle packets which exceed or conform the configured bandwidth limit. Possible values are:</p>
+<ul>
+<li><p>Don't do anything, just continue with the next action in line.</p></li>
+<li><p>Drop the packet immediately.</p></li>
+<li><p>This is a synonym to <strong>drop</strong>.</p></li>
+<li><p>Accept the packet. This is the default for conforming packets.</p></li>
+<li><p>This is a synonym to <strong>ok</strong>.</p></li>
+<li><p>Treat the packet as non-matching to the filter this action is attached to and continue with the next filter in line (if any). This is the default for exceeding packets.</p></li>
+<li><p>Pass the packet to the next action in line.</p></li>
+</ul>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<p>A typical application of the police action is to enforce ingress traffic rate by dropping exceeding packets. Although better done on the sender's side, especially in scenarios with lack of peer control (e.g. with dial-up providers) this is often the best one can do in order to keep latencies low under high load. The following establishes input bandwidth policing to 1mbit/s using the <strong>ingress</strong> qdisc and <strong>u32</strong> filter:</p>
+<blockquote>
+<pre><code># tc qdisc add dev eth0 handle ffff: ingress
+# tc filter add dev eth0 parent ffff: u32 \
+	match u32 0 0 \
+	police rate 1mbit burst 100k</code></pre>
+</blockquote>
+<p>As an action can not live on it's own, there always has to be a filter involved as link between qdisc and action. The example above uses <strong>u32</strong> for that, which is configured to effectively match any packet (passing it to the <strong>police</strong> action thereby).</p>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

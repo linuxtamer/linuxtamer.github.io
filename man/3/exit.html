@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command exit</title><meta name="description" content="Linux command exit cause normal process termination"><meta name="keywords" content="linux, command, exit, bsd, cause normal process termination"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>exit - cause normal process termination</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdlib.h&gt;
+
+void exit(int status);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>exit</strong>() function causes normal process termination and the least significant byte of <em>status</em> (i.e., <em>status &amp; 0xFF</em>) is returned to the parent (see <strong>wait</strong>(2)).</p>
+<p>All functions registered with <strong>atexit</strong>(3) and <strong>on_exit</strong>(3) are called, in the reverse order of their registration. (It is possible for one of these functions to use <strong>atexit</strong>(3) or <strong>on_exit</strong>(3) to register an additional function to be executed during exit processing; the new registration is added to the front of the list of functions that remain to be called.) If one of these functions does not return (e.g., it calls <strong>_exit</strong>(2), or kills itself with a signal), then none of the remaining functions is called, and further exit processing (in particular, flushing of <strong>stdio</strong>(3) streams) is abandoned. If a function has been registered multiple times using <strong>atexit</strong>(3) or <strong>on_exit</strong>(3), then it is called as many times as it was registered.</p>
+<p>All open <strong>stdio</strong>(3) streams are flushed and closed. Files created by <strong>tmpfile</strong>(3) are removed.</p>
+<p>The C standard specifies two constants, <strong>EXIT_SUCCESS</strong> and <strong>EXIT_FAILURE</strong>, that may be passed to <strong>exit</strong>() to indicate successful or unsuccessful termination, respectively.</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>exit</strong>() function does not return.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>exit</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:exit</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>exit</strong>() function uses a global variable that is not protected, so it is not thread-safe.</p>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.</p>
+<h1>NOTES</h1>
+<p>The behavior is undefined if one of the functions registered using <strong>atexit</strong>(3) and <strong>on_exit</strong>(3) calls either <strong>exit</strong>() or <strong>longjmp</strong>(3). Note that a call to <strong>execve</strong>(2) removes registrations created using <strong>atexit</strong>(3) and <strong>on_exit</strong>(3).</p>
+<p>The use of <strong>EXIT_SUCCESS</strong> and <strong>EXIT_FAILURE</strong> is slightly more portable (to non-UNIX environments) than the use of 0 and some nonzero value like 1 or -1. In particular, VMS uses a different convention.</p>
+<p>BSD has attempted to standardize exit codes (which some C libraries such as the GNU C library have also adopted); see the file <em>&lt;sysexits.h&gt;</em>.</p>
+<p>After <strong>exit</strong>(), the exit status must be transmitted to the parent process. There are three cases:</p>
+<ul>
+<li><p>If the parent has set <strong>SA_NOCLDWAIT</strong>, or has set the <strong>SIGCHLD</strong> handler to <strong>SIG_IGN</strong>, the status is discarded and the child dies immediately.</p></li>
+<li><p>If the parent was waiting on the child, it is notified of the exit status and the child dies immediately.</p></li>
+<li><p>Otherwise, the child becomes a "zombie" process: most of the process resources are recycled, but a slot containing minimal information about the child process (termination status, resource usage statistics) is retained in process table. This allows the parent to subsequently use <strong>waitpid</strong>(2) (or similar) to learn the termination status of the child; at that point the zombie process slot is released.</p></li>
+</ul>
+<p>If the implementation supports the <strong>SIGCHLD</strong> signal, this signal is sent to the parent. If the parent has set <strong>SA_NOCLDWAIT</strong>, it is undefined whether a <strong>SIGCHLD</strong> signal is sent.</p>
+<h2>Signals sent to other processes</h2>
+<p>If the exiting process is a session leader and its controlling terminal is the controlling terminal of the session, then each process in the foreground process group of this controlling terminal is sent a <strong>SIGHUP</strong> signal, and the terminal is disassociated from this session, allowing it to be acquired by a new controlling process.</p>
+<p>If the exit of the process causes a process group to become orphaned, and if any member of the newly orphaned process group is stopped, then a <strong>SIGHUP</strong> signal followed by a <strong>SIGCONT</strong> signal will be sent to each process in this process group. See <strong>setpgid</strong>(2) for an explanation of orphaned process groups.</p>
+<p>Except in the above cases, where the signalled processes may be children of the terminating process, termination of a process does <em>not</em> in general cause a signal to be sent to children of that process. However, a process can use the <strong>prctl</strong>(2) <strong>PR_SET_PDEATHSIG</strong> operation to arrange that it receives a signal if its parent terminates.</p>
+<h1>SEE ALSO</h1>
+<p><strong>_exit</strong>(2), <strong>get_robust_list</strong>(2), <strong>setpgid</strong>(2), <strong>wait</strong>(2), <strong>atexit</strong>(3), <strong>on_exit</strong>(3), <strong>tmpfile</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

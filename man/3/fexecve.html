@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fexecve</title><meta name="description" content="Linux command fexecve execute program specified via file descriptor"><meta name="keywords" content="linux, command, fexecve, bsd, execute program specified via file descriptor"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>fexecve - execute program specified via file descriptor</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+
+int fexecve(int fd, char *const argv[], char *const envp[]);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>fexecve</strong>():</p>
+<blockquote>
+<dl>
+<dt>Since glibc 2.10:</dt>
+<dd><p>_POSIX_C_SOURCE &gt;= 200809L</p>
+</dd>
+<dt>Before glibc 2.10:</dt>
+<dd><p>_GNU_SOURCE</p>
+</dd>
+</dl>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p><strong>fexecve</strong>() performs the same task as <strong>execve</strong>(2), with the difference that the file to be executed is specified via a file descriptor, <em>fd</em>, rather than via a pathname. The file descriptor <em>fd</em> must be opened read-only (<strong>O_RDONLY</strong>) or with the <strong>O_PATH</strong> flag and the caller must have permission to execute the file that it refers to.</p>
+<h1>RETURN VALUE</h1>
+<p>A successful call to <strong>fexecve</strong>() never returns. On error, the function does return, with a result value of -1, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<p>Errors are as for <strong>execve</strong>(2), with the following additions:</p>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>fd</em> is not a valid file descriptor, or <em>argv</em> is NULL, or <em>envp</em> is NULL.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>The close-on-exec flag is set on <em>fd</em>, and <em>fd</em> refers to a script. See BUGS.</p>
+</dd>
+<dt><strong>ENOSYS</strong></dt>
+<dd><p>The kernel does not provide the <strong>execveat</strong>(2) system call, and the <em>/proc</em> filesystem could not be accessed.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>fexecve</strong>() is implemented since glibc 2.3.2.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fexecve</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2008. This function is not specified in POSIX.1-2001, and is not widely available on other systems. It is specified in POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>On Linux with glibc versions 2.26 and earlier, <strong>fexecve</strong>() is implemented using the <strong>proc</strong>(5) filesystem, so <em>/proc</em> needs to be mounted and available at the time of the call. Since glibc 2.27, if the underlying kernel supports the <strong>execveat</strong>(2) system call, then <strong>fexecve</strong>() is implemented using that system call, with the benefit that <em>/proc</em> does not need to be mounted.</p>
+<p>The idea behind <strong>fexecve</strong>() is to allow the caller to verify (checksum) the contents of an executable before executing it. Simply opening the file, checksumming the contents, and then doing an <strong>execve</strong>(2) would not suffice, since, between the two steps, the filename, or a directory prefix of the pathname, could have been exchanged (by, for example, modifying the target of a symbolic link). <strong>fexecve</strong>() does not mitigate the problem that the <em>contents</em> of a file could be changed between the checksumming and the call to <strong>fexecve</strong>(); for that, the solution is to ensure that the permissions on the file prevent it from being modified by malicious users.</p>
+<p>The natural idiom when using <strong>fexecve</strong>() is to set the close-on-exec flag on <em>fd</em>, so that the file descriptor does not leak through to the program that is executed. This approach is natural for two reasons. First, it prevents file descriptors being consumed unnecessarily. (The executed program normally has no need of a file descriptor that refers to the program itself.) Second, if <strong>fexecve</strong>() is used recursively, employing the close-on-exec flag prevents the file descriptor exhaustion that would result from the fact that each step in the recursion would cause one more file descriptor to be passed to the new program. (But see BUGS.)</p>
+<h1>BUGS</h1>
+<p>If <em>fd</em> refers to a script (i.e., it is an executable text file that names a script interpreter with a first line that begins with the characters <em>#!</em>) and the close-on-exec flag has been set for <em>fd</em>, then <strong>fexecve</strong>() fails with the error <strong>ENOENT</strong>. This error occurs because, by the time the script interpreter is executed, <em>fd</em> has already been closed because of the close-on-exec flag. Thus, the close-on-exec flag can't be set on <em>fd</em> if it refers to a script, leading to the problems described in NOTES.</p>
+<h1>SEE ALSO</h1>
+<p><strong>execve</strong>(2), <strong>execveat</strong>(2)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

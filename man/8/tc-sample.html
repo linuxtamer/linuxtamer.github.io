@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-sample</title><meta name="description" content="Linux command tc-sample packet sampling tc action"><meta name="keywords" content="linux, command, tc-sample, bsd, packet sampling tc action"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sample - packet sampling tc action</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc</strong> ... <strong>action sample rate</strong> <em>RATE</em> <strong>group</strong> <em>GROUP</em> [ <strong>trunc</strong> <em>SIZE</em> ] [ <strong>index</strong> <em>INDEX</em> ]</p>
+<p><strong>tc</strong> ... <strong>action sample index </strong> <em>INDEX</em></p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sample</strong> action allows sampling packets matching classifier.</p>
+<p>The packets are chosen randomly according to the <strong>rate</strong> parameter, and are sampled using the <strong>psample</strong> generic netlink channel. The user can also specify packet truncation to save user-kernel traffic. Each sample includes some informative metadata about the original packet, which is sent using netlink attributes, alongside the original packet data.</p>
+<p>The user can either specify the sample action parameters as presented in the first form above, or use an existing sample action using its index, as presented in the second form.</p>
+<h1>SAMPLED PACKETS METADATA FIELDS</h1>
+<p>The metadata are delivered to userspace applications using the <strong>psample</strong> generic netlink channel, where each sample includes the following netlink attributes:</p>
+<dl>
+<dt><strong>PSAMPLE_ATTR_IIFINDEX</strong></dt>
+<dd><p>The input interface index of the packet, if there is one.</p>
+</dd>
+<dt><strong>PSAMPLE_ATTR_OIFINDEX</strong></dt>
+<dd><p>The output interface index of the packet. This field is not relevant on ingress sampling</p>
+</dd>
+<dt><strong>PSAMPLE_ATTR_ORIGSIZE</strong></dt>
+<dd><p>The size of the original packet (before truncation)</p>
+</dd>
+<dt><strong>PSAMPLE_ATTR_SAMPLE_GROUP</strong></dt>
+<dd><p>The <strong>psample</strong> group the packet was sent to</p>
+</dd>
+<dt><strong>PSAMPLE_ATTR_GROUP_SEQ</strong></dt>
+<dd><p>A sequence number of the sampled packet. This number is incremented with each sampled packet of the current <strong>psample</strong> group</p>
+</dd>
+<dt><strong>PSAMPLE_ATTR_SAMPLE_RATE</strong></dt>
+<dd><p>The rate the packet was sampled with</p>
+</dd>
+</dl>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>rate</strong><em> RATE</em></dt>
+<dd><p>The packet sample rate. <em>RATE</em> is the expected ratio between observed packets and sampled packets. For example, <em>RATE</em> of 100 will lead to an average of one sampled packet out of every 100 observed.</p>
+</dd>
+<dt><strong>trunc</strong><em> SIZE</em></dt>
+<dd><p>Upon set, defines the maximum size of the sampled packets, and causes truncation if needed</p>
+</dd>
+<dt><strong>group</strong><em> GROUP</em></dt>
+<dd><p>The <strong>psample</strong> group the packet will be sent to. The <strong>psample</strong> module defines the concept of groups, which allows the user to match specific sampled packets in the case of multiple sampling rules, thus identify only the packets that came from a specific rule.</p>
+</dd>
+<dt><strong>index</strong><em> INDEX</em></dt>
+<dd><p>Is a unique ID for an action. When creating new action instance, this parameter allows to set the new action index. When using existing action, this parameter allows to specify the existing action index. The index must 32bit unsigned integer greater than zero.</p>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<p>Sample one of every 100 packets flowing into interface eth0 to psample group 12:</p>
+<blockquote>
+<pre><code>tc qdisc add dev eth0 handle ffff: ingress
+tc filter add dev eth0 parent ffff: matchall \
+     action sample rate 100 group 12 index 19</code></pre>
+</blockquote>
+<p>Use the same action instance to sample eth1 too:</p>
+<blockquote>
+<pre><code>tc qdisc add dev eth1 handle ffff: ingress
+tc filter add dev eth1 parent ffff: matchall \
+     action sample index 19</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8), <strong>tc-matchall</strong>(8) <strong>psample</strong>(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

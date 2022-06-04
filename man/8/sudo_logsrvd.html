@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sudo_logsrvd</title><meta name="description" content="Linux command sudo_logsrvd sudo event and I/O log server"><meta name="keywords" content="linux, command, sudo_logsrvd, bsd, sudo event and I/O log server"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<p>is a high-performance log server that accepts event and I/O logs from</p>
+<p>It can be used to implement centralized logging of</p>
+<p>logs. Event log entries may be logged either via</p>
+<p>or to a file. I/O Logs created by</p>
+<p>can be replayed via the</p>
+<p>utility in the same way as logs generated directly by the</p>
+<p>plugin.</p>
+<p>The server also supports restarting interrupted log transfers. To distinguish completed I/O logs from incomplete ones, the I/O log timing file is set to be read-only when the log is complete.</p>
+<p>Configuration parameters for</p>
+<p>may be specified in the</p>
+<p>file.</p>
+<p>The options are as follows:</p>
+<p>Read configuration from</p>
+<p>instead of the default,</p>
+<p>Display a short help message to the standard output and exit.</p>
+<p>Run</p>
+<p>in the foreground instead of detaching from the terminal and becoming a daemon.</p>
+<p>For each message, there is a</p>
+<p>chance that the server will drop the connection. This is only intended for debugging the ability of a client to restart a connection.</p>
+<p>Print the</p>
+<p>version and exit.</p>
+<p>The I/O log data sent to</p>
+<p>may contain sensitive information such as passwords and should be secured using Transport Layer Security (TLS). Doing so requires having a signed certificate on the server and, if</p>
+<p>is enabled in</p>
+<p>a signed certificate on the client as well.</p>
+<p>The certificates can either be signed by a well-known Certificate Authority (CA), or a private CA can be used. Instructions for creating a private CA are included below in the</p>
+<p>section.</p>
+<p>supports a flexible debugging framework that is configured via</p>
+<p>lines in the</p>
+<p>file.</p>
+<p>For more information on configuring</p>
+<p>please refer to its manual.</p>
+<p>Sudo front end configuration</p>
+<p>Sudo log server configuration file</p>
+<p>Default I/O log file location</p>
+<p>Process ID file for</p>
+<p>Unless you are using certificates signed by a well-known Certificate Authority (or a local enterprise CA), you will need to create your own CA that can sign the certificates used by</p>
+<p>and the</p>
+<p>plugin. The following steps use the</p>
+<p>command to create keys and certificates.</p>
+<p>First, we need to create a directory structure to store the files for the CA. We'll create a new directory hierarchy in</p>
+<p>for this purpose.</p>
+<p># mkdir /etc/ssl/sudo # cd /etc/ssl/sudo # mkdir certs csr newcerts private # chmod 700 private # touch index.txt # echo 1000 &gt; serial</p>
+<p>The serial and index.txt files are used to keep track of signed certificates.</p>
+<p>Next, we need to make a copy of the openssl.conf file and customize it for our new CA. The path to openssl.cnf is system-dependent but</p>
+<p>is the most common location. You will need to adjust the example below if it has a different location on your system.</p>
+<p># cp /etc/ssl/openssl.cnf .</p>
+<p>Now edit the</p>
+<p>file in the current directory and make sure it contains</p>
+<p>and</p>
+<p>sections. Those sections should include the following settings:</p>
+<p>[ ca ] default_ca = CA_default</p>
+<p>[ CA_default ] dir = /etc/ssl/sudo certs = $dir/certs database = $dir/index.txt certificate = $dir/cacert.pem serial = $dir/serial</p>
+<p>If your</p>
+<p>file already has a</p>
+<p>section, you may only need to modify the</p>
+<p>setting.</p>
+<p>In order to create and sign our own certificates, we need to create a private key and a certificate for the root of the CA. First, create the private key and protect it with a pass phrase:</p>
+<p># openssl genrsa -aes256 -out private/cakey.pem 4096 # chmod 400 private/cakey.pem</p>
+<p>Next, generate the root certificate, using appropriate values for the site-specific fields:</p>
+<p># openssl req -config openssl.cnf -key private/cakey.pem \ -new -x509 -days 7300 -sha256 -extensions v3_ca \ -out cacert.pem</p>
+<p>Enter pass phrase for private/cakey.pem: You are about to be asked to enter information that will be incorporated into your certificate request. What you are about to enter is what is called a Distinguished Name or a DN. There are quite a few fields but you can leave some blank. For some fields there will be a default value, If you enter '.', the field will be left blank. ----- Country Name (2 letter code) [AU]:US State or Province Name (full name) [Some-State]:Colorado Locality Name (eg, city) []: Organization Name (eg, company) [Internet Widgits Pty Ltd]:sudo Organizational Unit Name (eg, section) []:sudo Certificate Authority Common Name (e.g., server FQDN or YOUR name) []:sudo Root CA Email Address []:</p>
+<p># chmod 444 cacert.pem</p>
+<p>Finally, verify the root certificate:</p>
+<p># openssl x509 -noout -text -in cacert.pem</p>
+<p>The server and client certificates will be signed by the previously created root CA. Usually, the root CA is not used to sign server/client certificates directly. Instead, intermediate certificates are created and signed with the root CA and the intermediate certs are used to sign CSRs (Certificate Signing Request). In this example we'll skip this part for simplicity's sake and sign the CSRs with the root CA.</p>
+<p>First, generate the private key without a pass phrase.</p>
+<p># openssl genrsa -out private/logsrvd_key.pem 2048 # chmod 400 private/logsrvd_key.pem</p>
+<p>Next, create a certificate signing request (CSR) for the server's certificate. The organization name must match the name given in the root certificate. The common name should be either the server's IP address or a fully qualified domain name.</p>
+<p># openssl req -config openssl.cnf -key private/logsrvd_key.pem -new \ -sha256 -out csr/logsrvd_csr.pem</p>
+<p>Enter pass phrase for private/logsrvd_key.pem: You are about to be asked to enter information that will be incorporated into your certificate request. What you are about to enter is what is called a Distinguished Name or a DN. There are quite a few fields but you can leave some blank. For some fields there will be a default value, If you enter '.', the field will be left blank. ----- Country Name (2 letter code) [AU]:US State or Province Name (full name) [Some-State]:Colorado Locality Name (eg, city) []: Organization Name (eg, company) [Internet Widgits Pty Ltd]:sudo Organizational Unit Name (eg, section) []:sudo log server Common Name (e.g., server FQDN or YOUR name) []:logserver.example.com Email Address []:</p>
+<p>Please enter the following 'extra' attributes to be sent with your certificate request A challenge password []: An optional company name []:</p>
+<p>Now sign the CSR that was just created:</p>
+<p># openssl ca -config openssl.cnf -days 375 -notext -md sha256 \ -in csr/logsrvd_csr.pem -out certs/logsrvd_cert.pem</p>
+<p>Using configuration from openssl.cnf Enter pass phrase for ./private/cakey.pem: Check that the request matches the signature Signature ok Certificate Details: Serial Number: 4096 (0x1000) Validity Not Before: Nov 11 14:05:05 2019 GMT Not After : Nov 20 14:05:05 2020 GMT Subject: countryName = US stateOrProvinceName = Colorado organizationName = sudo organizationalUnitName = sudo log server commonName = logserve.example.com X509v3 extensions: X509v3 Basic Constraints: CA:FALSE Netscape Comment: OpenSSL Generated Certificate X509v3 Subject Key Identifier: 4C:50:F9:D0:BE:1A:4C:B2:AC:90:76:56:C7:9E:16:AE:E6:9E:E5:B5 X509v3 Authority Key Identifier: keyid:D7:91:24:16:B1:03:06:65:1A:7A:6E:CF:51:E9:5C:CB:7A:95:3E:0C</p>
+<p>Certificate is to be certified until Nov 20 14:05:05 2020 GMT (375 days) Sign the certificate? [y/n]:y</p>
+<p>1 out of 1 certificate requests certified, commit? [y/n]y Write out database with 1 new entries Data Base Updated</p>
+<p>Finally, verify the new certificate:</p>
+<p># openssl verify -CAfile cacert.pem certs/logsrvd_cert.pem certs/logsrvd_cert.pem: OK</p>
+<p>The</p>
+<p>directory now contains a signed and verified certificate for use with</p>
+<p>To generate a client certificate, repeat the process above using a different file name.</p>
+<p>To use TLS for client/server communication, both</p>
+<p>and the</p>
+<p>plugin need to be configured to use TLS. Configuring</p>
+<p>for TLS requires the following settings, assuming the same path names used earlier:</p>
+<p># If set, secure connections with TLS 1.2 or 1.3. tls = true</p>
+<p># Path to the certificate authority bundle file in PEM format. tls_cacert = /etc/ssl/sudo/cacert.pem</p>
+<p># Path to the server's certificate file in PEM format. tls_cert = /etc/ssl/sudo/certs/logsrvd_cert.pem</p>
+<p># Path to the server's private key file in PEM format. tls_key = /etc/ssl/sudo/private/logsrvd_key.pem</p>
+<p>The root CA cert</p>
+<p>must be installed on the system running</p>
+<p>If peer authentication is enabled on the client, a copy of</p>
+<p>must be present on the client system too.</p>
+<p>Many people have worked on</p>
+<p>over the years; this version consists of code written primarily by:</p>
+<p>See the CONTRIBUTORS file in the</p>
+<p>distribution (https://www.sudo.ws/contributors.html) for an exhaustive list of people who have contributed to</p>
+<p>If you feel you have found a bug in</p>
+<p>please submit a bug report at https://bugzilla.sudo.ws/</p>
+<p>Limited free support is available via the sudo-users mailing list, see https://www.sudo.ws/mailman/listinfo/sudo-users to subscribe or search the archives.</p>
+<p>is provided</p>
+<p>and any express or implied warranties, including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose are disclaimed. See the LICENSE file distributed with</p>
+<p>or https://www.sudo.ws/license.html for complete details.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

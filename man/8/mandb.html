@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mandb</title><meta name="description" content="Linux command mandb create or update the manual page index caches"><meta name="keywords" content="linux, command, mandb, bsd, create or update the manual page index caches"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mandb - create or update the manual page index caches</p>
+<h1>SYNOPSIS</h1>
+<p><strong>mandb</strong> [ <strong>-dqsucpt?V</strong> ] [ <strong>-C</strong> <em>file</em> ] [ <em>manpath</em> ]<br />
+<strong>mandb</strong> [ <strong>-dqsut</strong> ] [ <strong>-C</strong> <em>file</em> ] <strong>-f</strong> <em>filename</em> . . .</p>
+<h1>DESCRIPTION</h1>
+<p><strong>mandb</strong> is used to initialise or manually update <strong>index</strong> database caches. The caches contain information relevant to the current state of the manual page system and the information stored within them is used by the man-db utilities to enhance their speed and functionality.</p>
+<p>When creating or updating an <strong>index</strong>, <strong>mandb</strong> will warn of bad ROFF .so requests, bogus manual page filenames and manual pages from which the <strong>whatis</strong> cannot be parsed.</p>
+<p>Supplying <strong>mandb</strong> with an optional colon-delimited path will override the internal system manual page hierarchy search path, determined from information found within the man-db configuration file.</p>
+<h1>DATABASE CACHES</h1>
+<p><strong>mandb</strong> can be compiled with support for any one of the following database types.</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Name</th>
+<th style="text-align: left;">Async</th>
+<th style="text-align: left;">Filename</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Berkeley db</td>
+<td style="text-align: left;">Yes</td>
+<td style="text-align: left;"><em>index.bt</em></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GNU gdbm</td>
+<td style="text-align: left;">Yes</td>
+<td style="text-align: left;"><em>index.db</em></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">UNIX ndbm</td>
+<td style="text-align: left;">No</td>
+<td style="text-align: left;"><em>index.(dir|pag)</em></td>
+</tr>
+</tbody>
+</table>
+<p>Those database types that support asynchronous updates provide enhanced speed at the cost of possible corruption in the event of unusual termination. In an unusual case where this has occurred, it may be necessary to rerun <strong>mandb</strong> with the <strong>-c</strong> option to re-create the databases from scratch.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-d</strong>, <strong>--debug</strong></dt>
+<dd><p>Print debugging information.</p>
+</dd>
+<dt><strong>-q</strong>, <strong>--quiet</strong></dt>
+<dd><p>Produce no warnings.</p>
+</dd>
+<dt><strong>-s</strong>, <strong>--no-straycats</strong></dt>
+<dd><p>Do not spend time looking for or adding information to the databases regarding stray cats.</p>
+</dd>
+<dt><strong>-p</strong>, <strong>--no-purge</strong></dt>
+<dd><p>Do not spend time checking for deleted manual pages and purging them from the databases.</p>
+</dd>
+<dt><strong>-c</strong>, <strong>--create</strong></dt>
+<dd><p>By default, <strong>mandb</strong> will try to update any previously created databases. If a database does not exist, it will create it. This option forces <strong>mandb</strong> to delete previous databases and re-create them from scratch, and implies <strong>--no-purge.</strong> This may be necessary if a database becomes corrupt or if a new database storage scheme is introduced in the future.</p>
+</dd>
+<dt><strong>-u</strong>, <strong>--user-db</strong></dt>
+<dd><p>Create user databases only, even with write permissions necessary to create system databases.</p>
+</dd>
+<dt><strong>-t</strong>, <strong>--test</strong></dt>
+<dd><p>Perform correctness checks on manual pages in the hierarchy search path. With this option, <strong>mandb</strong> will not alter existing databases.</p>
+</dd>
+<dt><strong>-f</strong>, <strong>--filename</strong></dt>
+<dd><p>Update only the entries for the given filename. This option is not for general use; it is used internally by <strong>man</strong> when it has been compiled with the <strong>MAN_DB_UPDATES</strong> option and finds that a page is out of date. It implies <strong>-p</strong> and disables <strong>-c</strong> and <strong>-s</strong>.</p>
+</dd>
+<dt><strong>-C </strong><em>file</em><strong>, <strong>--config-file=</strong></strong><em>file</em></dt>
+<dd><p>Use this user configuration file rather than the default of <em>~/.manpath</em>.</p>
+</dd>
+<dt><strong>-?</strong>, <strong>--help</strong></dt>
+<dd><p>Show the usage message, then exit.</p>
+</dd>
+<dt><strong>--usage</strong></dt>
+<dd><p>Print a short usage message and exit.</p>
+</dd>
+<dt><strong>-V</strong>, <strong>--version</strong></dt>
+<dd><p>Show the version, then exit.</p>
+</dd>
+</dl>
+<h1>EXIT STATUS</h1>
+<dl>
+<dt><strong>0</strong></dt>
+<dd><p>Successful program execution.</p>
+</dd>
+<dt><strong>1</strong></dt>
+<dd><p>Usage, syntax, or configuration file error.</p>
+</dd>
+<dt><strong>2</strong></dt>
+<dd><p>Operational error.</p>
+</dd>
+<dt><strong>3</strong></dt>
+<dd><p>A child process failed.</p>
+</dd>
+</dl>
+<h1>DIAGNOSTICS</h1>
+<p>The following warning messages can be emitted during database building.</p>
+<dl>
+<dt><strong>&lt;filename&gt;: whatis parse for page(sec) failed</strong></dt>
+<dd><p>An attempt to extract whatis line(s) from the given &lt;filename&gt; failed. This is usually due to a poorly written manual page, but if many such messages are emitted it is likely that the system contains non-standard manual pages which are incompatible with the man-db whatis parser. See the <strong>WHATIS PARSING</strong> section in <strong>lexgrog</strong>(1) for more information.</p>
+</dd>
+<dt><strong>&lt;filename&gt;: is a dangling symlink</strong></dt>
+<dd><p>&lt;filename&gt; does not exist but is referenced by a symbolic link. Further diagnostics are usually emitted to identify the &lt;filename&gt; of the offending link.</p>
+</dd>
+<dt><strong>&lt;filename&gt;: bad symlink or ROFF `.so' request</strong></dt>
+<dd><p>&lt;filename&gt; is either a symbolic link to, or contains a ROFF include request to, a non existent file.</p>
+</dd>
+<dt><strong>&lt;filename&gt;: ignoring bogus filename</strong></dt>
+<dd><p>The &lt;filename&gt; may or may not be a valid manual page but its name is invalid. This is usually due to a manual page with sectional extension &lt;x&gt; being put in manual page section &lt;y&gt;.</p>
+</dd>
+<dt><strong>&lt;filename_mask&gt;: competing extensions</strong></dt>
+<dd><p>The wildcard &lt;filename_mask&gt; is not unique. This is usually caused by the existence of both a compressed and uncompressed version of the same manual page. All but the most recent are ignored.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/manpath.config</em></dt>
+<dd><p>man-db configuration file.</p>
+</dd>
+<dt><em>/var/cache/man/index.(bt|db|dir|pag)</em></dt>
+<dd><p>An FHS compliant global <em>index</em> database cache.</p>
+</dd>
+</dl>
+<p>Older locations for the database cache included:</p>
+<dl>
+<dt><em>/usr/man/index.(bt|db|dir|pag)</em></dt>
+<dd><p>A traditional global <em>index</em> database cache.</p>
+</dd>
+<dt><em>/var/catman/index.(bt|db|dir|pag)</em></dt>
+<dd><p>An alternate or FSSTND compliant global <em>index</em> database cache.</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>lexgrog</strong>(1), <strong>man</strong>(1), <strong>manpath</strong>(5), <strong>catman</strong>(8)</p>
+<p>The <strong>WHATIS PARSING</strong> section formerly in this manual page is now part of <strong>lexgrog</strong>(1).</p>
+<h1>AUTHOR</h1>
+<pre><code>Wilf. (G.Wilford@ee.surrey.ac.uk).
+Fabrizio Polacco (fpolacco@debian.org).
+Colin Watson (cjwatson@debian.org).</code></pre>
+<h1>BUGS</h1>
+<p>https://savannah.nongnu.org/bugs/?group=man-db</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

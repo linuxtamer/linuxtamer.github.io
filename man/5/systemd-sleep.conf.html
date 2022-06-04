@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-sleep.conf</title><meta name="description" content="Linux command systemd-sleep.conf Suspend and hibernation configuration file"><meta name="keywords" content="linux, command, systemd-sleep.conf, bsd, Suspend and hibernation configuration file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-sleep.conf, sleep.conf.d - Suspend and hibernation configuration file</p>
+<h1>SYNOPSIS</h1>
+<p>/etc/systemd/sleep.conf</p>
+<p>/etc/systemd/sleep.conf.d/*.conf</p>
+<p>/run/systemd/sleep.conf.d/*.conf</p>
+<p>/usr/lib/systemd/sleep.conf.d/*.conf</p>
+<h1>DESCRIPTION</h1>
+<p><strong>systemd</strong> supports four general power-saving modes:</p>
+<p>suspend</p>
+<blockquote>
+<p>a low-power state where execution of the OS is paused, and complete power loss might result in lost data, and which is fast to enter and exit. This corresponds to suspend, standby, or freeze states as understood by the kernel.</p>
+</blockquote>
+<p>hibernate</p>
+<blockquote>
+<p>a low-power state where execution of the OS is paused, and complete power loss does not result in lost data, and which might be slow to enter and exit. This corresponds to the hibernation as understood by the kernel.</p>
+</blockquote>
+<p>hybrid-sleep</p>
+<blockquote>
+<p>a low-power state where execution of the OS is paused, which might be slow to enter, and on complete power loss does not result in lost data but might be slower to exit in that case. This mode is called suspend-to-both by the kernel.</p>
+</blockquote>
+<p>suspend-then-hibernate</p>
+<blockquote>
+<p>A low power state where the system is initially suspended (the state is stored in RAM). If not interrupted within the delay specified by <strong>HibernateDelaySec=</strong>, the system will be woken using an RTC alarm and hibernated (the state is then stored on disk).</p>
+</blockquote>
+<p>Settings in these files determine what strings will be written to /sys/power/disk and /sys/power/state by <strong>systemd-sleep</strong>(8) when <strong>systemd</strong>(1) attempts to suspend or hibernate the machine. See <strong>systemd.syntax</strong>(7) for a general description of the syntax.</p>
+<h1>CONFIGURATION DIRECTORIES AND PRECEDENCE</h1>
+<p>The default configuration is defined during compilation, so a configuration file is only needed when it is necessary to deviate from those defaults. By default, the configuration file in /etc/systemd/ contains commented out entries showing the defaults as a guide to the administrator. This file can be edited to create local overrides.</p>
+<p>When packages need to customize the configuration, they can install configuration snippets in /usr/lib/systemd/*.conf.d/ or /usr/local/lib/systemd/*.conf.d/. The main configuration file is read before any of the configuration directories, and has the lowest precedence; entries in a file in any configuration directory override entries in the single configuration file. Files in the *.conf.d/ configuration subdirectories are sorted by their filename in lexicographic order, regardless of in which of the subdirectories they reside. When multiple files specify the same option, for options which accept just a single value, the entry in the file with the lexicographically latest name takes precedence. For options which accept a list of values, entries are collected as they occur in files sorted lexicographically.</p>
+<p>Files in /etc/ are reserved for the local administrator, who may use this logic to override the configuration files installed by vendor packages. It is recommended to prefix all filenames in those subdirectories with a two-digit number and a dash, to simplify the ordering of the files.</p>
+<p>To disable a configuration file supplied by the vendor, the recommended way is to place a symlink to /dev/null in the configuration directory in /etc/, with the same filename as the vendor configuration file.</p>
+<h1>OPTIONS</h1>
+<p>The following options can be configured in the [Sleep] section of /etc/systemd/sleep.conf or a sleep.conf.d file:</p>
+<p><em>AllowSuspend=</em>, <em>AllowHibernation=</em>, <em>AllowSuspendThenHibernate=</em>, <em>AllowHybridSleep=</em></p>
+<blockquote>
+<p>By default any power-saving mode is advertised if possible (i.e. the kernel supports that mode, the necessary resources are available). Those switches can be used to disable specific modes.</p>
+<p>If <em>AllowHibernation=no</em> or <em>AllowSuspend=no</em> is used, this implies <em>AllowSuspendThenHibernate=no</em> and <em>AllowHybridSleep=no</em>, since those methods use both suspend and hibernation internally. <em>AllowSuspendThenHibernate=yes</em> and <em>AllowHybridSleep=yes</em> can be used to override and enable those specific modes.</p>
+</blockquote>
+<p><em>SuspendMode=</em>, <em>HibernateMode=</em>, <em>HybridSleepMode=</em></p>
+<blockquote>
+<p>The string to be written to /sys/power/disk by, respectively, <strong>systemd-suspend.service</strong>(8), <strong>systemd-hibernate.service</strong>(8), <strong>systemd-hybrid-sleep.service</strong>(8), or <strong>systemd-suspend-then-hibernate.service</strong>(8). More than one value can be specified by separating multiple values with whitespace. They will be tried in turn, until one is written without error. If neither succeeds, the operation will be aborted.</p>
+</blockquote>
+<p><em>SuspendState=</em>, <em>HibernateState=</em>, <em>HybridSleepState=</em></p>
+<blockquote>
+<p>The string to be written to /sys/power/state by, respectively, <strong>systemd-suspend.service</strong>(8), <strong>systemd-hibernate.service</strong>(8), <strong>systemd-hybrid-sleep.service</strong>(8), or <strong>systemd-suspend-then-hibernate.service</strong>(8). More than one value can be specified by separating multiple values with whitespace. They will be tried in turn, until one is written without error. If neither succeeds, the operation will be aborted.</p>
+</blockquote>
+<p><em>HibernateDelaySec=</em></p>
+<blockquote>
+<p>The amount of time the system spends in suspend mode before the system is automatically put into hibernate mode, when using <strong>systemd-suspend-then-hibernate.service</strong>(8). Defaults to 2h.</p>
+</blockquote>
+<h1>EXAMPLE: FREEZE</h1>
+<p>Example: to exploit the “freeze” mode added in Linux 3.9, one can use <strong>systemctl suspend</strong> with</p>
+<blockquote>
+<pre><code>[Sleep]
+SuspendState=freeze</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd-sleep</strong>(8), <strong>systemd-suspend.service</strong>(8), <strong>systemd-hibernate.service</strong>(8), <strong>systemd-hybrid-sleep.service</strong>(8), <strong>systemd-suspend-then-hibernate.service</strong>(8), <strong>systemd</strong>(1), <strong>systemd.directives</strong>(7)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command kcmp</title><meta name="description" content="Linux command kcmp compare two processes to determine if they share a kernel resource"><meta name="keywords" content="linux, command, kcmp, bsd, compare two processes to determine if they share a kernel resource"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>kcmp - compare two processes to determine if they share a kernel resource</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;linux/kcmp.h&gt;
+
+int kcmp(pid_t pid1, pid_t pid2, int type,
+ unsigned long idx1, unsigned long idx2);</code></pre>
+<p><em>Note</em>: There is no glibc wrapper for this system call; see NOTES.</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>kcmp</strong>() system call can be used to check whether the two processes identified by <em>pid1</em> and <em>pid2</em> share a kernel resource such as virtual memory, file descriptors, and so on.</p>
+<p>Permission to employ <strong>kcmp</strong>() is governed by ptrace access mode <strong>PTRACE_MODE_READ_REALCREDS</strong> checks against both <em>pid1</em> and <em>pid2</em>; see <strong>ptrace</strong>(2).</p>
+<p>The <em>type</em> argument specifies which resource is to be compared in the two processes. It has one of the following values:</p>
+<dl>
+<dt><strong>KCMP_FILE</strong></dt>
+<dd><p>Check whether a file descriptor <em>idx1</em> in the process <em>pid1</em> refers to the same open file description (see <strong>open</strong>(2)) as file descriptor <em>idx2</em> in the process <em>pid2</em>. The existence of two file descriptors that refer to the same open file description can occur as a result of <strong>dup</strong>(2) (and similar) <strong>fork</strong>(2), or passing file descriptors via a domain socket (see <strong>unix</strong>(7)).</p>
+</dd>
+<dt><strong>KCMP_FILES</strong></dt>
+<dd><p>Check whether the processes share the same set of open file descriptors. The arguments <em>idx1</em> and <em>idx2</em> are ignored. See the discussion of the <strong>CLONE_FILES</strong> flag in <strong>clone</strong>(2).</p>
+</dd>
+<dt><strong>KCMP_FS</strong></dt>
+<dd><p>Check whether the processes share the same filesystem information (i.e., file mode creation mask, working directory, and filesystem root). The arguments <em>idx1</em> and <em>idx2</em> are ignored. See the discussion of the <strong>CLONE_FS</strong> flag in <strong>clone</strong>(2).</p>
+</dd>
+<dt><strong>KCMP_IO</strong></dt>
+<dd><p>Check whether the processes share I/O context. The arguments <em>idx1</em> and <em>idx2</em> are ignored. See the discussion of the <strong>CLONE_IO</strong> flag in <strong>clone</strong>(2).</p>
+</dd>
+<dt><strong>KCMP_SIGHAND</strong></dt>
+<dd><p>Check whether the processes share the same table of signal dispositions. The arguments <em>idx1</em> and <em>idx2</em> are ignored. See the discussion of the <strong>CLONE_SIGHAND</strong> flag in <strong>clone</strong>(2).</p>
+</dd>
+<dt><strong>KCMP_SYSVSEM</strong></dt>
+<dd><p>Check whether the processes share the same list of System V semaphore undo operations. The arguments <em>idx1</em> and <em>idx2</em> are ignored. See the discussion of the <strong>CLONE_SYSVSEM</strong> flag in <strong>clone</strong>(2).</p>
+</dd>
+<dt><strong>KCMP_VM</strong></dt>
+<dd><p>Check whether the processes share the same address space. The arguments <em>idx1</em> and <em>idx2</em> are ignored. See the discussion of the <strong>CLONE_VM</strong> flag in <strong>clone</strong>(2).</p>
+</dd>
+<dt><strong>KCMP_EPOLL_TFD</strong> (since Linux 4.13)</dt>
+<dd><p>Check whether the file descriptor <em>idx1</em> of the process <em>pid1</em> is present in the <strong>epoll</strong>(7) instance described by <em>idx2</em> of the process <em>pid2</em>. The argument <em>idx2</em> is a pointer to a structure where the target file is described. This structure has the form:</p>
+</dd>
+</dl>
+<pre><code>struct kcmp_epoll_slot {
+    __u32 efd;
+    __u32 tfd;
+    __u64 toff;
+};</code></pre>
+<p>Within this structure, <em>efd</em> is an epoll file descriptor returned from <strong>epoll_create</strong>(2), <em>tfd</em> is a target file descriptor number, and <em>toff</em> is a target file offset counted from zero. Several different targets may be registered with the same file descriptor number and setting a specific offset helps to investigate each of them.</p>
+<p>Note the <strong>kcmp</strong>() is not protected against false positives which may occur if the processes are currently running. One should stop the processes by sending <strong>SIGSTOP</strong> (see <strong>signal</strong>(7)) prior to inspection with this system call to obtain meaningful results.</p>
+<h1>RETURN VALUE</h1>
+<p>The return value of a successful call to <strong>kcmp</strong>() is simply the result of arithmetic comparison of kernel pointers (when the kernel compares resources, it uses their memory addresses).</p>
+<p>The easiest way to explain is to consider an example. Suppose that <em>v1</em> and <em>v2</em> are the addresses of appropriate resources, then the return value is one of the following:</p>
+<blockquote>
+<ol start="0" type="1">
+<li><p><em>v1</em> is equal to <em>v2</em>; in other words, the two processes share the resource.</p></li>
+<li><p><em>v1</em> is less than <em>v2</em>.</p></li>
+<li><p><em>v1</em> is greater than <em>v2</em>.</p></li>
+<li><p><em>v1</em> is not equal to <em>v2</em>, but ordering information is unavailable.</p></li>
+</ol>
+</blockquote>
+<p>On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<p><strong>kcmp</strong>() was designed to return values suitable for sorting. This is particularly handy if one needs to compare a large number of file descriptors.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>type</em> is <strong>KCMP_FILE</strong> and <em>fd1</em> or <em>fd2</em> is not an open file descriptor.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>The epoll slot addressed by <em>idx2</em> is outside of the user's address space.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>type</em> is invalid.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>The target file is not present in <strong>epoll</strong>(7) instance.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>Insufficient permission to inspect process resources. The <strong>CAP_SYS_PTRACE</strong> capability is required to inspect processes that you do not own. Other ptrace limitations may also apply, such as <strong>CONFIG_SECURITY_YAMA</strong>, which, when <em>/proc/sys/kernel/yama/ptrace_scope</em> is 2, limits <strong>kcmp</strong>() to child processes; see <strong>ptrace</strong>(2).</p>
+</dd>
+<dt><strong>ESRCH</strong></dt>
+<dd><p>Process <em>pid1</em> or <em>pid2</em> does not exist.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The <strong>kcmp</strong>() system call first appeared in Linux 3.5.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>kcmp</strong>() is Linux-specific and should not be used in programs intended to be portable.</p>
+<h1>NOTES</h1>
+<p>Glibc does not provide a wrapper for this system call; call it using <strong>syscall</strong>(2).</p>
+<p>This system call is available only if the kernel was configured with <strong>CONFIG_CHECKPOINT_RESTORE</strong>. The main use of the system call is for the checkpoint/restore in user space (CRIU) feature. The alternative to this system call would have been to expose suitable process information via the <strong>proc</strong>(5) filesystem; this was deemed to be unsuitable for security reasons.</p>
+<p>See <strong>clone</strong>(2) for some background information on the shared resources referred to on this page.</p>
+<h1>EXAMPLES</h1>
+<p>The program below uses <strong>kcmp</strong>() to test whether pairs of file descriptors refer to the same open file description. The program tests different cases for the file descriptor pairs, as described in the program output. An example run of the program is as follows:</p>
+<pre><code>$ ./a.out
+Parent PID is 1144
+Parent opened file on FD 3
+
+PID of child of fork() is 1145
+	Compare duplicate FDs from different processes:
+		kcmp(1145, 1144, KCMP_FILE, 3, 3) ==&gt; same
+Child opened file on FD 4
+	Compare FDs from distinct open()s in same process:
+		kcmp(1145, 1145, KCMP_FILE, 3, 4) ==&gt; different
+Child duplicated FD 3 to create FD 5
+	Compare duplicated FDs in same process:
+		kcmp(1145, 1145, KCMP_FILE, 3, 5) ==&gt; same</code></pre>
+<h2>Program source</h2>
+<pre><code>#define _GNU_SOURCE
+#include &lt;sys/syscall.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;linux/kcmp.h&gt;
+
+#define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
+                        } while (0)
+
+static int
+kcmp(pid_t pid1, pid_t pid2, int type,
+     unsigned long idx1, unsigned long idx2)
+{
+    return syscall(SYS_kcmp, pid1, pid2, type, idx1, idx2);
+}
+
+static void
+test_kcmp(char *msg, pid_t pid1, pid_t pid2, int fd_a, int fd_b)
+{
+    printf(&quot;\t%s\n&quot;, msg);
+    printf(&quot;\t\tkcmp(%jd, %jd, KCMP_FILE, %d, %d) ==&gt; %s\n&quot;,
+            (intmax_t) pid1, (intmax_t) pid2, fd_a, fd_b,
+            (kcmp(pid1, pid2, KCMP_FILE, fd_a, fd_b) == 0) ?
+                        &quot;same&quot; : &quot;different&quot;);
+}
+
+int
+main(int argc, char *argv[])
+{
+    int fd1, fd2, fd3;
+    char pathname[] = &quot;/tmp/kcmp.test&quot;;
+
+    fd1 = open(pathname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    if (fd1 == -1)
+        errExit(&quot;open&quot;);
+
+    printf(&quot;Parent PID is %jd\n&quot;, (intmax_t) getpid());
+    printf(&quot;Parent opened file on FD %d\n\n&quot;, fd1);
+
+    switch (fork()) {
+    case -1:
+        errExit(&quot;fork&quot;);
+
+    case 0:
+        printf(&quot;PID of child of fork() is %jd\n&quot;, (intmax_t) getpid());
+
+        test_kcmp(&quot;Compare duplicate FDs from different processes:&quot;,
+                getpid(), getppid(), fd1, fd1);
+
+        fd2 = open(pathname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+        if (fd2 == -1)
+            errExit(&quot;open&quot;);
+        printf(&quot;Child opened file on FD %d\n&quot;, fd2);
+
+        test_kcmp(&quot;Compare FDs from distinct open()s in same process:&quot;,
+                getpid(), getpid(), fd1, fd2);
+
+        fd3 = dup(fd1);
+        if (fd3 == -1)
+            errExit(&quot;dup&quot;);
+        printf(&quot;Child duplicated FD %d to create FD %d\n&quot;, fd1, fd3);
+
+        test_kcmp(&quot;Compare duplicated FDs in same process:&quot;,
+                getpid(), getpid(), fd1, fd3);
+        break;
+
+    default:
+        wait(NULL);
+    }
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>clone</strong>(2), <strong>unshare</strong>(2)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

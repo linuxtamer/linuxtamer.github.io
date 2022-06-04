@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command libnftables-json</title><meta name="description" content="Linux command libnftables-json Supported JSON schema by libnftables"><meta name="keywords" content="linux, command, libnftables-json, bsd, Supported JSON schema by libnftables"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>libnftables-json - Supported JSON schema by libnftables</p>
+<h1>SYNOPSIS</h1>
+<p><strong>{ "nftables": [</strong> <em>OBJECTS</em> <strong>] }</strong></p>
+<p><em>OBJECTS</em> := <em>LIST_OBJECTS</em> | <em>CMD_OBJECTS</em></p>
+<p><em>LIST_OBJECTS</em> := <em>LIST_OBJECT</em> [ <strong>,</strong> <em>LIST_OBJECTS</em> ]</p>
+<p><em>CMD_OBJECTS</em> := <em>CMD_OBJECT</em> [ <strong>,</strong> <em>CMD_OBJECTS</em> ]</p>
+<p><em>CMD_OBJECT</em> := <strong>{</strong> <em>CMD</em><strong>:</strong> <em>LIST_OBJECT</em> <strong>}</strong> | <em>METAINFO_OBJECT</em></p>
+<p><em>CMD</em> := <strong>"add"</strong> | <strong>"replace"</strong> | <strong>"create"</strong> | <strong>"insert"</strong> | <strong>"delete"</strong> | <strong>"list"</strong> | <strong>"reset"</strong> | <strong>"flush"</strong> | <strong>"rename"</strong></p>
+<p><em>LIST_OBJECT</em> := <em>TABLE</em> | <em>CHAIN</em> | <em>RULE</em> | <em>SET</em> | <em>MAP</em> | <em>ELEMENT</em> | <em>FLOWTABLE</em> | <em>COUNTER</em> | <em>QUOTA</em> | <em>CT_HELPER</em> | <em>LIMIT</em> | <em>METAINFO_OBJECT</em> | <em>CT_TIMEOUT</em> | <em>CT_EXPECTATION</em></p>
+<h1>DESCRIPTION</h1>
+<p>libnftables supports JSON formatted input and output. This is implemented as an alternative frontend to the standard CLI syntax parser, therefore basic behaviour is identical and, for (almost) any operation available in standard syntax, there should be an equivalent one in JSON.</p>
+<p>JSON input may be provided in a single string as parameter to <strong>nft_run_cmd_from_buffer()</strong> or in a file identified by the <em>filename</em> parameter of the <strong>nft_run_cmd_from_filename()</strong> function.</p>
+<p>JSON output has to be enabled via the <strong>nft_ctx_output_set_json()</strong> function, turning library standard output into JSON format. Error output remains unaffected.</p>
+<h1>GLOBAL STRUCTURE</h1>
+<p>In general, any JSON input or output is enclosed in an object with a single property named <em>nftables</em>. Its value is an array containing commands (for input) or ruleset elements (for output).</p>
+<p>A command is an object with a single property whose name identifies the command. Its value is a ruleset element - basically identical to output elements, apart from certain properties which may be interpreted differently or are required when output generally omits them.</p>
+<h1>METAINFO OBJECT</h1>
+<p>In output, the first object in an <strong>nftables</strong> array is a special one containing library information. Its content is as follows:</p>
+<blockquote>
+<pre><code>{ &quot;metainfo&quot;: {
+        &quot;version&quot;: STRING,
+        &quot;release_name&quot;: STRING,
+        &quot;json_schema_version&quot;: NUMBER
+}}</code></pre>
+</blockquote>
+<p>The values of <strong>version</strong> and <strong>release_name</strong> properties are equal to the package version and release name as printed by <strong>nft -v</strong>. The value of the <strong>json_schema_version</strong> property is an integer indicating the schema version.</p>
+<p>If supplied in library input, the parser will verify the <strong>json_schema_version</strong> value to not exceed the internally hardcoded one (to make sure the given schema is fully understood). In future, a lower number than the internal one may activate compatibility mode to parse outdated and incompatible JSON input.</p>
+<h1>COMMAND OBJECTS</h1>
+<p>The structure accepts an arbitrary amount of commands which are interpreted in order of appearance. For instance, the following standard syntax input:</p>
+<blockquote>
+<pre><code>flush ruleset
+add table inet mytable
+add chain inet mytable mychain
+add rule inet mytable mychain tcp dport 22 accept</code></pre>
+</blockquote>
+<p>translates into JSON as such:</p>
+<blockquote>
+<pre><code>{ &quot;nftables&quot;: [
+        { &quot;flush&quot;: { &quot;ruleset&quot;: null }},
+        { &quot;add&quot;: { &quot;table&quot;: {
+                        &quot;family&quot;: &quot;inet&quot;,
+                        &quot;name&quot;: &quot;mytable&quot;
+        }}},
+        { &quot;add&quot;: { &quot;chain&quot;: {
+                        &quot;family&quot;: &quot;inet&quot;,
+                        &quot;table&quot;: &quot;mytable&quot;,
+                        &quot;chain&quot;: &quot;mychain&quot;
+        }}}
+        { &quot;add&quot;: { &quot;rule&quot;: {
+                        &quot;family&quot;: &quot;inet&quot;,
+                        &quot;table&quot;: &quot;mytable&quot;,
+                        &quot;chain&quot;: &quot;mychain&quot;,
+                        &quot;expr&quot;: [
+                                { &quot;match&quot;: {
+                                        &quot;left&quot;: { &quot;payload&quot;: {
+                                                        &quot;protocol&quot;: &quot;tcp&quot;,
+                                                        &quot;field&quot;: &quot;dport&quot;
+                                        }},
+                                        &quot;right&quot;: 22
+                                }},
+                                { &quot;accept&quot;: null }
+                        ]
+        }}}
+]}</code></pre>
+</blockquote>
+<h2>ADD</h2>
+<blockquote>
+<pre><code>{ &quot;add&quot;: ADD_OBJECT }
+
+ADD_OBJECT := TABLE | CHAIN | RULE | SET | MAP | ELEMENT |
+                FLOWTABLE | COUNTER | QUOTA | CT_HELPER | LIMIT |
+                CT_TIMEOUT | CT_EXPECTATION</code></pre>
+</blockquote>
+<p>Add a new ruleset element to the kernel.</p>
+<h2>REPLACE</h2>
+<blockquote>
+<pre><code>{ &quot;replace&quot;: RULE }</code></pre>
+</blockquote>
+<p>Replace a rule. In <em>RULE</em>, the <strong>handle</strong> property is mandatory and identifies the rule to be replaced.</p>
+<h2>CREATE</h2>
+<blockquote>
+<pre><code>{ &quot;create&quot;: ADD_OBJECT }</code></pre>
+</blockquote>
+<p>Identical to <strong>add</strong> command, but returns an error if the object already exists.</p>
+<h2>INSERT</h2>
+<blockquote>
+<pre><code>{ &quot;insert&quot;: RULE }</code></pre>
+</blockquote>
+<p>This command is identical to <strong>add</strong> for rules, but instead of appending the rule to the chain by default, it inserts at first position. If a <strong>handle</strong> or <strong>index</strong> property is given, the rule is inserted before the rule identified by those properties.</p>
+<h2>DELETE</h2>
+<blockquote>
+<pre><code>{ &quot;delete&quot;: ADD_OBJECT }</code></pre>
+</blockquote>
+<p>Delete an object from the ruleset. Only the minimal number of properties required to uniquely identify an object is generally needed in <em>ADD_OBJECT</em>. For most ruleset elements, this is <strong>family</strong> and <strong>table</strong> plus either <strong>handle</strong> or <strong>name</strong> (except rules since they don’t have a name).</p>
+<h2>LIST</h2>
+<blockquote>
+<pre><code>{ &quot;list&quot;: LIST_OBJECT }
+
+LIST_OBJECT := TABLE | TABLES | CHAIN | CHAINS | SET | SETS |
+                 MAP | MAPS | COUNTER | COUNTERS | QUOTA | QUOTAS |
+                 CT_HELPER | CT_HELPERS | LIMIT | LIMITS | RULESET |
+                 METER | METERS | FLOWTABLE | FLOWTABLES |
+                 CT_TIMEOUT | CT_EXPECTATION</code></pre>
+</blockquote>
+<p>List ruleset elements. The plural forms are used to list all objects of that kind, optionally filtered by <strong>family</strong> and for some, also <strong>table</strong>.</p>
+<h2>RESET</h2>
+<blockquote>
+<pre><code>{ &quot;reset&quot;: RESET_OBJECT }
+
+RESET_OBJECT := COUNTER | COUNTERS | QUOTA | QUOTAS</code></pre>
+</blockquote>
+<p>Reset state in suitable objects, i.e. zero their internal counter.</p>
+<h2>FLUSH</h2>
+<blockquote>
+<pre><code>{ &quot;flush&quot;: FLUSH_OBJECT }
+
+FLUSH_OBJECT := TABLE | CHAIN | SET | MAP | METER | RULESET</code></pre>
+</blockquote>
+<p>Empty contents in given object, e.g. remove all chains from given <strong>table</strong> or remove all elements from given <strong>set</strong>.</p>
+<h2>RENAME</h2>
+<blockquote>
+<pre><code>{ &quot;rename&quot;: CHAIN }</code></pre>
+</blockquote>
+<p>Rename a chain. The new name is expected in a dedicated property named <strong>newname</strong>.</p>
+<h1>RULESET ELEMENTS</h1>
+<h2>TABLE</h2>
+<blockquote>
+<pre><code>{ &quot;table&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;handle&quot;: NUMBER
+}}</code></pre>
+</blockquote>
+<p>This object describes a table.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family, e.g. <strong>"ip"</strong> or <strong>"ip6"</strong>.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The table’s handle. In input, it is used only in <strong>delete</strong> command as alternative to <strong>name</strong>.</p>
+</blockquote>
+<h2>CHAIN</h2>
+<blockquote>
+<pre><code>{ &quot;chain&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;newname&quot;: STRING,
+        &quot;handle&quot;: NUMBER,
+        &quot;type&quot;: STRING,
+        &quot;hook&quot;: STRING,
+        &quot;prio&quot;: NUMBER,
+        &quot;dev&quot;: STRING,
+        &quot;policy&quot;: STRING
+}}</code></pre>
+</blockquote>
+<p>This object describes a chain.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The chain’s name.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The chain’s handle. In input, it is used only in <strong>delete</strong> command as alternative to <strong>name</strong>.</p>
+</blockquote>
+<p><strong>newname</strong></p>
+<blockquote>
+<p>A new name for the chain, only relevant in the <strong>rename</strong> command.</p>
+</blockquote>
+<p>The following properties are required for base chains:</p>
+<p><strong>type</strong></p>
+<blockquote>
+<p>The chain’s type.</p>
+</blockquote>
+<p><strong>hook</strong></p>
+<blockquote>
+<p>The chain’s hook.</p>
+</blockquote>
+<p><strong>prio</strong></p>
+<blockquote>
+<p>The chain’s priority.</p>
+</blockquote>
+<p><strong>dev</strong></p>
+<blockquote>
+<p>The chain’s bound interface (if in the netdev family).</p>
+</blockquote>
+<p><strong>policy</strong></p>
+<blockquote>
+<p>The chain’s policy.</p>
+</blockquote>
+<h2>RULE</h2>
+<blockquote>
+<pre><code>{ &quot;rule&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;chain&quot;: STRING,
+        &quot;expr&quot;: [ STATEMENTS ],
+        &quot;handle&quot;: NUMBER,
+        &quot;index&quot;: NUMBER,
+        &quot;comment&quot;: STRING
+}}
+
+STATEMENTS := STATEMENT [, STATEMENTS ]</code></pre>
+</blockquote>
+<p>This object describes a rule. Basic building blocks of rules are statements. Each rule consists of at least one.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>chain</strong></p>
+<blockquote>
+<p>The chain’s name.</p>
+</blockquote>
+<p><strong>expr</strong></p>
+<blockquote>
+<p>An array of statements this rule consists of. In input, it is used in <strong>add</strong>/<strong>insert</strong>/<strong>replace</strong> commands only.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The rule’s handle. In <strong>delete</strong>/<strong>replace</strong> commands, it serves as an identifier of the rule to delete/replace. In <strong>add</strong>/<strong>insert</strong> commands, it serves as an identifier of an existing rule to append/prepend the rule to.</p>
+</blockquote>
+<p><strong>index</strong></p>
+<blockquote>
+<p>The rule’s position for <strong>add</strong>/<strong>insert</strong> commands. It is used as an alternative to <strong>handle</strong> then.</p>
+</blockquote>
+<p><strong>comment</strong></p>
+<blockquote>
+<p>Optional rule comment.</p>
+</blockquote>
+<h2>SET / MAP</h2>
+<blockquote>
+<pre><code>{ &quot;set&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;handle&quot;: NUMBER,
+        &quot;type&quot;: SET_TYPE,
+        &quot;policy&quot;: SET_POLICY,
+        &quot;flags&quot;: [ SET_FLAG_LIST ],
+        &quot;elem&quot;: SET_ELEMENTS,
+        &quot;timeout&quot;: NUMBER,
+        &quot;gc-interval&quot;: NUMBER,
+        &quot;size&quot;: NUMBER
+}}
+
+{ &quot;map&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;handle&quot;: NUMBER,
+        &quot;type&quot;: SET_TYPE,
+        &quot;map&quot;: STRING,
+        &quot;policy&quot;: SET_POLICY,
+        &quot;flags&quot;: [ SET_FLAG_LIST ],
+        &quot;elem&quot;: SET_ELEMENTS,
+        &quot;timeout&quot;: NUMBER,
+        &quot;gc-interval&quot;: NUMBER,
+        &quot;size&quot;: NUMBER
+}}
+
+SET_TYPE := STRING | [ SET_TYPE_LIST ]
+SET_TYPE_LIST := STRING [, SET_TYPE_LIST ]
+SET_POLICY := &quot;performance&quot; | &quot;memory&quot;
+SET_FLAG_LIST := SET_FLAG [, SET_FLAG_LIST ]
+SET_FLAG := &quot;constant&quot; | &quot;interval&quot; | &quot;timeout&quot;
+SET_ELEMENTS := EXPRESSION | [ EXPRESSION_LIST ]
+EXPRESSION_LIST := EXPRESSION [, EXPRESSION_LIST ]</code></pre>
+</blockquote>
+<p>These objects describe a named set or map. Maps are a special form of sets in that they translate a unique key to a value.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The set’s name.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The set’s handle. For input, it is used in the <strong>delete</strong> command only.</p>
+</blockquote>
+<p><strong>type</strong></p>
+<blockquote>
+<p>The set’s datatype, see below.</p>
+</blockquote>
+<p><strong>map</strong></p>
+<blockquote>
+<p>Type of values this set maps to (i.e. this set is a map).</p>
+</blockquote>
+<p><strong>policy</strong></p>
+<blockquote>
+<p>The set’s policy.</p>
+</blockquote>
+<p><strong>flags</strong></p>
+<blockquote>
+<p>The set’s flags.</p>
+</blockquote>
+<p><strong>elem</strong></p>
+<blockquote>
+<p>Initial set element(s), see below.</p>
+</blockquote>
+<p><strong>timeout</strong></p>
+<blockquote>
+<p>Element timeout in seconds.</p>
+</blockquote>
+<p><strong>gc-interval</strong></p>
+<blockquote>
+<p>Garbage collector interval in seconds.</p>
+</blockquote>
+<p><strong>size</strong></p>
+<blockquote>
+<p>Maximum number of elements supported.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>TYPE</strong></p>
+<blockquote>
+<p>The set type might be a string, such as <strong>"ipv4_addr"</strong> or an array consisting of strings (for concatenated types).</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>ELEM</strong></p>
+<blockquote>
+<p>A single set element might be given as string, integer or boolean value for simple cases. If additional properties are required, a formal <strong>elem</strong> object may be used.</p>
+<p>Multiple elements may be given in an array.</p>
+</blockquote>
+<h2>ELEMENT</h2>
+<blockquote>
+<pre><code>{ &quot;element&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;elem&quot;: SET_ELEM
+}}
+
+SET_ELEM := EXPRESSION | [ EXPRESSION_LIST ]
+EXPRESSION_LIST := EXPRESSION [, EXPRESSION ]</code></pre>
+</blockquote>
+<p>Manipulate element(s) in a named set.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The set’s name.</p>
+</blockquote>
+<p><strong>elem</strong></p>
+<blockquote>
+<p>See elem property of set object.</p>
+</blockquote>
+<h2>FLOWTABLE</h2>
+<blockquote>
+<pre><code>{ &quot;flowtable&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;handle&quot;: NUMBER,
+        &quot;hook&quot;: STRING,
+        &quot;prio&quot;: NUMBER,
+        &quot;dev&quot;: FT_INTERFACE
+}}
+
+FT_INTERFACE := STRING | [ FT_INTERFACE_LIST ]
+FT_INTERFACE_LIST := STRING [, STRING ]</code></pre>
+</blockquote>
+<p>This object represents a named flowtable.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The flow table’s name.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The flow table’s handle. In input, it is used by the <strong>delete</strong> command only.</p>
+</blockquote>
+<p><strong>hook</strong></p>
+<blockquote>
+<p>The flow table’s hook.</p>
+</blockquote>
+<p><strong>prio</strong></p>
+<blockquote>
+<p>The flow table’s priority.</p>
+</blockquote>
+<p><strong>dev</strong></p>
+<blockquote>
+<p>The flow table’s interface(s).</p>
+</blockquote>
+<h2>COUNTER</h2>
+<blockquote>
+<pre><code>{ &quot;counter&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;handle&quot;: NUMBER,
+        &quot;packets&quot;: NUMBER,
+        &quot;bytes&quot;: NUMBER
+}}</code></pre>
+</blockquote>
+<p>This object represents a named counter.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The counter’s name.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The counter’s handle. In input, it is used by the <strong>delete</strong> command only.</p>
+</blockquote>
+<p><strong>packets</strong></p>
+<blockquote>
+<p>Packet counter value.</p>
+</blockquote>
+<p><strong>bytes</strong></p>
+<blockquote>
+<p>Byte counter value.</p>
+</blockquote>
+<h2>QUOTA</h2>
+<blockquote>
+<pre><code>{ &quot;quota&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;handle&quot;: NUMBER,
+        &quot;bytes&quot;: NUMBER,
+        &quot;used&quot;: NUMBER,
+        &quot;inv&quot;: BOOLEAN
+}}</code></pre>
+</blockquote>
+<p>This object represents a named quota.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The quota’s name.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The quota’s handle. In input, it is used by the <strong>delete</strong> command only.</p>
+</blockquote>
+<p><strong>bytes</strong></p>
+<blockquote>
+<p>Quota threshold.</p>
+</blockquote>
+<p><strong>used</strong></p>
+<blockquote>
+<p>Quota used so far.</p>
+</blockquote>
+<p><strong>inv</strong></p>
+<blockquote>
+<p>If true, match if the quota has been exceeded.</p>
+</blockquote>
+<h2>CT HELPER</h2>
+<blockquote>
+<pre><code>{ &quot;ct helper&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;handle&quot;: ... ,
+        &quot;type&quot;: STRING,
+        &quot;protocol&quot;: CTH_PROTO,
+        &quot;l3proto&quot;: STRING
+}}
+
+CTH_PROTO := &quot;tcp&quot; | &quot;udp&quot;</code></pre>
+</blockquote>
+<p>This object represents a named conntrack helper.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The ct helper’s name.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The ct helper’s handle. In input, it is used by the <strong>delete</strong> command only.</p>
+</blockquote>
+<p><strong>type</strong></p>
+<blockquote>
+<p>The ct helper type name, e.g. <strong>"ftp"</strong> or <strong>"tftp"</strong>.</p>
+</blockquote>
+<p><strong>protocol</strong></p>
+<blockquote>
+<p>The ct helper’s layer 4 protocol.</p>
+</blockquote>
+<p><strong>l3proto</strong></p>
+<blockquote>
+<p>The ct helper’s layer 3 protocol, e.g. <strong>"ip"</strong> or <strong>"ip6"</strong>.</p>
+</blockquote>
+<h2>LIMIT</h2>
+<blockquote>
+<pre><code>{ &quot;limit&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;handle&quot;: NUMBER,
+        &quot;rate&quot;: NUMBER,
+        &quot;per&quot;: STRING,
+        &quot;burst&quot;: NUMBER,
+        &quot;unit&quot;: LIMIT_UNIT,
+        &quot;inv&quot;: BOOLEAN
+}}
+
+LIMIT_UNIT := &quot;packets&quot; | &quot;bytes&quot;</code></pre>
+</blockquote>
+<p>This object represents a named limit.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The limit’s name.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The limit’s handle. In input, it is used by the <strong>delete</strong> command only.</p>
+</blockquote>
+<p><strong>rate</strong></p>
+<blockquote>
+<p>The limit’s rate value.</p>
+</blockquote>
+<p><strong>per</strong></p>
+<blockquote>
+<p>Time unit to apply the limit to, e.g. <strong>"week"</strong>, <strong>"day"</strong>, <strong>"hour"</strong>, etc. If omitted, defaults to <strong>"second"</strong>.</p>
+</blockquote>
+<p><strong>burst</strong></p>
+<blockquote>
+<p>The limit’s burst value. If omitted, defaults to <strong>0</strong>.</p>
+</blockquote>
+<p><strong>unit</strong></p>
+<blockquote>
+<p>Unit of rate and burst values. If omitted, defaults to <strong>"packets"</strong>.</p>
+</blockquote>
+<p><strong>inv</strong></p>
+<blockquote>
+<p>If true, match if limit was exceeded. If omitted, defaults to <strong>false</strong>.</p>
+</blockquote>
+<h2>CT TIMEOUT</h2>
+<blockquote>
+<pre><code>{ &quot;ct timeout&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;handle&quot;: NUMBER,
+        &quot;protocol&quot;: CTH_PROTO,
+        &quot;state&quot;: STRING,
+        &quot;value: NUMBER,
+        &quot;l3proto&quot;: STRING
+}}
+
+CTH_PROTO := &quot;tcp&quot; | &quot;udp&quot; | &quot;dccp&quot; | &quot;sctp&quot; | &quot;gre&quot; | &quot;icmpv6&quot; | &quot;icmp&quot; | &quot;generic&quot;</code></pre>
+</blockquote>
+<p>This object represents a named conntrack timeout policy.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The ct timeout object’s name.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The ct timeout object’s handle. In input, it is used by <strong>delete</strong> command only.</p>
+</blockquote>
+<p><strong>protocol</strong></p>
+<blockquote>
+<p>The ct timeout object’s layer 4 protocol.</p>
+</blockquote>
+<p><strong>state</strong></p>
+<blockquote>
+<p>The connection state name, e.g. <strong>"established"</strong>, <strong>"syn_sent"</strong>, <strong>"close"</strong> or <strong>"close_wait"</strong>, for which the timeout value has to be updated.</p>
+</blockquote>
+<p><strong>value</strong></p>
+<blockquote>
+<p>The updated timeout value for the specified connection state.</p>
+</blockquote>
+<p><strong>l3proto</strong></p>
+<blockquote>
+<p>The ct timeout object’s layer 3 protocol, e.g. <strong>"ip"</strong> or <strong>"ip6"</strong>.</p>
+</blockquote>
+<h2>CT EXPECTATION</h2>
+<blockquote>
+<pre><code>{ &quot;ct expectation&quot;: {
+        &quot;family&quot;: STRING,
+        &quot;table&quot;: STRING,
+        &quot;name&quot;: STRING,
+        &quot;handle&quot;: NUMBER,
+        &quot;l3proto&quot;: STRING
+        &quot;protocol&quot;:* CTH_PROTO,
+        &quot;dport&quot;: NUMBER,
+        &quot;timeout: NUMBER,
+        &quot;size: NUMBER,
+*}}
+
+CTH_PROTO := &quot;tcp&quot; | &quot;udp&quot; | &quot;dccp&quot; | &quot;sctp&quot; | &quot;gre&quot; | &quot;icmpv6&quot; | &quot;icmp&quot; | &quot;generic&quot;</code></pre>
+</blockquote>
+<p>This object represents a named conntrack expectation.</p>
+<p><strong>family</strong></p>
+<blockquote>
+<p>The table’s family.</p>
+</blockquote>
+<p><strong>table</strong></p>
+<blockquote>
+<p>The table’s name.</p>
+</blockquote>
+<p><strong>name</strong></p>
+<blockquote>
+<p>The ct expectation object’s name.</p>
+</blockquote>
+<p><strong>handle</strong></p>
+<blockquote>
+<p>The ct expectation object’s handle. In input, it is used by <strong>delete</strong> command only.</p>
+</blockquote>
+<p><strong>l3proto</strong></p>
+<blockquote>
+<p>The ct expectation object’s layer 3 protocol, e.g. <strong>"ip"</strong> or <strong>"ip6"</strong>.</p>
+</blockquote>
+<p><strong>protocol</strong></p>
+<blockquote>
+<p>The ct expectation object’s layer 4 protocol.</p>
+</blockquote>
+<p><strong>dport</strong></p>
+<blockquote>
+<p>The destination port of the expected connection.</p>
+</blockquote>
+<p><strong>timeout</strong></p>
+<blockquote>
+<p>The time in millisecond that this expectation will live.</p>
+</blockquote>
+<p><strong>size</strong></p>
+<blockquote>
+<p>The maximum count of expectations to be living in the same time.</p>
+</blockquote>
+<h1>STATEMENTS</h1>
+<p>Statements are the building blocks for rules. Each rule consists of at least one.</p>
+<h2>VERDICT</h2>
+<blockquote>
+<pre><code>{ &quot;accept&quot;: null }
+{ &quot;drop&quot;: null }
+{ &quot;continue&quot;: null }
+{ &quot;return&quot;: null }
+{ &quot;jump&quot;: { &quot;target&quot;: * STRING *}}
+{ &quot;goto&quot;: { &quot;target&quot;: * STRING *}}</code></pre>
+</blockquote>
+<p>A verdict either terminates packet traversal through the current chain or delegates to a different one.</p>
+<p><strong>jump</strong> and <strong>goto</strong> statements expect a target chain name.</p>
+<h2>MATCH</h2>
+<blockquote>
+<pre><code>{ &quot;match&quot;: {
+        &quot;left&quot;: EXPRESSION,
+        &quot;right&quot;: EXPRESSION,
+        &quot;op&quot;: STRING
+}}</code></pre>
+</blockquote>
+<p>This matches the expression on left hand side (typically a packet header or packet meta info) with the expression on right hand side (typically a constant value). If the statement evaluates to true, the next statement in this rule is considered. If not, processing continues with the next rule in the same chain.</p>
+<p><strong>left</strong></p>
+<blockquote>
+<p>Left hand side of this match.</p>
+</blockquote>
+<p><strong>right</strong></p>
+<blockquote>
+<p>Right hand side of this match.</p>
+</blockquote>
+<p><strong>op</strong></p>
+<blockquote>
+<p>Operator indicating the type of comparison.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>OPERATORS</strong></p>
+<blockquote>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>&amp;</strong></td>
+<td style="text-align: left;">Binary AND</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>|</strong></td>
+<td style="text-align: left;">Binary OR</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>^</strong></td>
+<td style="text-align: left;">Binary XOR</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>&lt;&lt;</strong></td>
+<td style="text-align: left;">Left shift</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>&gt;&gt;</strong></td>
+<td style="text-align: left;">Right shift</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>==</strong></td>
+<td style="text-align: left;">Equal</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>!=</strong></td>
+<td style="text-align: left;">Not equal</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>&lt;</strong></td>
+<td style="text-align: left;">Less than</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>&gt;</strong></td>
+<td style="text-align: left;">Greater than</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>⇐</strong></td>
+<td style="text-align: left;">Less than or equal to</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>&gt;=</strong></td>
+<td style="text-align: left;">Greater than or equal to</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>in</strong></td>
+<td style="text-align: left;">Perform a lookup, i.e. test if bits on RHS are contained in LHS value</td>
+</tr>
+</tbody>
+</table>
+<p>Unlike with the standard API, the operator is mandatory here. In the standard API, a missing operator may be resolved in two ways, depending on the type of expression on the RHS:</p>
+<blockquote>
+<p>·</p>
+<p>If the RHS is a bitmask or a list of bitmasks, the expression resolves into a binary operation with the inequality operator, like this: <em>LHS &amp; RHS != 0</em>.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>In any other case, the equality operator is simply inserted.</p>
+</blockquote>
+<p>For the non-trivial first case, the JSON API supports the <strong>in</strong> operator.</p>
+</blockquote>
+<h2>COUNTER</h2>
+<blockquote>
+<pre><code>{ &quot;counter&quot;: {
+        &quot;packets&quot;: NUMBER,
+        &quot;bytes&quot;: NUMBER
+}}
+
+{ &quot;counter&quot;: STRING }</code></pre>
+</blockquote>
+<p>This object represents a byte/packet counter. In input, no properties are required. If given, they act as initial values for the counter.</p>
+<p>The first form creates an anonymous counter which lives in the rule it appears in. The second form specifies a reference to a named counter object.</p>
+<p><strong>packets</strong></p>
+<blockquote>
+<p>Packets counted.</p>
+</blockquote>
+<p><strong>bytes</strong></p>
+<blockquote>
+<p>Bytes counted.</p>
+</blockquote>
+<h2>MANGLE</h2>
+<blockquote>
+<pre><code>{ &quot;mangle&quot;: {
+        &quot;key&quot;: EXPRESSION,
+        &quot;value&quot;: EXPRESSION
+}}</code></pre>
+</blockquote>
+<p>This changes the packet data or meta info.</p>
+<p><strong>key</strong></p>
+<blockquote>
+<p>The packet data to be changed, given as an <strong>exthdr</strong>, <strong>payload</strong>, <strong>meta</strong>, <strong>ct</strong> or <strong>ct helper</strong> expression.</p>
+</blockquote>
+<p><strong>value</strong></p>
+<blockquote>
+<p>Value to change data to.</p>
+</blockquote>
+<h2>QUOTA</h2>
+<blockquote>
+<pre><code>{ &quot;quota&quot;: {
+        &quot;val&quot;: NUMBER,
+        &quot;val_unit&quot;: STRING,
+        &quot;used&quot;: NUMBER,
+        &quot;used_unit&quot;: STRING,
+        &quot;inv&quot;: BOOLEAN
+}}
+
+{ &quot;quota&quot;: STRING }</code></pre>
+</blockquote>
+<p>The first form creates an anonymous quota which lives in the rule it appears in. The second form specifies a reference to a named quota object.</p>
+<p><strong>val</strong></p>
+<blockquote>
+<p>Quota value.</p>
+</blockquote>
+<p><strong>val_unit</strong></p>
+<blockquote>
+<p>Unit of <strong>val</strong>, e.g. <strong>"kbytes"</strong> or <strong>"mbytes"</strong>. If omitted, defaults to <strong>"bytes"</strong>.</p>
+</blockquote>
+<p><strong>used</strong></p>
+<blockquote>
+<p>Quota used so far. Optional on input. If given, serves as initial value.</p>
+</blockquote>
+<p><strong>used_unit</strong></p>
+<blockquote>
+<p>Unit of <strong>used</strong>. Defaults to <strong>"bytes"</strong>.</p>
+</blockquote>
+<p><strong>inv</strong></p>
+<blockquote>
+<p>If <strong>true</strong>, will match if quota was exceeded. Defaults to <strong>false</strong>.</p>
+</blockquote>
+<h2>LIMIT</h2>
+<blockquote>
+<pre><code>{ &quot;limit&quot;: {
+        &quot;rate&quot;: NUMBER,
+        &quot;rate_unit&quot;: STRING,
+        &quot;per&quot;: STRING,
+        &quot;burst&quot;: NUMBER,
+        &quot;burst_unit&quot;: STRING,
+        &quot;inv&quot;: BOOLEAN
+}}
+
+{ &quot;limit&quot;: STRING }</code></pre>
+</blockquote>
+<p>The first form creates an anonymous limit which lives in the rule it appears in. The second form specifies a reference to a named limit object.</p>
+<p><strong>rate</strong></p>
+<blockquote>
+<p>Rate value to limit to.</p>
+</blockquote>
+<p><strong>rate_unit</strong></p>
+<blockquote>
+<p>Unit of <strong>rate</strong>, e.g. <strong>"packets"</strong> or <strong>"mbytes"</strong>. Defaults to <strong>"packets"</strong>.</p>
+</blockquote>
+<p><strong>per</strong></p>
+<blockquote>
+<p>Denominator of <strong>rate</strong>, e.g. <strong>"week"</strong> or <strong>"minutes"</strong>.</p>
+</blockquote>
+<p><strong>burst</strong></p>
+<blockquote>
+<p>Burst value. Defaults to <strong>0</strong>.</p>
+</blockquote>
+<p><strong>burst_unit</strong></p>
+<blockquote>
+<p>Unit of <strong>burst</strong>, ignored if <strong>rate_unit</strong> is <strong>"packets"</strong>. Defaults to <strong>"bytes"</strong>.</p>
+</blockquote>
+<p><strong>inv</strong></p>
+<blockquote>
+<p>If <strong>true</strong>, matches if the limit was exceeded. Defaults to <strong>false</strong>.</p>
+</blockquote>
+<h2>FWD</h2>
+<blockquote>
+<pre><code>{ &quot;fwd&quot;: {
+        &quot;dev&quot;: EXPRESSION,
+        &quot;family&quot;: FWD_FAMILY,
+        &quot;addr&quot;: EXPRESSION
+}}
+
+FWD_FAMILY := &quot;ip&quot; | &quot;ip6&quot;</code></pre>
+</blockquote>
+<p>Forward a packet to a different destination.</p>
+<p><strong>dev</strong></p>
+<blockquote>
+<p>Interface to forward the packet on.</p>
+</blockquote>
+<p><strong>family</strong></p>
+<blockquote>
+<p>Family of <strong>addr</strong>.</p>
+</blockquote>
+<p><strong>addr</strong></p>
+<blockquote>
+<p>IP(v6) address to forward the packet to.</p>
+</blockquote>
+<p>Both <strong>family</strong> and <strong>addr</strong> are optional, but if at least one is given, both must be present.</p>
+<h2>NOTRACK</h2>
+<blockquote>
+<pre><code>{ &quot;notrack&quot;: null }</code></pre>
+</blockquote>
+<p>Disable connection tracking for the packet.</p>
+<h2>DUP</h2>
+<blockquote>
+<pre><code>{ &quot;dup&quot;: {
+        &quot;addr&quot;: EXPRESSION,
+        &quot;dev&quot;: EXPRESSION
+}}</code></pre>
+</blockquote>
+<p>Duplicate a packet to a different destination.</p>
+<p><strong>addr</strong></p>
+<blockquote>
+<p>Address to duplicate packet to.</p>
+</blockquote>
+<p><strong>dev</strong></p>
+<blockquote>
+<p>Interface to duplicate packet on. May be omitted to not specify an interface explicitly.</p>
+</blockquote>
+<h2>NETWORK ADDRESS TRANSLATION</h2>
+<blockquote>
+<pre><code>{ &quot;snat&quot;: {
+        &quot;addr&quot;: EXPRESSION,
+        &quot;family&quot;: STRING,
+        &quot;port&quot;: EXPRESSION,
+        &quot;flags&quot;: FLAGS
+}}
+
+{ &quot;dnat&quot;: {
+        &quot;addr&quot;: EXPRESSION,
+        &quot;family&quot;: STRING,
+        &quot;port&quot;: EXPRESSION,
+        &quot;flags&quot;: FLAGS
+}}
+
+{ &quot;masquerade&quot;: {
+        &quot;port&quot;: EXPRESSION,
+        &quot;flags&quot;: FLAGS
+}}
+
+{ &quot;redirect&quot;: {
+        &quot;port&quot;: EXPRESSION,
+        &quot;flags&quot;: FLAGS
+}}
+
+FLAGS := FLAG | [ FLAG_LIST ]
+FLAG_LIST := FLAG [, FLAG_LIST ]
+FLAG := &quot;random&quot; | &quot;fully-random&quot; | &quot;persistent&quot;</code></pre>
+</blockquote>
+<p>Perform Network Address Translation.</p>
+<p><strong>addr</strong></p>
+<blockquote>
+<p>Address to translate to.</p>
+</blockquote>
+<p><strong>family</strong></p>
+<blockquote>
+<p>Family of <strong>addr</strong>, either <strong>ip</strong> or <strong>ip6</strong>. Required in <strong>inet</strong> table family.</p>
+</blockquote>
+<p><strong>port</strong></p>
+<blockquote>
+<p>Port to translate to.</p>
+</blockquote>
+<p><strong>flags</strong></p>
+<blockquote>
+<p>Flag(s).</p>
+</blockquote>
+<p>All properties are optional and default to none.</p>
+<h2>REJECT</h2>
+<blockquote>
+<pre><code>{ &quot;reject&quot;: {
+        &quot;type&quot;: STRING,
+        &quot;expr&quot;: EXPRESSION
+}}</code></pre>
+</blockquote>
+<p>Reject the packet and send the given error reply.</p>
+<p><strong>type</strong></p>
+<blockquote>
+<p>Type of reject, either <strong>"tcp reset"</strong>, <strong>"icmpx"</strong>, <strong>"icmp"</strong> or <strong>"icmpv6"</strong>.</p>
+</blockquote>
+<p><strong>expr</strong></p>
+<blockquote>
+<p>ICMP type to reject with.</p>
+</blockquote>
+<p>All properties are optional.</p>
+<h2>SET</h2>
+<blockquote>
+<pre><code>{ &quot;set&quot;: {
+        &quot;op&quot;: STRING,
+        &quot;elem&quot;: EXPRESSION,
+        &quot;set&quot;: STRING
+}}</code></pre>
+</blockquote>
+<p>Dynamically add/update elements to a set.</p>
+<p><strong>op</strong></p>
+<blockquote>
+<p>Operator on set, either <strong>"add"</strong> or <strong>"update"</strong>.</p>
+</blockquote>
+<p><strong>elem</strong></p>
+<blockquote>
+<p>Set element to add or update.</p>
+</blockquote>
+<p><strong>set</strong></p>
+<blockquote>
+<p>Set reference.</p>
+</blockquote>
+<h2>LOG</h2>
+<blockquote>
+<pre><code>{ &quot;log&quot;: {
+        &quot;prefix&quot;: STRING,
+        &quot;group&quot;: NUMBER,
+        &quot;snaplen&quot;: NUMBER,
+        &quot;queue-threshold&quot;: NUMBER,
+        &quot;level&quot;: LEVEL,
+        &quot;flags&quot;: FLAGS
+}}
+
+LEVEL := &quot;emerg&quot; | &quot;alert&quot; | &quot;crit&quot; | &quot;err&quot; | &quot;warn&quot; | &quot;notice&quot; |
+           &quot;info&quot; | &quot;debug&quot; | &quot;audit&quot;
+
+FLAGS := FLAG | [ FLAG_LIST ]
+FLAG_LIST := FLAG [, FLAG_LIST ]
+FLAG := &quot;tcp sequence&quot; | &quot;tcp options&quot; | &quot;ip options&quot; | &quot;skuid&quot; |
+          &quot;ether&quot; | &quot;all&quot;</code></pre>
+</blockquote>
+<p>Log the packet.</p>
+<p><strong>prefix</strong></p>
+<blockquote>
+<p>Prefix for log entries.</p>
+</blockquote>
+<p><strong>group</strong></p>
+<blockquote>
+<p>Log group.</p>
+</blockquote>
+<p><strong>snaplen</strong></p>
+<blockquote>
+<p>Snaplen for logging.</p>
+</blockquote>
+<p><strong>queue-threshold</strong></p>
+<blockquote>
+<p>Queue threshold.</p>
+</blockquote>
+<p><strong>level</strong></p>
+<blockquote>
+<p>Log level. Defaults to <strong>"warn"</strong>.</p>
+</blockquote>
+<p><strong>flags</strong></p>
+<blockquote>
+<p>Log flags.</p>
+</blockquote>
+<p>All properties are optional.</p>
+<h2>CT HELPER</h2>
+<blockquote>
+<pre><code>{ &quot;ct helper&quot;: EXPRESSION }</code></pre>
+</blockquote>
+<p>Enable the specified conntrack helper for this packet.</p>
+<p><strong>ct helper</strong></p>
+<blockquote>
+<p>CT helper reference.</p>
+</blockquote>
+<h2>METER</h2>
+<blockquote>
+<pre><code>{ &quot;meter&quot;: {
+        &quot;name&quot;: STRING,
+        &quot;key&quot;: EXPRESSION,
+        &quot;stmt&quot;: STATEMENT
+}}</code></pre>
+</blockquote>
+<p>Apply a given statement using a meter.</p>
+<p><strong>name</strong></p>
+<blockquote>
+<p>Meter name.</p>
+</blockquote>
+<p><strong>key</strong></p>
+<blockquote>
+<p>Meter key.</p>
+</blockquote>
+<p><strong>stmt</strong></p>
+<blockquote>
+<p>Meter statement.</p>
+</blockquote>
+<h2>QUEUE</h2>
+<blockquote>
+<pre><code>{ &quot;queue&quot;: {
+        &quot;num&quot;: EXPRESSION,
+        &quot;flags&quot;: FLAGS
+}}
+
+FLAGS := FLAG | [ FLAG_LIST ]
+FLAG_LIST := FLAG [, FLAG_LIST ]
+FLAG := &quot;bypass&quot; | &quot;fanout&quot;</code></pre>
+</blockquote>
+<p>Queue the packet to userspace.</p>
+<p><strong>num</strong></p>
+<blockquote>
+<p>Queue number.</p>
+</blockquote>
+<p><strong>flags</strong></p>
+<blockquote>
+<p>Queue flags.</p>
+</blockquote>
+<h2>VERDICT MAP</h2>
+<blockquote>
+<pre><code>{ &quot;vmap&quot;: {
+        &quot;key&quot;: EXPRESSION,
+        &quot;data&quot;: EXPRESSION
+}}</code></pre>
+</blockquote>
+<p>Apply a verdict conditionally.</p>
+<p><strong>key</strong></p>
+<blockquote>
+<p>Map key.</p>
+</blockquote>
+<p><strong>data</strong></p>
+<blockquote>
+<p>Mapping expression consisting of value/verdict pairs.</p>
+</blockquote>
+<h2>CT COUNT</h2>
+<blockquote>
+<pre><code>{ &quot;ct count&quot;: {
+        &quot;val&quot;: NUMBER,
+        &quot;inv&quot;: BOOLEAN
+}}</code></pre>
+</blockquote>
+<p>Limit the number of connections using conntrack.</p>
+<p><strong>val</strong></p>
+<blockquote>
+<p>Connection count threshold.</p>
+</blockquote>
+<p><strong>inv</strong></p>
+<blockquote>
+<p>If <strong>true</strong>, match if <strong>val</strong> was exceeded. If omitted, defaults to <strong>false</strong>.</p>
+</blockquote>
+<h2>CT TIMEOUT</h2>
+<blockquote>
+<pre><code>{ &quot;ct timeout&quot;: EXPRESSION }</code></pre>
+</blockquote>
+<p>Assign connection tracking timeout policy.</p>
+<p><strong>ct timeout</strong></p>
+<blockquote>
+<p>CT timeout reference.</p>
+</blockquote>
+<h2>CT EXPECTATION</h2>
+<blockquote>
+<pre><code>{ &quot;ct expectation&quot;: EXPRESSION }</code></pre>
+</blockquote>
+<p>Assign connection tracking expectation.</p>
+<p><strong>ct expectation</strong></p>
+<blockquote>
+<p>CT expectation reference.</p>
+</blockquote>
+<h2>XT</h2>
+<blockquote>
+<pre><code>{ &quot;xt&quot;: null }</code></pre>
+</blockquote>
+<p>This represents an xt statement from xtables compat interface. Sadly, at this point, it is not possible to provide any further information about its content.</p>
+<h1>EXPRESSIONS</h1>
+<p>Expressions are the building blocks of (most) statements. In their most basic form, they are just immediate values represented as a JSON string, integer or boolean type.</p>
+<h2>IMMEDIATES</h2>
+<blockquote>
+<pre><code>STRING
+NUMBER
+BOOLEAN</code></pre>
+</blockquote>
+<p>Immediate expressions are typically used for constant values. For strings, there are two special cases:</p>
+<p><strong>@STRING</strong></p>
+<blockquote>
+<p>The remaining part is taken as set name to create a set reference.</p>
+</blockquote>
+<p><strong>\</strong>*</p>
+<blockquote>
+<p>Construct a wildcard expression.</p>
+</blockquote>
+<h2>LISTS</h2>
+<blockquote>
+<pre><code>ARRAY</code></pre>
+</blockquote>
+<p>List expressions are constructed by plain arrays containing of an arbitrary number of expressions.</p>
+<h2>CONCAT</h2>
+<blockquote>
+<pre><code>{ &quot;concat&quot;: CONCAT }
+
+CONCAT := [ EXPRESSION_LIST ]
+EXPRESSION_LIST := EXPRESSION [, EXPRESSION_LIST ]</code></pre>
+</blockquote>
+<p>Concatenate several expressions.</p>
+<h2>SET</h2>
+<blockquote>
+<pre><code>{ &quot;set&quot;: SET }
+
+SET := EXPRESSION | [ EXPRESSION_LIST ]</code></pre>
+</blockquote>
+<p>This object constructs an anonymous set. For mappings, an array of arrays with exactly two elements is expected.</p>
+<h2>MAP</h2>
+<blockquote>
+<pre><code>{ &quot;map&quot;: {
+        &quot;key&quot;: EXPRESSION,
+        &quot;data&quot;: EXPRESSION
+}}</code></pre>
+</blockquote>
+<p>Map a key to a value.</p>
+<p><strong>key</strong></p>
+<blockquote>
+<p>Map key.</p>
+</blockquote>
+<p><strong>data</strong></p>
+<blockquote>
+<p>Mapping expression consisting of value/target pairs.</p>
+</blockquote>
+<h2>PREFIX</h2>
+<blockquote>
+<pre><code>{ &quot;prefix&quot;: {
+        &quot;addr&quot;: EXPRESSION,
+        &quot;len&quot;: NUMBER
+}}</code></pre>
+</blockquote>
+<p>Construct an IPv4 or IPv6 prefix consisting of address part in <strong>addr</strong> and prefix length in <strong>len</strong>.</p>
+<h2>RANGE</h2>
+<blockquote>
+<pre><code>{ &quot;range&quot;: [ EXPRESSION , EXPRESSION ] }</code></pre>
+</blockquote>
+<p>Construct a range of values. The first array item denotes the lower boundary, the second one the upper boundary.</p>
+<h2>PAYLOAD</h2>
+<blockquote>
+<pre><code>{ &quot;payload&quot;: {
+        &quot;base&quot;: BASE,
+        &quot;offset&quot;: NUMBER,
+        &quot;len&quot;: NUMBER
+}}
+
+{ &quot;payload&quot;: {
+        &quot;protocol&quot;: STRING,
+        &quot;field&quot;: STRING
+}}
+
+BASE := &quot;ll&quot; | &quot;nh&quot; | &quot;th&quot;</code></pre>
+</blockquote>
+<p>Construct a payload expression, i.e. a reference to a certain part of packet data. The first form creates a raw payload expression to point at a random number (<strong>len</strong>) of bytes at a certain offset (<strong>offset</strong>) from a given reference point (<strong>base</strong>). The following <strong>base</strong> values are accepted:</p>
+<p><strong>"ll"</strong></p>
+<blockquote>
+<p>The offset is relative to Link Layer header start offset.</p>
+</blockquote>
+<p><strong>"nh"</strong></p>
+<blockquote>
+<p>The offset is relative to Network Layer header start offset.</p>
+</blockquote>
+<p><strong>"th"</strong></p>
+<blockquote>
+<p>The offset is relative to Transport Layer header start offset.</p>
+</blockquote>
+<p>The second form allows to reference a field by name (<strong>field</strong>) in a named packet header (<strong>protocol</strong>).</p>
+<h2>EXTHDR</h2>
+<blockquote>
+<pre><code>{ &quot;exthdr&quot;: {
+        &quot;name&quot;: STRING,
+        &quot;field&quot;: STRING,
+        &quot;offset&quot;: NUMBER
+}}</code></pre>
+</blockquote>
+<p>Create a reference to a field (<strong>field</strong>) in an IPv6 extension header (<strong>name</strong>). <strong>offset</strong> is used only for <strong>rt0</strong> protocol.</p>
+<p>If the <strong>field</strong> property is not given, the expression is to be used as a header existence check in a <strong>match</strong> statement with a boolean on the right hand side.</p>
+<h2>TCP OPTION</h2>
+<blockquote>
+<pre><code>{ &quot;tcp option&quot;: {
+        &quot;name&quot;: STRING,
+        &quot;field&quot;: STRING
+}}</code></pre>
+</blockquote>
+<p>Create a reference to a field (<strong>field</strong>) of a TCP option header (<strong>name</strong>).</p>
+<p>If the <strong>field</strong> property is not given, the expression is to be used as a TCP option existence check in a <strong>match</strong> statement with a boolean on the right hand side.</p>
+<h2>META</h2>
+<blockquote>
+<pre><code>{ &quot;meta&quot;: {
+        &quot;key&quot;: META_KEY
+}}
+
+META_KEY := &quot;length&quot; | &quot;protocol&quot; | &quot;priority&quot; | &quot;random&quot; | &quot;mark&quot; |
+              &quot;iif&quot; | &quot;iifname&quot; | &quot;iiftype&quot; | &quot;oif&quot; | &quot;oifname&quot; |
+              &quot;oiftype&quot; | &quot;skuid&quot; | &quot;skgid&quot; | &quot;nftrace&quot; |
+              &quot;rtclassid&quot; | &quot;ibriport&quot; | &quot;obriport&quot; | &quot;ibridgename&quot; |
+              &quot;obridgename&quot; | &quot;pkttype&quot; | &quot;cpu&quot; | &quot;iifgroup&quot; |
+              &quot;oifgroup&quot; | &quot;cgroup&quot; | &quot;nfproto&quot; | &quot;l4proto&quot; |
+              &quot;secpath&quot;</code></pre>
+</blockquote>
+<p>Create a reference to packet meta data.</p>
+<h2>RT</h2>
+<blockquote>
+<pre><code>{ &quot;rt&quot;: {
+        &quot;key&quot;: RT_KEY,
+        &quot;family&quot;: RT_FAMILY
+}}
+
+RT_KEY := &quot;classid&quot; | &quot;nexthop&quot; | &quot;mtu&quot;
+RT_FAMILY := &quot;ip&quot; | &quot;ip6&quot;</code></pre>
+</blockquote>
+<p>Create a reference to packet routing data.</p>
+<p>The <strong>family</strong> property is optional and defaults to unspecified.</p>
+<h2>CT</h2>
+<blockquote>
+<pre><code>{ &quot;ct&quot;: {
+        &quot;key&quot;: STRING,
+        &quot;family&quot;: CT_FAMILY,
+        &quot;dir&quot;: CT_DIRECTION
+}}
+
+CT_FAMILY := &quot;ip&quot; | &quot;ip6&quot;
+CT_DIRECTION := &quot;original&quot; | &quot;reply&quot;</code></pre>
+</blockquote>
+<p>Create a reference to packet conntrack data.</p>
+<p>Some CT keys do not support a direction. In this case, <strong>dir</strong> must not be given.</p>
+<h2>NUMGEN</h2>
+<blockquote>
+<pre><code>{ &quot;numgen&quot;: {
+        &quot;mode&quot;: NG_MODE,
+        &quot;mod&quot;: NUMBER,
+        &quot;offset&quot;: NUMBER
+}}
+
+NG_MODE := &quot;inc&quot; | &quot;random&quot;</code></pre>
+</blockquote>
+<p>Create a number generator.</p>
+<p>The <strong>offset</strong> property is optional and defaults to 0.</p>
+<h2>HASH</h2>
+<blockquote>
+<pre><code>{ &quot;jhash&quot;: {
+        &quot;mod&quot;: NUMBER,
+        &quot;offset&quot;: NUMBER,
+        &quot;expr&quot;: EXPRESSION,
+        &quot;seed&quot;: NUMBER
+}}
+
+{ &quot;symhash&quot;: {
+        &quot;mod&quot;: NUMBER,
+        &quot;offset&quot;: NUMBER
+}}</code></pre>
+</blockquote>
+<p>Hash packet data.</p>
+<p>The <strong>offset</strong> and <strong>seed</strong> properties are optional and default to 0.</p>
+<h2>FIB</h2>
+<blockquote>
+<pre><code>{ &quot;fib&quot;: {
+        &quot;result&quot;: FIB_RESULT,
+        &quot;flags&quot;: FIB_FLAGS
+}}
+
+FIB_RESULT := &quot;oif&quot; | &quot;oifname&quot; | &quot;type&quot;
+
+FIB_FLAGS := FIB_FLAG | [ FIB_FLAG_LIST ]
+FIB_FLAG_LIST := FIB_FLAG [, FIB_FLAG_LIST ]
+FIB_FLAG := &quot;saddr&quot; | &quot;daddr&quot; | &quot;mark&quot; | &quot;iif&quot; | &quot;oif&quot;</code></pre>
+</blockquote>
+<p>Perform kernel Forwarding Information Base lookups.</p>
+<h2>BINARY OPERATION</h2>
+<blockquote>
+<pre><code>{ &quot;|&quot;: [ EXPRESSION, EXPRESSION ] }
+{ &quot;^&quot;: [ EXPRESSION, EXPRESSION ] }
+{ &quot;&amp;&quot;: [ EXPRESSION, EXPRESSION ] }
+{ &quot;&lt;&lt;&quot;: [ EXPRESSION, EXPRESSION ] }
+{ &quot;&gt;&gt;&quot;: [ EXPRESSION, EXPRESSION ] }</code></pre>
+</blockquote>
+<p>All binary operations expect an array of exactly two expressions, of which the first element denotes the left hand side and the second one the right hand side.</p>
+<h2>VERDICT</h2>
+<blockquote>
+<pre><code>{ &quot;accept&quot;: null }
+{ &quot;drop&quot;: null }
+{ &quot;continue&quot;: null }
+{ &quot;return&quot;: null }
+{ &quot;jump&quot;: { &quot;target&quot;: STRING }}
+{ &quot;goto&quot;: { &quot;target&quot;: STRING }}</code></pre>
+</blockquote>
+<p>Same as the <strong>verdict</strong> statement, but for use in verdict maps.</p>
+<p><strong>jump</strong> and <strong>goto</strong> verdicts expect a target chain name.</p>
+<h2>ELEM</h2>
+<blockquote>
+<pre><code>{ &quot;elem&quot;: {
+        &quot;val&quot;: EXPRESSION,
+        &quot;timeout&quot;: NUMBER,
+        &quot;expires&quot;: NUMBER,
+        &quot;comment&quot;: STRING
+}}</code></pre>
+</blockquote>
+<p>Explicitly set element object, in case <strong>timeout</strong>, <strong>expires</strong> or <strong>comment</strong> are desired. Otherwise, it may be replaced by the value of <strong>val</strong>.</p>
+<h2>SOCKET</h2>
+<blockquote>
+<pre><code>{ &quot;socket&quot;: {
+        &quot;key&quot;: SOCKET_KEY
+}}
+
+SOCKET_KEY := &quot;transparent&quot;</code></pre>
+</blockquote>
+<p>Construct a reference to packet’s socket.</p>
+<h2>OSF</h2>
+<blockquote>
+<pre><code>{ &quot;osf&quot;: {
+        &quot;key&quot;: OSF_KEY,
+        &quot;ttl&quot;: OSF_TTL
+}}
+
+OSF_KEY := &quot;name&quot;
+OSF_TTL := &quot;loose&quot; | &quot;skip&quot;</code></pre>
+</blockquote>
+<p>Perform OS fingerprinting. This expression is typically used in the LHS of a <strong>match</strong> statement.</p>
+<p><strong>key</strong></p>
+<blockquote>
+<p>Which part of the fingerprint info to match against. At this point, only the OS name is supported.</p>
+</blockquote>
+<p><strong>ttl</strong></p>
+<blockquote>
+<p>Define how the packet’s TTL value is to be matched. This property is optional. If omitted, the TTL value has to match exactly. A value of <strong>loose</strong> accepts TTL values less than the fingerprint one. A value of <strong>skip</strong> omits TTL value comparison entirely.</p>
+</blockquote>
+<h1>AUTHOR</h1>
+<p><strong>Phil Sutter</strong> &lt;phil@nwl.cc&gt;</p>
+<blockquote>
+<p>Author.</p>
+</blockquote>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

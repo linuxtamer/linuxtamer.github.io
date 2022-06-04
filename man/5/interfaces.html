@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command interfaces</title><meta name="description" content="Linux command interfaces network interface configuration for ifup and ifdown"><meta name="keywords" content="linux, command, interfaces, bsd, network interface configuration for ifup and ifdown"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<h1>NAME</h1>
+<p>/etc/network/interfaces - network interface configuration for ifup and ifdown</p>
+<h1>DESCRIPTION</h1>
+<p>/etc/network/interfaces contains network interface configuration information for the <strong>ifup</strong>(8) and <strong>ifdown</strong>(8) commands. This is where you configure how your system is connected to the network.</p>
+<h1>EXAMPLE</h1>
+<p>The following example configures two network interfaces: eth0 is brought up at boot, and uses DHCP for IPv4 and SLAAC for IPv6, whereas eth1 is brought up whenever the network hardware is detected, and is configured with static IPv4 and IPv6 addresses.</p>
+<p>auto eth0 allow-hotplug eth1</p>
+<p>iface eth0 inet dhcp</p>
+<p>iface eth0 inet6 auto</p>
+<p>iface eth1 inet static address 192.168.1.2/24 gateway 192.168.1.1</p>
+<p>iface eth1 inet6 static address fec0:0:0:1::2/64 gateway fec0:0:0:1::1</p>
+<h1>FILE FORMAT</h1>
+<p>Lines starting with `#' are ignored. Note that end-of-line comments are NOT supported, comments must be on a line of their own.</p>
+<p>A line may be extended across multiple lines by making the last character a backslash.</p>
+<p>The file consists of zero or more "iface", "mapping", "auto", "allow-", "rename", "source" and "source-directory" stanzas. These will be described in more detail in the following sections.</p>
+<h1>INTERFACE SELECTION</h1>
+<p>Lines beginning with the word "auto" are used to identify the physical interfaces to be brought up when <strong>ifup</strong> is run with the <strong>-a</strong> option. (This option is also used by the system boot scripts, so interfaces marked "auto" are brought up at boot time.) Physical interface names should follow the word "auto" on the same line. There can be multiple "auto" stanzas. <strong>ifup</strong> brings the named interfaces up in the order listed.</p>
+<p>Lines beginning with "allow-" are used to identify interfaces that should be brought up automatically by various subsystems. This may be done using a command such as "ifup --allow=hotplug eth0 eth1", which will only bring up eth0 or eth1 if it is listed in an "allow-hotplug" line. Note that "allow-auto" and "auto" are synonyms. (Interfaces marked "allow-hotplug" are brought up when udev detects them. This can either be during boot if the interface is already present, or at a later time, for example when plugging in a USB network card. Please note that this does not have anything to do with detecting a network cable being plugged in.)</p>
+<p>Lines beginning with "no-auto-down" are used to identify interfaces that should not be brought down by the command "ifdown -a". Its main use is to prevent an interface from being brought down during system shutdown time, for example if the root filesystem is a network filesystem and the interface should stay up until the very end. Note that you can still bring down the interface by specifying the interface name explicitly.</p>
+<p>Lines beginning with "no-scripts" are used to identify interfaces for which scripts in <em>/etc/network/if-*.d/</em> should not be run when those interfaces are brought up or down. he above will match eth0 and eth1, and will bring up both interfaces using the "iface eth" stanza.</p>
+<h1>INTERFACE RENAMING</h1>
+<p>Lines beginning with "rename" are used to rename interfaces. It takes one or more arguments in the form of "CUR=NEW", where CUR is the name of an existing interface, and NEW is the new name. This becomes very powerful when combined with pattern matching for the CUR interface.</p>
+<p>Interfaces are renamed whenever "ifup" is called. Renaming logically happens before anything else is done. So if an interface is started with the name "foo", and it has to be renamed to "bar" and brought up at boot time, then one should use the following /etc/network/interfaces file:</p>
+<p>rename foo=bar auto bar iface bar ...</p>
+<p>However, if the interface is not renamed yet, it is possible to use both "ifup foo" and "ifup bar". The former command will then automatically be converted to the latter. This is mainly useful when ifup is called automatically whenever an interface is hotplugged.</p>
+<p>Interface renaming only works if the operating system supports it, if an interface is not renamed to another existing interface, and may require that the interface that is to be renamed has not been brought up yet. If ifup tries to rename an interface and it fails, it will exit with an error.</p>
+<h1>INCLUDING OTHER FILES</h1>
+<p>Lines beginning with "source" are used to include stanzas from other files, so configuration can be split into many files. The word "source" is followed by the path of file to be sourced. Shell wildcards can be used. (See <strong>wordexp</strong>(3) for details.)</p>
+<p>Similarly, "source-directory" keyword is used to source multiple files at once, without specifying them individually or using shell globs. Additionally, when "source-directory" is used, names of the files are checked to match the following regular expression: <em>^[a-zA-Z0-9_-]+$</em>. In other words, the names must consist entirely of ASCII upper- and lower-case letters, ASCII digits, ASCII underscores, and ASCII minus-hyphens. In the directory path, shell wildcards may be used as well.</p>
+<p>When sourcing files or directories, if a path doesn't have a leading slash, it's considered relative to the directory containing the file in which the keyword is placed. In the example above, if the file is located at <em>/etc/network/interfaces,</em> paths to the included files are understood to be under <em>/etc/network.</em></p>
+<p>By default, on a freshly installed Debian system, the interfaces file includes a line to source files in the <em>/etc/network/interfaces.d</em> directory.</p>
+<h1>MAPPINGS</h1>
+<p>Stanzas beginning with the word "mapping" are used to determine how a logical interface name is chosen for a physical interface that is to be brought up. The first line of a mapping stanza consists of the word "mapping" followed by a pattern in shell glob syntax. Each mapping stanza must contain a <strong>script</strong> definition. The named script is run with the physical interface name as its argument and with the contents of all following "map" lines (<strong>without</strong> the leading "map") in the stanza provided to it on its standard input. The script must print a string on its standard output before exiting. See <em>/usr/share/doc/ifupdown/examples</em> for examples of what the script must print.</p>
+<p>Mapping a name consists of searching the remaining mapping patterns and running the script corresponding to the first match; the script outputs the name to which the original is mapped.</p>
+<p><strong>ifup</strong> is normally given a physical interface name as its first non-option argument. <strong>ifup</strong> also uses this name as the initial logical name for the interface unless it is accompanied by a suffix of the form <em>=LOGICAL</em>, in which case ifup chooses <em>LOGICAL</em> as the initial logical name for the interface. It then maps this name, possibly more than once according to successive mapping specifications, until no further mappings are possible. If the resulting name is the name of some defined logical interface then <strong>ifup</strong> attempts to bring up the physical interface as that logical interface. Otherwise <strong>ifup</strong> exits with an error.</p>
+<h1>INTERFACE DEFINITIONS</h1>
+<p>Stanzas defining logical interfaces start with a line consisting of the word "iface" followed by the name of the logical interface. In simple configurations without mapping stanzas this name should simply be the name of the physical interface to which it is to be applied. (The default mapping script is, in effect, the <strong>echo</strong> command.) The interface name is followed by the name of the address family that the interface uses. This will be "inet" for TCP/IP networking, but there is also some support for IPX networking ("ipx"), and IPv6 networking ("inet6"). Following that is the name of the method used to configure the interface.</p>
+<p>Additional options can be given on subsequent lines in the stanza. Which options are available depends on the family and method, as described below. Additional options can be made available by other Debian packages. For example, the wireless-tools package makes available a number of options prefixed with "wireless-" which can be used to configure the interface using <strong>iwconfig</strong>(8)<strong>.</strong> (See <strong>wireless</strong>(7) for details.) A list of packages providing additional options is mentioned in the section "OPTIONS PROVIDED BY OTHER PACKAGE".</p>
+<p>Options are usually indented for clarity (as in the example above) but are not required to be.</p>
+<p>Multiple "iface" stanzas can be given for the same interface, in which case all of the configured addresses and options for that interface will be applied when bringing up that interface. This is useful to configure both IPv4 and IPv6 addresses on the same interface (although if no inet6 stanza is present, the kernel will normally still perform stateless address autoconfiguration if there is an IPv6 route advertisement daemon on the network). It can also be used to configure multiple addresses of the same type on a single interface.</p>
+<h1>INTERFACE TEMPLATES</h1>
+<p>It is possible to define interface definition templates and extend them using the <strong>inherits</strong> keyword:</p>
+<p>iface ethernet inet static mtu 1500 hwaddress 11:22:33:44:55:66</p>
+<p>iface eth0 inet static inherits ethernet address 192.168.1.2/24</p>
+<p>This may be useful to separate link-level settings shared by multiple interfaces from, for example, IP address settings specific to every interface.</p>
+<h1>PATTERN MATCHING INTERFACES</h1>
+<p>It is possible to use patterns to match one or more real interfaces. These patterns can currently appear in lines beginning with "auto", "allow-", "rename" and on the command line. A pattern has the following format (see below for exceptions for GNU/Hurd):</p>
+<p>[VARIABLE]/VALUE[/[OPTIONS]][=LOGICAL]</p>
+<p>If no VARIABLE is given, this pattern will match interface names against the given VALUE. VALUE can contain wildcard patterns such as ? and *, see the <strong>fnmatch</strong>(3) function. When <strong>ifup</strong> or <strong>ifdown</strong> is run, patterns are replaces by all real interfaces that are currently known to the operating system kernel and whose names match the pattern. For example, given the following line:</p>
+<p>auto /eth*</p>
+<p>If the kernel knows about the interfaces with names lo, eth0 and eth1, then the above line is then interpreted as:</p>
+<p>auto eth0 eth1</p>
+<p>Note that there must still be valid "iface" stanzas for each matching interface. However, it is possible to combine a pattern with a mapping to a logical interface, like so:</p>
+<p>auto /eth*=eth iface eth inet dhcp</p>
+<p>Valid variable names are "mac", in which case value is matched against the interface's MAC address. On Linux, the variable name can also be any filename in /sys/class/net/&lt;iface&gt;/, in which case the value is matched against the contents of the corresponding file.</p>
+<p>The OPTIONS field currently only supports a number. If given, only the n-th interface that has a matching value will actually be used, where n is the number given, starting at 1. So /eth*/1 will match the first interface whose name starts with eth.</p>
+<p>On GNU/Hurd, interface names start with /dev/, and this obviously clashes with the format for patterns. To ensure an interface name like /dev/eth0 does not get interpreted as a pattern, any pattern that starts with /dev/ is ignored, and instead interpreted as a literal interface name. To make a pattern that matches interface names on GNU/Hurd, use something like:</p>
+<p>auto /?dev?eth*=eth iface eth inet dhcp</p>
+<h1>VLAN INTERFACES</h1>
+<p>To ease the configuration of VLAN interfaces, interfaces having <strong>.</strong> (full stop character) in the name are configured as 802.1q tagged virtual LAN interface. For example, interface <strong>eth0.1</strong> is a virtual interface with VLAN ID 1 having <strong>eth0</strong> as its parent interface.</p>
+<p>VLAN interfaces are mostly treated as independent interfaces. As such, a VLAN interface is normally not automatically brought up when its parent interface is brought up. The exception is when ifup is called with the --allow option, in which case all VLAN interfaces that are in the same allow class as the parent interface are brought up together with the parent interface. For example:</p>
+<p>allow-hotplug eth0 eth0.1</p>
+<p>iface eth0 inet static address ...</p>
+<p>iface eth0.1 inet static address ...</p>
+<p>iface eth0.2 inet static address ...</p>
+<p>In the above example, when "ifup --allow hotplug eth0" is called (either manually or because udev triggers this when a network device is hotplugged), the interface eth0 and the VLAN interface eth0.1 are brought up, but eth0.2 is not.</p>
+<p>Keep in mind that pattern matching will only match interfaces the kernel knows about, so it is not possible to specify "auto /eth0.*" and have all VLAN interfaces for eth0 be brought up at boot time. Another way to ensure that a VLAN interface is brought up automatically when the parent interface is brought up, is to use a recursive call to ifup, like so:</p>
+<p>iface eth0 inet manual up ifup eth0.3</p>
+<p>iface eth0.3 inet static address ...</p>
+<p>Note that there is no need to add an explicit call to ifdown, since VLAN interfaces are automatically brought down whenever their parent interfaces are brought down.</p>
+<h1>IFACE OPTIONS</h1>
+<p>The following "command" options are available for every family and method. Each of these options can be given multiple times in a single stanza, in which case the commands are executed in the order in which they appear in the stanza. (You can ensure a command never fails by suffixing them with "|| true".)</p>
+<dl>
+<dt><strong>pre-up</strong><em> command</em></dt>
+<dd><p>Run <em>command</em> before bringing the interface up. If this command fails then <strong>ifup</strong> aborts, refraining from marking the interface as configured, prints an error message, and exits with status 0. This behavior may change in the future.</p>
+</dd>
+<dt><strong>up</strong><em> command</em></dt>
+<dd>
+</dd>
+<dt><strong>post-up</strong><em> command</em></dt>
+<dd><p>Run <em>command</em> after bringing the interface up. If this command fails then <strong>ifup</strong> aborts, refraining from marking the interface as configured (even though it has really been configured), prints an error message, and exits with status 0. This behavior may change in the future.</p>
+</dd>
+<dt><strong>down</strong><em> command</em></dt>
+<dd>
+</dd>
+<dt><strong>pre-down</strong><em> command</em></dt>
+<dd><p>Run <em>command</em> before taking the interface down. If this command fails then <strong>ifdown</strong> aborts, marks the interface as deconfigured (even though it has not really been deconfigured), and exits with status 0. This behavior may change in the future.</p>
+</dd>
+<dt><strong>post-down</strong><em> command</em></dt>
+<dd><p>Run <em>command</em> after taking the interface down. If this command fails then <strong>ifdown</strong> aborts, marks the interface as deconfigured, and exits with status 0. This behavior may change in the future.</p>
+</dd>
+<dt><strong>description</strong><em> name</em></dt>
+<dd><p>Alias interface by <em>name</em></p>
+</dd>
+</dl>
+<h1>HOOK SCRIPTS</h1>
+<p>There are four directories in which scripts can be placed which will always be run for any interface during certain phases of ifup and ifdown commands. These are:</p>
+<dl>
+<dt><em>/etc/network/if-pre-up.d/</em></dt>
+<dd><p>Scripts in this directory are run before bringing the interface up.</p>
+</dd>
+<dt><em>/etc/network/if-up.d/</em></dt>
+<dd><p>Scripts in this directory are run after bringing the interface up.</p>
+</dd>
+<dt><em>/etc/network/if-down.d/</em></dt>
+<dd><p>Scripts in this directory are run before bringing the interface down.</p>
+</dd>
+<dt><em>/etc/network/if-post-down.d/</em></dt>
+<dd><p>Scripts in this directory are run after bringing the interface down.</p>
+</dd>
+</dl>
+<p>The scripts in which are run (with no arguments) using <strong>run-parts</strong>(8) after the corresponding <strong>pre-up,</strong> <strong>up,</strong> <strong>down</strong> and <strong>post-down</strong> options in the <em>/etc/network/interfaces</em> file itself have been processed. Please note that as <strong>post-up</strong> and <strong>pre-down</strong> are aliases, no files in the corresponding directories are processed. Please use <em>if-up.d</em> and <em>if-down.d</em> directories instead.</p>
+<h1>ENVIRONMENT VARIABLES</h1>
+<p>All hook scripts, and the commands executed by <strong>pre-up,</strong> <strong>up,</strong> <strong>post-up,</strong> <strong>pre-down,</strong> <strong>down</strong> and <strong>post-down</strong> have access to the following environment variables:</p>
+<dl>
+<dt><strong>IFACE</strong></dt>
+<dd><p>The physical name of the interface being processed, or "--all" (see below).</p>
+</dd>
+<dt><strong>LOGICAL</strong></dt>
+<dd><p>The logical name of the interface being processed, or "auto" (see below).</p>
+</dd>
+<dt><strong>ADDRFAM</strong></dt>
+<dd><p>The address family of the interface, or "meta" (see below).</p>
+</dd>
+<dt><strong>METHOD</strong></dt>
+<dd><p>The method of the interface (e.g., <em>static</em>), or "none" (see below).</p>
+</dd>
+<dt><strong>CLASS</strong></dt>
+<dd><p>The class of interfaces being processed. This is a copy of the value given to the <strong>--allow</strong> option when running ifup or ifdown, otherwise it is set to "auto" when the <strong>--all</strong> option is used.</p>
+</dd>
+<dt><strong>MODE</strong></dt>
+<dd><p><em>start</em> if run from ifup, <em>stop</em> if run from ifdown<em>.</em></p>
+</dd>
+<dt><strong>PHASE</strong></dt>
+<dd><p>As per MODE, but with finer granularity, distinguishing the <em>pre-up</em>, <em>post-up</em>, <em>pre-down</em> and <em>post-down</em> phases.</p>
+</dd>
+<dt><strong>VERBOSITY</strong></dt>
+<dd><p>Indicates whether <strong>--verbose</strong> was used; set to 1 if so, 0 if not.</p>
+</dd>
+<dt><strong>PATH</strong></dt>
+<dd><p>The command search path: <em>/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin</em></p>
+</dd>
+</dl>
+<p>Additionally, all options given in an interface definition stanza are exported to the environment in upper case with "IF_" prepended and with hyphens converted to underscores and non-alphanumeric characters discarded.</p>
+<p>When ifupdown is being called with the <strong>--all</strong> option, before doing anything to interfaces, it calls all the hook scripts (<em>pre-up</em> or <em>down</em>) with <strong>IFACE</strong> set to "--all", <strong>LOGICAL</strong> set to the current value of --allow parameter (or "auto" if it's not set), <strong>ADDRFAM</strong>="meta" and <strong>METHOD</strong>="none". After all the interfaces have been brought up or taken down, the appropriate scripts (<em>up</em> or <em>post-down</em>) are executed.</p>
+<h1>CONCURRENCY AND PARALLEL EXECUTION</h1>
+<p>Ifupdown uses per-interface locking to ensure that concurrent ifup and ifdown calls to the same interface are run in serial. However, calls to different interfaces will be able to run in parallel. It is therefore important that any hook scripts and <em>pre-up</em>, <em>up</em>, <em>down</em> and <em>post-down</em> commands are written with the possibility of parallel execution in mind.</p>
+<p>It is allowed to recursively call <strong>ifup</strong> and <strong>ifdown</strong> from hook scripts and interface commands, as long as these calls refer to a different interface than the one that is already being (de)configured. Loops are detected and will result in the call failing instead of a deadlock, although it is best if one does not rely on that.</p>
+<h1>OPTIONS PROVIDED BY OTHER PACKAGES</h1>
+<p>This manual page documents the configuration options provided by the ifupdown package. However, other packages can make other options available for use in /etc/network/interfaces. Here is a list of packages that provide such extensions:</p>
+<p>arping, avahi-autoipd, avahi-daemon, bind9, bridge-utils, clamav-freshclam, controlaula, epoptes-client, ethtool, guidedog, hostap-utils, hostapd, htpdate, ifenslave, ifmetric, ifupdown-extra, ifupdown-multi, ifupdown-scripts-zg2, initscripts, isatapd, linux-wlan-ng, lprng, macchanger, miredo, nslcd, ntpdate, openntpd, openresolv, openssh-server, openvpn, openvswitch-switch, postfix, resolvconf, sendmail-base, shorewall-init, slrn, slrnpull, tinc, ucarp, uml-utilities, uruk, vde2, vlan, vzctl, whereami, wide-dhcpv6-client, wireless-tools, wpasupplicant.</p>
+<p>Please consult the documentation of those packages for information about how they extend ifupdown.</p>
+<h1>INET ADDRESS FAMILY</h1>
+<p>This section documents the methods available in the inet address family.</p>
+<h2>The loopback Method</h2>
+<p>This method may be used to define the IPv4 loopback interface.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt>(No options)</dt>
+<dd>
+</dd>
+</dl>
+</blockquote>
+<h2>The static Method</h2>
+<p>This method may be used to define Ethernet interfaces with statically allocated IPv4 addresses.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>address</strong><em> address </em></dt>
+<dd><p>Address (dotted quad/netmask) <strong>required</strong></p>
+</dd>
+<dt><strong>netmask</strong><em> mask </em></dt>
+<dd><p>Netmask (dotted quad or number of bits) <strong>deprecated</strong></p>
+</dd>
+<dt><strong>broadcast</strong><em> broadcast_address</em></dt>
+<dd><p>Broadcast address (dotted quad, + or -) <strong>deprecated</strong>. Default value: "+"</p>
+</dd>
+<dt><strong>metric</strong><em> metric </em></dt>
+<dd><p>Routing metric for default gateway (integer)</p>
+</dd>
+<dt><strong>gateway</strong><em> address </em></dt>
+<dd><p>Default gateway (dotted quad)</p>
+</dd>
+<dt><strong>pointopoint</strong><em> address </em></dt>
+<dd><p>Address of other end point (dotted quad). Note the spelling of "point-to".</p>
+</dd>
+<dt><strong>hwaddress</strong><em> address </em></dt>
+<dd><p>Link local address or "random".</p>
+</dd>
+<dt><strong>mtu</strong><em> size </em></dt>
+<dd><p>MTU size</p>
+</dd>
+<dt><strong>scope</strong></dt>
+<dd><p>Address validity scope. Possible values: global, link, host</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The manual Method</h2>
+<p>This method may be used to define interfaces for which no configuration is done by default. Such interfaces can be configured manually by means of <strong>up</strong> and <strong>down</strong> commands or /etc/network/if-*.d scripts.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>hwaddress</strong><em> address </em></dt>
+<dd><p>Link local address or "random".</p>
+</dd>
+<dt><strong>mtu</strong><em> size </em></dt>
+<dd><p>MTU size</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The dhcp Method</h2>
+<p>This method may be used to obtain an address via DHCP with any of the tools: dhclient, pump, udhcpc, dhcpcd. (They have been listed in their order of precedence.) If you have a complicated DHCP setup you should note that some of these clients use their own configuration files and do not obtain their configuration information via <strong>ifup</strong>.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>hostname</strong><em> hostname </em></dt>
+<dd><p>Hostname to be requested (pump, dhcpcd, udhcpc)</p>
+</dd>
+<dt><strong>metric</strong><em> metric </em></dt>
+<dd><p>Metric for added routes (dhclient)</p>
+</dd>
+<dt><strong>leasehours</strong><em> leasehours </em></dt>
+<dd><p>Preferred lease time in hours (pump)</p>
+</dd>
+<dt><strong>leasetime</strong><em> leasetime </em></dt>
+<dd><p>Preferred lease time in seconds (dhcpcd)</p>
+</dd>
+<dt><strong>vendor</strong><em> vendor_id </em></dt>
+<dd><p>Vendor class identifier (dhcpcd)</p>
+</dd>
+<dt><strong>client</strong><em> client_id </em></dt>
+<dd><p>Client identifier (dhcpcd), or "no" (dhclient)</p>
+</dd>
+<dt><strong>hwaddress</strong><em> address </em></dt>
+<dd><p>Hardware address.</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The bootp Method</h2>
+<p>This method may be used to obtain an address via bootp.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>bootfile</strong><em> file </em></dt>
+<dd><p>Tell the server to use <em>file</em> as the bootfile.</p>
+</dd>
+<dt><strong>server</strong><em> address</em></dt>
+<dd><p>Use the IP address <em>address</em> to communicate with the server.</p>
+</dd>
+<dt><strong>hwaddr</strong><em> addr </em></dt>
+<dd><p>Use <em>addr</em> as the hardware address instead of whatever it really is.</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The tunnel Method</h2>
+<p>This method is used to create GRE or IPIP tunnels. You need to have the <strong>ip</strong> binary from the <strong>iproute</strong> package. For GRE tunnels, you will need to load the ip_gre module and the ipip module for IPIP tunnels.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>address</strong><em> address </em></dt>
+<dd><p>Local address (dotted quad) <strong>required</strong></p>
+</dd>
+<dt><strong>mode</strong><em> type </em></dt>
+<dd><p>Tunnel type (either GRE or IPIP) <strong>required</strong></p>
+</dd>
+<dt><strong>endpoint</strong><em> address </em></dt>
+<dd><p>Address of other tunnel endpoint <strong>required</strong></p>
+</dd>
+<dt><strong>dstaddr</strong><em> address </em></dt>
+<dd><p>Remote address (remote address inside tunnel)</p>
+</dd>
+<dt><strong>local</strong><em> address </em></dt>
+<dd><p>Address of the local endpoint</p>
+</dd>
+<dt><strong>metric</strong><em> metric </em></dt>
+<dd><p>Routing metric for default gateway (integer)</p>
+</dd>
+<dt><strong>gateway</strong><em> address </em></dt>
+<dd><p>Default gateway</p>
+</dd>
+<dt><strong>ttl</strong><em> time </em></dt>
+<dd><p>TTL setting</p>
+</dd>
+<dt><strong>mtu</strong><em> size </em></dt>
+<dd><p>MTU size</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The ppp Method</h2>
+<p>This method uses pon/poff to configure a PPP interface. See those commands for details.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>provider</strong><em> name </em></dt>
+<dd><p>Use <em>name</em> as the provider (from /etc/ppp/peers).</p>
+</dd>
+<dt><strong>unit</strong><em> number </em></dt>
+<dd><p>Use <em>number</em> as the ppp unit number.</p>
+</dd>
+<dt><strong>options</strong><em> string</em></dt>
+<dd><p>Pass <em>string</em> as additional options to pon.</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The wvdial Method</h2>
+<p>This method uses wvdial to configure a PPP interface. See that command for more details.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>provider</strong><em> name </em></dt>
+<dd><p>Use <em>name</em> as the provider (from /etc/wvdial.conf).</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The ipv4ll Method</h2>
+<p>This method uses avahi-autoipd to configure an interface with an IPv4 Link-Layer address (169.254.0.0/16 family). This method is also known as APIPA or IPAC, and often colloquially referred to as "Zeroconf address".</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt>(No options)</dt>
+<dd>
+</dd>
+</dl>
+</blockquote>
+<h1>IPX ADDRESS FAMILY</h1>
+<p>This section documents the methods available in the ipx address family.</p>
+<h2>The static Method</h2>
+<p>This method may be used to setup an IPX interface. It requires the <em>ipx_interface</em> command.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>frame</strong><em> type </em></dt>
+<dd><p><em>type</em> of Ethernet frames to use (e.g. <strong>802.2</strong>)</p>
+</dd>
+<dt><strong>netnum</strong><em> id </em></dt>
+<dd><p>Network number</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The dynamic Method</h2>
+<p>This method may be used to setup an IPX interface dynamically.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>frame</strong><em> type </em></dt>
+<dd><p><em>type</em> of Ethernet frames to use (e.g. <strong>802.2</strong>)</p>
+</dd>
+</dl>
+</blockquote>
+<h1>INET6 ADDRESS FAMILY</h1>
+<p>This section documents the methods available in the inet6 address family.</p>
+<h2>The auto Method</h2>
+<p>This method may be used to define interfaces with automatically assigned IPv6 addresses. Using this method on its own doesn't mean that RDNSS options will be applied, too. To make this happen, <strong>rdnssd</strong> daemon must be installed, properly configured and running. If stateless DHCPv6 support is turned on, then additional network configuration parameters such as DNS and NTP servers will be retrieved from a DHCP server. Please note that on ifdown, the lease is not currently released (a known bug).</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>privext</strong><em> int </em></dt>
+<dd><p>Privacy extensions (RFC4941) (0=off, 1=assign, 2=prefer)</p>
+</dd>
+<dt><strong>accept_ra</strong><em> int </em></dt>
+<dd><p>Accept router advertisements (0=off, 1=on, 2=on+forwarding). Default value: "2"</p>
+</dd>
+<dt><strong>dhcp</strong><em> int </em></dt>
+<dd><p>Use stateless DHCPv6 (0=off, 1=on)</p>
+</dd>
+<dt><strong>request_prefix</strong><em> int </em></dt>
+<dd><p>Request a prefix through DHCPv6 Prefix Delegation (0=off, 1=on). Default value: "0"</p>
+</dd>
+<dt><strong>ll-attempts</strong></dt>
+<dd><p>Number of attempts to wait for a link-local address. Default value: "60"</p>
+</dd>
+<dt><strong>ll-interval</strong></dt>
+<dd><p>Link-local address polling interval in seconds. Default value: "0.1"</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The loopback Method</h2>
+<p>This method may be used to define the IPv6 loopback interface.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt>(No options)</dt>
+<dd>
+</dd>
+</dl>
+</blockquote>
+<h2>The static Method</h2>
+<p>This method may be used to define interfaces with statically assigned IPv6 addresses. By default, stateless autoconfiguration is disabled for this interface.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>address</strong><em> address </em></dt>
+<dd><p>Address (colon delimited/netmask) <strong>required</strong></p>
+</dd>
+<dt><strong>netmask</strong><em> mask </em></dt>
+<dd><p>Netmask (number of bits, eg 64) <strong>deprecated</strong></p>
+</dd>
+<dt><strong>metric</strong><em> metric </em></dt>
+<dd><p>Routing metric for default gateway (integer)</p>
+</dd>
+<dt><strong>gateway</strong><em> address </em></dt>
+<dd><p>Default gateway (colon delimited)</p>
+</dd>
+<dt><strong>media</strong><em> type </em></dt>
+<dd><p>Medium type, driver dependent</p>
+</dd>
+<dt><strong>hwaddress</strong><em> address </em></dt>
+<dd><p>Hardware address or "random"</p>
+</dd>
+<dt><strong>mtu</strong><em> size </em></dt>
+<dd><p>MTU size</p>
+</dd>
+<dt><strong>accept_ra</strong><em> int </em></dt>
+<dd><p>Accept router advertisements (0=off, 1=on, 2=on+forwarding)</p>
+</dd>
+<dt><strong>autoconf</strong><em> int </em></dt>
+<dd><p>Perform stateless autoconfiguration (0=off, 1=on). Default value: "0"</p>
+</dd>
+<dt><strong>privext</strong><em> int </em></dt>
+<dd><p>Privacy extensions (RFC3041) (0=off, 1=assign, 2=prefer)</p>
+</dd>
+<dt><strong>scope</strong></dt>
+<dd><p>Address validity scope. Possible values: global, site, link, host</p>
+</dd>
+<dt><strong>preferred-lifetime</strong><em> int</em></dt>
+<dd><p>Time that address remains preferred</p>
+</dd>
+<dt><strong>dad-attempts</strong></dt>
+<dd><p>Number of attempts to settle DAD (0 to disable DAD). Default value: "60"</p>
+</dd>
+<dt><strong>dad-interval</strong></dt>
+<dd><p>DAD state polling interval in seconds. Default value: "0.1"</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The manual Method</h2>
+<p>This method may be used to define interfaces for which no configuration is done by default. Such interfaces can be configured manually by means of <strong>up</strong> and <strong>down</strong> commands or /etc/network/if-*.d scripts.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>hwaddress</strong><em> address </em></dt>
+<dd><p>Hardware address or "random"</p>
+</dd>
+<dt><strong>mtu</strong><em> size </em></dt>
+<dd><p>MTU size</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The dhcp Method</h2>
+<p>This method may be used to obtain network interface configuration via stateful DHCPv6 with dhclient. In stateful DHCPv6, the DHCP server is responsible for assigning addresses to clients.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>hwaddress</strong><em> address </em></dt>
+<dd><p>Hardware address or "random"</p>
+</dd>
+<dt><strong>accept_ra</strong><em> int </em></dt>
+<dd><p>Accept router advertisements (0=off, 1=on, 2=on+forwarding). Default value: "1"</p>
+</dd>
+<dt><strong>autoconf</strong><em> int </em></dt>
+<dd><p>Perform stateless autoconfiguration (0=off, 1=on)</p>
+</dd>
+<dt><strong>request_prefix</strong><em> int </em></dt>
+<dd><p>Request a prefix through DHCPv6 Prefix Delegation (0=off, 1=on). Default value: "0"</p>
+</dd>
+<dt><strong>ll-attempts</strong></dt>
+<dd><p>Number of attempts to wait for a link-local address. Default value: "60"</p>
+</dd>
+<dt><strong>ll-interval</strong></dt>
+<dd><p>Link-local address polling interval in seconds. Default value: "0.1"</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The v4tunnel Method</h2>
+<p>This method may be used to setup an IPv6-over-IPv4 tunnel. It requires the <strong>ip</strong> command from the <strong>iproute</strong> package.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>address</strong><em> address </em></dt>
+<dd><p>Address (colon delimited/netmask) <strong>required</strong></p>
+</dd>
+<dt><strong>netmask</strong><em> mask </em></dt>
+<dd><p>Netmask (number of bits, eg 64) <strong>deprecated</strong></p>
+</dd>
+<dt><strong>endpoint</strong><em> address </em></dt>
+<dd><p>Address of other tunnel endpoint (IPv4 dotted quad) <strong>required</strong></p>
+</dd>
+<dt><strong>local</strong><em> address </em></dt>
+<dd><p>Address of the local endpoint (IPv4 dotted quad)</p>
+</dd>
+<dt><strong>metric</strong><em> metric </em></dt>
+<dd><p>Routing metric for default gateway (integer)</p>
+</dd>
+<dt><strong>gateway</strong><em> address </em></dt>
+<dd><p>Default gateway (colon delimited)</p>
+</dd>
+<dt><strong>ttl</strong><em> time </em></dt>
+<dd><p>TTL setting</p>
+</dd>
+<dt><strong>mtu</strong><em> size </em></dt>
+<dd><p>MTU size</p>
+</dd>
+<dt><strong>preferred-lifetime</strong><em> int</em></dt>
+<dd><p>Time that address remains preferred</p>
+</dd>
+</dl>
+</blockquote>
+<h2>The 6to4 Method</h2>
+<p>This method may be used to setup a 6to4 tunnel. It requires the <strong>ip</strong> command from the <strong>iproute</strong> package.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>local</strong><em> address </em></dt>
+<dd><p>Address of the local endpoint (IPv4 dotted quad) <strong>required</strong></p>
+</dd>
+<dt><strong>metric</strong><em> metric </em></dt>
+<dd><p>Routing metric for default gateway (integer)</p>
+</dd>
+<dt><strong>ttl</strong><em> time </em></dt>
+<dd><p>TTL setting</p>
+</dd>
+<dt><strong>mtu</strong><em> size </em></dt>
+<dd><p>MTU size</p>
+</dd>
+<dt><strong>preferred-lifetime</strong><em> int</em></dt>
+<dd><p>Time that address remains preferred</p>
+</dd>
+</dl>
+</blockquote>
+<h1>CAN ADDRESS FAMILY</h1>
+<p>This section documents the methods available in the can address family.</p>
+<h2>The static Method</h2>
+<p>This method may be used to setup a Controller Area Network (CAN) interface. It requires the the <strong>ip</strong> command from the <strong>iproute</strong> package.</p>
+<p><strong>Options</strong></p>
+<blockquote>
+<dl>
+<dt><strong>bitrate</strong><em> bitrate </em></dt>
+<dd><p>bitrate (1..1000000) <strong>required</strong></p>
+</dd>
+<dt><strong>samplepoint</strong><em> samplepoint</em></dt>
+<dd><p>sample point (0.000..0.999)</p>
+</dd>
+<dt><strong>loopback</strong><em> loopback </em></dt>
+<dd><p>loop back CAN Messages (on|off)</p>
+</dd>
+<dt><strong>listenonly</strong><em> listenonly</em></dt>
+<dd><p>listen only mode (on|off)</p>
+</dd>
+<dt><strong>triple</strong><em> triple </em></dt>
+<dd><p>activate triple sampling (on|off)</p>
+</dd>
+<dt><strong>oneshot</strong><em> oneshot </em></dt>
+<dd><p>one shot mode (on|off)</p>
+</dd>
+<dt><strong>berr</strong><em> berr </em></dt>
+<dd><p>activate berr reporting (on|off)</p>
+</dd>
+</dl>
+</blockquote>
+<h1>KNOWN BUGS/LIMITATIONS</h1>
+<p>The <strong>ifup</strong> and <strong>ifdown</strong> programs work with so-called "physical" interface names. These names are assigned to hardware by the kernel. Unfortunately it can happen that the kernel assigns different physical interface names to the same hardware at different times; for example, what was called "eth0" last time you booted is now called "eth1" and vice versa. This creates a problem if you want to configure the interfaces appropriately. A way to deal with this problem is to use mapping scripts that choose logical interface names according to the properties of the interface hardware. See the <strong>get-mac-address.sh</strong> script in the examples directory for an example of such a mapping script. See also Debian bug #101728.</p>
+<h1>AUTHOR</h1>
+<p>The ifupdown suite was written by Anthony Towns &lt;aj@azure.humbug.org.au&gt;. This manpage was contributed by Joey Hess &lt;joey@kitenet.net&gt;.</p>
+<h1>SEE ALSO</h1>
+<p><strong>ifup</strong>(8), <strong>ip</strong>(8), <strong>ifconfig</strong>(8), <strong>run-parts</strong>(8), <strong>resolvconf</strong>(8).</p>
+<p>For advice on configuring this package read the <strong>Network Configuration</strong> chapter of the <em>Debian Reference</em> manual, available at <em>http://www.debian.org/doc/manuals/debian-reference/ch05.en.html</em> or in the <strong>debian-reference-en</strong> package.</p>
+<p>Examples of how to set up interfaces can be found in <strong>/usr/share/doc/ifupdown/examples/network-interfaces.gz</strong>.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd.dnssd</title><meta name="description" content="Linux command systemd.dnssd DNS-SD configuration"><meta name="keywords" content="linux, command, systemd.dnssd, bsd, DNS-SD configuration"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd.dnssd - DNS-SD configuration</p>
+<h1>SYNOPSIS</h1>
+<p><em>network_service</em>.dnssd</p>
+<h1>DESCRIPTION</h1>
+<p>DNS-SD setup is performed by <strong>systemd-resolved</strong>(8).</p>
+<p>The main network service file must have the extension .dnssd; other extensions are ignored.</p>
+<p>The .dnssd files are read from the files located in the system network directories /usr/lib/systemd/dnssd and /usr/local/lib/systemd/dnssd, the volatile runtime network directory /run/systemd/dnssd and the local administration network directory /etc/systemd/dnssd. All configuration files are collectively sorted and processed in lexical order, regardless of the directories in which they live. However, files with identical filenames replace each other. Files in /etc/ have the highest priority, files in /run/ take precedence over files with the same name in /lib/. This can be used to override a system-supplied configuration file with a local file if needed.</p>
+<p>Along with the network service file foo.dnssd, a "drop-in" directory foo.dnssd.d/ may exist. All files with the suffix ".conf" from this directory will be parsed after the file itself is parsed. This is useful to alter or add configuration settings, without having to modify the main configuration file. Each drop-in file must have appropriate section headers.</p>
+<p>In addition to /etc/systemd/dnssd, drop-in ".d" directories can be placed in /usr/lib/systemd/dnssd or /run/systemd/dnssd directories. Drop-in files in /etc/ take precedence over those in /run/ which in turn take precedence over those in /usr/lib/ or /usr/local/lib. Drop-in files under any of these directories take precedence over the main network service file wherever located.</p>
+<h1>[SERVICE] SECTION OPTIONS</h1>
+<p>The network service file contains a [Service] section, which specifies a discoverable network service announced in a local network with Multicast DNS broadcasts.</p>
+<p><em>Name=</em></p>
+<blockquote>
+<p>An instance name of the network service as defined in the section 4.1.1 of <strong>RFC 6763</strong>[1], e.g. "webserver".</p>
+<p>The option supports simple specifier expansion. The following expansions are understood:</p>
+<p><br />
+<strong>Table 1. Specifiers available</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Specifier</td>
+<td style="text-align: left;">Meaning</td>
+<td style="text-align: left;">Details</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"%a"</td>
+<td style="text-align: left;">Architecture</td>
+<td style="text-align: left;">A short string identifying the architecture of the local system. A string such as <strong>x86</strong>, <strong>x86-64</strong> or <strong>arm64</strong>. See the architectures defined for <em>ConditionArchitecture=</em> in <strong>systemd.unit</strong>(5) for a full list.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"%b"</td>
+<td style="text-align: left;">Boot ID</td>
+<td style="text-align: left;">The boot ID of the running system, formatted as string. See <strong>random</strong>(4) for more information.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"%B"</td>
+<td style="text-align: left;">Operating system build ID</td>
+<td style="text-align: left;">The operating system build identifier of the running system, as read from the <em>BUILD_ID=</em> field of /etc/os-release. If not set, resolves to an empty string. See <strong>os-release</strong>(5) for more information.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"%H"</td>
+<td style="text-align: left;">Host name</td>
+<td style="text-align: left;">The hostname of the running system.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"%m"</td>
+<td style="text-align: left;">Machine ID</td>
+<td style="text-align: left;">The machine ID of the running system, formatted as string. See <strong>machine-id</strong>(5) for more information.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"%o"</td>
+<td style="text-align: left;">Operating system ID</td>
+<td style="text-align: left;">The operating system identifier of the running system, as read from the <em>ID=</em> field of /etc/os-release. See <strong>os-release</strong>(5) for more information.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"%v"</td>
+<td style="text-align: left;">Kernel release</td>
+<td style="text-align: left;">Identical to <strong>uname -r</strong> output.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"%w"</td>
+<td style="text-align: left;">Operating system version ID</td>
+<td style="text-align: left;">The operating system version identifier of the running system, as read from the <em>VERSION_ID=</em> field of /etc/os-release. If not set, resolves to an empty string. See <strong>os-release</strong>(5) for more information.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"%W"</td>
+<td style="text-align: left;">Operating system variant ID</td>
+<td style="text-align: left;">The operating system variant identifier of the running system, as read from the <em>VARIANT_ID=</em> field of /etc/os-release. If not set, resolves to an empty string. See <strong>os-release</strong>(5) for more information.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"%%"</td>
+<td style="text-align: left;">Single percent sign</td>
+<td style="text-align: left;">Use "%%" in place of "%" to specify a single percent sign.</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<p><em>Type=</em></p>
+<blockquote>
+<p>A type of the network service as defined in the section 4.1.2 of <strong>RFC 6763</strong>[1], e.g. "_http._tcp".</p>
+</blockquote>
+<p><em>Port=</em></p>
+<blockquote>
+<p>An IP port number of the network service.</p>
+</blockquote>
+<p><em>Priority=</em></p>
+<blockquote>
+<p>A priority number set in SRV resource records corresponding to the network service.</p>
+</blockquote>
+<p><em>Weight=</em></p>
+<blockquote>
+<p>A weight number set in SRV resource records corresponding to the network service.</p>
+</blockquote>
+<p><em>TxtText=</em></p>
+<blockquote>
+<p>A whitespace-separated list of arbitrary key/value pairs conveying additional information about the named service in the corresponding TXT resource record, e.g. "path=/portal/index.html". Keys and values can contain C-style escape sequences which get translated upon reading configuration files.</p>
+<p>This option together with <em>TxtData=</em> may be specified more than once, in which case multiple TXT resource records will be created for the service. If the empty string is assigned to this option, the list is reset and all prior assignments will have no effect.</p>
+</blockquote>
+<p><em>TxtData=</em></p>
+<blockquote>
+<p>A whitespace-separated list of arbitrary key/value pairs conveying additional information about the named service in the corresponding TXT resource record where values are base64-encoded string representing any binary data, e.g. "data=YW55IGJpbmFyeSBkYXRhCg==". Keys can contain C-style escape sequences which get translated upon reading configuration files.</p>
+<p>This option together with <em>TxtText=</em> may be specified more than once, in which case multiple TXT resource records will be created for the service. If the empty string is assigned to this option, the list is reset and all prior assignments will have no effect.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p><strong>Example 1. HTTP service</strong></p>
+<blockquote>
+<pre><code># /etc/systemd/dnssd/http.dnssd
+[Service]
+Name=%H
+Type=_http._tcp
+Port=80
+TxtText=path=/stats/index.html t=temperature_sensor</code></pre>
+</blockquote>
+<p>This makes the http server running on the host discoverable in the local network given MulticastDNS is enabled on the network interface.</p>
+<p>Now the utility "resolvectl" should be able to resolve the service to the hosts name:</p>
+<blockquote>
+<pre><code>$ resolvectl service meteo._http._tcp.local
+meteo._http._tcp.local: meteo.local:80 [priority=0, weight=0]
+                        169.254.208.106%senp0s21f0u2u4
+                        fe80::213:3bff:fe49:8aa%senp0s21f0u2u4
+                        path=/stats/index.html
+                        t=temperature_sensor
+                        (meteo/_http._tcp/local)
+
+-- Information acquired via protocol mDNS/IPv6 in 4.0ms.
+-- Data is authenticated: yes</code></pre>
+</blockquote>
+<p>"Avahi" running on a different host in the same local network should see the service as well:</p>
+<blockquote>
+<pre><code>$ avahi-browse -a -r
++ enp3s0 IPv6 meteo                                         Web Site             local
++ enp3s0 IPv4 meteo                                         Web Site             local
+= enp3s0 IPv6 meteo                                         Web Site             local
+   hostname = [meteo.local]
+   address = [fe80::213:3bff:fe49:8aa]
+   port = [80]
+   txt = [&quot;path=/stats/index.html&quot; &quot;t=temperature_sensor&quot;]
+= enp3s0 IPv4 meteo                                         Web Site             local
+   hostname = [meteo.local]
+   address = [169.254.208.106]
+   port = [80]
+   txt = [&quot;path=/stats/index.html&quot; &quot;t=temperature_sensor&quot;]</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemd-resolved.service</strong>(8), <strong>resolvectl</strong>(1)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>RFC 6763</p>
+<p>https://tools.ietf.org/html/rfc6763</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

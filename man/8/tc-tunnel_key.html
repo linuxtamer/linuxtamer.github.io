@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-tunnel_key</title><meta name="description" content="Linux command tc-tunnel_key Tunnel metadata manipulation"><meta name="keywords" content="linux, command, tc-tunnel_key, bsd, Tunnel metadata manipulation"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>tunnel_key - Tunnel metadata manipulation</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc</strong> ... <strong>action tunnel_key</strong> { <strong>unset</strong> | <em>SET</em> }</p>
+<p><em>SET</em> := <strong>set</strong> <strong>src_ip</strong> <em>ADDRESS</em> <strong>dst_ip</strong> <em>ADDRESS</em> <strong>id</strong><em> KEY_ID</em> <strong>dst_port</strong><em> UDP_PORT</em> <strong>tos</strong><em> TOS</em> <strong>ttl</strong><em> TTL</em> [ <strong>csum</strong> | <strong>nocsum</strong> ]</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>tunnel_key</strong> action combined with a shared IP tunnel device, allows to perform IP tunnel en- or decapsulation on a packet, reflected by the operation modes <em>UNSET</em> and <em>SET</em>. The <em>UNSET</em> mode is optional - even without using it, the metadata information will be released automatically when packet processing will be finished. <em>UNSET</em> function could be used in cases when traffic is forwarded between two tunnels, where the metadata from the first tunnel will be used for encapsulation done by the second tunnel. <em>SET</em> mode requires the source and destination ip <em>ADDRESS</em> and the tunnel key id <em>KEY_ID</em> which will be used by the ip tunnel shared device to create the tunnel header. The <strong>tunnel_key</strong> action is useful only in combination with a <strong>mirred redirect</strong> action to a shared IP tunnel device which will use the metadata (for <em>SET</em> ) and unset the metadata created by it (for <em>UNSET</em> ).</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>unset</strong></dt>
+<dd><p>Unset the tunnel metadata created by the IP tunnel device. This function is not mandatory and might be used only in some specific use cases (as explained above).</p>
+</dd>
+<dt><strong>set</strong></dt>
+<dd><p>Set tunnel metadata to be used by the IP tunnel device. Requires <strong>src_ip</strong> and <strong>dst_ip</strong> options. <strong>id</strong> , <strong>dst_port</strong> , <strong>geneve_opts</strong> , <strong>vxlan_opts</strong> and <strong>erspan_opts</strong> are optional.</p>
+<dl>
+<dt><strong>id</strong></dt>
+<dd><p>Tunnel ID (for example VNI in VXLAN tunnel)</p>
+</dd>
+<dt><strong>src_ip</strong></dt>
+<dd><p>Outer header source IP address (IPv4 or IPv6)</p>
+</dd>
+<dt><strong>dst_ip</strong></dt>
+<dd><p>Outer header destination IP address (IPv4 or IPv6)</p>
+</dd>
+<dt><strong>dst_port</strong></dt>
+<dd><p>Outer header destination UDP port</p>
+</dd>
+<dt><strong>geneve_opts</strong></dt>
+<dd><p>Geneve variable length options. <strong>geneve_opts</strong> is specified in the form CLASS:TYPE:DATA, where CLASS is represented as a 16bit hexadecimal value, TYPE as an 8bit hexadecimal value and DATA as a variable length hexadecimal value. Additionally multiple options may be listed using a comma delimiter.</p>
+</dd>
+<dt><strong>vxlan_opts</strong></dt>
+<dd><p>Vxlan metadata options. <strong>vxlan_opts</strong> is specified in the form GBP, as a 32bit number. Multiple options is not supported.</p>
+</dd>
+<dt><strong>erspan_opts</strong></dt>
+<dd><p>Erspan metadata options. <strong>erspan_opts</strong> is specified in the form VERSION:INDEX:DIR:HWID, where VERSION is represented as a 8bit number, INDEX as an 32bit number, DIR and HWID as a 8bit number. Multiple options is not supported. Note INDEX is used when VERSION is 1, and DIR and HWID are used when VERSION is 2.</p>
+</dd>
+<dt><strong>tos</strong></dt>
+<dd><p>Outer header TOS</p>
+</dd>
+<dt><strong>ttl</strong></dt>
+<dd><p>Outer header TTL</p>
+</dd>
+<dt>[<strong>no</strong>]<strong>csum</strong></dt>
+<dd><p>Controls outer UDP checksum. When set to <strong>csum</strong> (which is default), the outer UDP checksum is calculated and included in the packets. When set to <strong>nocsum</strong>, outer UDP checksum is zero. Note that when using zero UDP checksums with IPv6, the other tunnel endpoint must be configured to accept such packets. In Linux, this would be the <strong>udp6zerocsumrx</strong> option for the VXLAN tunnel interface.</p>
+<p>If using <strong>nocsum</strong> with IPv6, be sure you know what you are doing. Zero UDP checksums provide weaker protection against corrupted packets. See RFC6935 for details.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<p>The following example encapsulates incoming ICMP packets on eth0 into a vxlan tunnel, by setting metadata to VNI 11, source IP 11.11.0.1 and destination IP 11.11.0.2, and by redirecting the packet with the metadata to device vxlan0, which will do the actual encapsulation using the metadata:</p>
+<blockquote>
+<pre><code>#tc qdisc add dev eth0 handle ffff: ingress
+#tc filter add dev eth0 protocol ip parent ffff: \
+  flower \
+    ip_proto icmp \
+  action tunnel_key set \
+    src_ip 11.11.0.1 \
+    dst_ip 11.11.0.2 \
+    id 11 \
+  action mirred egress redirect dev vxlan0</code></pre>
+</blockquote>
+<p>Here is an example of the <strong>unset</strong> function: Incoming VXLAN traffic with outer IP's and VNI 11 is decapsulated by vxlan0 and metadata is unset before redirecting to tunl1 device:</p>
+<blockquote>
+<pre><code>#tc qdisc add dev eth0 handle ffff: ingress
+#tc filter add dev vxlan0 protocol ip parent ffff:   flower \
+	  enc_src_ip 11.11.0.2 enc_dst_ip 11.11.0.1 enc_key_id 11 	action tunnel_key unset 	action mirred egress redirect dev tunl1</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

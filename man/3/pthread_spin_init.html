@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pthread_spin_init</title><meta name="description" content="Linux command pthread_spin_init initialize or destroy a spin lock"><meta name="keywords" content="linux, command, pthread_spin_init, bsd, initialize or destroy a spin lock"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pthread_spin_init, pthread_spin_destroy - initialize or destroy a spin lock</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;pthread.h&gt;
+
+int pthread_spin_init(pthread_spinlock_t *lock, int pshared);
+int pthread_spin_destroy(pthread_spinlock_t *lock);</code></pre>
+<p>Compile and link with <em>-pthread</em>.</p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>pthread_spin_init</strong>(), <strong>pthread_spin_destroy</strong>():<br />
+</p>
+<blockquote>
+<p>_POSIX_C_SOURCE &gt;= 200112L</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p><em>General note</em>: Most programs should use mutexes instead of spin locks. Spin locks are primarily useful in conjunction with real-time scheduling policies. See NOTES.</p>
+<p>The <strong>pthread_spin_init</strong>() function allocates any resources required for the use of the spin lock referred to by <em>lock</em> and initializes the lock to be in the unlocked state. The <em>pshared</em> argument must have one of the following values:</p>
+<dl>
+<dt><strong>PTHREAD_PROCESS_PRIVATE</strong></dt>
+<dd><p>The spin lock is to be operated on only by threads in the same process as the thread that calls <strong>pthread_spin_init</strong>(). (Attempting to share the spin lock between processes results in undefined behavior.)</p>
+</dd>
+<dt><strong>PTHREAD_PROCESS_SHARED</strong></dt>
+<dd><p>The spin lock may be operated on by any thread in any process that has access to the memory containing the lock (i.e., the lock may be in a shared memory object that is shared among multiple processes).</p>
+</dd>
+</dl>
+<p>Calling <strong>pthread_spin_init</strong>() on a spin lock that has already been initialized results in undefined behavior.</p>
+<p>The <strong>pthread_spin_destroy</strong>() function destroys a previously initialized spin lock, freeing any resources that were allocated for that lock. Destroying a spin lock that has not been previously been initialized or destroying a spin lock while another thread holds the lock results in undefined behavior.</p>
+<p>Once a spin lock has been destroyed, performing any operation on the lock other than once more initializing it with <strong>pthread_spin_init</strong>() results in undefined behavior.</p>
+<p>The result of performing operations such as <strong>pthread_spin_lock</strong>(3), <strong>pthread_spin_unlock</strong>(3), and <strong>pthread_spin_destroy</strong>() on <em>copies</em> of the object referred to by <em>lock</em> is undefined.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, there functions return zero. On failure, they return an error number. In the event that <strong>pthread_spin_init</strong>() fails, the lock is not initialized.</p>
+<h1>ERRORS</h1>
+<p><strong>pthread_spin_init</strong>() may fail with the following errors:</p>
+<dl>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>The system has insufficient resources to initialize a new spin lock.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient memory to initialize the spin lock.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>These functions first appeared in glibc in version 2.2.</p>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001.</p>
+<p>Support for process-shared spin locks is a POSIX option. The option is supported in the glibc implementation.</p>
+<h1>NOTES</h1>
+<p>Spin locks should be employed in conjunction with real-time scheduling policies (<strong>SCHED_FIFO</strong>, or possibly <strong>SCHED_RR</strong>). Use of spin locks with nondeterministic scheduling policies such as <strong>SCHED_OTHER</strong> probably indicates a design mistake. The problem is that if a thread operating under such a policy is scheduled off the CPU while it holds a spin lock, then other threads will waste time spinning on the lock until the lock holder is once more rescheduled and releases the lock.</p>
+<p>If threads create a deadlock situation while employing spin locks, those threads will spin forever consuming CPU time.</p>
+<p>User-space spin locks are <em>not</em> applicable as a general locking solution. They are, by definition, prone to priority inversion and unbounded spin times. A programmer using spin locks must be exceptionally careful not only in the code, but also in terms of system configuration, thread placement, and priority assignment.</p>
+<h1>SEE ALSO</h1>
+<p><strong>pthread_mutex_init</strong>(3), <strong>pthread_mutex_lock</strong>(3), <strong>pthread_spin_lock</strong>(3), <strong>pthread_spin_unlock</strong>(3), <strong>pthreads</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sem_timedwait</title><meta name="description" content="Linux command sem_timedwait lock a semaphore"><meta name="keywords" content="linux, command, sem_timedwait, bsd, lock a semaphore"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sem_wait, sem_timedwait, sem_trywait - lock a semaphore</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;semaphore.h&gt;
+
+int sem_wait(sem_t *sem);
+
+int sem_trywait(sem_t *sem);
+
+int sem_timedwait(sem_t *sem, const struct timespec *abs_timeout);</code></pre>
+<p>Link with <em>-pthread</em>.</p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>sem_timedwait</strong>(): _POSIX_C_SOURCE &gt;= 200112L</p>
+<h1>DESCRIPTION</h1>
+<p><strong>sem_wait</strong>() decrements (locks) the semaphore pointed to by <em>sem</em>. If the semaphore's value is greater than zero, then the decrement proceeds, and the function returns, immediately. If the semaphore currently has the value zero, then the call blocks until either it becomes possible to perform the decrement (i.e., the semaphore value rises above zero), or a signal handler interrupts the call.</p>
+<p><strong>sem_trywait</strong>() is the same as <strong>sem_wait</strong>(), except that if the decrement cannot be immediately performed, then call returns an error (<em>errno</em> set to <strong>EAGAIN</strong>) instead of blocking.</p>
+<p><strong>sem_timedwait</strong>() is the same as <strong>sem_wait</strong>(), except that <em>abs_timeout</em> specifies a limit on the amount of time that the call should block if the decrement cannot be immediately performed. The <em>abs_timeout</em> argument points to a structure that specifies an absolute timeout in seconds and nanoseconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC). This structure is defined as follows:</p>
+<pre><code>struct timespec {
+    time_t tv_sec;      /* Seconds */
+    long   tv_nsec;     /* Nanoseconds [0 .. 999999999] */
+};</code></pre>
+<p>If the timeout has already expired by the time of the call, and the semaphore could not be locked immediately, then <strong>sem_timedwait</strong>() fails with a timeout error (<em>errno</em> set to <strong>ETIMEDOUT</strong>).</p>
+<p>If the operation can be performed immediately, then <strong>sem_timedwait</strong>() never fails with a timeout error, regardless of the value of <em>abs_timeout</em>. Furthermore, the validity of <em>abs_timeout</em> is not checked in this case.</p>
+<h1>RETURN VALUE</h1>
+<p>All of these functions return 0 on success; on error, the value of the semaphore is left unchanged, -1 is returned, and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINTR</strong></dt>
+<dd><p>The call was interrupted by a signal handler; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>sem</em> is not a valid semaphore.</p>
+</dd>
+</dl>
+<p>The following additional error can occur for <strong>sem_trywait</strong>():</p>
+<dl>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>The operation could not be performed without blocking (i.e., the semaphore currently has the value zero).</p>
+</dd>
+</dl>
+<p>The following additional errors can occur for <strong>sem_timedwait</strong>():</p>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The value of <em>abs_timeout.tv_nsecs</em> is less than 0, or greater than or equal to 1000 million.</p>
+</dd>
+<dt><strong>ETIMEDOUT</strong></dt>
+<dd><p>The call timed out before the semaphore could be locked.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sem_wait</strong>(), <strong>sem_trywait</strong>(), <strong>sem_timedwait</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>EXAMPLES</h1>
+<p>The (somewhat trivial) program shown below operates on an unnamed semaphore. The program expects two command-line arguments. The first argument specifies a seconds value that is used to set an alarm timer to generate a <strong>SIGALRM</strong> signal. This handler performs a <strong>sem_post</strong>(3) to increment the semaphore that is being waited on in <em>main()</em> using <strong>sem_timedwait</strong>(). The second command-line argument specifies the length of the timeout, in seconds, for <strong>sem_timedwait</strong>(). The following shows what happens on two different runs of the program:</p>
+<pre><code>$ ./a.out 2 3
+About to call sem_timedwait()
+sem_post() from handler
+sem_timedwait() succeeded
+$ ./a.out 2 1
+About to call sem_timedwait()
+sem_timedwait() timed out</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;semaphore.h&gt;
+#include &lt;time.h&gt;
+#include &lt;assert.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;signal.h&gt;
+
+sem_t sem;
+
+#define handle_error(msg) \
+    do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+static void
+handler(int sig)
+{
+    write(STDOUT_FILENO, &quot;sem_post() from handler\n&quot;, 24);
+    if (sem_post(&amp;sem) == -1) {
+        write(STDERR_FILENO, &quot;sem_post() failed\n&quot;, 18);
+        _exit(EXIT_FAILURE);
+    }
+}
+
+int
+main(int argc, char *argv[])
+{
+    struct sigaction sa;
+    struct timespec ts;
+    int s;
+
+    if (argc != 3) {
+        fprintf(stderr, &quot;Usage: %s &lt;alarm-secs&gt; &lt;wait-secs&gt;\n&quot;,
+                argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    if (sem_init(&amp;sem, 0, 0) == -1)
+        handle_error(&quot;sem_init&quot;);
+
+    /* Establish SIGALRM handler; set alarm timer using argv[1] */
+
+    sa.sa_handler = handler;
+    sigemptyset(&amp;sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGALRM, &amp;sa, NULL) == -1)
+        handle_error(&quot;sigaction&quot;);
+
+    alarm(atoi(argv[1]));
+
+    /* Calculate relative interval as current time plus
+       number of seconds given argv[2] */
+
+    if (clock_gettime(CLOCK_REALTIME, &amp;ts) == -1)
+        handle_error(&quot;clock_gettime&quot;);
+
+    ts.tv_sec += atoi(argv[2]);
+
+    printf(&quot;main() about to call sem_timedwait()\n&quot;);
+    while ((s = sem_timedwait(&amp;sem, &amp;ts)) == -1 &amp;&amp; errno == EINTR)
+        continue;       /* Restart if interrupted by handler */
+
+    /* Check what happened */
+
+    if (s == -1) {
+        if (errno == ETIMEDOUT)
+            printf(&quot;sem_timedwait() timed out\n&quot;);
+        else
+            perror(&quot;sem_timedwait&quot;);
+    } else
+        printf(&quot;sem_timedwait() succeeded\n&quot;);
+
+    exit((s == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>clock_gettime</strong>(2), <strong>sem_getvalue</strong>(3), <strong>sem_post</strong>(3), <strong>sem_overview</strong>(7), <strong>time</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

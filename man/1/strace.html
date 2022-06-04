@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command strace</title><meta name="description" content="Linux command strace trace system calls and signals"><meta name="keywords" content="linux, command, strace, bsd, trace system calls and signals"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>strace - trace system calls and signals</p>
+<h1>SYNOPSIS</h1>
+<p><strong>strace</strong> [ <strong>-I</strong> n ] [ <strong>-b</strong> execve ] [ <strong>-O</strong> overhead ] [ <strong>-S</strong> sortby ] [ <strong>-U</strong> columns ] [ <strong>-a</strong> column ] [ <strong>-o</strong> file ] [ <strong>-s</strong> strsize ] [ <strong>-X</strong> format ] [ <strong>--seccomp-bpf</strong> ] <strong></strong>{ <strong></strong>| [ <strong>-DDD</strong> ] [ <strong>-u</strong> username ] <em>command</em> [<em>args</em>] <strong></strong>} <strong>strace</strong> <strong>-c</strong> [ <strong>-dfwzZ</strong> ] [ <strong>-I</strong> n ] [ <strong>-b</strong> execve ] [ <strong>-O</strong> overhead ] [ <strong>-S</strong> sortby ] [ <strong>-U</strong> columns ] [ <strong>--seccomp-bpf</strong> ] <strong></strong>{ <strong></strong>| [ <strong>-DDD</strong> ] [ <strong>-u</strong> username ] <em>command</em> [<em>args</em>] <strong></strong>}</p>
+<h1>DESCRIPTION</h1>
+<p>In the simplest case <strong>strace</strong> runs the specified <em>command</em> until it exits. It intercepts and records the system calls which are called by a process and the signals which are received by a process. The name of each system call, its arguments and its return value are printed on standard error or to the file specified with the <strong>-o</strong> option.</p>
+<p><strong>strace</strong> is a useful diagnostic, instructional, and debugging tool. System administrators, diagnosticians and trouble-shooters will find it invaluable for solving problems with programs for which the source is not readily available since they do not need to be recompiled in order to trace them. Students, hackers and the overly-curious will find that a great deal can be learned about a system and its system calls by tracing even ordinary programs. And programmers will find that since system calls and signals are events that happen at the user/kernel interface, a close examination of this boundary is very useful for bug isolation, sanity checking and attempting to capture race conditions.</p>
+<p>Each line in the trace contains the system call name, followed by its arguments in parentheses and its return value. An example from stracing the command "cat /dev/null" is:</p>
+<pre><code>open(&quot;/dev/null&quot;, O_RDONLY) = 3</code></pre>
+<p>Errors (typically a return value of -1) have the errno symbol and error string appended.</p>
+<pre><code>open(&quot;/foo/bar&quot;, O_RDONLY) = -1 ENOENT (No such file or directory)</code></pre>
+<p>Signals are printed as signal symbol and decoded siginfo structure. An excerpt from stracing and interrupting the command "sleep 666" is:</p>
+<pre><code>sigsuspend([] &lt;unfinished ...&gt;
+--- SIGINT {si_signo=SIGINT, si_code=SI_USER, si_pid=...} ---
++++ killed by SIGINT +++</code></pre>
+<p>If a system call is being executed and meanwhile another one is being called from a different thread/process then <strong>strace</strong> will try to preserve the order of those events and mark the ongoing call as being <em>unfinished</em>. When the call returns it will be marked as <em>resumed</em>.</p>
+<pre><code>[pid 28772] select(4, [3], NULL, NULL, NULL &lt;unfinished ...&gt;
+[pid 28779] clock_gettime(CLOCK_REALTIME, {1130322148, 939977000}) = 0
+[pid 28772] &lt;... select resumed&gt; )      = 1 (in [3])</code></pre>
+<p>Interruption of a (restartable) system call by a signal delivery is processed differently as kernel terminates the system call and also arranges its immediate reexecution after the signal handler completes.</p>
+<pre><code>read(0, 0x7ffff72cf5cf, 1)              = ? ERESTARTSYS (To be restarted)
+--- SIGALRM ... ---
+rt_sigreturn(0xe)                       = 0
+read(0, &quot;&quot;, 1)                          = 0</code></pre>
+<p>Arguments are printed in symbolic form with passion. This example shows the shell performing "&gt;&gt;xyzzy" output redirection:</p>
+<pre><code>open(&quot;xyzzy&quot;, O_WRONLY|O_APPEND|O_CREAT, 0666) = 3</code></pre>
+<p>Here, the second and the third argument of <strong>open</strong>(2) are decoded by breaking down the flag argument into its three bitwise-OR constituents and printing the mode value in octal by tradition. Where the traditional or native usage differs from ANSI or POSIX, the latter forms are preferred. In some cases, <strong>strace</strong> output is proven to be more readable than the source.</p>
+<p>Structure pointers are dereferenced and the members are displayed as appropriate. In most cases, arguments are formatted in the most C-like fashion possible. For example, the essence of the command "ls -l /dev/null" is captured as:</p>
+<pre><code>lstat(&quot;/dev/null&quot;, {st_mode=S_IFCHR|0666, st_rdev=makedev(0x1, 0x3), ...}) = 0</code></pre>
+<p>Notice how the 'struct stat' argument is dereferenced and how each member is displayed symbolically. In particular, observe how the <strong>st_mode</strong> member is carefully decoded into a bitwise-OR of symbolic and numeric values. Also notice in this example that the first argument to <strong>lstat</strong>(2) is an input to the system call and the second argument is an output. Since output arguments are not modified if the system call fails, arguments may not always be dereferenced. For example, retrying the "ls -l" example with a non-existent file produces the following line:</p>
+<pre><code>lstat(&quot;/foo/bar&quot;, 0xb004) = -1 ENOENT (No such file or directory)</code></pre>
+<p>In this case the porch light is on but nobody is home.</p>
+<p>Syscalls unknown to <strong>strace</strong> are printed raw, with the unknown system call number printed in hexadecimal form and prefixed with "syscall_":</p>
+<pre><code>syscall_0xbad(0x1, 0x2, 0x3, 0x4, 0x5, 0x6) = -1 ENOSYS (Function not implemented)</code></pre>
+<p>Character pointers are dereferenced and printed as C strings. Non-printing characters in strings are normally represented by ordinary C escape codes. Only the first <em>strsize</em> (32 by default) bytes of strings are printed; longer strings have an ellipsis appended following the closing quote. Here is a line from "ls -l" where the <strong>getpwuid</strong>(3) library routine is reading the password file:</p>
+<pre><code>read(3, &quot;root::0:0:System Administrator:/&quot;..., 1024) = 422</code></pre>
+<p>While structures are annotated using curly braces, simple pointers and arrays are printed using square brackets with commas separating elements. Here is an example from the command <strong>id</strong>(1) on a system with supplementary group ids:</p>
+<pre><code>getgroups(32, [100, 0]) = 2</code></pre>
+<p>On the other hand, bit-sets are also shown using square brackets, but set elements are separated only by a space. Here is the shell, preparing to execute an external command:</p>
+<pre><code>sigprocmask(SIG_BLOCK, [CHLD TTOU], []) = 0</code></pre>
+<p>Here, the second argument is a bit-set of two signals, <strong>SIGCHLD</strong> and <strong>SIGTTOU</strong>. In some cases, the bit-set is so full that printing out the unset elements is more valuable. In that case, the bit-set is prefixed by a tilde like this:</p>
+<pre><code>sigprocmask(SIG_UNBLOCK, ~[], NULL) = 0</code></pre>
+<p>Here, the second argument represents the full set of all signals.</p>
+<h1>OPTIONS</h1>
+<h2>General</h2>
+<dl>
+<dt><strong>-e </strong><em>expr</em></dt>
+<dd><p>A qualifying expression which modifies which events to trace or how to trace them. The format of the expression is:</p>
+<blockquote>
+<p>[<em>qualifier</em><strong>=</strong>][<strong>!</strong>]<em>value</em>[<strong>,</strong><em>value</em>]...</p>
+</blockquote>
+<p>where <em>qualifier</em> is one of <strong>trace</strong> (or <strong>t</strong>), <strong>abbrev</strong> (or <strong>a</strong>), <strong>verbose</strong> (or <strong>v</strong>), <strong>raw</strong> (or <strong>x</strong>), <strong>signal</strong> (or <strong>signals</strong> or <strong>s</strong>), <strong>read</strong> (or <strong>reads</strong> or <strong>r</strong>), <strong>write</strong> (or <strong>writes</strong> or <strong>w</strong>), <strong>fault</strong>, <strong>inject</strong>, <strong>status</strong>, <strong>quiet</strong> (or <strong>silent</strong> or <strong>silence</strong> or <strong>q</strong>), <strong>decode-fds</strong> (or <strong>decode-fd</strong>), or <strong>kvm</strong>, and <em>value</em> is a qualifier-dependent symbol or number. The default qualifier is <strong>trace</strong>. Using an exclamation mark negates the set of values. For example, <strong>-e</strong> <strong>open</strong> means literally <strong>-e</strong> <strong>trace</strong>=<strong>open</strong> which in turn means trace only the <strong>open</strong> system call. By contrast, <strong>-e</strong> <strong>trace</strong>=!<strong>open</strong> means to trace every system call except <strong>open</strong>. In addition, the special values <strong>all</strong> and <strong>none</strong> have the obvious meanings.</p>
+<p>Note that some shells use the exclamation point for history expansion even inside quoted arguments. If so, you must escape the exclamation point with a backslash.</p>
+</dd>
+</dl>
+<h2>Startup</h2>
+<dl>
+<dt><strong>-E </strong><em>var</em>=<em>val</em><br />
+<strong>--env</strong>=<strong><em>var</em></strong>=<strong><em>val</em></strong></dt>
+<dd><p>Run command with <em>var</em>=<em>val</em> in its list of environment variables.</p>
+</dd>
+<dt><strong>-E </strong><em>var</em><br />
+<strong>--env</strong>=<strong><em>var</em></strong></dt>
+<dd><p>Remove <em>var</em> from the inherited list of environment variables before passing it on to the command.</p>
+</dd>
+<dt><strong>-p </strong><em>pid</em><br />
+<strong>--attach</strong>=<strong><em>pid</em></strong></dt>
+<dd><p>Attach to the process with the process</p>
+</dd>
+</dl>
+<p><em>pid</em> and begin tracing. The trace may be terminated at any time by a keyboard interrupt signal (<strong>CTRL-C</strong>). <strong>strace</strong> will respond by detaching itself from the traced process(es) leaving it (them) to continue running. Multiple <strong>-p</strong> options can be used to attach to many processes in addition to <em>command</em> (which is optional if at least one <strong>-p</strong> option is given). <strong>-p</strong> "`pidof PROG`" syntax is supported.</p>
+<dl>
+<dt><strong>-u </strong><em>username</em><br />
+<strong>--user</strong>=<strong><em>username</em></strong></dt>
+<dd><p>Run command with the user ID, group ID, and supplementary groups of <em>username</em>. This option is only useful when running as root and enables the correct execution of setuid and/or setgid binaries. Unless this option is used setuid and setgid programs are executed without effective privileges.</p>
+</dd>
+</dl>
+<h2>Tracing</h2>
+<dl>
+<dt><strong>-b </strong><em>syscall</em><br />
+<strong>--detach-on</strong>=<strong><em>syscall</em></strong></dt>
+<dd><p>If specified syscall is reached, detach from traced process. Currently, only <strong>execve</strong>(2) syscall is supported. This option is useful if you want to trace multi-threaded process and therefore require <strong>-f</strong>, but don't want to trace its (potentially very complex) children.</p>
+</dd>
+<dt><strong>-D</strong><br />
+<strong>--daemonize</strong><br />
+<strong>--daemonize</strong>=<strong>grandchild</strong></dt>
+<dd><p>Run tracer process as a grandchild, not as the parent of the tracee. This reduces the visible effect of <strong>strace</strong> by keeping the tracee a direct child of the calling process.</p>
+</dd>
+<dt><strong>-DD</strong><br />
+<strong>--daemonize</strong>=<strong>pgroup</strong><br />
+<strong>--daemonize</strong>=<strong>pgrp</strong></dt>
+<dd><p>Run tracer process as tracee's grandchild in a separate process group. In addition to reduction of the visible effect of <strong>strace</strong>, it also avoids killing of <strong>strace</strong> with <strong>kill</strong>(2) issued to the whole process group.</p>
+</dd>
+<dt><strong>-DDD</strong><br />
+<strong>--daemonize</strong>=<strong>session</strong></dt>
+<dd><p>Run tracer process as tracee's grandchild in a separate session ("true daemonisation"). In addition to reduction of the visible effect of <strong>strace</strong>, it also avoids killing of <strong>strace</strong> upon session termination.</p>
+</dd>
+<dt><strong>-f</strong><br />
+<strong>--follow-forks</strong></dt>
+<dd><p>Trace child processes as they are created by currently traced processes as a result of the <strong>fork</strong>(2), <strong>vfork</strong>(2) and <strong>clone</strong>(2) system calls. Note that <strong>-p</strong> <em>PID</em> <strong>-f</strong> will attach all threads of process <em>PID</em> if it is multi-threaded, not only thread with <em>thread_id</em> = <em>PID</em>.</p>
+</dd>
+<dt><strong>--output-separately</strong></dt>
+<dd><p>If the <strong>--output</strong>=<strong><em>filename</em></strong> option is in effect, each processes trace is written to <em>filename</em>.<em>pid</em> where <em>pid</em> is the numeric process id of each process.</p>
+</dd>
+<dt><strong>-ff</strong><br />
+<strong>--follow-forks --output-separately</strong></dt>
+<dd><p>Combine the effects of <strong>--follow-forks</strong> and <strong>--output-separately</strong> options. This is incompatible with <strong>-c</strong>, since no per-process counts are kept.</p>
+<p>One might want to consider using <strong>strace-log-merge</strong>(1) to obtain a combined strace log view.</p>
+</dd>
+<dt><strong>-I </strong><em>interruptible</em><br />
+<strong>--interruptible</strong>=<strong><em>interruptible</em></strong></dt>
+<dd><p>When <strong>strace</strong> can be interrupted by signals (such as pressing <strong>CTRL-C</strong>).</p>
+<dl>
+<dt><strong>1</strong>, <strong>anywhere</strong></dt>
+<dd><p>no signals are blocked;</p>
+</dd>
+</dl>
+<p><strong>2</strong>, <strong>waiting</strong> fatal signals are blocked while decoding syscall (default);</p>
+<p><strong>3</strong>, <strong>never</strong> fatal signals are always blocked (default if <strong>-o</strong> <strong><em>FILE</em></strong> <strong><em>PROG</em></strong>);</p>
+<p><strong>4</strong>, <strong>never_tstp</strong> fatal signals and <strong>SIGTSTP</strong> (<strong>CTRL-Z</strong>) are always blocked (useful to make <strong>strace -o </strong><em>FILE PROG</em> not stop on <strong>CTRL-Z</strong>, default if <strong>-D</strong>).</p>
+</dd>
+</dl>
+<h2>Filtering</h2>
+<dl>
+<dt><strong>-e trace</strong>=<em>syscall_set</em><br />
+<strong>--trace</strong>=<em>syscall_set</em></dt>
+<dd><p>Trace only the specified set of system calls. <em>syscall_set</em> is defined as [<strong>!</strong>]<em>value</em>[<strong>,</strong><em>value</em>], and <em>value</em> can be one of the following:</p>
+<dl>
+<dt><em>syscall</em></dt>
+<dd><p>Trace specific syscall, specified by its name (but see <strong>NOTES</strong>).</p>
+</dd>
+<dt><strong>?</strong><em>value</em></dt>
+<dd><p>Question mark before the syscall qualification allows suppression of error in case no syscalls matched the qualification provided.</p>
+</dd>
+<dt><strong>/</strong><em>regex</em></dt>
+<dd><p>Trace only those system calls that match the <em>regex</em>. You can use <strong>POSIX</strong> Extended Regular Expression syntax (see <strong>regex</strong>(7)).</p>
+</dd>
+<dt><em>syscall</em><strong>@64</strong></dt>
+<dd><p>Trace <em>syscall</em> only for the 64-bit personality.</p>
+</dd>
+<dt><em>syscall</em><strong>@32</strong></dt>
+<dd><p>Trace <em>syscall</em> only for the 32-bit personality.</p>
+</dd>
+<dt><em>syscall</em><strong>@x32</strong></dt>
+<dd><p>Trace <em>syscall</em> only for the 32-on-64-bit personality.</p>
+</dd>
+<dt><strong>%file</strong><br />
+<strong>file</strong></dt>
+<dd><p>Trace all system calls which take a file name as an argument. You can think of this as an abbreviation for <strong>-e trace</strong>=<strong>open</strong>,<strong>stat</strong>,<strong>chmod</strong>,<strong>unlink</strong>,... which is useful to seeing what files the process is referencing. Furthermore, using the abbreviation will ensure that you don't accidentally forget to include a call like <strong>lstat</strong>(2) in the list. Betchya woulda forgot that one. The syntax without a preceding percent sign ("<strong>-e trace</strong>=<strong>file</strong>") is deprecated.</p>
+</dd>
+<dt><strong>%process</strong><br />
+<strong>process</strong></dt>
+<dd><p>Trace system calls associated with process lifecycle (creation, exec, termination). The syntax without a preceding percent sign ("<strong>-e trace</strong>=<strong>process</strong>") is deprecated.</p>
+</dd>
+<dt><strong>%net</strong><br />
+<strong>%network</strong><br />
+<strong>network</strong></dt>
+<dd><p>Trace all the network related system calls. The syntax without a preceding percent sign ("<strong>-e trace</strong>=<strong>network</strong>") is deprecated.</p>
+</dd>
+<dt><strong>%signal</strong><br />
+<strong>signal</strong></dt>
+<dd><p>Trace all signal related system calls. The syntax without a preceding percent sign ("<strong>-e trace</strong>=<strong>signal</strong>") is deprecated.</p>
+</dd>
+<dt><strong>%ipc</strong><br />
+<strong>ipc</strong></dt>
+<dd><p>Trace all IPC related system calls. The syntax without a preceding percent sign ("<strong>-e trace</strong>=<strong>ipc</strong>") is deprecated.</p>
+</dd>
+<dt><strong>%desc</strong><br />
+<strong>desc</strong></dt>
+<dd><p>Trace all file descriptor related system calls. The syntax without a preceding percent sign ("<strong>-e trace</strong>=<strong>desc</strong>") is deprecated.</p>
+</dd>
+<dt><strong>%memory</strong><br />
+<strong>memory</strong></dt>
+<dd><p>Trace all memory mapping related system calls. The syntax without a preceding percent sign ("<strong>-e trace</strong>=<strong>memory</strong>") is deprecated.</p>
+</dd>
+<dt><strong>%creds</strong></dt>
+<dd><p>Trace system calls that read or modify user and group identifiers or capability sets.</p>
+</dd>
+<dt><strong>%stat</strong></dt>
+<dd><p>Trace stat syscall variants.</p>
+</dd>
+<dt><strong>%lstat</strong></dt>
+<dd><p>Trace lstat syscall variants.</p>
+</dd>
+<dt><strong>%fstat</strong></dt>
+<dd><p>Trace fstat, fstatat, and statx syscall variants.</p>
+</dd>
+<dt><strong>%%stat</strong></dt>
+<dd><p>Trace syscalls used for requesting file status (stat, lstat, fstat, fstatat, statx, and their variants).</p>
+</dd>
+<dt><strong>%statfs</strong></dt>
+<dd><p>Trace statfs, statfs64, statvfs, osf_statfs, and osf_statfs64 system calls. The same effect can be achieved with <strong>-e trace</strong>=<strong>/^(.*_)?statv?fs</strong> regular expression.</p>
+</dd>
+<dt><strong>%fstatfs</strong></dt>
+<dd><p>Trace fstatfs, fstatfs64, fstatvfs, osf_fstatfs, and osf_fstatfs64 system calls. The same effect can be achieved with <strong>-e trace</strong>=<strong>/fstatv?fs</strong> regular expression.</p>
+</dd>
+<dt><strong>%%statfs</strong></dt>
+<dd><p>Trace syscalls related to file system statistics (statfs-like, fstatfs-like, and ustat). The same effect can be achieved with <strong>-e trace</strong>=<strong>/statv?fs|fsstat|ustat</strong> regular expression.</p>
+</dd>
+<dt><strong>%clock</strong></dt>
+<dd><p>Trace system calls that read or modify system clocks.</p>
+</dd>
+<dt><strong>%pure</strong></dt>
+<dd><p>Trace syscalls that always succeed and have no arguments. Currently, this list includes <strong>arc_gettls</strong>(2), <strong>getdtablesize</strong>(2), <strong>getegid</strong>(2), <strong>getegid32</strong>(2), <strong>geteuid</strong>(2), <strong>geteuid32</strong>(2), <strong>getgid</strong>(2), <strong>getgid32</strong>(2), <strong>getpagesize</strong>(2), <strong>getpgrp</strong>(2), <strong>getpid</strong>(2), <strong>getppid</strong>(2), <strong>get_thread_area</strong>(2) (on architectures other than x86), <strong>gettid</strong>(2), <strong>get_tls</strong>(2), <strong>getuid</strong>(2), <strong>getuid32</strong>(2), <strong>getxgid</strong>(2), <strong>getxpid</strong>(2), <strong>getxuid</strong>(2), <strong>kern_features</strong>(2), and <strong>metag_get_tls</strong>(2) syscalls.</p>
+</dd>
+</dl>
+<p>The <strong>-c</strong> option is useful for determining which system calls might be useful to trace. For example, <strong>trace</strong>=<strong>open,close,read,write</strong> means to only trace those four system calls. Be careful when making inferences about the user/kernel boundary if only a subset of system calls are being monitored. The default is <strong>trace</strong>=<strong>all</strong>.</p>
+</dd>
+<dt><strong>-e signal</strong>=<em>set</em><br />
+<strong>--signal</strong>=<em>set</em></dt>
+<dd><p>Trace only the specified subset of signals. The default is <strong>signal</strong>=<strong>all</strong>. For example, <strong>signal</strong>=!<strong>SIGIO</strong> (or <strong>signal</strong>=!<strong>io</strong>) causes <strong>SIGIO</strong> signals not to be traced.</p>
+</dd>
+<dt><strong>-e status</strong>=<em>set</em><br />
+<strong>--status</strong>=<em>set</em></dt>
+<dd><p>Print only system calls with the specified return status. The default is <strong>status</strong>=<strong>all</strong>. When using the <strong>status</strong> qualifier, because <strong>strace</strong> waits for system calls to return before deciding whether they should be printed or not, the traditional order of events may not be preserved anymore. If two system calls are executed by concurrent threads, <strong>strace</strong> will first print both the entry and exit of the first system call to exit, regardless of their respective entry time. The entry and exit of the second system call to exit will be printed afterwards. Here is an example when <strong>select</strong>(2) is called, but a different thread calls <strong>clock_gettime</strong>(2) before <strong>select</strong>(2) finishes:</p>
+</dd>
+</dl>
+<pre><code>[pid 28779] 1130322148.939977 clock_gettime(CLOCK_REALTIME, {1130322148, 939977000}) = 0
+[pid 28772] 1130322148.438139 select(4, [3], NULL, NULL, NULL) = 1 (in [3])</code></pre>
+<p><em>set</em> can include the following elements:</p>
+<blockquote>
+<dl>
+<dt><strong>successful</strong></dt>
+<dd><p>Trace system calls that returned without an error code. The <strong>-z</strong> option has the effect of <strong>status</strong>=<strong>successful</strong>.</p>
+</dd>
+</dl>
+<p><strong>failed</strong> Trace system calls that returned with an error code. The <strong>-Z</strong> option has the effect of <strong>status</strong>=<strong>failed</strong>.</p>
+<p><strong>unfinished</strong> Trace system calls that did not return. This might happen, for example, due to an execve call in a neighbour thread.</p>
+<p><strong>unavailable</strong> Trace system calls that returned but strace failed to fetch the error status.</p>
+<p><strong>detached</strong> Trace system calls for which strace detached before the return.</p>
+</blockquote>
+<dl>
+<dt><strong>-P </strong><em>path</em><br />
+<strong>--trace-path</strong>=<strong><em>path</em></strong></dt>
+<dd><p>Trace only system calls accessing <em>path</em>. Multiple <strong>-P</strong> options can be used to specify several paths.</p>
+</dd>
+<dt><strong>-z</strong><br />
+<strong>--successful-only</strong></dt>
+<dd><p>Print only syscalls that returned without an error code.</p>
+</dd>
+<dt><strong>-Z</strong><br />
+<strong>--failed-only</strong></dt>
+<dd><p>Print only syscalls that returned with an error code.</p>
+</dd>
+</dl>
+<h2>Output format</h2>
+<dl>
+<dt><strong>-a </strong><em>column</em><br />
+<strong>--columns</strong>=<strong><em>column</em></strong></dt>
+<dd><p>Align return values in a specific column (default column 40).</p>
+</dd>
+<dt><strong>-e abbrev</strong>=<em>syscall_set</em><br />
+<strong>--abbrev</strong>=<em>syscall_set</em></dt>
+<dd><p>Abbreviate the output from printing each member of large structures. The syntax of the <em>syscall_set</em> specification is the same as in the <strong>-e trace</strong> option. The default is <strong>abbrev</strong>=<strong>all</strong>. The <strong>-v</strong> option has the effect of <strong>abbrev</strong>=<strong>none</strong>.</p>
+</dd>
+<dt><strong>-e verbose</strong>=<em>syscall_set</em><br />
+<strong>--verbose</strong>=<em>syscall_set</em></dt>
+<dd><p>Dereference structures for the specified set of system calls. The syntax of the <em>syscall_set</em> specification is the same as in the <strong>-e trace</strong> option. The default is <strong>verbose</strong>=<strong>all</strong>.</p>
+</dd>
+<dt><strong>-e raw</strong>=<em>syscall_set</em><br />
+<strong>--raw</strong>=<em>syscall_set</em></dt>
+<dd><p>Print raw, undecoded arguments for the specified set of system calls. The syntax of the <em>syscall_set</em> specification is the same as in the <strong>-e trace</strong> option. This option has the effect of causing all arguments to be printed in hexadecimal. This is mostly useful if you don't trust the decoding or you need to know the actual numeric value of an argument. See also <strong>-X raw</strong> option.</p>
+</dd>
+<dt><strong>-e read</strong>=<em>set</em><br />
+<strong>--read</strong>=<em>set</em></dt>
+<dd><p>Perform a full hexadecimal and ASCII dump of all the data read from file descriptors listed in the specified set. For example, to see all input activity on file descriptors <em>3</em> and <em>5</em> use <strong>-e read</strong>=<em>3</em>,<em>5</em>. Note that this is independent from the normal tracing of the <strong>read</strong>(2) system call which is controlled by the option <strong>-e</strong> <strong>trace</strong>=<strong>read</strong>.</p>
+</dd>
+<dt><strong>-e write</strong>=<em>set</em><br />
+<strong>--write</strong>=<em>set</em></dt>
+<dd><p>Perform a full hexadecimal and ASCII dump of all the data written to file descriptors listed in the specified set. For example, to see all output activity on file descriptors <em>3</em> and <em>5</em> use <strong>-e write</strong>=<em>3</em>,<em>5</em>. Note that this is independent from the normal tracing of the <strong>write</strong>(2) system call which is controlled by the option <strong>-e</strong> <strong>trace</strong>=<strong>write</strong>.</p>
+</dd>
+<dt><strong>-e quiet</strong>=<em>set</em><br />
+<strong>--quiet</strong>=<em>set</em><br />
+<strong>--silent</strong>=<em>set</em><br />
+<strong>--silence</strong>=<em>set</em></dt>
+<dd><p>Suppress various information messages. The default is <strong>quiet</strong>=<strong>none</strong>. <em>set</em> can include the following elements:</p>
+<dl>
+<dt><strong>attach</strong></dt>
+<dd><p>Suppress messages about attaching and detaching ("<strong>[ Process NNNN attached ]</strong>", "<strong>[ Process NNNN detached ]</strong>").</p>
+</dd>
+</dl>
+<p><strong>exit</strong> Suppress messages about process exits ("<strong>+++ exited with SSS +++</strong>").</p>
+<p><strong>path-resolution</strong> Suppress messages about resolution of paths provided via the <strong>-P</strong> option ("<strong>Requested path "..." resolved into "..."</strong>").</p>
+<p><strong>personality</strong> Suppress messages about process personality changes ("<strong>[ Process PID=NNNN runs in PPP mode. ]</strong>").</p>
+<p><strong>thread-execve</strong></p>
+<p><strong>superseded</strong> Suppress messages about process being superseded by <strong>execve</strong>(2) in another thread ("<strong>+++ superseded by execve in pid NNNN +++</strong>").</p>
+</dd>
+<dt><strong>-e decode-fds</strong>=<em>set</em><br />
+<strong>--decode-fds</strong>=<em>set</em></dt>
+<dd><p>Decode various information associated with file descriptors. The default is <strong>decode-fds</strong>=<strong>none</strong>. <em>set</em> can include the following elements:</p>
+<dl>
+<dt><strong>path</strong></dt>
+<dd><p>Print file paths.</p>
+</dd>
+</dl>
+<p><strong>socket</strong> Print socket protocol-specific information,</p>
+<p><strong>dev</strong> Print character/block device numbers.</p>
+<p><strong>pidfd</strong> Print PIDs associated with pidfd file descriptors.</p>
+</dd>
+<dt><strong>-e kvm</strong>=<strong>vcpu</strong><br />
+<strong>--kvm</strong>=<strong>vcpu</strong></dt>
+<dd><p>Print the exit reason of kvm vcpu. Requires Linux kernel version 4.16.0 or higher.</p>
+</dd>
+<dt><strong>-i</strong><br />
+<strong>--instruction-pointer</strong></dt>
+<dd><p>Print the instruction pointer at the time of the system call.</p>
+</dd>
+<dt><strong>-n</strong><br />
+<strong>--syscall-number</strong></dt>
+<dd><p>Print the syscall number.</p>
+</dd>
+<dt><strong>-o </strong><em>filename</em><br />
+<strong>--output</strong>=<strong><em>filename</em></strong></dt>
+<dd><p>Write the trace output to the file <em>filename</em> rather than to stderr. <em>filename</em>.<em>pid</em> form is used if <strong>-ff</strong> option is supplied. If the argument begins with '|' or '!', the rest of the argument is treated as a command and all output is piped to it. This is convenient for piping the debugging output to a program without affecting the redirections of executed programs. The latter is not compatible with <strong>-ff</strong> option currently.</p>
+</dd>
+<dt><strong>-A</strong><br />
+<strong>--output-append-mode</strong></dt>
+<dd><p>Open the file provided in the <strong>-o</strong> option in append mode.</p>
+</dd>
+<dt><strong>-q</strong><br />
+<strong>--quiet</strong><br />
+<strong>--quiet</strong>=<strong>attach</strong>,<strong>personality</strong></dt>
+<dd><p>Suppress messages about attaching, detaching, and personality changes. This happens automatically when output is redirected to a file and the command is run directly instead of attaching.</p>
+</dd>
+<dt><strong>-qq</strong><br />
+<strong>--quiet</strong>=<strong>attach</strong>,<strong>personality</strong>,<strong>exit</strong></dt>
+<dd><p>Suppress messages attaching, detaching, personality changes, and about process exit status.</p>
+</dd>
+<dt><strong>-qqq</strong><br />
+<strong>--quiet</strong>=<strong>all</strong></dt>
+<dd><p>Suppress all suppressible messages (please refer to the <strong>-e quiet</strong> option description for the full list of suppressible messages).</p>
+</dd>
+<dt><strong>-r</strong><br />
+<strong>--relative-timestamps</strong>[=<strong><em>precision</em></strong>]</dt>
+<dd><p>Print a relative timestamp upon entry to each system call. This records the time difference between the beginning of successive system calls. <em>precision</em> can be one of <strong>s</strong> (for seconds), <strong>ms</strong> (milliseconds), <strong>us</strong> (microseconds), or <strong>ns</strong> (nanoseconds), and allows setting the precision of time value being printed. Default is <strong>us</strong> (microseconds). Note that since <strong>-r</strong> option uses the monotonic clock time for measuring time difference and not the wall clock time, its measurements can differ from the difference in time reported by the <strong>-t</strong> option.</p>
+</dd>
+<dt><strong>-s </strong><em>strsize</em><br />
+<strong>--string-limit</strong>=<strong><em>strsize</em></strong></dt>
+<dd><p>Specify the maximum string size to print (the default is 32). Note that filenames are not considered strings and are always printed in full.</p>
+</dd>
+<dt><strong>--absolute-timestamps</strong>[=[[<strong>format:</strong>]<strong><em>format</em></strong>],[[<strong>precision:</strong>]<strong><em>precision</em></strong>]]<br />
+<strong>--timestamps</strong>[=[[<strong>format:</strong>]<strong><em>format</em></strong>],[[<strong>precision:</strong>]<strong><em>precision</em></strong>]]</dt>
+<dd><p>Prefix each line of the trace with the wall clock time in the specified <em>format</em> with the specified <em>precision</em>. <em>format</em> can be one of the following:</p>
+<dl>
+<dt><strong>none</strong></dt>
+<dd><p>No time stamp is printed. Can be used to override the previous setting.</p>
+</dd>
+</dl>
+<p><strong>time</strong> Wall clock time (<strong>strftime</strong>(3) format string is <strong>%T</strong>).</p>
+<p><strong>unix</strong> Number of seconds since the epoch (<strong>strftime</strong>(3) format string is <strong>%s</strong>).</p>
+<p><em>precision</em> can be one of <strong>s</strong> (for seconds), <strong>ms</strong> (milliseconds), <strong>us</strong> (microseconds), or <strong>ns</strong> (nanoseconds). Default arguments for the option are <strong>format:time</strong>,<strong>precision:s</strong>.</p>
+</dd>
+<dt><strong>-t</strong><br />
+<strong>--absolute-timestamps</strong></dt>
+<dd><p>Prefix each line of the trace with the wall clock time.</p>
+</dd>
+<dt><strong>-tt</strong><br />
+<strong>--absolute-timestamps</strong>=<strong>precision:us</strong></dt>
+<dd><p>If given twice, the time printed will include the microseconds.</p>
+</dd>
+<dt><strong>-ttt</strong><br />
+<strong>--absolute-timestamps</strong>=<strong>format:unix</strong>,<strong>precision:us</strong></dt>
+<dd><p>If given thrice, the time printed will include the microseconds and the leading portion will be printed as the number of seconds since the epoch.</p>
+</dd>
+<dt><strong>-T</strong><br />
+<strong>--syscall-times</strong>[=<strong><em>precision</em></strong>]</dt>
+<dd><p>Show the time spent in system calls. This records the time difference between the beginning and the end of each system call. <em>precision</em> can be one of <strong>s</strong> (for seconds), <strong>ms</strong> (milliseconds), <strong>us</strong> (microseconds), or <strong>ns</strong> (nanoseconds), and allows setting the precision of time value being printed. Default is <strong>us</strong> (microseconds).</p>
+</dd>
+<dt><strong>-v</strong><br />
+<strong>--no-abbrev</strong></dt>
+<dd><p>Print unabbreviated versions of environment, stat, termios, etc. calls. These structures are very common in calls and so the default behavior displays a reasonable subset of structure members. Use this option to get all of the gory details.</p>
+</dd>
+<dt><strong>-x</strong><br />
+<strong>--strings-in-hex</strong>=<strong><em>non-ascii</em></strong></dt>
+<dd><p>Print all non-ASCII strings in hexadecimal string format.</p>
+</dd>
+<dt><strong>-xx</strong><br />
+<strong>--strings-in-hex</strong><br />
+<strong>--strings-in-hex</strong>=<strong><em>all</em></strong></dt>
+<dd><p>Print all strings in hexadecimal string format.</p>
+</dd>
+<dt><strong>-X </strong><em>format</em><br />
+<strong>--const-print-style</strong>=<strong><em>format</em></strong></dt>
+<dd><p>Set the format for printing of named constants and flags. Supported <em>format</em> values are:</p>
+<dl>
+<dt><strong>raw</strong></dt>
+<dd><p>Raw number output, without decoding.</p>
+</dd>
+</dl>
+<p><strong>abbrev</strong> Output a named constant or a set of flags instead of the raw number if they are found. This is the default <strong>strace</strong> behaviour.</p>
+<p><strong>verbose</strong> Output both the raw value and the decoded string (as a comment).</p>
+</dd>
+<dt><strong>-y</strong><br />
+<strong>--decode-fds</strong><br />
+<strong>--decode-fds</strong>=<strong>path</strong></dt>
+<dd><p>Print paths associated with file descriptor arguments.</p>
+</dd>
+<dt><strong>-yy</strong><br />
+<strong>--decode-fds</strong>=<strong>all</strong></dt>
+<dd><p>Print all available information associated with file descriptors: protocol-specific information associated with socket file descriptors, block/character device number associated with device file descriptors, and PIDs associated with pidfd file descriptors.</p>
+</dd>
+<dt><strong>--pidns-translation</strong></dt>
+<dd><p>If strace and tracee are in different PID namespaces, print PIDs in strace's namespace, too.</p>
+</dd>
+</dl>
+<h2>Statistics</h2>
+<dl>
+<dt><strong>-c</strong><br />
+<strong>--summary-only</strong></dt>
+<dd><p>Count time, calls, and errors for each system call and report a summary on program exit, suppressing the regular output. This attempts to show system time (CPU time spent running in the kernel) independent of wall clock time. If <strong>-c</strong> is used with <strong>-f</strong>, only aggregate totals for all traced processes are kept.</p>
+</dd>
+<dt><strong>-C</strong><br />
+<strong>--summary</strong></dt>
+<dd><p>Like <strong>-c</strong> but also print regular output while processes are running.</p>
+</dd>
+<dt><strong>-O </strong><em>overhead</em><br />
+<strong>--summary-syscall-overhead </strong>=<strong><em>overhead</em></strong></dt>
+<dd><p>Set the overhead for tracing system calls to <em>overhead</em>. This is useful for overriding the default heuristic for guessing how much time is spent in mere measuring when timing system calls using the <strong>-c</strong> option. The accuracy of the heuristic can be gauged by timing a given program run without tracing (using <strong>time</strong>(1)) and comparing the accumulated system call time to the total produced using <strong>-c</strong>.</p>
+<p>The format of <em>overhead</em> specification is described in section <em>Time specification format description</em>.</p>
+</dd>
+<dt><strong>-S </strong><em>sortby</em><br />
+<strong>--summary-sort-by</strong>=<strong><em>sortby</em></strong></dt>
+<dd><p>Sort the output of the histogram printed by the <strong>-c</strong> option by the specified criterion. Legal values are <strong>time</strong> (or <strong>time-percent</strong> or <strong>time-total</strong> or <strong>total-time</strong>), <strong>min-time</strong> (or <strong>shortest</strong> or <strong>time-min</strong>), <strong>max-time</strong> (or <strong>longest</strong> or <strong>time-max</strong>), <strong>avg-time</strong> (or <strong>time-avg</strong>), <strong>calls</strong> (or <strong>count</strong>), <strong>errors</strong> (or <strong>error</strong>), <strong>name</strong> (or <strong>syscall</strong> or <strong>syscall-name</strong>), and <strong>nothing</strong> (or <strong>none</strong>); default is <strong>time</strong>.</p>
+</dd>
+<dt><strong>-U </strong><em>columns</em><br />
+<strong>--summary-columns</strong>=<strong><em>columns</em></strong></dt>
+<dd><p>Configure a set (and order) of columns being shown in the call summary. The <em>columns</em> argument is a comma-separated list with items being one of the following:</p>
+<dl>
+<dt><strong>time-percent</strong> (or <strong>time</strong>)</dt>
+<dd><p>Percentage of cumulative time consumed by a specific system call.</p>
+</dd>
+</dl>
+<p><strong>total-time</strong> (or <strong>time-total</strong>) Total system (or wall clock, if <strong>-w</strong> option is provided) time consumed by a specific system call.</p>
+<p><strong>min-time</strong> (or <strong>shortest</strong> or <strong>time-min</strong>) Minimum observed call duration.</p>
+<p><strong>max-time</strong> (or <strong>longest</strong> or <strong>time-max</strong>) Maximum observed call duration.</p>
+<p><strong>avg-time</strong> (or <strong>time-avg</strong>) Average call duration.</p>
+<p><strong>calls</strong> (or <strong>count</strong>) Call count.</p>
+<p><strong>errors</strong> (or <strong>error</strong>) Error count.</p>
+<p><strong>name</strong> (or <strong>syscall</strong> or <strong>syscall-name</strong>) Syscall name.</p>
+<p>The default value is <strong>time-percent</strong>,<strong>total-time</strong>,<strong>avg-time</strong>,<strong>calls</strong>,<strong>errors</strong>,<strong>name</strong>. If the <strong>name</strong> field is not supplied explicitly, it is added as the last column.</p>
+</dd>
+<dt><strong>-w</strong><br />
+<strong>--summary-wall-clock</strong></dt>
+<dd><p>Summarise the time difference between the beginning and end of each system call. The default is to summarise the system time.</p>
+</dd>
+</dl>
+<h2>Tampering</h2>
+<dl>
+<dt><strong>-e inject</strong>=<em>syscall_set</em>[:<strong>error</strong>=<em>errno</em>|:<strong>retval</strong>=<em>value</em>][:<strong>signal</strong>=<em>sig</em>][:<strong>syscall</strong>=<em>syscall</em>][:<strong>delay_enter</strong>=<em>delay</em>][:<strong>delay_exit</strong>=<em>delay</em>][:<strong>when</strong>=<em>expr</em>]<br />
+<strong>--inject</strong>=<em>syscall_set</em>[:<strong>error</strong>=<em>errno</em>|:<strong>retval</strong>=<em>value</em>][:<strong>signal</strong>=<em>sig</em>][:<strong>syscall</strong>=<em>syscall</em>][:<strong>delay_enter</strong>=<em>delay</em>][:<strong>delay_exit</strong>=<em>delay</em>][:<strong>when</strong>=<em>expr</em>]</dt>
+<dd><p>Perform syscall tampering for the specified set of syscalls. The syntax of the <em>syscall_set</em> specification is the same as in the <strong>-e trace</strong> option.</p>
+<p>At least one of <strong>error</strong>, <strong>retval</strong>, <strong>signal</strong>, <strong>delay_enter</strong>, or <strong>delay_exit</strong> options has to be specified. <strong>error</strong> and <strong>retval</strong> are mutually exclusive.</p>
+<p>If :<strong>error</strong>=<em>errno</em> option is specified, a fault is injected into a syscall invocation: the syscall number is replaced by -1 which corresponds to an invalid syscall (unless a syscall is specified with :<strong>syscall=</strong> option), and the error code is specified using a symbolic <em>errno</em> value like <strong>ENOSYS</strong> or a numeric value within 1..4095 range.</p>
+<p>If :<strong>retval</strong>=<em>value</em> option is specified, success injection is performed: the syscall number is replaced by -1, but a bogus success value is returned to the callee.</p>
+<p>If :<strong>signal</strong>=<em>sig</em> option is specified with either a symbolic value like <strong>SIGSEGV</strong> or a numeric value within 1..<strong>SIGRTMAX</strong> range, that signal is delivered on entering every syscall specified by the <em>set</em>.</p>
+<p>If :<strong>delay_enter</strong>=<em>delay</em> or :<strong>delay_exit</strong>=<em>delay</em> options are specified, delay injection is performed: the tracee is delayed by time period specified by <em>delay</em> on entering or exiting the syscall, respectively. The format of <em>delay</em> specification is described in section <em>Time specification format description</em>.</p>
+<p>If :<strong>signal</strong>=<em>sig</em> option is specified without :<strong>error</strong>=<em>errno</em>, :<strong>retval</strong>=<em>value</em> or :<strong>delay_{enter,exit}</strong>=<em>usecs</em> options, then only a signal <em>sig</em> is delivered without a syscall fault or delay injection. Conversely, :<strong>error</strong>=<em>errno</em> or :<strong>retval</strong>=<em>value</em> option without :<strong>delay_enter</strong>=<em>delay</em>, :<strong>delay_exit</strong>=<em>delay</em> or :<strong>signal</strong>=<em>sig</em> options injects a fault without delivering a signal or injecting a delay, etc.</p>
+<p>If both :<strong>error</strong>=<em>errno</em> or :<strong>retval</strong>=<em>value</em> and :<strong>signal</strong>=<em>sig</em> options are specified, then both a fault or success is injected and a signal is delivered.</p>
+<p>if :<strong>syscall</strong>=<em>syscall</em> option is specified, the corresponding syscall with no side effects is injected instead of -1. Currently, only "pure" (see <strong>-e trace</strong>=<strong>%pure</strong> description) syscalls can be specified there.</p>
+<p>Unless a :<strong>when</strong>=<em>expr</em> subexpression is specified, an injection is being made into every invocation of each syscall from the <em>set</em>.</p>
+<p>The format of the subexpression is:</p>
+<blockquote>
+<p><em>first</em>[<strong>..</strong><em>last</em>][<strong>+</strong>[<em>step</em>]]</p>
+</blockquote>
+<p>Number <em>first</em> stands for the first invocation number in the range, number <em>last</em> stands for the last invocation number in the range, and <em>step</em> stands for the step between two consecutive invocations. The following combinations are useful:</p>
+<dl>
+<dt><em>first</em></dt>
+<dd><p>For every syscall from the <em>set</em>, perform an injection for the syscall invocation number <em>first</em> only.</p>
+</dd>
+</dl>
+<p><em>first</em><strong>..</strong><em>last</em> For every syscall from the <em>set</em>, perform an injection for the syscall invocation number <em>first</em> and all subsequent invocations until the invocation number <em>last</em> (inclusive).</p>
+<p><em>first</em><strong>+</strong> For every syscall from the <em>set</em>, perform injections for the syscall invocation number <em>first</em> and all subsequent invocations.</p>
+<p><em>first</em><strong>..</strong><em>last</em><strong>+</strong> For every syscall from the <em>set</em>, perform injections for the syscall invocation number <em>first</em> and all subsequent invocations until the invocation number <em>last</em> (inclusive).</p>
+<p><em>first</em><strong>+</strong><em>step</em> For every syscall from the <em>set</em>, perform injections for syscall invocations number <em>first</em>, <em>first</em>+<em>step</em>, <em>first</em>+<em>step</em>+<em>step</em>, and so on.</p>
+<p><em>first</em><strong>..</strong><em>last</em><strong>+</strong><em>step</em> Same as the previous, but consider only syscall invocations with numbers up to <em>last</em> (inclusive).</p>
+<p>For example, to fail each third and subsequent chdir syscalls with <strong>ENOENT</strong>, use <strong>-e inject</strong>=<em>chdir</em>:<strong>error</strong>=<em>ENOENT</em>:<strong>when</strong>=<em>3</em><strong>+</strong>.</p>
+<p>The valid range for numbers <em>first</em> and <em>step</em> is 1..65535, and for number <em>last</em> is 1..65534.</p>
+<p>An injection expression can contain only one <strong>error</strong>= or <strong>retval</strong>= specification, and only one <strong>signal</strong>= specification. If an injection expression contains multiple <strong>when</strong>= specifications, the last one takes precedence.</p>
+<p>Accounting of syscalls that are subject to injection is done per syscall and per tracee.</p>
+<p>Specification of syscall injection can be combined with other syscall filtering options, for example, <strong>-P </strong><em>/dev/urandom </em><strong>-e inject</strong>=<em>file</em>:<strong>error</strong>=<em>ENOENT</em>.</p>
+</dd>
+<dt><strong>-e fault</strong>=<em>syscall_set</em>[:<strong>error</strong>=<em>errno</em>][:<strong>when</strong>=<em>expr</em>]<br />
+<strong>--fault</strong>=<em>syscall_set</em>[:<strong>error</strong>=<em>errno</em>][:<strong>when</strong>=<em>expr</em>]</dt>
+<dd><p>Perform syscall fault injection for the specified set of syscalls.</p>
+<p>This is equivalent to more generic <strong>-e inject</strong>= expression with default value of <em>errno</em> option set to <strong>ENOSYS</strong>.</p>
+</dd>
+</dl>
+<h2>Miscellaneous</h2>
+<dl>
+<dt><strong>-d</strong><br />
+<strong>--debug</strong></dt>
+<dd><p>Show some debugging output of <strong>strace</strong> itself on the standard error.</p>
+</dd>
+<dt><strong>-F</strong></dt>
+<dd><p>This option is deprecated. It is retained for backward compatibility only and may be removed in future releases. Usage of multiple instances of <strong>-F</strong> option is still equivalent to a single <strong>-f</strong>, and it is ignored at all if used along with one or more instances of <strong>-f</strong> option.</p>
+</dd>
+<dt><strong>-h</strong><br />
+<strong>--help</strong></dt>
+<dd><p>Print the help summary.</p>
+</dd>
+<dt><strong>--seccomp-bpf</strong></dt>
+<dd><p>Try to enable use of seccomp-bpf (see <strong>seccomp</strong>(2)) to have <strong>ptrace</strong>(2)-stops only when system calls that are being traced occur in the traced processes. This option has no effect unless <strong>-f</strong>/<strong>--follow-forks</strong> is also specified. <strong>--seccomp-bpf</strong> is also not applicable to processes attached using <strong>-p</strong>/<strong>--attach</strong> option. An attempt to enable system calls filtering using seccomp-bpf may fail for various reasons, e.g. there are too many system calls to filter, the seccomp API is not available, or <strong>strace</strong> itself is being traced. In cases when seccomp-bpf filter setup failed, <strong>strace</strong> proceeds as usual and stops traced processes on every system call.</p>
+</dd>
+<dt><strong>-V</strong><br />
+<strong>--version</strong></dt>
+<dd><p>Print the version number of <strong>strace</strong>.</p>
+</dd>
+</dl>
+<h2>Time specification format description</h2>
+<p>Time values can be specified as a decimal floating point number (in a format accepted by <strong>strtod</strong>(3)), optionally followed by one of the following suffices that specify the unit of time: <strong>s</strong> (seconds), <strong>ms</strong> (milliseconds), <strong>us</strong> (microseconds), or <strong>ns</strong> (nanoseconds). If no suffix is specified, the value is interpreted as microseconds.</p>
+<p>The described format is used for <strong>-O</strong>, <strong>-e inject</strong>=<strong>delay_enter</strong>, and <strong>-e inject</strong>=<strong>delay_exit</strong> options.</p>
+<h1>DIAGNOSTICS</h1>
+<p>When <em>command</em> exits, <strong>strace</strong> exits with the same exit status. If <em>command</em> is terminated by a signal, <strong>strace</strong> terminates itself with the same signal, so that <strong>strace</strong> can be used as a wrapper process transparent to the invoking parent process. Note that parent-child relationship (signal stop notifications, <strong>getppid</strong>(2) value, etc) between traced process and its parent are not preserved unless <strong>-D</strong> is used.</p>
+<p>When using <strong>-p</strong> without a <em>command</em>, the exit status of <strong>strace</strong> is zero unless no processes has been attached or there was an unexpected error in doing the tracing.</p>
+<h1>SETUID INSTALLATION</h1>
+<p>If <strong>strace</strong> is installed setuid to root then the invoking user will be able to attach to and trace processes owned by any user. In addition setuid and setgid programs will be executed and traced with the correct effective privileges. Since only users trusted with full root privileges should be allowed to do these things, it only makes sense to install <strong>strace</strong> as setuid to root when the users who can execute it are restricted to those users who have this trust. For example, it makes sense to install a special version of <strong>strace</strong> with mode 'rwsr-xr--', user <strong>root</strong> and group <strong>trace</strong>, where members of the <strong>trace</strong> group are trusted users. If you do use this feature, please remember to install a regular non-setuid version of <strong>strace</strong> for ordinary users to use.</p>
+<h1>MULTIPLE PERSONALITIES SUPPORT</h1>
+<p>On some architectures, <strong>strace</strong> supports decoding of syscalls for processes that use different ABI rather than the one <strong>strace</strong> uses. Specifically, in addition to decoding native ABI, <strong>strace</strong> can decode the following ABIs on the following architectures:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Architecture</td>
+<td style="text-align: left;">ABIs supported</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">x86_64</td>
+<td style="text-align: left;">i386, x32 [1]; i386 [2]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">AArch64</td>
+<td style="text-align: left;">ARM 32-bit EABI</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PowerPC 64-bit [3]</td>
+<td style="text-align: left;">PowerPC 32-bit</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">s390x</td>
+<td style="text-align: left;">s390</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SPARC 64-bit</td>
+<td style="text-align: left;">SPARC 32-bit</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">TILE 64-bit</td>
+<td style="text-align: left;">TILE 32-bit</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<dl>
+<dt>[1]</dt>
+<dd><p>When <strong>strace</strong> is built as an x86_64 application</p>
+</dd>
+</dl>
+<p>[2] When <strong>strace</strong> is built as an x32 application</p>
+<p>[3] Big endian only</p>
+</blockquote>
+<p>This support is optional and relies on ability to generate and parse structure definitions during the build time. Please refer to the output of the <strong>strace -V</strong> command in order to figure out what support is available in your <strong>strace</strong> build ("non-native" refers to an ABI that differs from the ABI <strong>strace</strong> has):</p>
+<dl>
+<dt><strong>m32-mpers</strong></dt>
+<dd><p><strong>strace</strong> can trace and properly decode non-native 32-bit binaries.</p>
+</dd>
+</dl>
+<p><strong>no-m32-mpers</strong> <strong>strace</strong> can trace, but cannot properly decode non-native 32-bit binaries.</p>
+<p><strong>mx32-mpers</strong> <strong>strace</strong> can trace and properly decode non-native 32-on-64-bit binaries.</p>
+<p><strong>no-mx32-mpers</strong> <strong>strace</strong> can trace, but cannot properly decode non-native 32-on-64-bit binaries.</p>
+<p>If the output contains neither <strong>m32-mpers</strong> nor <strong>no-m32-mpers</strong>, then decoding of non-native 32-bit binaries is not implemented at all or not applicable.</p>
+<p>Likewise, if the output contains neither <strong>mx32-mpers</strong> nor <strong>no-mx32-mpers</strong>, then decoding of non-native 32-on-64-bit binaries is not implemented at all or not applicable.</p>
+<h1>NOTES</h1>
+<p>It is a pity that so much tracing clutter is produced by systems employing shared libraries.</p>
+<p>It is instructive to think about system call inputs and outputs as data-flow across the user/kernel boundary. Because user-space and kernel-space are separate and address-protected, it is sometimes possible to make deductive inferences about process behavior using inputs and outputs as propositions.</p>
+<p>In some cases, a system call will differ from the documented behavior or have a different name. For example, the <strong>faccessat</strong>(2) system call does not have <em>flags</em> argument, and the <strong>setrlimit</strong>(2) library function uses <strong>prlimit64</strong>(2) system call on modern (2.6.38+) kernels. These discrepancies are normal but idiosyncratic characteristics of the system call interface and are accounted for by C library wrapper functions.</p>
+<p>Some system calls have different names in different architectures and personalities. In these cases, system call filtering and printing uses the names that match corresponding <strong>__NR_</strong>* kernel macros of the tracee's architecture and personality. There are two exceptions from this general rule: <strong>arm_fadvise64_64</strong>(2) ARM syscall and <strong>xtensa_fadvise64_64</strong>(2) Xtensa syscall are filtered and printed as <strong>fadvise64_64</strong>(2).</p>
+<p>On x32, syscalls that are intended to be used by 64-bit processes and not x32 ones (for example, <strong>readv</strong>(2), that has syscall number 19 on x86_64, with its x32 counterpart has syscall number 515), but called with <strong>__X32_SYSCALL_BIT</strong> flag being set, are designated with <strong>#64</strong> suffix.</p>
+<p>On some platforms a process that is attached to with the <strong>-p</strong> option may observe a spurious <strong>EINTR</strong> return from the current system call that is not restartable. (Ideally, all system calls should be restarted on <strong>strace</strong> attach, making the attach invisible to the traced process, but a few system calls aren't. Arguably, every instance of such behavior is a kernel bug.) This may have an unpredictable effect on the process if the process takes no action to restart the system call.</p>
+<p>As <strong>strace</strong> executes the specified <em>command</em> directly and does not employ a shell for that, scripts without shebang that usually run just fine when invoked by shell fail to execute with <strong>ENOEXEC</strong> error. It is advisable to manually supply a shell as a <em>command</em> with the script as its argument.</p>
+<h1>BUGS</h1>
+<p>Programs that use the <em>setuid</em> bit do not have effective user</p>
+<p>privileges while being traced.</p>
+<p>A traced process runs slowly (but check out the <strong>--seccomp-bpf</strong> option).</p>
+<p>Traced processes which are descended from <em>command</em> may be left running after an interrupt signal (<strong>CTRL-C</strong>).</p>
+<h1>HISTORY</h1>
+<p>The original <strong>strace</strong> was written by Paul Kranenburg for SunOS and was inspired by its <strong>trace</strong> utility. The SunOS version of <strong>strace</strong> was ported to Linux and enhanced by Branko Lankester, who also wrote the Linux kernel support. Even though Paul released <strong>strace</strong> 2.5 in 1992, Branko's work was based on Paul's <strong>strace</strong> 1.5 release from 1991. In 1993, Rick Sladkey merged <strong>strace</strong> 2.5 for SunOS and the second release of <strong>strace</strong> for Linux, added many of the features of <strong>truss</strong>(1) from SVR4, and produced an <strong>strace</strong> that worked on both platforms. In 1994 Rick ported <strong>strace</strong> to SVR4 and Solaris and wrote the automatic configuration support. In 1995 he ported <strong>strace</strong> to Irix and tired of writing about himself in the third person.</p>
+<p>Beginning with 1996, <strong>strace</strong> was maintained by Wichert Akkerman. During his tenure, <strong>strace</strong> development migrated to CVS; ports to FreeBSD and many architectures on Linux (including ARM, IA-64, MIPS, PA-RISC, PowerPC, s390, SPARC) were introduced. In 2002, the burden of <strong>strace</strong> maintainership was transferred to Roland McGrath. Since then, <strong>strace</strong> gained support for several new Linux architectures (AMD64, s390x, SuperH), bi-architecture support for some of them, and received numerous additions and improvements in syscalls decoders on Linux; <strong>strace</strong> development migrated to <strong>git</strong> during that period. Since 2009, <strong>strace</strong> is actively maintained by Dmitry Levin. <strong>strace</strong> gained support for AArch64, ARC, AVR32, Blackfin, Meta, Nios II, OpenRISC 1000, RISC-V, Tile/TileGx, Xtensa architectures since that time. In 2012, unmaintained and apparently broken support for non-Linux operating systems was removed. Also, in 2012 <strong>strace</strong> gained support for path tracing and file descriptor path decoding. In 2014, support for stack traces printing was added. In 2016, syscall fault injection was implemented.</p>
+<p>For the additional information, please refer to the <strong>NEWS</strong> file and <strong>strace</strong> repository commit log.</p>
+<h1>REPORTING BUGS</h1>
+<p>Problems with <strong>strace</strong> should be reported to the</p>
+<p><strong>strace</strong> mailing list</p>
+<h1>SEE ALSO</h1>
+<p><strong>strace-log-merge</strong>(1), <strong>ltrace</strong>(1), <strong>perf-trace</strong>(1), <strong>trace-cmd</strong>(1), <strong>time</strong>(1), <strong>ptrace</strong>(2), <strong>proc</strong>(5)</p>
+<p><strong>strace</strong> Home Page</p>
+<h1>AUTHORS</h1>
+<p>The complete list of <strong>strace</strong> contributors can be found in the <strong>CREDITS</strong> file.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

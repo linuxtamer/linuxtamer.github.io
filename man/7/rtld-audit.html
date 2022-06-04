@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command rtld-audit</title><meta name="description" content="Linux command rtld-audit auditing API for the dynamic linker"><meta name="keywords" content="linux, command, rtld-audit, bsd, auditing API for the dynamic linker"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>rtld-audit - auditing API for the dynamic linker</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;link.h&gt;</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The GNU dynamic linker (run-time linker) provides an auditing API that allows an application to be notified when various dynamic linking events occur. This API is very similar to the auditing interface provided by the Solaris run-time linker. The necessary constants and prototypes are defined by including <em>&lt;link.h&gt;</em>.</p>
+<p>To use this interface, the programmer creates a shared library that implements a standard set of function names. Not all of the functions need to be implemented: in most cases, if the programmer is not interested in a particular class of auditing event, then no implementation needs to be provided for the corresponding auditing function.</p>
+<p>To employ the auditing interface, the environment variable <strong>LD_AUDIT</strong> must be defined to contain a colon-separated list of shared libraries, each of which can implement (parts of) the auditing API. When an auditable event occurs, the corresponding function is invoked in each library, in the order that the libraries are listed.</p>
+<h2>la_version()</h2>
+<pre><code>unsigned int la_version(unsigned int version);</code></pre>
+<p>This is the only function that <em>must</em> be defined by an auditing library: it performs the initial handshake between the dynamic linker and the auditing library. When invoking this function, the dynamic linker passes, in <em>version</em>, the highest version of the auditing interface that the linker supports.</p>
+<p>A typical implementation of this function simply returns the constant <strong>LAV_CURRENT</strong>, which indicates the version of <em>&lt;link.h&gt;</em> that was used to build the audit module. If the dynamic linker does not support this version of the audit interface, it will refuse to activate this audit module. If the function returns zero, the dynamic linker also does not activate this audit module.</p>
+<p>In order to enable backwards compatibility with older dynamic linkers, an audit module can examine the <em>version</em> argument and return an earlier version than <strong>LAV_CURRENT</strong>, assuming the module can adjust its implementation to match the requirements of the previous version of the audit interface. The <strong>la_version</strong> function should not return the value of <em>version</em> without further checks because it could correspond to an interface that does not match the <em>&lt;link.h&gt;</em> definitions used to build the audit module.</p>
+<h2>la_objsearch()</h2>
+<pre><code>char *la_objsearch(const char *name, uintptr_t *cookie,
+ unsigned int flag);</code></pre>
+<p>The dynamic linker invokes this function to inform the auditing library that it is about to search for a shared object. The <em>name</em> argument is the filename or pathname that is to be searched for. <em>cookie</em> identifies the shared object that initiated the search. <em>flag</em> is set to one of the following values:</p>
+<dl>
+<dt><strong>LA_SER_ORIG</strong></dt>
+<dd><p>This is the original name that is being searched for. Typically, this name comes from an ELF <strong>DT_NEEDED</strong> entry, or is the <em>filename</em> argument given to <strong>dlopen</strong>(3).</p>
+</dd>
+<dt><strong>LA_SER_LIBPATH</strong></dt>
+<dd><p><em>name</em> was created using a directory specified in <strong>LD_LIBRARY_PATH</strong>.</p>
+</dd>
+<dt><strong>LA_SER_RUNPATH</strong></dt>
+<dd><p><em>name</em> was created using a directory specified in an ELF <strong>DT_RPATH</strong> or <strong>DT_RUNPATH</strong> list.</p>
+</dd>
+<dt><strong>LA_SER_CONFIG</strong></dt>
+<dd><p><em>name</em> was found via the <strong>ldconfig</strong>(8) cache (<em>/etc/ld.so.cache</em>).</p>
+</dd>
+<dt><strong>LA_SER_DEFAULT</strong></dt>
+<dd><p><em>name</em> was found via a search of one of the default directories.</p>
+</dd>
+<dt><strong>LA_SER_SECURE</strong></dt>
+<dd><p><em>name</em> is specific to a secure object (unused on Linux).</p>
+</dd>
+</dl>
+<p>As its function result, <strong>la_objsearch</strong>() returns the pathname that the dynamic linker should use for further processing. If NULL is returned, then this pathname is ignored for further processing. If this audit library simply intends to monitor search paths, then <em>name</em> should be returned.</p>
+<h2>la_activity()</h2>
+<pre><code>void la_activity( uintptr_t *cookie, unsigned int flag);</code></pre>
+<p>The dynamic linker calls this function to inform the auditing library that link-map activity is occurring. <em>cookie</em> identifies the object at the head of the link map. When the dynamic linker invokes this function, <em>flag</em> is set to one of the following values:</p>
+<dl>
+<dt><strong>LA_ACT_ADD</strong></dt>
+<dd><p>New objects are being added to the link map.</p>
+</dd>
+<dt><strong>LA_ACT_DELETE</strong></dt>
+<dd><p>Objects are being removed from the link map.</p>
+</dd>
+<dt><strong>LA_ACT_CONSISTENT</strong></dt>
+<dd><p>Link-map activity has been completed: the map is once again consistent.</p>
+</dd>
+</dl>
+<h2>la_objopen()</h2>
+<pre><code>unsigned int la_objopen(struct link_map *map, Lmid_t lmid,
+ uintptr_t *cookie);</code></pre>
+<p>The dynamic linker calls this function when a new shared object is loaded. The <em>map</em> argument is a pointer to a link-map structure that describes the object. The <em>lmid</em> field has one of the following values</p>
+<dl>
+<dt><strong>LM_ID_BASE</strong></dt>
+<dd><p>Link map is part of the initial namespace.</p>
+</dd>
+<dt><strong>LM_ID_NEWLM</strong></dt>
+<dd><p>Link map is part of a new namespace requested via <strong>dlmopen</strong>(3).</p>
+</dd>
+</dl>
+<p><em>cookie</em> is a pointer to an identifier for this object. The identifier is provided to later calls to functions in the auditing library in order to identify this object. This identifier is initialized to point to object's link map, but the audit library can change the identifier to some other value that it may prefer to use to identify the object.</p>
+<p>As its return value, <strong>la_objopen</strong>() returns a bit mask created by ORing zero or more of the following constants, which allow the auditing library to select the objects to be monitored by <strong>la_symbind*</strong>():</p>
+<dl>
+<dt><strong>LA_FLG_BINDTO</strong></dt>
+<dd><p>Audit symbol bindings to this object.</p>
+</dd>
+<dt><strong>LA_FLG_BINDFROM</strong></dt>
+<dd><p>Audit symbol bindings from this object.</p>
+</dd>
+</dl>
+<p>A return value of 0 from <strong>la_objopen</strong>() indicates that no symbol bindings should be audited for this object.</p>
+<h2>la_objclose()</h2>
+<pre><code>unsigned int la_objclose(uintptr_t *cookie);</code></pre>
+<p>The dynamic linker invokes this function after any finalization code for the object has been executed, before the object is unloaded. The <em>cookie</em> argument is the identifier obtained from a previous invocation of <strong>la_objopen</strong>().</p>
+<p>In the current implementation, the value returned by <strong>la_objclose</strong>() is ignored.</p>
+<h2>la_preinit()</h2>
+<pre><code>void la_preinit(uintptr_t *cookie);</code></pre>
+<p>The dynamic linker invokes this function after all shared objects have been loaded, before control is passed to the application (i.e., before calling <em>main</em>()). Note that <em>main</em>() may still later dynamically load objects using <strong>dlopen</strong>(3).</p>
+<h2>la_symbind*()</h2>
+<pre><code>uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
+ uintptr_t *refcook, uintptr_t *defcook,
+ unsigned int *flags, const char *symname);
+uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
+ uintptr_t *refcook, uintptr_t *defcook,
+ unsigned int *flags, const char *symname);</code></pre>
+<p>The dynamic linker invokes one of these functions when a symbol binding occurs between two shared objects that have been marked for auditing notification by <strong>la_objopen</strong>(). The <strong>la_symbind32</strong>() function is employed on 32-bit platforms; the <strong>la_symbind64</strong>() function is employed on 64-bit platforms.</p>
+<p>The <em>sym</em> argument is a pointer to a structure that provides information about the symbol being bound. The structure definition is shown in <em>&lt;elf.h&gt;</em>. Among the fields of this structure, <em>st_value</em> indicates the address to which the symbol is bound.</p>
+<p>The <em>ndx</em> argument gives the index of the symbol in the symbol table of the bound shared object.</p>
+<p>The <em>refcook</em> argument identifies the shared object that is making the symbol reference; this is the same identifier that is provided to the <strong>la_objopen</strong>() function that returned <strong>LA_FLG_BINDFROM</strong>. The <em>defcook</em> argument identifies the shared object that defines the referenced symbol; this is the same identifier that is provided to the <strong>la_objopen</strong>() function that returned <strong>LA_FLG_BINDTO</strong>.</p>
+<p>The <em>symname</em> argument points a string containing the name of the symbol.</p>
+<p>The <em>flags</em> argument is a bit mask that both provides information about the symbol and can be used to modify further auditing of this PLT (Procedure Linkage Table) entry. The dynamic linker may supply the following bit values in this argument:</p>
+<dl>
+<dt><strong>LA_SYMB_DLSYM</strong></dt>
+<dd><p>The binding resulted from a call to <strong>dlsym</strong>(3).</p>
+</dd>
+<dt><strong>LA_SYMB_ALTVALUE</strong></dt>
+<dd><p>A previous <strong>la_symbind*</strong>() call returned an alternate value for this symbol.</p>
+</dd>
+</dl>
+<p>By default, if the auditing library implements <strong>la_pltenter</strong>() and <strong>la_pltexit</strong>() functions (see below), then these functions are invoked, after <strong>la_symbind</strong>(), for PLT entries, each time the symbol is referenced. The following flags can be ORed into <em>*flags</em> to change this default behavior:</p>
+<dl>
+<dt><strong>LA_SYMB_NOPLTENTER</strong></dt>
+<dd><p>Don't call <strong>la_pltenter</strong>() for this symbol.</p>
+</dd>
+<dt><strong>LA_SYMB_NOPLTEXIT</strong></dt>
+<dd><p>Don't call <strong>la_pltexit</strong>() for this symbol.</p>
+</dd>
+</dl>
+<p>The return value of <strong>la_symbind32</strong>() and <strong>la_symbind64</strong>() is the address to which control should be passed after the function returns. If the auditing library is simply monitoring symbol bindings, then it should return <em>sym-&gt;st_value</em>. A different value may be returned if the library wishes to direct control to an alternate location.</p>
+<h2>la_pltenter()</h2>
+<p>The precise name and argument types for this function depend on the hardware platform. (The appropriate definition is supplied by <em>&lt;link.h&gt;</em>.) Here is the definition for x86-32:</p>
+<pre><code>Elf32_Addr la_i86_gnu_pltenter(Elf32_Sym *sym, unsigned int ndx,
+ uintptr_t *refcook, uintptr_t *defcook,
+ La_i86_regs *regs, unsigned int *flags,
+ const char *symname, long *framesizep);</code></pre>
+<p>This function is invoked just before a PLT entry is called, between two shared objects that have been marked for binding notification.</p>
+<p>The <em>sym</em>, <em>ndx</em>, <em>refcook</em>, <em>defcook</em>, and <em>symname</em> are as for <strong>la_symbind*</strong>().</p>
+<p>The <em>regs</em> argument points to a structure (defined in <em>&lt;link.h&gt;</em>) containing the values of registers to be used for the call to this PLT entry.</p>
+<p>The <em>flags</em> argument points to a bit mask that conveys information about, and can be used to modify subsequent auditing of, this PLT entry, as for <strong>la_symbind*</strong>().</p>
+<p>The <em>framesizep</em> argument points to a <em>long int</em> buffer that can be used to explicitly set the frame size used for the call to this PLT entry. If different <strong>la_pltenter</strong>() invocations for this symbol return different values, then the maximum returned value is used. The <strong>la_pltexit</strong>() function is called only if this buffer is explicitly set to a suitable value.</p>
+<p>The return value of <strong>la_pltenter</strong>() is as for <strong>la_symbind*</strong>().</p>
+<h2>la_pltexit()</h2>
+<p>The precise name and argument types for this function depend on the hardware platform. (The appropriate definition is supplied by <em>&lt;link.h&gt;</em>.) Here is the definition for x86-32:</p>
+<pre><code>unsigned int la_i86_gnu_pltexit(Elf32_Sym *sym, unsigned int ndx,
+ uintptr_t *refcook, uintptr_t *defcook,
+ const La_i86_regs *inregs, La_i86_retval *outregs,
+ const char *symname);</code></pre>
+<p>This function is called when a PLT entry, made between two shared objects that have been marked for binding notification, returns. The function is called just before control returns to the caller of the PLT entry.</p>
+<p>The <em>sym</em>, <em>ndx</em>, <em>refcook</em>, <em>defcook</em>, and <em>symname</em> are as for <strong>la_symbind*</strong>().</p>
+<p>The <em>inregs</em> argument points to a structure (defined in <em>&lt;link.h&gt;</em>) containing the values of registers used for the call to this PLT entry. The <em>outregs</em> argument points to a structure (defined in <em>&lt;link.h&gt;</em>) containing return values for the call to this PLT entry. These values can be modified by the caller, and the changes will be visible to the caller of the PLT entry.</p>
+<p>In the current GNU implementation, the return value of <strong>la_pltexit</strong>() is ignored.</p>
+<h1>CONFORMING TO</h1>
+<p>This API is nonstandard, but very similar to the Solaris API, described in the Solaris <em>Linker and Libraries Guide</em>, in the chapter <em>Runtime Linker Auditing Interface</em>.</p>
+<h1>NOTES</h1>
+<p>Note the following differences from the Solaris dynamic linker auditing API:</p>
+<ul>
+<li><p>The Solaris <strong>la_objfilter</strong>() interface is not supported by the GNU implementation.</p></li>
+<li><p>The Solaris <strong>la_symbind32</strong>() and <strong>la_pltexit</strong>() functions do not provide a <em>symname</em> argument.</p></li>
+<li><p>The Solaris <strong>la_pltexit</strong>() function does not provide <em>inregs</em> and <em>outregs</em> arguments (but does provide a <em>retval</em> argument with the function return value).</p></li>
+</ul>
+<h1>BUGS</h1>
+<p>In glibc versions up to and include 2.9, specifying more than one audit library in <strong>LD_AUDIT</strong> results in a run-time crash. This is reportedly fixed in glibc 2.10.</p>
+<h1>EXAMPLES</h1>
+<pre><code>#include &lt;link.h&gt;
+#include &lt;stdio.h&gt;
+
+unsigned int
+la_version(unsigned int version)
+{
+    printf(&quot;la_version(): version = %u; LAV_CURRENT = %u\n&quot;,
+            version, LAV_CURRENT);
+
+    return LAV_CURRENT;
+}
+
+char *
+la_objsearch(const char *name, uintptr_t *cookie, unsigned int flag)
+{
+    printf(&quot;la_objsearch(): name = %s; cookie = %p&quot;, name, cookie);
+    printf(&quot;; flag = %s\n&quot;,
+            (flag == LA_SER_ORIG) ?    &quot;LA_SER_ORIG&quot; :
+            (flag == LA_SER_LIBPATH) ? &quot;LA_SER_LIBPATH&quot; :
+            (flag == LA_SER_RUNPATH) ? &quot;LA_SER_RUNPATH&quot; :
+            (flag == LA_SER_DEFAULT) ? &quot;LA_SER_DEFAULT&quot; :
+            (flag == LA_SER_CONFIG) ?  &quot;LA_SER_CONFIG&quot; :
+            (flag == LA_SER_SECURE) ?  &quot;LA_SER_SECURE&quot; :
+            &quot;???&quot;);
+
+    return name;
+}
+
+void
+la_activity (uintptr_t *cookie, unsigned int flag)
+{
+    printf(&quot;la_activity(): cookie = %p; flag = %s\n&quot;, cookie,
+            (flag == LA_ACT_CONSISTENT) ? &quot;LA_ACT_CONSISTENT&quot; :
+            (flag == LA_ACT_ADD) ?        &quot;LA_ACT_ADD&quot; :
+            (flag == LA_ACT_DELETE) ?     &quot;LA_ACT_DELETE&quot; :
+            &quot;???&quot;);
+}
+
+unsigned int
+la_objopen(struct link_map *map, Lmid_t lmid, uintptr_t *cookie)
+{
+    printf(&quot;la_objopen(): loading \&quot;%s\&quot;; lmid = %s; cookie=%p\n&quot;,
+            map-&gt;l_name,
+            (lmid == LM_ID_BASE) ?  &quot;LM_ID_BASE&quot; :
+            (lmid == LM_ID_NEWLM) ? &quot;LM_ID_NEWLM&quot; :
+            &quot;???&quot;,
+            cookie);
+
+    return LA_FLG_BINDTO | LA_FLG_BINDFROM;
+}
+
+unsigned int
+la_objclose (uintptr_t *cookie)
+{
+    printf(&quot;la_objclose(): %p\n&quot;, cookie);
+
+    return 0;
+}
+
+void
+la_preinit(uintptr_t *cookie)
+{
+    printf(&quot;la_preinit(): %p\n&quot;, cookie);
+}
+
+uintptr_t
+la_symbind32(Elf32_Sym *sym, unsigned int ndx, uintptr_t *refcook,
+        uintptr_t *defcook, unsigned int *flags, const char *symname)
+{
+    printf(&quot;la_symbind32(): symname = %s; sym-&gt;st_value = %p\n&quot;,
+            symname, sym-&gt;st_value);
+    printf(&quot;        ndx = %u; flags = %#x&quot;, ndx, *flags);
+    printf(&quot;; refcook = %p; defcook = %p\n&quot;, refcook, defcook);
+
+    return sym-&gt;st_value;
+}
+
+uintptr_t
+la_symbind64(Elf64_Sym *sym, unsigned int ndx, uintptr_t *refcook,
+        uintptr_t *defcook, unsigned int *flags, const char *symname)
+{
+    printf(&quot;la_symbind64(): symname = %s; sym-&gt;st_value = %p\n&quot;,
+            symname, sym-&gt;st_value);
+    printf(&quot;        ndx = %u; flags = %#x&quot;, ndx, *flags);
+    printf(&quot;; refcook = %p; defcook = %p\n&quot;, refcook, defcook);
+
+    return sym-&gt;st_value;
+}
+
+Elf32_Addr
+la_i86_gnu_pltenter(Elf32_Sym *sym, unsigned int ndx,
+        uintptr_t *refcook, uintptr_t *defcook, La_i86_regs *regs,
+        unsigned int *flags, const char *symname, long *framesizep)
+{
+    printf(&quot;la_i86_gnu_pltenter(): %s (%p)\n&quot;, symname, sym-&gt;st_value);
+
+    return sym-&gt;st_value;
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>ldd</strong>(1), <strong>dlopen</strong>(3), <strong>ld.so</strong>(8), <strong>ldconfig</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

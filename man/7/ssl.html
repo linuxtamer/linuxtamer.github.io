@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command ssl</title><meta name="description" content="Linux command ssl OpenSSL SSL/TLS library"><meta name="keywords" content="linux, command, ssl, bsd, OpenSSL SSL/TLS library"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>ssl - OpenSSL SSL/TLS library</p>
+<h1>SYNOPSIS</h1>
+<p>See the individual manual pages for details.</p>
+<h1>DESCRIPTION</h1>
+<p>The OpenSSL <strong>ssl</strong> library implements the Secure Sockets Layer (SSL v2/v3) and Transport Layer Security (TLS v1) protocols. It provides a rich API which is documented here.</p>
+<p>An <strong>SSL_CTX</strong> object is created as a framework to establish TLS/SSL enabled connections (see <strong>SSL_CTX_new</strong> (3)). Various options regarding certificates, algorithms etc. can be set in this object.</p>
+<p>When a network connection has been created, it can be assigned to an <strong>SSL</strong> object. After the <strong>SSL</strong> object has been created using <strong>SSL_new</strong> (3), <strong>SSL_set_fd</strong> (3) or <strong>SSL_set_bio</strong> (3) can be used to associate the network connection with the object.</p>
+<p>When the TLS/SSL handshake is performed using <strong>SSL_accept</strong> (3) or <strong>SSL_connect</strong> (3) respectively. <strong>SSL_read_ex</strong> (3), <strong>SSL_read</strong> (3), <strong>SSL_write_ex</strong> (3) and <strong>SSL_write</strong> (3) are used to read and write data on the TLS/SSL connection. <strong>SSL_shutdown</strong> (3) can be used to shut down the TLS/SSL connection.</p>
+<h1>DATA STRUCTURES</h1>
+<p>Currently the OpenSSL <strong>ssl</strong> library functions deals with the following data structures:</p>
+<ul>
+<li><p>This is a dispatch structure describing the internal <strong>ssl</strong> library methods/functions which implement the various protocol versions (SSLv3 TLSv1, ...). It's needed to create an <strong>SSL_CTX</strong>.</p></li>
+<li><p>This structure holds the algorithm information for a particular cipher which are a core part of the SSL/TLS protocol. The available ciphers are configured on a <strong>SSL_CTX</strong> basis and the actual ones used are then part of the <strong>SSL_SESSION</strong>.</p></li>
+<li><p>This is the global context structure which is created by a server or client once per program life-time and which holds mainly default values for the <strong>SSL</strong> structures which are later created for the connections.</p></li>
+<li><p>This is a structure containing the current TLS/SSL session details for a connection: <strong>SSL_CIPHER</strong>s, client and server certificates, keys, etc.</p></li>
+<li><p>This is the main SSL/TLS structure which is created by a server or client per established connection. This actually is the core structure in the SSL API. At run-time the application usually deals with this structure which has links to mostly all other structures.</p></li>
+</ul>
+<h1>HEADER FILES</h1>
+<p>Currently the OpenSSL <strong>ssl</strong> library provides the following C header files containing the prototypes for the data structures and functions:</p>
+<ul>
+<li><p>This is the common header file for the SSL/TLS API. Include it into your program to make the API of the <strong>ssl</strong> library available. It internally includes both more private SSL headers and headers from the <strong>crypto</strong> library. Whenever you need hard-core details on the internals of the SSL API, look inside this header file.</p></li>
+<li><p>Unused. Present for backwards compatibility only.</p></li>
+<li><p>This is the sub header file dealing with the SSLv3 protocol only. <em>Usually you don't have to include it explicitly because</em> it's already included by ssl.h.</p></li>
+<li><p>This is the sub header file dealing with the TLSv1 protocol only. <em>Usually you don't have to include it explicitly because</em> it's already included by ssl.h.</p></li>
+</ul>
+<h1>API FUNCTIONS</h1>
+<p>Currently the OpenSSL <strong>ssl</strong> library exports 214 API functions. They are documented in the following:</p>
+<h2>Dealing with Protocol Methods</h2>
+<p>Here we document the various API functions which deal with the SSL/TLS protocol methods defined in <strong>SSL_METHOD</strong> structures.</p>
+<ul>
+<li><p>Constructor for the <em>version-flexible</em> SSL_METHOD structure for clients, servers or both. See <strong>SSL_CTX_new</strong> (3) for details.</p></li>
+<li><p>Constructor for the <em>version-flexible</em> SSL_METHOD structure for clients. Must be used to support the TLSv1.3 protocol.</p></li>
+<li><p>Constructor for the <em>version-flexible</em> SSL_METHOD structure for servers. Must be used to support the TLSv1.3 protocol.</p></li>
+<li><p>Constructor for the TLSv1.2 SSL_METHOD structure for clients, servers or both.</p></li>
+<li><p>Constructor for the TLSv1.2 SSL_METHOD structure for clients.</p></li>
+<li><p>Constructor for the TLSv1.2 SSL_METHOD structure for servers.</p></li>
+<li><p>Constructor for the TLSv1.1 SSL_METHOD structure for clients, servers or both.</p></li>
+<li><p>Constructor for the TLSv1.1 SSL_METHOD structure for clients.</p></li>
+<li><p>Constructor for the TLSv1.1 SSL_METHOD structure for servers.</p></li>
+<li><p>Constructor for the TLSv1 SSL_METHOD structure for clients, servers or both.</p></li>
+<li><p>Constructor for the TLSv1 SSL_METHOD structure for clients.</p></li>
+<li><p>Constructor for the TLSv1 SSL_METHOD structure for servers.</p></li>
+<li><p>Constructor for the SSLv3 SSL_METHOD structure for clients, servers or both.</p></li>
+<li><p>Constructor for the SSLv3 SSL_METHOD structure for clients.</p></li>
+<li><p>Constructor for the SSLv3 SSL_METHOD structure for servers.</p></li>
+</ul>
+<h2>Dealing with Ciphers</h2>
+<p>Here we document the various API functions which deal with the SSL/TLS ciphers defined in <strong>SSL_CIPHER</strong> structures.</p>
+<ul>
+<li><p>Write a string to <em>buf</em> (with a maximum size of <em>len</em>) containing a human readable description of <em>cipher</em>. Returns <em>buf</em>.</p></li>
+<li><p>Determine the number of bits in <em>cipher</em>. Because of export crippled ciphers there are two bits: The bits the algorithm supports in general (stored to <em>alg_bits</em>) and the bits which are actually used (the return value).</p></li>
+<li><p>Return the internal name of <em>cipher</em> as a string. These are the various strings defined by the <em>SSL3_TXT_xxx</em> and <em>TLS1_TXT_xxx</em> definitions in the header files.</p></li>
+<li><p>Returns a string like "<code>SSLv3</code> or <code>TLSv1.2</code>" which indicates the SSL/TLS protocol version to which <em>cipher</em> belongs (i.e. where it was defined in the specification the first time).</p></li>
+</ul>
+<h2>Dealing with Protocol Contexts</h2>
+<p>Here we document the various API functions which deal with the SSL/TLS protocol context defined in the <strong>SSL_CTX</strong> structure.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+<p>Use the default paths to locate trusted CA certificates. There is one default directory path and one default file path. Both are set via this call.</p>
+<ul>
+<li><p>Use the default directory path to locate trusted CA certificates.</p></li>
+<li><p>Use the file path to locate trusted CA certificates.</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+<h2>Dealing with Sessions</h2>
+<p>Here we document the various API functions which deal with the SSL/TLS sessions defined in the <strong>SSL_SESSION</strong> structures.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+<h2>Dealing with Connections</h2>
+<p>Here we document the various API functions which deal with the SSL/TLS connection defined in the <strong>SSL</strong> structure.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+<p>Sets the session details for <strong>t</strong> to be the same as in <strong>f</strong>. Returns 1 on success or 0 on failure.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+<li></li>
+</ul>
+<p><strong>SSL_dup()</strong> allows applications to configure an SSL handle for use in multiple SSL connections, and then duplicate it prior to initiating each connection with the duplicated handle. Use of <strong>SSL_dup()</strong> avoids the need to repeat the configuration of the handles for each connection. For <strong>SSL_dup()</strong> to work, the connection MUST be in its initial state and MUST NOT have not yet have started the SSL handshake. For connections that are not in their initial state <strong>SSL_dup()</strong> just increments an internal reference count and returns the <em>same</em> handle. It may be possible to use <strong>SSL_clear</strong> (3) to recycle an SSL handle that is not in its initial state for re-use, but this is best avoided. Instead, save and restore the session, if desired, and construct a fresh handle for each connection.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+<p>Returns the current handshake state.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+<h1>RETURN VALUES</h1>
+<p>See the individual manual pages for details.</p>
+<h1>SEE ALSO</h1>
+<p><strong>openssl</strong> (1), <strong>crypto</strong> (7), <strong>CRYPTO_get_ex_new_index</strong> (3), <strong>SSL_accept</strong> (3), <strong>SSL_clear</strong> (3), <strong>SSL_connect</strong> (3), <strong>SSL_CIPHER_get_name</strong> (3), <strong>SSL_COMP_add_compression_method</strong> (3), <strong>SSL_CTX_add_extra_chain_cert</strong> (3), <strong>SSL_CTX_add_session</strong> (3), <strong>SSL_CTX_ctrl</strong> (3), <strong>SSL_CTX_flush_sessions</strong> (3), <strong>SSL_CTX_get_verify_mode</strong> (3), <strong>SSL_CTX_load_verify_locations</strong> (3) <strong>SSL_CTX_new</strong> (3), <strong>SSL_CTX_sess_number</strong> (3), <strong>SSL_CTX_sess_set_cache_size</strong> (3), <strong>SSL_CTX_sess_set_get_cb</strong> (3), <strong>SSL_CTX_sessions</strong> (3), <strong>SSL_CTX_set_cert_store</strong> (3), <strong>SSL_CTX_set_cert_verify_callback</strong> (3), <strong>SSL_CTX_set_cipher_list</strong> (3), <strong>SSL_CTX_set_client_CA_list</strong> (3), <strong>SSL_CTX_set_client_cert_cb</strong> (3), <strong>SSL_CTX_set_default_passwd_cb</strong> (3), <strong>SSL_CTX_set_generate_session_id</strong> (3), <strong>SSL_CTX_set_info_callback</strong> (3), <strong>SSL_CTX_set_max_cert_list</strong> (3), <strong>SSL_CTX_set_mode</strong> (3), <strong>SSL_CTX_set_msg_callback</strong> (3), <strong>SSL_CTX_set_options</strong> (3), <strong>SSL_CTX_set_quiet_shutdown</strong> (3), <strong>SSL_CTX_set_read_ahead</strong> (3), <strong>SSL_CTX_set_security_level</strong> (3), <strong>SSL_CTX_set_session_cache_mode</strong> (3), <strong>SSL_CTX_set_session_id_context</strong> (3), <strong>SSL_CTX_set_ssl_version</strong> (3), <strong>SSL_CTX_set_timeout</strong> (3), <strong>SSL_CTX_set_tmp_dh_callback</strong> (3), <strong>SSL_CTX_set_verify</strong> (3), <strong>SSL_CTX_use_certificate</strong> (3), <strong>SSL_alert_type_string</strong> (3), <strong>SSL_do_handshake</strong> (3), <strong>SSL_enable_ct</strong> (3), <strong>SSL_get_SSL_CTX</strong> (3), <strong>SSL_get_ciphers</strong> (3), <strong>SSL_get_client_CA_list</strong> (3), <strong>SSL_get_default_timeout</strong> (3), <strong>SSL_get_error</strong> (3), <strong>SSL_get_ex_data_X509_STORE_CTX_idx</strong> (3), <strong>SSL_get_fd</strong> (3), <strong>SSL_get_peer_cert_chain</strong> (3), <strong>SSL_get_rbio</strong> (3), <strong>SSL_get_session</strong> (3), <strong>SSL_get_verify_result</strong> (3), <strong>SSL_get_version</strong> (3), <strong>SSL_load_client_CA_file</strong> (3), <strong>SSL_new</strong> (3), <strong>SSL_pending</strong> (3), <strong>SSL_read_ex</strong> (3), <strong>SSL_read</strong> (3), <strong>SSL_rstate_string</strong> (3), <strong>SSL_session_reused</strong> (3), <strong>SSL_set_bio</strong> (3), <strong>SSL_set_connect_state</strong> (3), <strong>SSL_set_fd</strong> (3), <strong>SSL_set_session</strong> (3), <strong>SSL_set_shutdown</strong> (3), <strong>SSL_shutdown</strong> (3), <strong>SSL_state_string</strong> (3), <strong>SSL_want</strong> (3), <strong>SSL_write_ex</strong> (3), <strong>SSL_write</strong> (3), <strong>SSL_SESSION_free</strong> (3), <strong>SSL_SESSION_get_time</strong> (3), <strong>d2i_SSL_SESSION</strong> (3), <strong>SSL_CTX_set_psk_client_callback</strong> (3), <strong>SSL_CTX_use_psk_identity_hint</strong> (3), <strong>SSL_get_psk_identity</strong> (3), <strong>DTLSv1_listen</strong> (3)</p>
+<h1>HISTORY</h1>
+<p><strong>SSLv2_client_method</strong>, <strong>SSLv2_server_method</strong> and <strong>SSLv2_method</strong> were removed in OpenSSL 1.1.0.</p>
+<p>The return type of <strong>SSL_copy_session_id</strong> was changed from void to int in OpenSSL 1.1.0.</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright 2000-2018 The OpenSSL Project Authors. All Rights Reserved.</p>
+<p>Licensed under the OpenSSL license (the License). You may not use this file except in compliance with the License. You can obtain a copy in the file LICENSE in the source distribution or at &lt;https://www.openssl.org/source/license.html&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

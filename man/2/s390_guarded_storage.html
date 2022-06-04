@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command s390_guarded_storage</title><meta name="description" content="Linux command s390_guarded_storage operations with z/Architecture guarded storage facility"><meta name="keywords" content="linux, command, s390_guarded_storage, bsd, operations with z/Architecture guarded storage facility"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>s390_guarded_storage - operations with z/Architecture guarded storage facility</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;asm/guarded_storage.h&gt;
+
+int s390_guarded_storage(int command, struct gs_cb *gs_cb);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>s390_guarded_storage</strong>() system call enables the use of the Guarded Storage Facility (a z/Architecture-specific feature) for user-space processes.</p>
+<p>The guarded storage facility is a hardware feature that allows marking up to 64 memory regions (as of z14) as guarded; reading a pointer with a newly introduced "Load Guarded" (LGG) or "Load Logical and Shift Guarded" (LLGFSG) instructions will cause a range check on the loaded value and invoke a (previously set up) user-space handler if one of the guarded regions is affected.</p>
+<p>The <em>command</em> argument indicates which function to perform. The following commands are supported:</p>
+<dl>
+<dt><strong>GS_ENABLE</strong></dt>
+<dd><p>Enable the guarded storage facility for the calling task. The initial content of the guarded storage control block will be all zeros. After enablement, user-space code can use the "Load Guarded Storage Controls" (LGSC) instruction (or the <strong>load_gs_cb</strong>() function wrapper provided in the <em>asm/guarded_storage.h</em> header) to load an arbitrary control block. While a task is enabled, the kernel will save and restore the calling content of the guarded storage registers on context switch.</p>
+</dd>
+<dt><strong>GS_DISABLE</strong></dt>
+<dd><p>Disables the use of the guarded storage facility for the calling task. The kernel will cease to save and restore the content of the guarded storage registers, the task-specific content of these registers is lost.</p>
+</dd>
+<dt><strong>GS_SET_BC_CB</strong></dt>
+<dd><p>Set a broadcast guarded storage control block to the one provided in the <em>gs_cb</em> argument. This is called per thread and associates a specific guarded storage control block with the calling task. This control block will be used in the broadcast command <strong>GS_BROADCAST</strong>.</p>
+</dd>
+<dt><strong>GS_CLEAR_BC_CB</strong></dt>
+<dd><p>Clears the broadcast guarded storage control block. The guarded storage control block will no longer have the association established by the <strong>GS_SET_BC_CB</strong> command.</p>
+</dd>
+<dt><strong>GS_BROADCAST</strong></dt>
+<dd><p>Sends a broadcast to all thread siblings of the calling task. Every sibling that has established a broadcast guarded storage control block will load this control block and will be enabled for guarded storage. The broadcast guarded storage control block is consumed; a second broadcast without a refresh of the stored control block with <strong>GS_SET_BC_CB</strong> will not have any effect.</p>
+</dd>
+</dl>
+<p>The <em>gs_cb</em> argument specifies the address of a guarded storage control block structure and is currently used only by the <strong>GS_SET_BC_CB</strong> command; all other aforementioned commands ignore this argument.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, the return value of <strong>s390_guarded_storage</strong>() is 0.</p>
+<p>On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>command</em> was <strong>GS_SET_BC_CB</strong> and the copying of the guarded storage control block structure pointed by the <em>gs_cb</em> argument has failed.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The value provided in the <em>command</em> argument was not valid.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p><em>command</em> was one of <strong>GS_ENABLE</strong> or <strong>GS_SET_BC_CB</strong>, and the allocation of a new guarded storage control block has failed.</p>
+</dd>
+<dt><strong>EOPNOTSUPP</strong></dt>
+<dd><p>The guarded storage facility is not supported by the hardware.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>This system call is available since Linux 4.12.</p>
+<h1>CONFORMING TO</h1>
+<p>This Linux-specific system call is available only on the s390 architecture.</p>
+<p>The guarded storage facility is available beginning with System z14.</p>
+<h1>NOTES</h1>
+<p>Glibc does not provide a wrapper for this system call, use <strong>syscall</strong>(2) to call it.</p>
+<p>The description of the guarded storage facility along with related instructions and Guarded Storage Control Block and Guarded Storage Event Parameter List structure layouts is available in "z/Architecture Principles of Operations" beginning from the twelfth edition.</p>
+<p>The <em>gs_cb</em> structure has a field <em>gsepla</em> (Guarded Storage Event Parameter List Address), which is a user-space pointer to a Guarded Storage Event Parameter List structure (that contains the address of the aforementioned event handler in the <em>gseha</em> field), and its layout is available as a <strong>gs_epl</strong> structure type definition in the <em>asm/guarded_storage.h</em> header.</p>
+<h1>SEE ALSO</h1>
+<p><strong>syscall</strong>(2)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

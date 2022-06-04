@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command arm_sync_file_range</title><meta name="description" content="Linux command arm_sync_file_range sync a file segment with disk"><meta name="keywords" content="linux, command, arm_sync_file_range, bsd, sync a file segment with disk"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sync_file_range - sync a file segment with disk</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;fcntl.h&gt;
+
+int sync_file_range(int fd, off64_t offset, off64_t nbytes,
+ unsigned int flags);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>sync_file_range</strong>() permits fine control when synchronizing the open file referred to by the file descriptor <em>fd</em> with disk.</p>
+<p><em>offset</em> is the starting byte of the file range to be synchronized. <em>nbytes</em> specifies the length of the range to be synchronized, in bytes; if <em>nbytes</em> is zero, then all bytes from <em>offset</em> through to the end of file are synchronized. Synchronization is in units of the system page size: <em>offset</em> is rounded down to a page boundary; <em>(offset+nbytes-1)</em> is rounded up to a page boundary.</p>
+<p>The <em>flags</em> bit-mask argument can include any of the following values:</p>
+<dl>
+<dt><strong>SYNC_FILE_RANGE_WAIT_BEFORE</strong></dt>
+<dd><p>Wait upon write-out of all pages in the specified range that have already been submitted to the device driver for write-out before performing any write.</p>
+</dd>
+<dt><strong>SYNC_FILE_RANGE_WRITE</strong></dt>
+<dd><p>Initiate write-out of all dirty pages in the specified range which are not presently submitted write-out. Note that even this may block if you attempt to write more than request queue size.</p>
+</dd>
+<dt><strong>SYNC_FILE_RANGE_WAIT_AFTER</strong></dt>
+<dd><p>Wait upon write-out of all pages in the range after performing any write.</p>
+</dd>
+</dl>
+<p>Specifying <em>flags</em> as 0 is permitted, as a no-op.</p>
+<h2>Warning</h2>
+<p>This system call is extremely dangerous and should not be used in portable programs. None of these operations writes out the file's metadata. Therefore, unless the application is strictly performing overwrites of already-instantiated disk blocks, there are no guarantees that the data will be available after a crash. There is no user interface to know if a write is purely an overwrite. On filesystems using copy-on-write semantics (e.g., <em>btrfs</em>) an overwrite of existing allocated blocks is impossible. When writing into preallocated space, many filesystems also require calls into the block allocator, which this system call does not sync out to disk. This system call does not flush disk write caches and thus does not provide any data integrity on systems with volatile disk write caches.</p>
+<h2>Some details</h2>
+<p><strong>SYNC_FILE_RANGE_WAIT_BEFORE</strong> and <strong>SYNC_FILE_RANGE_WAIT_AFTER</strong> will detect any I/O errors or <strong>ENOSPC</strong> conditions and will return these to the caller.</p>
+<p>Useful combinations of the <em>flags</em> bits are:</p>
+<dl>
+<dt><strong>SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE</strong></dt>
+<dd><p>Ensures that all pages in the specified range which were dirty when <strong>sync_file_range</strong>() was called are placed under write-out. This is a start-write-for-data-integrity operation.</p>
+</dd>
+<dt><strong>SYNC_FILE_RANGE_WRITE</strong></dt>
+<dd><p>Start write-out of all dirty pages in the specified range which are not presently under write-out. This is an asynchronous flush-to-disk operation. This is not suitable for data integrity operations.</p>
+</dd>
+<dt><strong>SYNC_FILE_RANGE_WAIT_BEFORE</strong> (or <strong>SYNC_FILE_RANGE_WAIT_AFTER</strong>)</dt>
+<dd><p>Wait for completion of write-out of all pages in the specified range. This can be used after an earlier <strong>SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE</strong> operation to wait for completion of that operation, and obtain its result.</p>
+</dd>
+<dt><strong>SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE | SYNC_FILE_RANGE_WAIT_AFTER</strong></dt>
+<dd><p>This is a write-for-data-integrity operation that will ensure that all pages in the specified range which were dirty when <strong>sync_file_range</strong>() was called are committed to disk.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>sync_file_range</strong>() returns 0; on failure -1 is returned and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not a valid file descriptor.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>flags</em> specifies an invalid bit; or <em>offset</em> or <em>nbytes</em> is invalid.</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>I/O error.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Out of memory.</p>
+</dd>
+<dt><strong>ENOSPC</strong></dt>
+<dd><p>Out of disk space.</p>
+</dd>
+<dt><strong>ESPIPE</strong></dt>
+<dd><p><em>fd</em> refers to something other than a regular file, a block device, or a directory.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>sync_file_range</strong>() appeared on Linux in kernel 2.6.17.</p>
+<h1>CONFORMING TO</h1>
+<p>This system call is Linux-specific, and should be avoided in portable programs.</p>
+<h1>NOTES</h1>
+<h2>sync_file_range2()</h2>
+<p>Some architectures (e.g., PowerPC, ARM) need 64-bit arguments to be aligned in a suitable pair of registers. On such architectures, the call signature of <strong>sync_file_range</strong>() shown in the SYNOPSIS would force a register to be wasted as padding between the <em>fd</em> and <em>offset</em> arguments. (See <strong>syscall</strong>(2) for details.) Therefore, these architectures define a different system call that orders the arguments suitably:</p>
+<pre><code>int sync_file_range2(int fd, unsigned int flags,
+ off64_t offset, off64_t nbytes);</code></pre>
+<p>The behavior of this system call is otherwise exactly the same as <strong>sync_file_range</strong>().</p>
+<p>A system call with this signature first appeared on the ARM architecture in Linux 2.6.20, with the name <strong>arm_sync_file_range</strong>(). It was renamed in Linux 2.6.22, when the analogous system call was added for PowerPC. On architectures where glibc support is provided, glibc transparently wraps <strong>sync_file_range2</strong>() under the name <strong>sync_file_range</strong>().</p>
+<h1>SEE ALSO</h1>
+<p><strong>fdatasync</strong>(2), <strong>fsync</strong>(2), <strong>msync</strong>(2), <strong>sync</strong>(2)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

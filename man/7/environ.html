@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command environ</title><meta name="description" content="Linux command environ user environment"><meta name="keywords" content="linux, command, environ, bsd, user environment"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>environ - user environment</p>
+<h1>SYNOPSIS</h1>
+<pre><code>extern char **environ;</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The variable <em>environ</em> points to an array of pointers to strings called the "environment". The last pointer in this array has the value NULL. (This variable must be declared in the user program, but is declared in the header file <em>&lt;unistd.h&gt;</em> if the <strong>_GNU_SOURCE</strong> feature test macro is defined.) This array of strings is made available to the process by the <strong>exec</strong>(3) call that started the process. When a child process is created via <strong>fork</strong>(2), it inherits a <em>copy</em> of its parent's environment.</p>
+<p>By convention the strings in <em>environ</em> have the form "<em>name</em><strong>=</strong><em>value</em>". Common examples are:</p>
+<dl>
+<dt><strong>USER</strong></dt>
+<dd><p>The name of the logged-in user (used by some BSD-derived programs).</p>
+</dd>
+<dt><strong>LOGNAME</strong></dt>
+<dd><p>The name of the logged-in user (used by some System-V derived programs).</p>
+</dd>
+<dt><strong>HOME</strong></dt>
+<dd><p>A user's login directory, set by <strong>login</strong>(1) from the password file <strong>passwd</strong>(5).</p>
+</dd>
+<dt><strong>LANG</strong></dt>
+<dd><p>The name of a locale to use for locale categories when not overridden by <strong>LC_ALL</strong> or more specific environment variables such as <strong>LC_COLLATE</strong>, <strong>LC_CTYPE</strong>, <strong>LC_MESSAGES</strong>, <strong>LC_MONETARY</strong>, <strong>LC_NUMERIC</strong>, and <strong>LC_TIME</strong> (see <strong>locale</strong>(7) for further details of the <strong>LC_*</strong> environment variables).</p>
+</dd>
+<dt><strong>PATH</strong></dt>
+<dd><p>The sequence of directory prefixes that <strong>sh</strong>(1) and many other programs apply in searching for a file known by an incomplete pathname. The prefixes are separated by '<strong>:</strong>'. (Similarly one has <strong>CDPATH</strong> used by some shells to find the target of a change directory command, <strong>MANPATH</strong> used by <strong>man</strong>(1) to find manual pages, and so on)</p>
+</dd>
+<dt><strong>PWD</strong></dt>
+<dd><p>The current working directory. Set by some shells.</p>
+</dd>
+<dt><strong>SHELL</strong></dt>
+<dd><p>The pathname of the user's login shell.</p>
+</dd>
+<dt><strong>TERM</strong></dt>
+<dd><p>The terminal type for which output is to be prepared.</p>
+</dd>
+<dt><strong>PAGER</strong></dt>
+<dd><p>The user's preferred utility to display text files.</p>
+</dd>
+<dt><strong>EDITOR</strong>/<strong>VISUAL</strong></dt>
+<dd><p>The user's preferred utility to edit text files.</p>
+</dd>
+</dl>
+<p>Names may be placed in the shell's environment by the <em>export</em> command in <strong>sh</strong>(1), or by the <em>setenv</em> command if you use <strong>csh</strong>(1).</p>
+<p>The initial environment of the shell is populated in various ways, such as definitions from <em>/etc/environment</em> that are processed by <strong>pam_env</strong>(8) for all users at login time (on systems that employ <strong>pam</strong>(8)). In addition, various shell initialization scripts, such as the system-wide <em>/etc/profile</em> script and per-user initializations script may include commands that add variables to the shell's environment; see the manual page of your preferred shell for details.</p>
+<p>Bourne-style shells support the syntax</p>
+<p>NAME=value command</p>
+<p>to create an environment variable definition only in the scope of the process that executes <em>command</em>. Multiple variable definitions, separated by white space, may precede <em>command</em>.</p>
+<p>Arguments may also be placed in the environment at the point of an <strong>exec</strong>(3). A C program can manipulate its environment using the functions <strong>getenv</strong>(3), <strong>putenv</strong>(3), <strong>setenv</strong>(3), and <strong>unsetenv</strong>(3).</p>
+<p>Note that the behavior of many programs and library routines is influenced by the presence or value of certain environment variables. Examples include the following:</p>
+<ul>
+<li><p>The variables <strong>LANG</strong>, <strong>LANGUAGE</strong>, <strong>NLSPATH</strong>, <strong>LOCPATH</strong>, <strong>LC_ALL</strong>, <strong>LC_MESSAGES</strong>, and so on influence locale handling; see <strong>catopen</strong>(3), <strong>gettext</strong>(3), and <strong>locale</strong>(7).</p></li>
+<li><p><strong>TMPDIR</strong> influences the path prefix of names created by <strong>tempnam</strong>(3) and other routines, and the temporary directory used by <strong>sort</strong>(1) and other programs.</p></li>
+<li><p><strong>LD_LIBRARY_PATH</strong>, <strong>LD_PRELOAD</strong>, and other <strong>LD_*</strong> variables influence the behavior of the dynamic loader/linker.</p></li>
+<li><p><strong>POSIXLY_CORRECT</strong> makes certain programs and library routines follow the prescriptions of POSIX.</p></li>
+<li><p>The behavior of <strong>malloc</strong>(3) is influenced by <strong>MALLOC_*</strong> variables.</p></li>
+<li><p>The variable <strong>HOSTALIASES</strong> gives the name of a file containing aliases to be used with <strong>gethostbyname</strong>(3).</p></li>
+<li><p><strong>TZ</strong> and <strong>TZDIR</strong> give timezone information used by <strong>tzset</strong>(3) and through that by functions like <strong>ctime</strong>(3), <strong>localtime</strong>(3), <strong>mktime</strong>(3), <strong>strftime</strong>(3). See also <strong>tzselect</strong>(8).</p></li>
+<li><p><strong>TERMCAP</strong> gives information on how to address a given terminal (or gives the name of a file containing such information).</p></li>
+<li><p><strong>COLUMNS</strong> and <strong>LINES</strong> tell applications about the window size, possibly overriding the actual size.</p></li>
+<li><p><strong>PRINTER</strong> or <strong>LPDEST</strong> may specify the desired printer to use. See <strong>lpr</strong>(1).</p></li>
+</ul>
+<h1>NOTES</h1>
+<p>The <strong>prctl</strong>(2) <strong>PR_SET_MM_ENV_START</strong> and <strong>PR_SET_MM_ENV_END</strong> operations can be used to control the location of the process's environment.</p>
+<h1>BUGS</h1>
+<p>Clearly there is a security risk here. Many a system command has been tricked into mischief by a user who specified unusual values for <strong>IFS</strong> or <strong>LD_LIBRARY_PATH</strong>.</p>
+<p>There is also the risk of name space pollution. Programs like <em>make</em> and <em>autoconf</em> allow overriding of default utility names from the environment with similarly named variables in all caps. Thus one uses <strong>CC</strong> to select the desired C compiler (and similarly <strong>MAKE</strong>, <strong>AR</strong>, <strong>AS</strong>, <strong>FC</strong>, <strong>LD</strong>, <strong>LEX</strong>, <strong>RM</strong>, <strong>YACC</strong>, etc.). However, in some traditional uses such an environment variable gives options for the program instead of a pathname. Thus, one has <strong>MORE</strong>, <strong>LESS</strong>, and <strong>GZIP</strong>. Such usage is considered mistaken, and to be avoided in new programs. The authors of <em>gzip</em> should consider renaming their option to <strong>GZIP_OPT</strong>.</p>
+<h1>SEE ALSO</h1>
+<p><strong>bash</strong>(1), <strong>csh</strong>(1), <strong>env</strong>(1), <strong>login</strong>(1), <strong>printenv</strong>(1), <strong>sh</strong>(1), <strong>tcsh</strong>(1), <strong>execve</strong>(2), <strong>clearenv</strong>(3), <strong>exec</strong>(3), <strong>getenv</strong>(3), <strong>putenv</strong>(3), <strong>setenv</strong>(3), <strong>unsetenv</strong>(3), <strong>locale</strong>(7), <strong>ld.so</strong>(8), <strong>pam_env</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

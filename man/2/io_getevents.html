@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command io_getevents</title><meta name="description" content="Linux command io_getevents read asynchronous I/O events from the completion queue"><meta name="keywords" content="linux, command, io_getevents, bsd, read asynchronous I/O events from the completion queue"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>io_getevents - read asynchronous I/O events from the completion queue</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;linux/aio_abi.h&gt; /* Defines needed types */
+#include &lt;linux/time.h&gt; /* Defines &#39;struct timespec&#39; */
+
+int io_getevents(aio_context_t ctx_id, long min_nr, long nr,
+ struct io_event *events&quot;,structtimespec*&quot;timeout);</code></pre>
+<p><em>Note</em>: There is no glibc wrapper for this system call; see NOTES.</p>
+<h1>DESCRIPTION</h1>
+<p><em>Note</em>: this page describes the raw Linux system call interface. The wrapper function provided by <em>libaio</em> uses a different type for the <em>ctx_id</em> argument. See NOTES.</p>
+<p>The <strong>io_getevents</strong>() system call attempts to read at least <em>min_nr</em> events and up to <em>nr</em> events from the completion queue of the AIO context specified by <em>ctx_id</em>.</p>
+<p>The <em>timeout</em> argument specifies the amount of time to wait for events, and is specified as a relative timeout in a structure of the following form:</p>
+<pre><code>struct timespec {
+    time_t tv_sec;      /* seconds */
+    long   tv_nsec;     /* nanoseconds [0 .. 999999999] */
+};</code></pre>
+<p>The specified time will be rounded up to the system clock granularity and is guaranteed not to expire early.</p>
+<p>Specifying <em>timeout</em> as NULL means block indefinitely until at least <em>min_nr</em> events have been obtained.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>io_getevents</strong>() returns the number of events read. This may be 0, or a value less than <em>min_nr</em>, if the <em>timeout</em> expired. It may also be a nonzero value less than <em>min_nr</em>, if the call was interrupted by a signal handler.</p>
+<p>For the failure return, see NOTES.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>Either <em>events</em> or <em>timeout</em> is an invalid pointer.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>Interrupted by a signal handler; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>ctx_id</em> is invalid. <em>min_nr</em> is out of range or <em>nr</em> is out of range.</p>
+</dd>
+<dt><strong>ENOSYS</strong></dt>
+<dd><p><strong>io_getevents</strong>() is not implemented on this architecture.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The asynchronous I/O system calls first appeared in Linux 2.5.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>io_getevents</strong>() is Linux-specific and should not be used in programs that are intended to be portable.</p>
+<h1>NOTES</h1>
+<p>Glibc does not provide a wrapper function for this system call. You could invoke it using <strong>syscall</strong>(2). But instead, you probably want to use the <strong>io_getevents</strong>() wrapper function provided by <em>libaio</em>.</p>
+<p>Note that the <em>libaio</em> wrapper function uses a different type (<em>io_context_t</em>) for the <em>ctx_id</em> argument. Note also that the <em>libaio</em> wrapper does not follow the usual C library conventions for indicating errors: on error it returns a negated error number (the negative of one of the values listed in ERRORS). If the system call is invoked via <strong>syscall</strong>(2), then the return value follows the usual conventions for indicating an error: -1, with <em>errno</em> set to a (positive) value that indicates the error.</p>
+<h1>BUGS</h1>
+<p>An invalid <em>ctx_id</em> may cause a segmentation fault instead of generating the error <strong>EINVAL</strong>.</p>
+<h1>SEE ALSO</h1>
+<p><strong>io_cancel</strong>(2), <strong>io_destroy</strong>(2), <strong>io_setup</strong>(2), <strong>io_submit</strong>(2), <strong>aio</strong>(7), <strong>time</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

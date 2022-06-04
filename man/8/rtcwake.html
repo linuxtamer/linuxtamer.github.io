@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command rtcwake</title><meta name="description" content="Linux command rtcwake enter a system sleep state until specified wakeup time"><meta name="keywords" content="linux, command, rtcwake, bsd, enter a system sleep state until specified wakeup time"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>rtcwake - enter a system sleep state until specified wakeup time</p>
+<h1>SYNOPSIS</h1>
+<p><strong>rtcwake</strong> [options] [<strong>-d</strong> <em>device</em>] [<strong>-m</strong> <em>standby_mode</em>] {<strong>-s <em>seconds</em></strong>|<strong>-t <em>time_t</em></strong>}</p>
+<h1>DESCRIPTION</h1>
+<p>This program is used to enter a system sleep state and to automatically wake from it at a specified time.</p>
+<p>This uses cross-platform Linux interfaces to enter a system sleep state, and leave it no later than a specified time. It uses any RTC framework driver that supports standard driver model wakeup flags.</p>
+<p>This is normally used like the old <strong>apmsleep</strong> utility, to wake from a suspend state like ACPI S1 (standby) or S3 (suspend-to-RAM). Most platforms can implement those without analogues of BIOS, APM, or ACPI.</p>
+<p>On some systems, this can also be used like <strong>nvram-wakeup</strong>, waking from states like ACPI S4 (suspend to disk). Not all systems have persistent media that are appropriate for such suspend modes.</p>
+<p>Note that alarm functionality depends on hardware; not every RTC is able to setup an alarm up to 24 hours in the future.</p>
+<p>The suspend setup may be interrupted by active hardware; for example wireless USB input devices that continue to send events for some fraction of a second after the return key is pressed. <strong>rtcwake</strong> tries to avoid this problem and it waits to terminal to settle down before entering a system sleep.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-A</strong>,<strong> --adjfile </strong><em>file</em></dt>
+<dd><p>Specify an alternative path to the adjust file.</p>
+</dd>
+<dt><strong>-a</strong>,<strong> --auto</strong></dt>
+<dd><p>Read the clock mode (whether the hardware clock is set to UTC or local time) from the <em>adjtime file, where</em> <strong>hwclock</strong>(8) stores that information. This is the default.</p>
+</dd>
+<dt><strong>--date</strong> <em>timestamp</em></dt>
+<dd><p>Set the wakeup time to the value of the timestamp. Format of the timestamp can be any of the following:</p>
+</dd>
+</dl>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">YYYYMMDDhhmmss</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">YYYY-MM-DD hh:mm:ss</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">YYYY-MM-DD hh:mm</td>
+<td style="text-align: left;">(seconds will be set to 00)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">YYYY-MM-DD</td>
+<td style="text-align: left;">(time will be set to 00:00:00)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">hh:mm:ss</td>
+<td style="text-align: left;">(date will be set to today)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">hh:mm</td>
+<td style="text-align: left;">(date will be set to today, seconds to 00)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">tomorrow</td>
+<td style="text-align: left;">(time is set to 00:00:00)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">+5min</td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+<dl>
+<dt><strong>-d</strong>,<strong> --device </strong><em>device</em></dt>
+<dd><p>Use the specified <em>device instead of </em><strong>rtc0</strong><em> as realtime clock.</em> This option is only relevant if your system has more than one RTC. You may specify <strong>rtc1</strong><em>, </em><strong>rtc2</strong><em>, ... here.</em></p>
+</dd>
+<dt><strong>-l</strong>,<strong> --local</strong></dt>
+<dd><p>Assume that the hardware clock is set to local time, regardless of the contents of the <em>adjtime file.</em></p>
+</dd>
+<dt><strong>--list-modes</strong></dt>
+<dd><p>List available --mode option arguments.</p>
+</dd>
+<dt><strong>-m</strong>,<strong> --mode </strong><em>mode</em></dt>
+<dd><p>Go into the given standby state. Valid values for <em>mode are:</em></p>
+<dl>
+<dt><strong>standby</strong></dt>
+<dd><p>ACPI state S1. This state offers minimal, though real, power savings, while providing a very low-latency transition back to a working system. This is the default mode.</p>
+</dd>
+<dt><strong>freeze</strong></dt>
+<dd><p>The processes are frozen, all the devices are suspended and all the processors idled. This state is a general state that does not need any platform-specific support, but it saves less power than Suspend-to-RAM, because the system is still in a running state. (Available since Linux 3.9.)</p>
+</dd>
+<dt><strong>mem</strong></dt>
+<dd><p>ACPI state S3 (Suspend-to-RAM). This state offers significant power savings as everything in the system is put into a low-power state, except for memory, which is placed in self-refresh mode to retain its contents.</p>
+</dd>
+<dt><strong>disk</strong></dt>
+<dd><p>ACPI state S4 (Suspend-to-disk). This state offers the greatest power savings, and can be used even in the absence of low-level platform support for power management. This state operates similarly to Suspend-to-RAM, but includes a final step of writing memory contents to disk.</p>
+</dd>
+<dt><strong>off</strong></dt>
+<dd><p>ACPI state S5 (Poweroff). This is done by calling '/sbin/shutdown'. Not officially supported by ACPI, but it usually works.</p>
+</dd>
+<dt><strong>no</strong></dt>
+<dd><p>Don't suspend, only set the RTC wakeup time.</p>
+</dd>
+<dt><strong>on</strong></dt>
+<dd><p>Don't suspend, but read the RTC device until an alarm time appears. This mode is useful for debugging.</p>
+</dd>
+<dt><strong>disable</strong></dt>
+<dd><p>Disable a previously set alarm.</p>
+</dd>
+<dt><strong>show</strong></dt>
+<dd><p>Print alarm information in format: "alarm: off|on &lt;time&gt;". The time is in ctime() output format, e.g., "alarm: on Tue Nov 16 04:48:45 2010".</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>-n</strong>,<strong> --dry-run</strong></dt>
+<dd><p>This option does everything apart from actually setting up the alarm, suspending the system, or waiting for the alarm.</p>
+</dd>
+<dt><strong>-s</strong>,<strong> --seconds </strong><em>seconds</em></dt>
+<dd><p>Set the wakeup time to <em>seconds in the future from now.</em></p>
+</dd>
+<dt><strong>-t</strong>,<strong> --time </strong><em>time_t</em></dt>
+<dd><p>Set the wakeup time to the absolute time <em>time_t. time_t</em> is the time in seconds since 1970-01-01, 00:00 UTC. Use the <strong>date</strong>(1) tool to convert between human-readable time and <em>time_t.</em></p>
+</dd>
+<dt><strong>-u</strong>,<strong> --utc</strong></dt>
+<dd><p>Assume that the hardware clock is set to UTC (Universal Time Coordinated), regardless of the contents of the <em>adjtime file.</em></p>
+</dd>
+<dt><strong>-v</strong>,<strong> --verbose</strong></dt>
+<dd><p>Be verbose.</p>
+</dd>
+<dt><strong>-V</strong>,<strong> --version</strong></dt>
+<dd><p>Display version information and exit.</p>
+</dd>
+<dt><strong>-h</strong>,<strong> --help</strong></dt>
+<dd><p>Display help text and exit.</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>Some PC systems can't currently exit sleep states such as <strong>mem</strong> using only the kernel code accessed by this driver. They need help from userspace code to make the framebuffer work again.</p>
+<h1>FILES</h1>
+<p><em>/etc/adjtime</em></p>
+<h1>HISTORY</h1>
+<p>The program was posted several times on LKML and other lists before appearing in kernel commit message for Linux 2.6 in the GIT commit 87ac84f42a7a580d0dd72ae31d6a5eb4bfe04c6d.</p>
+<h1>AUTHORS</h1>
+<p>The program was written by David Brownell &lt;dbrownell@users.sourceforge.net&gt; and improved by Bernhard Walle &lt;bwalle@suse.de&gt;.</p>
+<h1>COPYRIGHT</h1>
+<p>This is free software. You may redistribute copies of it under the terms of the GNU General Public License &lt;http://www.gnu.org/licenses/gpl.html&gt;. There is NO WARRANTY, to the extent permitted by law.</p>
+<h1>SEE ALSO</h1>
+<p><strong>hwclock</strong>(8), <strong>date</strong>(1)</p>
+<h1>AVAILABILITY</h1>
+<p>The rtcwake command is part of the util-linux package and is available from the <a href="https://www.kernel.org/pub/linux/utils/util-linux/">Linux Kernel Archive</a>.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd.device</title><meta name="description" content="Linux command systemd.device Device unit configuration"><meta name="keywords" content="linux, command, systemd.device, bsd, Device unit configuration"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd.device - Device unit configuration</p>
+<h1>SYNOPSIS</h1>
+<p><em>device</em>.device</p>
+<h1>DESCRIPTION</h1>
+<p>A unit configuration file whose name ends in ".device" encodes information about a device unit as exposed in the sysfs/<strong>udev</strong>(7) device tree.</p>
+<p>This unit type has no specific options. See <strong>systemd.unit</strong>(5) for the common options of all unit configuration files. The common configuration items are configured in the generic [Unit] and [Install] sections. A separate [Device] section does not exist, since no device-specific options may be configured.</p>
+<p>systemd will dynamically create device units for all kernel devices that are marked with the "systemd" udev tag (by default all block and network devices, and a few others). This may be used to define dependencies between devices and other units. To tag a udev device, use "TAG+="systemd"" in the udev rules file, see <strong>udev</strong>(7) for details.</p>
+<p>Device units are named after the /sys/ and /dev/ paths they control. Example: the device /dev/sda5 is exposed in systemd as dev-sda5.device. For details about the escaping logic used to convert a file system path to a unit name see <strong>systemd.unit</strong>(5).</p>
+<p>Device units will be reloaded by systemd whenever the corresponding device generates a "changed" event. Other units can use <em>ReloadPropagatedFrom=</em> to react to that event.</p>
+<h1>AUTOMATIC DEPENDENCIES</h1>
+<h2>Implicit Dependencies</h2>
+<p>Many unit types automatically acquire dependencies on device units of devices they require. For example, .socket unit acquire dependencies on the device units of the network interface specified in <em>BindToDevice=</em>. Similar, swap and mount units acquire dependencies on the units encapsulating their backing block devices.</p>
+<h2>Default Dependencies</h2>
+<p>There are no default dependencies for device units.</p>
+<h1>THE UDEV DATABASE</h1>
+<p>Unit settings of device units may either be configured via unit files, or directly from the udev database. The following udev device properties are understood by the service manager:</p>
+<p><em>SYSTEMD_WANTS=</em>, <em>SYSTEMD_USER_WANTS=</em></p>
+<blockquote>
+<p>Adds dependencies of type <em>Wants=</em> from the device unit to the specified units. <em>SYSTEMD_WANTS=</em> is read by the system service manager, <em>SYSTEMD_USER_WANTS=</em> by user service manager instances. These properties may be used to activate arbitrary units when a specific device becomes available.</p>
+<p>Note that this and the other udev device properties are not taken into account unless the device is tagged with the "systemd" tag in the udev database, because otherwise the device is not exposed as a systemd unit (see above).</p>
+<p>Note that systemd will only act on <em>Wants=</em> dependencies when a device first becomes active. It will not act on them if they are added to devices that are already active. Use <em>SYSTEMD_READY=</em> (see below) to configure when a udev device shall be considered active, and thus when to trigger the dependencies.</p>
+<p>The specified property value should be a space-separated list of valid unit names. If a unit template name is specified (that is, a unit name containing an "@" character indicating a unit name to use for multiple instantiation, but with an empty instance name following the "@"), it will be automatically instantiated by the devices "sysfs" path (that is: the path is escaped and inserted as instance name into the template unit name). This is useful in order to instantiate a specific template unit once for each device that appears and matches specific properties.</p>
+</blockquote>
+<p><em>SYSTEMD_ALIAS=</em></p>
+<blockquote>
+<p>Adds an additional alias name to the device unit. This must be an absolute path that is automatically transformed into a unit name. (See above.)</p>
+</blockquote>
+<p><em>SYSTEMD_READY=</em></p>
+<blockquote>
+<p>If set to 0, systemd will consider this device unplugged even if it shows up in the udev tree. If this property is unset or set to 1, the device will be considered plugged if it is visible in the udev tree.</p>
+<p>This option is useful for devices that initially show up in an uninitialized state in the tree, and for which a "changed" event is generated the moment they are fully set up. Note that <em>SYSTEMD_WANTS=</em> (see above) is not acted on as long as <em>SYSTEMD_READY=0</em> is set for a device.</p>
+</blockquote>
+<p><em>ID_MODEL_FROM_DATABASE=</em>, <em>ID_MODEL=</em></p>
+<blockquote>
+<p>If set, this property is used as description string for the device unit.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemctl</strong>(1), <strong>systemd.unit</strong>(5), <strong>udev</strong>(7), <strong>systemd.directives</strong>(7)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

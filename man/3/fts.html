@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fts</title><meta name="description" content="Linux command fts traverse a file hierarchy"><meta name="keywords" content="linux, command, fts, bsd, traverse a file hierarchy"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>fts, fts_open, fts_read, fts_children, fts_set, fts_close - traverse a file hierarchy</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fts.h&gt;
+
+FTS *fts_open(char * const *path_argv, int options,
+ int (*compar)(const FTSENT **, const FTSENT **));
+
+FTSENT *fts_read(FTS *ftsp);
+
+FTSENT *fts_children(FTS *ftsp, int instr);
+
+int fts_set(FTS *ftsp, FTSENT *f, int instr);
+
+int fts_close(FTS *ftsp);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The fts functions are provided for traversing file hierarchies. A simple overview is that the <strong>fts_open</strong>() function returns a "handle" (of type <em>FTS *</em>) that refers to a file hierarchy "stream". This handle is then supplied to the other fts functions. The function <strong>fts_read</strong>() returns a pointer to a structure describing one of the files in the file hierarchy. The function <strong>fts_children</strong>() returns a pointer to a linked list of structures, each of which describes one of the files contained in a directory in the hierarchy.</p>
+<p>In general, directories are visited two distinguishable times; in preorder (before any of their descendants are visited) and in postorder (after all of their descendants have been visited). Files are visited once. It is possible to walk the hierarchy "logically" (visiting the files that symbolic links point to) or physically (visiting the symbolic links themselves), order the walk of the hierarchy or prune and/or revisit portions of the hierarchy.</p>
+<p>Two structures (and associated types) are defined in the include file <em>&lt;fts.h&gt;</em>. The first type is <em>FTS</em>, the structure that represents the file hierarchy itself. The second type is <em>FTSENT</em>, the structure that represents a file in the file hierarchy. Normally, an <em>FTSENT</em> structure is returned for every file in the file hierarchy. In this manual page, "file" and "FTSENT structure" are generally interchangeable.</p>
+<p>The <em>FTSENT</em> structure contains fields describing a file. The structure contains at least the following fields (there are additional fields that should be considered private to the implementation):</p>
+<pre><code>typedef struct _ftsent {
+    unsigned short  fts_info;     /* flags for FTSENT structure */
+    char           *fts_accpath;  /* access path */
+    char           *fts_path;     /* root path */
+    short           fts_pathlen;  /* strlen(fts_path) +
+                                     strlen(fts_name) */
+    char           *fts_name;     /* filename */
+    short           fts_namelen;  /* strlen(fts_name) */
+    short           fts_level;    /* depth (-1 to N) */
+    int             fts_errno;    /* file errno */
+    long            fts_number;   /* local numeric value */
+    void           *fts_pointer;  /* local address value */
+    struct _ftsent *fts_parent;   /* parent directory */
+    struct _ftsent *fts_link;     /* next file structure */
+    struct _ftsent *fts_cycle;    /* cycle structure */
+    struct stat    *fts_statp;    /* stat(2) information */
+} FTSENT;</code></pre>
+<p>These fields are defined as follows:</p>
+<dl>
+<dt><em>fts_info</em></dt>
+<dd><p>One of the following values describing the returned <em>FTSENT</em> structure and the file it represents. With the exception of directories without errors (<strong>FTS_D</strong>), all of these entries are terminal, that is, they will not be revisited, nor will any of their descendants be visited.</p>
+<dl>
+<dt><strong>FTS_D</strong></dt>
+<dd><p>A directory being visited in preorder.</p>
+</dd>
+<dt><strong>FTS_DC</strong></dt>
+<dd><p>A directory that causes a cycle in the tree. (The <em>fts_cycle</em> field of the <em>FTSENT</em> structure will be filled in as well.)</p>
+</dd>
+<dt><strong>FTS_DEFAULT</strong></dt>
+<dd><p>Any <em>FTSENT</em> structure that represents a file type not explicitly described by one of the other <em>fts_info</em> values.</p>
+</dd>
+<dt><strong>FTS_DNR</strong></dt>
+<dd><p>A directory which cannot be read. This is an error return, and the <em>fts_errno</em> field will be set to indicate what caused the error.</p>
+</dd>
+<dt><strong>FTS_DOT</strong></dt>
+<dd><p>A file named "." or ".." which was not specified as a filename to <strong>fts_open</strong>() (see <strong>FTS_SEEDOT</strong>).</p>
+</dd>
+<dt><strong>FTS_DP</strong></dt>
+<dd><p>A directory being visited in postorder. The contents of the <em>FTSENT</em> structure will be unchanged from when it was returned in preorder, that is, with the <em>fts_info</em> field set to <strong>FTS_D</strong>.</p>
+</dd>
+<dt><strong>FTS_ERR</strong></dt>
+<dd><p>This is an error return, and the <em>fts_errno</em> field will be set to indicate what caused the error.</p>
+</dd>
+<dt><strong>FTS_F</strong></dt>
+<dd><p>A regular file.</p>
+</dd>
+<dt><strong>FTS_NS</strong></dt>
+<dd><p>A file for which no <strong>stat</strong>(2) information was available. The contents of the <em>fts_statp</em> field are undefined. This is an error return, and the <em>fts_errno</em> field will be set to indicate what caused the error.</p>
+</dd>
+<dt><strong>FTS_NSOK</strong></dt>
+<dd><p>A file for which no <strong>stat</strong>(2) information was requested. The contents of the <em>fts_statp</em> field are undefined.</p>
+</dd>
+<dt><strong>FTS_SL</strong></dt>
+<dd><p>A symbolic link.</p>
+</dd>
+<dt><strong>FTS_SLNONE</strong></dt>
+<dd><p>A symbolic link with a nonexistent target. The contents of the <em>fts_statp</em> field reference the file characteristic information for the symbolic link itself.</p>
+</dd>
+</dl>
+</dd>
+<dt><em>fts_accpath</em></dt>
+<dd><p>A path for accessing the file from the current directory.</p>
+</dd>
+<dt><em>fts_path</em></dt>
+<dd><p>The path for the file relative to the root of the traversal. This path contains the path specified to <strong>fts_open</strong>() as a prefix.</p>
+</dd>
+<dt><em>fts_pathlen</em></dt>
+<dd><p>The sum of the lengths of the strings referenced by <em>fts_path</em> and <em>fts_name</em>.</p>
+</dd>
+<dt><em>fts_name</em></dt>
+<dd><p>The name of the file.</p>
+</dd>
+<dt><em>fts_namelen</em></dt>
+<dd><p>The length of the string referenced by <em>fts_name</em>.</p>
+</dd>
+<dt><em>fts_level</em></dt>
+<dd><p>The depth of the traversal, numbered from -1 to N, where this file was found. The <em>FTSENT</em> structure representing the parent of the starting point (or root) of the traversal is numbered -1, and the <em>FTSENT</em> structure for the root itself is numbered 0.</p>
+</dd>
+<dt><em>fts_errno</em></dt>
+<dd><p>If <strong>fts_children</strong>() or <strong>fts_read</strong>() returns an <em>FTSENT</em> structure whose <em>fts_info</em> field is set to <strong>FTS_DNR</strong>, <strong>FTS_ERR</strong>, or <strong>FTS_NS</strong>, the <em>fts_errno</em> field contains the error number (i.e., the <em>errno</em> value) specifying the cause of the error. Otherwise, the contents of the <em>fts_errno</em> field are undefined.</p>
+</dd>
+<dt><em>fts_number</em></dt>
+<dd><p>This field is provided for the use of the application program and is not modified by the fts functions. It is initialized to 0.</p>
+</dd>
+<dt><em>fts_pointer</em></dt>
+<dd><p>This field is provided for the use of the application program and is not modified by the fts functions. It is initialized to NULL.</p>
+</dd>
+<dt><em>fts_parent</em></dt>
+<dd><p>A pointer to the <em>FTSENT</em> structure referencing the file in the hierarchy immediately above the current file, that is, the directory of which this file is a member. A parent structure for the initial entry point is provided as well, however, only the <em>fts_level</em>, <em>fts_number</em>, and <em>fts_pointer</em> fields are guaranteed to be initialized.</p>
+</dd>
+<dt><em>fts_link</em></dt>
+<dd><p>Upon return from the <strong>fts_children</strong>() function, the <em>fts_link</em> field points to the next structure in the NULL-terminated linked list of directory members. Otherwise, the contents of the <em>fts_link</em> field are undefined.</p>
+</dd>
+<dt><em>fts_cycle</em></dt>
+<dd><p>If a directory causes a cycle in the hierarchy (see <strong>FTS_DC</strong>), either because of a hard link between two directories, or a symbolic link pointing to a directory, the <em>fts_cycle</em> field of the structure will point to the <em>FTSENT</em> structure in the hierarchy that references the same file as the current <em>FTSENT</em> structure. Otherwise, the contents of the <em>fts_cycle</em> field are undefined.</p>
+</dd>
+<dt><em>fts_statp</em></dt>
+<dd><p>A pointer to <strong>stat</strong>(2) information for the file.</p>
+</dd>
+</dl>
+<p>A single buffer is used for all of the paths of all of the files in the file hierarchy. Therefore, the <em>fts_path</em> and <em>fts_accpath</em> fields are guaranteed to be null-terminated <em>only</em> for the file most recently returned by <strong>fts_read</strong>(). To use these fields to reference any files represented by other <em>FTSENT</em> structures will require that the path buffer be modified using the information contained in that <em>FTSENT</em> structure's <em>fts_pathlen</em> field. Any such modifications should be undone before further calls to <strong>fts_read</strong>() are attempted. The <em>fts_name</em> field is always null-terminated.</p>
+<h2>fts_open()</h2>
+<p>The <strong>fts_open</strong>() function takes a pointer to an array of character pointers naming one or more paths which make up a logical file hierarchy to be traversed. The array must be terminated by a null pointer.</p>
+<p>There are a number of options, at least one of which (either <strong>FTS_LOGICAL</strong> or <strong>FTS_PHYSICAL</strong>) must be specified. The options are selected by ORing the following values:</p>
+<dl>
+<dt><strong>FTS_COMFOLLOW</strong></dt>
+<dd><p>This option causes any symbolic link specified as a root path to be followed immediately whether or not <strong>FTS_LOGICAL</strong> is also specified.</p>
+</dd>
+<dt><strong>FTS_LOGICAL</strong></dt>
+<dd><p>This option causes the fts routines to return <em>FTSENT</em> structures for the targets of symbolic links instead of the symbolic links themselves. If this option is set, the only symbolic links for which <em>FTSENT</em> structures are returned to the application are those referencing nonexistent files. Either <strong>FTS_LOGICAL</strong> or <strong>FTS_PHYSICAL</strong> <em>must</em> be provided to the <strong>fts_open</strong>() function.</p>
+</dd>
+<dt><strong>FTS_NOCHDIR</strong></dt>
+<dd><p>As a performance optimization, the fts functions change directories as they walk the file hierarchy. This has the side-effect that an application cannot rely on being in any particular directory during the traversal. The <strong>FTS_NOCHDIR</strong> option turns off this optimization, and the fts functions will not change the current directory. Note that applications should not themselves change their current directory and try to access files unless <strong>FTS_NOCHDIR</strong> is specified and absolute pathnames were provided as arguments to <strong>fts_open</strong>().</p>
+</dd>
+<dt><strong>FTS_NOSTAT</strong></dt>
+<dd><p>By default, returned <em>FTSENT</em> structures reference file characteristic information (the <em>statp</em> field) for each file visited. This option relaxes that requirement as a performance optimization, allowing the fts functions to set the <em>fts_info</em> field to <strong>FTS_NSOK</strong> and leave the contents of the <em>statp</em> field undefined.</p>
+</dd>
+<dt><strong>FTS_PHYSICAL</strong></dt>
+<dd><p>This option causes the fts routines to return <em>FTSENT</em> structures for symbolic links themselves instead of the target files they point to. If this option is set, <em>FTSENT</em> structures for all symbolic links in the hierarchy are returned to the application. Either <strong>FTS_LOGICAL</strong> or <strong>FTS_PHYSICAL</strong> <em>must</em> be provided to the <strong>fts_open</strong>() function.</p>
+</dd>
+<dt><strong>FTS_SEEDOT</strong></dt>
+<dd><p>By default, unless they are specified as path arguments to <strong>fts_open</strong>(), any files named "." or ".." encountered in the file hierarchy are ignored. This option causes the fts routines to return <em>FTSENT</em> structures for them.</p>
+</dd>
+<dt><strong>FTS_XDEV</strong></dt>
+<dd><p>This option prevents fts from descending into directories that have a different device number than the file from which the descent began.</p>
+</dd>
+</dl>
+<p>The argument <strong>compar</strong>() specifies a user-defined function which may be used to order the traversal of the hierarchy. It takes two pointers to pointers to <em>FTSENT</em> structures as arguments and should return a negative value, zero, or a positive value to indicate if the file referenced by its first argument comes before, in any order with respect to, or after, the file referenced by its second argument. The <em>fts_accpath</em>, <em>fts_path</em>, and <em>fts_pathlen</em> fields of the <em>FTSENT</em> structures may <em>never</em> be used in this comparison. If the <em>fts_info</em> field is set to <strong>FTS_NS</strong> or <strong>FTS_NSOK</strong>, the <em>fts_statp</em> field may not either. If the <strong>compar</strong>() argument is NULL, the directory traversal order is in the order listed in <em>path_argv</em> for the root paths, and in the order listed in the directory for everything else.</p>
+<h2>fts_read()</h2>
+<p>The <strong>fts_read</strong>() function returns a pointer to an <em>FTSENT</em> structure describing a file in the hierarchy. Directories (that are readable and do not cause cycles) are visited at least twice, once in preorder and once in postorder. All other files are visited at least once. (Hard links between directories that do not cause cycles or symbolic links to symbolic links may cause files to be visited more than once, or directories more than twice.)</p>
+<p>If all the members of the hierarchy have been returned, <strong>fts_read</strong>() returns NULL and sets the external variable <em>errno</em> to 0. If an error unrelated to a file in the hierarchy occurs, <strong>fts_read</strong>() returns NULL and sets <em>errno</em> appropriately. If an error related to a returned file occurs, a pointer to an <em>FTSENT</em> structure is returned, and <em>errno</em> may or may not have been set (see <em>fts_info</em>).</p>
+<p>The <em>FTSENT</em> structures returned by <strong>fts_read</strong>() may be overwritten after a call to <strong>fts_close</strong>() on the same file hierarchy stream, or, after a call to <strong>fts_read</strong>() on the same file hierarchy stream unless they represent a file of type directory, in which case they will not be overwritten until after a call to <strong>fts_read</strong>() after the <em>FTSENT</em> structure has been returned by the function <strong>fts_read</strong>() in postorder.</p>
+<h2>fts_children()</h2>
+<p>The <strong>fts_children</strong>() function returns a pointer to an <em>FTSENT</em> structure describing the first entry in a NULL-terminated linked list of the files in the directory represented by the <em>FTSENT</em> structure most recently returned by <strong>fts_read</strong>(). The list is linked through the <em>fts_link</em> field of the <em>FTSENT</em> structure, and is ordered by the user-specified comparison function, if any. Repeated calls to <strong>fts_children</strong>() will re-create this linked list.</p>
+<p>As a special case, if <strong>fts_read</strong>() has not yet been called for a hierarchy, <strong>fts_children</strong>() will return a pointer to the files in the logical directory specified to <strong>fts_open</strong>(), that is, the arguments specified to <strong>fts_open</strong>(). Otherwise, if the <em>FTSENT</em> structure most recently returned by <strong>fts_read</strong>() is not a directory being visited in preorder, or the directory does not contain any files, <strong>fts_children</strong>() returns NULL and sets <em>errno</em> to zero. If an error occurs, <strong>fts_children</strong>() returns NULL and sets <em>errno</em> appropriately.</p>
+<p>The <em>FTSENT</em> structures returned by <strong>fts_children</strong>() may be overwritten after a call to <strong>fts_children</strong>(), <strong>fts_close</strong>(), or <strong>fts_read</strong>() on the same file hierarchy stream.</p>
+<p>The <em>instr</em> argument is either zero or the following value:</p>
+<dl>
+<dt><strong>FTS_NAMEONLY</strong></dt>
+<dd><p>Only the names of the files are needed. The contents of all the fields in the returned linked list of structures are undefined with the exception of the <em>fts_name</em> and <em>fts_namelen</em> fields.</p>
+</dd>
+</dl>
+<h2>fts_set()</h2>
+<p>The function <strong>fts_set</strong>() allows the user application to determine further processing for the file <em>f</em> of the stream <em>ftsp</em>. The <strong>fts_set</strong>() function returns 0 on success, and -1 if an error occurs.</p>
+<p>The <em>instr</em> argument is either 0 (meaning "do nothing") or one of the following values:</p>
+<dl>
+<dt><strong>FTS_AGAIN</strong></dt>
+<dd><p>Revisit the file; any file type may be revisited. The next call to <strong>fts_read</strong>() will return the referenced file. The <em>fts_stat</em> and <em>fts_info</em> fields of the structure will be reinitialized at that time, but no other fields will have been changed. This option is meaningful only for the most recently returned file from <strong>fts_read</strong>(). Normal use is for postorder directory visits, where it causes the directory to be revisited (in both preorder and postorder) as well as all of its descendants.</p>
+</dd>
+<dt><strong>FTS_FOLLOW</strong></dt>
+<dd><p>The referenced file must be a symbolic link. If the referenced file is the one most recently returned by <strong>fts_read</strong>(), the next call to <strong>fts_read</strong>() returns the file with the <em>fts_info</em> and <em>fts_statp</em> fields reinitialized to reflect the target of the symbolic link instead of the symbolic link itself. If the file is one of those most recently returned by <strong>fts_children</strong>(), the <em>fts_info</em> and <em>fts_statp</em> fields of the structure, when returned by <strong>fts_read</strong>(), will reflect the target of the symbolic link instead of the symbolic link itself. In either case, if the target of the symbolic link does not exist, the fields of the returned structure will be unchanged and the <em>fts_info</em> field will be set to <strong>FTS_SLNONE</strong>.</p>
+<p>If the target of the link is a directory, the preorder return, followed by the return of all of its descendants, followed by a postorder return, is done.</p>
+</dd>
+<dt><strong>FTS_SKIP</strong></dt>
+<dd><p>No descendants of this file are visited. The file may be one of those most recently returned by either <strong>fts_children</strong>() or <strong>fts_read</strong>().</p>
+</dd>
+</dl>
+<h2>fts_close()</h2>
+<p>The <strong>fts_close</strong>() function closes the file hierarchy stream referred to by <em>ftsp</em> and restores the current directory to the directory from which <strong>fts_open</strong>() was called to open <em>ftsp</em>. The <strong>fts_close</strong>() function returns 0 on success, and -1 if an error occurs.</p>
+<h1>ERRORS</h1>
+<p>The function <strong>fts_open</strong>() may fail and set <em>errno</em> for any of the errors specified for <strong>open</strong>(2) and <strong>malloc</strong>(3).</p>
+<p>The function <strong>fts_close</strong>() may fail and set <em>errno</em> for any of the errors specified for <strong>chdir</strong>(2) and <strong>close</strong>(2).</p>
+<p>The functions <strong>fts_read</strong>() and <strong>fts_children</strong>() may fail and set <em>errno</em> for any of the errors specified for <strong>chdir</strong>(2), <strong>malloc</strong>(3), <strong>opendir</strong>(3), <strong>readdir</strong>(3), and <strong>stat</strong>(2).</p>
+<p>In addition, <strong>fts_children</strong>(), <strong>fts_open</strong>(), and <strong>fts_set</strong>() may fail and set <em>errno</em> as follows:</p>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>options</em> or <em>instr</em> was invalid.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>These functions are available in Linux since glibc2.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fts_open</strong>(), <strong>fts_set</strong>(), <strong>fts_close</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>fts_read</strong>(), <strong>fts_children</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>4.4BSD.</p>
+<h1>BUGS</h1>
+<p>In versions of glibc before 2.23, all of the APIs described in this man page are not safe when compiling a program using the LFS APIs (e.g., when compiling with <em>-D_FILE_OFFSET_BITS=64</em>).</p>
+<h1>SEE ALSO</h1>
+<p><strong>find</strong>(1), <strong>chdir</strong>(2), <strong>stat</strong>(2), <strong>ftw</strong>(3), <strong>qsort</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

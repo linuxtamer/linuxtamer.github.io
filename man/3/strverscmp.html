@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command strverscmp</title><meta name="description" content="Linux command strverscmp compare two version strings"><meta name="keywords" content="linux, command, strverscmp, bsd, compare two version strings"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>strverscmp - compare two version strings</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;string.h&gt;
+
+int strverscmp(const char *s1, const char *s2);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>Often one has files <em>jan1</em>, <em>jan2</em>, ..., <em>jan9</em>, <em>jan10</em>, ... and it feels wrong when <strong>ls</strong>(1) orders them <em>jan1</em>, <em>jan10</em>, ..., <em>jan2</em>, ..., <em>jan9</em>. In order to rectify this, GNU introduced the <em>-v</em> option to <strong>ls</strong>(1), which is implemented using <strong>versionsort</strong>(3), which again uses <strong>strverscmp</strong>().</p>
+<p>Thus, the task of <strong>strverscmp</strong>() is to compare two strings and find the "right" order, while <strong>strcmp</strong>(3) finds only the lexicographic order. This function does not use the locale category <strong>LC_COLLATE</strong>, so is meant mostly for situations where the strings are expected to be in ASCII.</p>
+<p>What this function does is the following. If both strings are equal, return 0. Otherwise, find the position between two bytes with the property that before it both strings are equal, while directly after it there is a difference. Find the largest consecutive digit strings containing (or starting at, or ending at) this position. If one or both of these is empty, then return what <strong>strcmp</strong>(3) would have returned (numerical ordering of byte values). Otherwise, compare both digit strings numerically, where digit strings with one or more leading zeros are interpreted as if they have a decimal point in front (so that in particular digit strings with more leading zeros come before digit strings with fewer leading zeros). Thus, the ordering is <em>000</em>, <em>00</em>, <em>01</em>, <em>010</em>, <em>09</em>, <em>0</em>, <em>1</em>, <em>9</em>, <em>10</em>.</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>strverscmp</strong>() function returns an integer less than, equal to, or greater than zero if <em>s1</em> is found, respectively, to be earlier than, equal to, or later than <em>s2</em>.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>strverscmp</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>This function is a GNU extension.</p>
+<h1>EXAMPLES</h1>
+<p>The program below can be used to demonstrate the behavior of <strong>strverscmp</strong>(). It uses <strong>strverscmp</strong>() to compare the two strings given as its command-line arguments. An example of its use is the following:</p>
+<pre><code>$ ./a.out jan1 jan10
+jan1 &lt; jan10</code></pre>
+<h2>Program source</h2>
+<pre><code>#define _GNU_SOURCE
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    int res;
+
+    if (argc != 3) {
+        fprintf(stderr, &quot;Usage: %s &lt;string1&gt; &lt;string2&gt;\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    res = strverscmp(argv[1], argv[2]);
+
+    printf(&quot;%s %s %s\n&quot;, argv[1],
+            (res &lt; 0) ? &quot;&lt;&quot; : (res == 0) ? &quot;==&quot; : &quot;&gt;&quot;, argv[2]);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>rename</strong>(1), <strong>strcasecmp</strong>(3), <strong>strcmp</strong>(3), <strong>strcoll</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

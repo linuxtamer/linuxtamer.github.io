@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command apt-ftparchive</title><meta name="description" content="Linux command apt-ftparchive Utility to generate index files"><meta name="keywords" content="linux, command, apt-ftparchive, bsd, Utility to generate index files"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>apt-ftparchive - Utility to generate index files</p>
+<h1>SYNOPSIS</h1>
+<p><strong>apt-ftparchive</strong> [<strong>-dsq</strong>] [<strong>--md5</strong>] [<strong>--delink</strong>] [<strong>--readonly</strong>] [<strong>--contents</strong>] [<strong>--arch </strong><em>architecture</em>] [<strong>-o=</strong><em>config_string</em>] [<strong>-c=</strong><em>config_file</em>] {packages <em>path</em>... [<em>override-file</em> [<em>pathprefix</em>]] | sources <em>path</em>... [<em>override-file</em> [<em>pathprefix</em>]] | contents <em>path</em> | release <em>path</em> | generate <em>config_file</em> <em>section</em>... | clean <em>config_file</em> | {-v | --version} | {-h | --help}}</p>
+<h1>DESCRIPTION</h1>
+<p><strong>apt-ftparchive</strong> is the command line tool that generates the index files that APT uses to access a distribution source. The index files should be generated on the origin site based on the content of that site.</p>
+<p><strong>apt-ftparchive</strong> is a superset of the <strong>dpkg-scanpackages</strong>(1) program, incorporating its entire functionality via the packages command. It also contains a contents file generator, contents, and an elaborate means to script the generation process for a complete archive.</p>
+<p>Internally <strong>apt-ftparchive</strong> can make use of binary databases to cache the contents of a .deb file and it does not rely on any external programs aside from <strong>gzip</strong>(1). When doing a full generate it automatically performs file-change checks and builds the desired compressed output files.</p>
+<p>Unless the <strong>-h</strong>, or <strong>--help</strong> option is given, one of the commands below must be present.</p>
+<p><strong>packages</strong></p>
+<blockquote>
+<p>The packages command generates a package file from a directory tree. It takes the given directory and recursively searches it for .deb files, emitting a package record to stdout for each. This command is approximately equivalent to <strong>dpkg-scanpackages</strong>(1).</p>
+<p>The option <strong>--db</strong> can be used to specify a binary caching DB.</p>
+</blockquote>
+<p><strong>sources</strong></p>
+<blockquote>
+<p>The sources command generates a source index file from a directory tree. It takes the given directory and recursively searches it for .dsc files, emitting a source record to stdout for each. This command is approximately equivalent to <strong>dpkg-scansources</strong>(1).</p>
+<p>If an override file is specified then a source override file will be looked for with an extension of .src. The --source-override option can be used to change the source override file that will be used.</p>
+</blockquote>
+<p><strong>contents</strong></p>
+<blockquote>
+<p>The contents command generates a contents file from a directory tree. It takes the given directory and recursively searches it for .deb files, and reads the file list from each file. It then sorts and writes to stdout the list of files matched to packages. Directories are not written to the output. If multiple packages own the same file then each package is separated by a comma in the output.</p>
+<p>The option <strong>--db</strong> can be used to specify a binary caching DB.</p>
+</blockquote>
+<p><strong>release</strong></p>
+<blockquote>
+<p>The release command generates a Release file from a directory tree. It recursively searches the given directory for uncompressed and compressed Packages, Sources, Contents, Components and icons files as well as Release, Index and md5sum.txt files by default (APT::FTPArchive::Release::Default-Patterns). Additional filename patterns can be added by listing them in APT::FTPArchive::Release::Patterns. It then writes to stdout a Release file containing (by default) an MD5, SHA1, SHA256 and SHA512 digest for each file.</p>
+<p>Values for the additional metadata fields in the Release file are taken from the corresponding variables under APT::FTPArchive::Release, e.g. APT::FTPArchive::Release::Origin. The supported fields are Origin, Label, Suite, Version, Codename, Date, NotAutomatic, ButAutomaticUpgrades, Acquire-By-Hash, Valid-Until, Signed-By, Architectures, Components and Description.</p>
+</blockquote>
+<p><strong>generate</strong></p>
+<blockquote>
+<p>The generate command is designed to be runnable from a cron script and builds indexes according to the given config file. The config language provides a flexible means of specifying which index files are built from which directories, as well as providing a simple means of maintaining the required settings.</p>
+</blockquote>
+<p><strong>clean</strong></p>
+<blockquote>
+<p>The clean command tidies the databases used by the given configuration file by removing any records that are no longer necessary.</p>
+</blockquote>
+<h1>THE GENERATE CONFIGURATION</h1>
+<p>The generate command uses a configuration file to describe the archives that are going to be generated. It follows the typical ISC configuration format as seen in ISC tools like bind 8 and dhcpd. <strong>apt.conf</strong>(5) contains a description of the syntax. Note that the generate configuration is parsed in sectional manner, but <strong>apt.conf</strong>(5) is parsed in a tree manner. This only effects how the scope tag is handled.</p>
+<p>The generate configuration has four separate sections, each described below.</p>
+<h2>Dir Section</h2>
+<p>The Dir section defines the standard directories needed to locate the files required during the generation process. These directories are prepended certain relative paths defined in later sections to produce a complete an absolute path.</p>
+<p><strong>ArchiveDir</strong></p>
+<blockquote>
+<p>Specifies the root of the FTP archive, in a standard Debian configuration this is the directory that contains the ls-LR and dist nodes.</p>
+</blockquote>
+<p><strong>OverrideDir</strong></p>
+<blockquote>
+<p>Specifies the location of the override files.</p>
+</blockquote>
+<p><strong>CacheDir</strong></p>
+<blockquote>
+<p>Specifies the location of the cache files.</p>
+</blockquote>
+<p><strong>FileListDir</strong></p>
+<blockquote>
+<p>Specifies the location of the file list files, if the FileList setting is used below.</p>
+</blockquote>
+<h2>Default Section</h2>
+<p>The Default section specifies default values, and settings that control the operation of the generator. Other sections may override these defaults with a per-section setting.</p>
+<p><strong>Packages::Compress</strong></p>
+<blockquote>
+<p>Sets the default compression schemes to use for the package index files. It is a string that contains a space separated list of at least one of the compressors configured via the <strong>APT::Compressor</strong> configuration scope. The default for all compression schemes is . gzip.</p>
+</blockquote>
+<p><strong>Packages::Extensions</strong></p>
+<blockquote>
+<p>Sets the default list of file extensions that are package files. This defaults to .deb.</p>
+</blockquote>
+<p><strong>Sources::Compress</strong></p>
+<blockquote>
+<p>This is similar to Packages::Compress except that it controls the compression for the Sources files.</p>
+</blockquote>
+<p><strong>Sources::Extensions</strong></p>
+<blockquote>
+<p>Sets the default list of file extensions that are source files. This defaults to .dsc.</p>
+</blockquote>
+<p><strong>Contents::Compress</strong></p>
+<blockquote>
+<p>This is similar to Packages::Compress except that it controls the compression for the Contents files.</p>
+</blockquote>
+<p><strong>Translation::Compress</strong></p>
+<blockquote>
+<p>This is similar to Packages::Compress except that it controls the compression for the Translation-en master file.</p>
+</blockquote>
+<p><strong>DeLinkLimit</strong></p>
+<blockquote>
+<p>Specifies the number of kilobytes to delink (and replace with hard links) per run. This is used in conjunction with the per-section External-Links setting.</p>
+</blockquote>
+<p><strong>FileMode</strong></p>
+<blockquote>
+<p>Specifies the mode of all created index files. It defaults to 0644. All index files are set to this mode with no regard to the umask.</p>
+</blockquote>
+<p><strong>LongDescription</strong></p>
+<blockquote>
+<p>Specifies whether long descriptions should be included in the Packages file or split out into a master Translation-en file.</p>
+</blockquote>
+<h2>TreeDefault Section</h2>
+<p>Sets defaults specific to Tree sections. All of these variables are substitution variables and have the strings $(DIST), $(SECTION) and $(ARCH) replaced with their respective values.</p>
+<p><strong>MaxContentsChange</strong></p>
+<blockquote>
+<p>Sets the number of kilobytes of contents files that are generated each day. The contents files are round-robined so that over several days they will all be rebuilt.</p>
+</blockquote>
+<p><strong>ContentsAge</strong></p>
+<blockquote>
+<p>Controls the number of days a contents file is allowed to be checked without changing. If this limit is passed the mtime of the contents file is updated. This case can occur if the package file is changed in such a way that does not result in a new contents file [override edit for instance]. A hold off is allowed in hopes that new .debs will be installed, requiring a new file anyhow. The default is 10, the units are in days.</p>
+</blockquote>
+<p><strong>Directory</strong></p>
+<blockquote>
+<p>Sets the top of the .deb directory tree. Defaults to $(DIST)/$(SECTION)/binary-$(ARCH)/</p>
+</blockquote>
+<p><strong>SrcDirectory</strong></p>
+<blockquote>
+<p>Sets the top of the source package directory tree. Defaults to $(DIST)/$(SECTION)/source/</p>
+</blockquote>
+<p><strong>Packages</strong></p>
+<blockquote>
+<p>Sets the output Packages file. Defaults to $(DIST)/$(SECTION)/binary-$(ARCH)/Packages</p>
+</blockquote>
+<p><strong>Sources</strong></p>
+<blockquote>
+<p>Sets the output Sources file. Defaults to $(DIST)/$(SECTION)/source/Sources</p>
+</blockquote>
+<p><strong>Translation</strong></p>
+<blockquote>
+<p>Sets the output Translation-en master file with the long descriptions if they should be not included in the Packages file. Defaults to $(DIST)/$(SECTION)/i18n/Translation-en</p>
+</blockquote>
+<p><strong>InternalPrefix</strong></p>
+<blockquote>
+<p>Sets the path prefix that causes a symlink to be considered an internal link instead of an external link. Defaults to $(DIST)/$(SECTION)/</p>
+</blockquote>
+<p><strong>Contents</strong></p>
+<blockquote>
+<p>Sets the output Contents file. Defaults to $(DIST)/$(SECTION)/Contents-$(ARCH). If this setting causes multiple Packages files to map onto a single Contents file (as is the default) then <strong>apt-ftparchive</strong> will integrate those package files together automatically.</p>
+</blockquote>
+<p><strong>Contents::Header</strong></p>
+<blockquote>
+<p>Sets header file to prepend to the contents output.</p>
+</blockquote>
+<p><strong>BinCacheDB</strong></p>
+<blockquote>
+<p>Sets the binary cache database to use for this section. Multiple sections can share the same database.</p>
+</blockquote>
+<p><strong>FileList</strong></p>
+<blockquote>
+<p>Specifies that instead of walking the directory tree, <strong>apt-ftparchive</strong> should read the list of files from the given file. Relative files names are prefixed with the archive directory.</p>
+</blockquote>
+<p><strong>SourceFileList</strong></p>
+<blockquote>
+<p>Specifies that instead of walking the directory tree, <strong>apt-ftparchive</strong> should read the list of files from the given file. Relative files names are prefixed with the archive directory. This is used when processing source indexes.</p>
+</blockquote>
+<h2>Tree Section</h2>
+<p>The Tree section defines a standard Debian file tree which consists of a base directory, then multiple sections in that base directory and finally multiple Architectures in each section. The exact pathing used is defined by the Directory substitution variable.</p>
+<p>The Tree section takes a scope tag which sets the $(DIST) variable and defines the root of the tree (the path is prefixed by ArchiveDir). Typically this is a setting such as dists/bullseye.</p>
+<p>All of the settings defined in the TreeDefault section can be used in a Tree section as well as three new variables.</p>
+<p>When processing a Tree section <strong>apt-ftparchive</strong> performs an operation similar to:</p>
+<blockquote>
+<pre><code>for i in Sections do 
+   for j in Architectures do
+      Generate for DIST=scope SECTION=i ARCH=j
+     </code></pre>
+</blockquote>
+<p><strong>Sections</strong></p>
+<blockquote>
+<p>This is a space separated list of sections which appear under the distribution; typically this is something like main contrib non-free</p>
+</blockquote>
+<p><strong>Architectures</strong></p>
+<blockquote>
+<p>This is a space separated list of all the architectures that appear under search section. The special architecture source is used to indicate that this tree has a source archive. The architecture all signals that architecture specific files like Packages should not include information about architecture all packages in all files as they will be available in a dedicated file.</p>
+</blockquote>
+<p><strong>LongDescription</strong></p>
+<blockquote>
+<p>Specifies whether long descriptions should be included in the Packages file or split out into a master Translation-en file.</p>
+</blockquote>
+<p><strong>BinOverride</strong></p>
+<blockquote>
+<p>Sets the binary override file. The override file contains section, priority and maintainer address information.</p>
+</blockquote>
+<p><strong>SrcOverride</strong></p>
+<blockquote>
+<p>Sets the source override file. The override file contains section information.</p>
+</blockquote>
+<p><strong>ExtraOverride</strong></p>
+<blockquote>
+<p>Sets the binary extra override file.</p>
+</blockquote>
+<p><strong>SrcExtraOverride</strong></p>
+<blockquote>
+<p>Sets the source extra override file.</p>
+</blockquote>
+<h2>BinDirectory Section</h2>
+<p>The bindirectory section defines a binary directory tree with no special structure. The scope tag specifies the location of the binary directory and the settings are similar to the Tree section with no substitution variables or SectionArchitecture settings.</p>
+<p><strong>Packages</strong></p>
+<blockquote>
+<p>Sets the Packages file output.</p>
+</blockquote>
+<p><strong>Sources</strong></p>
+<blockquote>
+<p>Sets the Sources file output. At least one of Packages or Sources is required.</p>
+</blockquote>
+<p><strong>Contents</strong></p>
+<blockquote>
+<p>Sets the Contents file output (optional).</p>
+</blockquote>
+<p><strong>BinOverride</strong></p>
+<blockquote>
+<p>Sets the binary override file.</p>
+</blockquote>
+<p><strong>SrcOverride</strong></p>
+<blockquote>
+<p>Sets the source override file.</p>
+</blockquote>
+<p><strong>ExtraOverride</strong></p>
+<blockquote>
+<p>Sets the binary extra override file.</p>
+</blockquote>
+<p><strong>SrcExtraOverride</strong></p>
+<blockquote>
+<p>Sets the source extra override file.</p>
+</blockquote>
+<p><strong>BinCacheDB</strong></p>
+<blockquote>
+<p>Sets the cache DB.</p>
+</blockquote>
+<p><strong>PathPrefix</strong></p>
+<blockquote>
+<p>Appends a path to all the output paths.</p>
+</blockquote>
+<p><strong>FileList</strong>, <strong>SourceFileList</strong></p>
+<blockquote>
+<p>Specifies the file list file.</p>
+</blockquote>
+<h1>THE BINARY OVERRIDE FILE</h1>
+<p>The binary override file is fully compatible with <strong>dpkg-scanpackages</strong>(1). It contains four fields separated by spaces. The first field is the package name, the second is the priority to force that package to, the third is the section to force that package to and the final field is the maintainer permutation field.</p>
+<p>The general form of the maintainer field is:</p>
+<blockquote>
+<pre><code>old [// oldn]* =&gt; new</code></pre>
+</blockquote>
+<p>or simply,</p>
+<blockquote>
+<pre><code>new</code></pre>
+</blockquote>
+<p>The first form allows a double-slash separated list of old email addresses to be specified. If any of those are found then new is substituted for the maintainer field. The second form unconditionally substitutes the maintainer field.</p>
+<h1>THE SOURCE OVERRIDE FILE</h1>
+<p>The source override file is fully compatible with <strong>dpkg-scansources</strong>(1). It contains two fields separated by spaces. The first field is the source package name, the second is the section to assign it.</p>
+<h1>THE EXTRA OVERRIDE FILE</h1>
+<p>The extra override file allows any arbitrary tag to be added or replaced in the output. It has three columns, the first is the package, the second is the tag and the remainder of the line is the new value.</p>
+<h1>OPTIONS</h1>
+<p>All command line options may be set using the configuration file, the descriptions indicate the configuration option to set. For boolean options you can override the config file by using something like <strong>-f-</strong>,<strong>--no-f</strong>, <strong>-f=no</strong> or several other variations.</p>
+<p><strong>--md5</strong>, <strong>--sha1</strong>, <strong>--sha256</strong>, <strong>--sha512</strong></p>
+<blockquote>
+<p>Generate the given checksum. These options default to on, when turned off the generated index files will not have the checksum fields where possible. Configuration Items: APT::FTPArchive::<em>Checksum</em> and APT::FTPArchive::<em>Index</em>::<em>Checksum</em> where <em>Index</em> can be Packages, Sources or Release and <em>Checksum</em> can be MD5, SHA1, SHA256 or SHA512.</p>
+</blockquote>
+<p><strong>-d</strong>, <strong>--db</strong></p>
+<blockquote>
+<p>Use a binary caching DB. This has no effect on the generate command. Configuration Item: APT::FTPArchive::DB.</p>
+</blockquote>
+<p><strong>-q</strong>, <strong>--quiet</strong></p>
+<blockquote>
+<p>Quiet; produces output suitable for logging, omitting progress indicators. More qs will produce more quiet up to a maximum of 2. You can also use <strong>-q=#</strong> to set the quiet level, overriding the configuration file. Configuration Item: quiet.</p>
+</blockquote>
+<p><strong>--delink</strong></p>
+<blockquote>
+<p>Perform Delinking. If the External-Links setting is used then this option actually enables delinking of the files. It defaults to on and can be turned off with <strong>--no-delink</strong>. Configuration Item: APT::FTPArchive::DeLinkAct.</p>
+</blockquote>
+<p><strong>--contents</strong></p>
+<blockquote>
+<p>Perform contents generation. When this option is set and package indexes are being generated with a cache DB then the file listing will also be extracted and stored in the DB for later use. When using the generate command this option also allows the creation of any Contents files. The default is on. Configuration Item: APT::FTPArchive::Contents.</p>
+</blockquote>
+<p><strong>-s</strong>, <strong>--source-override</strong></p>
+<blockquote>
+<p>Select the source override file to use with the sources command. Configuration Item: APT::FTPArchive::SourceOverride.</p>
+</blockquote>
+<p><strong>--readonly</strong></p>
+<blockquote>
+<p>Make the caching databases read only. Configuration Item: APT::FTPArchive::ReadOnlyDB.</p>
+</blockquote>
+<p><strong>-a</strong>, <strong>--arch</strong></p>
+<blockquote>
+<p>Accept in the packages and contents commands only package files matching *_arch.deb or *_all.deb instead of all package files in the given path. Configuration Item: APT::FTPArchive::Architecture.</p>
+</blockquote>
+<p><strong>APT::FTPArchive::AlwaysStat</strong></p>
+<blockquote>
+<p><strong>apt-ftparchive</strong>(1) caches as much as possible of metadata in a cachedb. If packages are recompiled and/or republished with the same version again, this will lead to problems as the now outdated cached metadata like size and checksums will be used. With this option enabled this will no longer happen as it will be checked if the file was changed. Note that this option is set to "false" by default as it is not recommend to upload multiple versions/builds of a package with the same version number, so in theory nobody will have these problems and therefore all these extra checks are useless.</p>
+</blockquote>
+<p><strong>APT::FTPArchive::LongDescription</strong></p>
+<blockquote>
+<p>This configuration option defaults to "true" and should only be set to "false" if the Archive generated with <strong>apt-ftparchive</strong>(1) also provides Translation files. Note that the Translation-en master file can only be created in the generate command.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Show a short usage summary.</p>
+</blockquote>
+<p><strong>-v</strong>, <strong>--version</strong></p>
+<blockquote>
+<p>Show the program version.</p>
+</blockquote>
+<p><strong>-c</strong>, <strong>--config-file</strong></p>
+<blockquote>
+<p>Configuration File; Specify a configuration file to use. The program will read the default configuration file and then this configuration file. If configuration settings need to be set before the default configuration files are parsed specify a file with the <strong>APT_CONFIG</strong> environment variable. See <strong>apt.conf</strong>(5) for syntax information.</p>
+</blockquote>
+<p><strong>-o</strong>, <strong>--option</strong></p>
+<blockquote>
+<p>Set a Configuration Option; This will set an arbitrary configuration option. The syntax is <strong>-o Foo::Bar=bar</strong>. <strong>-o</strong> and <strong>--option</strong> can be used multiple times to set different options.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>To create a compressed Packages file for a directory containing binary packages (.deb):</p>
+<blockquote>
+<pre><code>apt-ftparchive packages directory | gzip &gt; Packages.gz</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>apt.conf</strong>(5)</p>
+<h1>DIAGNOSTICS</h1>
+<p><strong>apt-ftparchive</strong> returns zero on normal operation, decimal 100 on error.</p>
+<h1>BUGS</h1>
+<p><strong>APT bug page</strong>[1]. If you wish to report a bug in APT, please see /usr/share/doc/debian/bug-reporting.txt or the <strong>reportbug</strong>(1) command.</p>
+<h1>AUTHORS</h1>
+<p><strong>Jason Gunthorpe</strong></p>
+<blockquote>
+
+</blockquote>
+<p><strong>APT team</strong></p>
+<blockquote>
+
+</blockquote>
+<h1>NOTES</h1>
+<ul>
+<li><p>APT bug page</p>
+<p>http://bugs.debian.org/src:apt</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

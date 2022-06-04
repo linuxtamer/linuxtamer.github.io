@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command system</title><meta name="description" content="Linux command system execute a shell command"><meta name="keywords" content="linux, command, system, bsd, execute a shell command"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>system - execute a shell command</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdlib.h&gt;
+
+int system(const char *command);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>system</strong>() library function uses <strong>fork</strong>(2) to create a child process that executes the shell command specified in <em>command</em> using <strong>execl</strong>(3) as follows:</p>
+<pre><code>execl(&quot;/bin/sh&quot;, &quot;sh&quot;, &quot;-c&quot;, command, (char *) NULL);</code></pre>
+<p><strong>system</strong>() returns after the command has been completed.</p>
+<p>During execution of the command, <strong>SIGCHLD</strong> will be blocked, and <strong>SIGINT</strong> and <strong>SIGQUIT</strong> will be ignored, in the process that calls <strong>system</strong>(). (These signals will be handled according to their defaults inside the child process that executes <em>command</em>.)</p>
+<p>If <em>command</em> is NULL, then <strong>system</strong>() returns a status indicating whether a shell is available on the system.</p>
+<h1>RETURN VALUE</h1>
+<p>The return value of <strong>system</strong>() is one of the following:</p>
+<ul>
+<li><p>If <em>command</em> is NULL, then a nonzero value if a shell is available, or 0 if no shell is available.</p></li>
+<li><p>If a child process could not be created, or its status could not be retrieved, the return value is -1 and <em>errno</em> is set to indicate the error.</p></li>
+<li><p>If a shell could not be executed in the child process, then the return value is as though the child shell terminated by calling <strong>_exit</strong>(2) with the status 127.</p></li>
+<li><p>If all system calls succeed, then the return value is the termination status of the child shell used to execute <em>command</em>. (The termination status of a shell is the termination status of the last command it executes.)</p></li>
+</ul>
+<p>In the last two cases, the return value is a "wait status" that can be examined using the macros described in <strong>waitpid</strong>(2). (i.e., <strong>WIFEXITED</strong>(), <strong>WEXITSTATUS</strong>(), and so on).</p>
+<p><strong>system</strong>() does not affect the wait status of any other children.</p>
+<h1>ERRORS</h1>
+<p><strong>system</strong>() can fail with any of the same errors as <strong>fork</strong>(2).</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>system</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, C89, C99.</p>
+<h1>NOTES</h1>
+<p><strong>system</strong>() provides simplicity and convenience: it handles all of the details of calling <strong>fork</strong>(2), <strong>execl</strong>(3), and <strong>waitpid</strong>(2), as well as the necessary manipulations of signals; in addition, the shell performs the usual substitutions and I/O redirections for <em>command</em>. The main cost of <strong>system</strong>() is inefficiency: additional system calls are required to create the process that runs the shell and to execute the shell.</p>
+<p>If the <strong>_XOPEN_SOURCE</strong> feature test macro is defined (before including <em>any</em> header files), then the macros described in <strong>waitpid</strong>(2) (<strong>WEXITSTATUS</strong>(), etc.) are made available when including <em>&lt;stdlib.h&gt;</em>.</p>
+<p>As mentioned, <strong>system</strong>() ignores <strong>SIGINT</strong> and <strong>SIGQUIT</strong>. This may make programs that call it from a loop uninterruptible, unless they take care themselves to check the exit status of the child. For example:</p>
+<pre><code>while (something) {
+    int ret = system(&quot;foo&quot;);
+
+    if (WIFSIGNALED(ret) &amp;&amp;
+        (WTERMSIG(ret) == SIGINT || WTERMSIG(ret) == SIGQUIT))
+            break;
+}</code></pre>
+<p>According to POSIX.1, it is unspecified whether handlers registered using <strong>pthread_atfork</strong>(3) are called during the execution of <strong>system</strong>(). In the glibc implementation, such handlers are not called.</p>
+<p>In versions of glibc before 2.1.3, the check for the availability of <em>/bin/sh</em> was not actually performed if <em>command</em> was NULL; instead it was always assumed to be available, and <strong>system</strong>() always returned 1 in this case. Since glibc 2.1.3, this check is performed because, even though POSIX.1-2001 requires a conforming implementation to provide a shell, that shell may not be available or executable if the calling program has previously called <strong>chroot</strong>(2) (which is not specified by POSIX.1-2001).</p>
+<p>It is possible for the shell command to terminate with a status of 127, which yields a <strong>system</strong>() return value that is indistinguishable from the case where a shell could not be executed in the child process.</p>
+<h2>Caveats</h2>
+<p>Do not use <strong>system</strong>() from a privileged program (a set-user-ID or set-group-ID program, or a program with capabilities) because strange values for some environment variables might be used to subvert system integrity. For example, <strong>PATH</strong> could be manipulated so that an arbitrary program is executed with privilege. Use the <strong>exec</strong>(3) family of functions instead, but not <strong>execlp</strong>(3) or <strong>execvp</strong>(3) (which also use the <strong>PATH</strong> environment variable to search for an executable).</p>
+<p><strong>system</strong>() will not, in fact, work properly from programs with set-user-ID or set-group-ID privileges on systems on which <em>/bin/sh</em> is bash version 2: as a security measure, bash 2 drops privileges on startup. (Debian uses a different shell, <strong>dash</strong>(1), which does not do this when invoked as <strong>sh</strong>.)</p>
+<p>Any user input that is employed as part of <em>command</em> should be <em>carefully</em> sanitized, to ensure that unexpected shell commands or command options are not executed. Such risks are especially grave when using <strong>system</strong>() from a privileged program.</p>
+<h1>SEE ALSO</h1>
+<p><strong>sh</strong>(1), <strong>execve</strong>(2), <strong>fork</strong>(2), <strong>sigaction</strong>(2), <strong>sigprocmask</strong>(2), <strong>wait</strong>(2), <strong>exec</strong>(3), <strong>signal</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

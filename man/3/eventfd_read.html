@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command eventfd_read</title><meta name="description" content="Linux command eventfd_read create a file descriptor for event notification"><meta name="keywords" content="linux, command, eventfd_read, bsd, create a file descriptor for event notification"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>eventfd - create a file descriptor for event notification</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/eventfd.h&gt;</strong></p>
+<p><strong>int eventfd(unsigned int </strong><em>initval</em><strong>, int </strong><em>flags</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>eventfd</strong>() creates an "eventfd object" that can be used as an event wait/notify mechanism by user-space applications, and by the kernel to notify user-space applications of events. The object contains an unsigned 64-bit integer (<em>uint64_t</em>) counter that is maintained by the kernel. This counter is initialized with the value specified in the argument <em>initval</em>.</p>
+<p>As its return value, <strong>eventfd</strong>() returns a new file descriptor that can be used to refer to the eventfd object.</p>
+<p>The following values may be bitwise ORed in <em>flags</em> to change the behavior of <strong>eventfd</strong>():</p>
+<dl>
+<dt><strong>EFD_CLOEXEC</strong> (since Linux 2.6.27)</dt>
+<dd><p>Set the close-on-exec (<strong>FD_CLOEXEC</strong>) flag on the new file descriptor. See the description of the <strong>O_CLOEXEC</strong> flag in <strong>open</strong>(2) for reasons why this may be useful.</p>
+</dd>
+<dt><strong>EFD_NONBLOCK</strong> (since Linux 2.6.27)</dt>
+<dd><p>Set the <strong>O_NONBLOCK</strong> file status flag on the open file description (see <strong>open</strong>(2)) referred to by the new file descriptor. Using this flag saves extra calls to <strong>fcntl</strong>(2) to achieve the same result.</p>
+</dd>
+<dt><strong>EFD_SEMAPHORE</strong> (since Linux 2.6.30)</dt>
+<dd><p>Provide semaphore-like semantics for reads from the new file descriptor. See below.</p>
+</dd>
+</dl>
+<p>In Linux up to version 2.6.26, the <em>flags</em> argument is unused, and must be specified as zero.</p>
+<p>The following operations can be performed on the file descriptor returned by <strong>eventfd</strong>():</p>
+<dl>
+<dt><strong>read</strong>(2)</dt>
+<dd><p>Each successful <strong>read</strong>(2) returns an 8-byte integer. A <strong>read</strong>(2) fails with the error <strong>EINVAL</strong> if the size of the supplied buffer is less than 8 bytes.</p>
+<p>The value returned by <strong>read</strong>(2) is in host byte order—that is, the native byte order for integers on the host machine.</p>
+<p>The semantics of <strong>read</strong>(2) depend on whether the eventfd counter currently has a nonzero value and whether the <strong>EFD_SEMAPHORE</strong> flag was specified when creating the eventfd file descriptor:</p>
+<ul>
+<li><p>If <strong>EFD_SEMAPHORE</strong> was not specified and the eventfd counter has a nonzero value, then a <strong>read</strong>(2) returns 8 bytes containing that value, and the counter's value is reset to zero.</p></li>
+<li><p>If <strong>EFD_SEMAPHORE</strong> was specified and the eventfd counter has a nonzero value, then a <strong>read</strong>(2) returns 8 bytes containing the value 1, and the counter's value is decremented by 1.</p></li>
+<li><p>If the eventfd counter is zero at the time of the call to <strong>read</strong>(2), then the call either blocks until the counter becomes nonzero (at which time, the <strong>read</strong>(2) proceeds as described above) or fails with the error <strong>EAGAIN</strong> if the file descriptor has been made nonblocking.</p></li>
+</ul>
+</dd>
+<dt><strong>write</strong>(2)</dt>
+<dd><p>A <strong>write</strong>(2) call adds the 8-byte integer value supplied in its buffer to the counter. The maximum value that may be stored in the counter is the largest unsigned 64-bit value minus 1 (i.e., 0xfffffffffffffffe). If the addition would cause the counter's value to exceed the maximum, then the <strong>write</strong>(2) either blocks until a <strong>read</strong>(2) is performed on the file descriptor, or fails with the error <strong>EAGAIN</strong> if the file descriptor has been made nonblocking.</p>
+<p>A <strong>write</strong>(2) fails with the error <strong>EINVAL</strong> if the size of the supplied buffer is less than 8 bytes, or if an attempt is made to write the value 0xffffffffffffffff.</p>
+</dd>
+<dt><strong>poll</strong>(2), <strong>select</strong>(2) (and similar)</dt>
+<dd><p>The returned file descriptor supports <strong>poll</strong>(2) (and analogously <strong>epoll</strong>(7)) and <strong>select</strong>(2), as follows:</p>
+<ul>
+<li><p>The file descriptor is readable (the <strong>select</strong>(2) <em>readfds</em> argument; the <strong>poll</strong>(2) <strong>POLLIN</strong> flag) if the counter has a value greater than 0.</p></li>
+<li><p>The file descriptor is writable (the <strong>select</strong>(2) <em>writefds</em> argument; the <strong>poll</strong>(2) <strong>POLLOUT</strong> flag) if it is possible to write a value of at least "1" without blocking.</p></li>
+<li><p>If an overflow of the counter value was detected, then <strong>select</strong>(2) indicates the file descriptor as being both readable and writable, and <strong>poll</strong>(2) returns a <strong>POLLERR</strong> event. As noted above, <strong>write</strong>(2) can never overflow the counter. However an overflow can occur if 2^64 eventfd "signal posts" were performed by the KAIO subsystem (theoretically possible, but practically unlikely). If an overflow has occurred, then <strong>read</strong>(2) will return that maximum <em>uint64_t</em> value (i.e., 0xffffffffffffffff).</p></li>
+</ul>
+<p>The eventfd file descriptor also supports the other file-descriptor multiplexing APIs: <strong>pselect</strong>(2) and <strong>ppoll</strong>(2).</p>
+</dd>
+<dt><strong>close</strong>(2)</dt>
+<dd><p>When the file descriptor is no longer required it should be closed. When all file descriptors associated with the same eventfd object have been closed, the resources for object are freed by the kernel.</p>
+</dd>
+</dl>
+<p>A copy of the file descriptor created by <strong>eventfd</strong>() is inherited by the child produced by <strong>fork</strong>(2). The duplicate file descriptor is associated with the same eventfd object. File descriptors created by <strong>eventfd</strong>() are preserved across <strong>execve</strong>(2), unless the close-on-exec flag has been set.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>eventfd</strong>() returns a new eventfd file descriptor. On error, -1 is returned and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>An unsupported value was specified in <em>flags</em>.</p>
+</dd>
+<dt><strong>EMFILE</strong></dt>
+<dd><p>The per-process limit on the number of open file descriptors has been reached.</p>
+</dd>
+<dt><strong>ENFILE</strong></dt>
+<dd><p>The system-wide limit on the total number of open files has been reached.</p>
+</dd>
+<dt><strong>ENODEV</strong></dt>
+<dd><p>Could not mount (internal) anonymous inode device.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>There was insufficient memory to create a new eventfd file descriptor.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>eventfd</strong>() is available on Linux since kernel 2.6.22. Working support is provided in glibc since version 2.8. The <strong>eventfd2</strong>() system call (see NOTES) is available on Linux since kernel 2.6.27. Since version 2.9, the glibc <strong>eventfd</strong>() wrapper will employ the <strong>eventfd2</strong>() system call, if it is supported by the kernel.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>eventfd</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p><strong>eventfd</strong>() and <strong>eventfd2</strong>() are Linux-specific.</p>
+<h1>NOTES</h1>
+<p>Applications can use an eventfd file descriptor instead of a pipe (see <strong>pipe</strong>(2)) in all cases where a pipe is used simply to signal events. The kernel overhead of an eventfd file descriptor is much lower than that of a pipe, and only one file descriptor is required (versus the two required for a pipe).</p>
+<p>When used in the kernel, an eventfd file descriptor can provide a bridge from kernel to user space, allowing, for example, functionalities like KAIO (kernel AIO) to signal to a file descriptor that some operation is complete.</p>
+<p>A key point about an eventfd file descriptor is that it can be monitored just like any other file descriptor using <strong>select</strong>(2), <strong>poll</strong>(2), or <strong>epoll</strong>(7). This means that an application can simultaneously monitor the readiness of "traditional" files and the readiness of other kernel mechanisms that support the eventfd interface. (Without the <strong>eventfd</strong>() interface, these mechanisms could not be multiplexed via <strong>select</strong>(2), <strong>poll</strong>(2), or <strong>epoll</strong>(7).)</p>
+<p>The current value of an eventfd counter can be viewed via the entry for the corresponding file descriptor in the process's <em>/proc/[pid]/fdinfo</em> directory. See <strong>proc</strong>(5) for further details.</p>
+<h2>C library/kernel differences</h2>
+<p>There are two underlying Linux system calls: <strong>eventfd</strong>() and the more recent <strong>eventfd2</strong>(). The former system call does not implement a <em>flags</em> argument. The latter system call implements the <em>flags</em> values described above. The glibc wrapper function will use <strong>eventfd2</strong>() where it is available.</p>
+<h2>Additional glibc features</h2>
+<p>The GNU C library defines an additional type, and two functions that attempt to abstract some of the details of reading and writing on an eventfd file descriptor:</p>
+<pre><code>typedef uint64_t eventfd_t;
+
+int eventfd_read(int fd, eventfd_t *value);
+int eventfd_write(int fd, eventfd_t value);</code></pre>
+<p>The functions perform the read and write operations on an eventfd file descriptor, returning 0 if the correct number of bytes was transferred, or -1 otherwise.</p>
+<h1>EXAMPLES</h1>
+<p>The following program creates an eventfd file descriptor and then forks to create a child process. While the parent briefly sleeps, the child writes each of the integers supplied in the program's command-line arguments to the eventfd file descriptor. When the parent has finished sleeping, it reads from the eventfd file descriptor.</p>
+<p>The following shell session shows a sample run of the program:</p>
+<pre><code>$ ./a.out 1 2 4 7 14
+Child writing 1 to efd
+Child writing 2 to efd
+Child writing 4 to efd
+Child writing 7 to efd
+Child writing 14 to efd
+Child completed write loop
+Parent about to read
+Parent read 28 (0x1c) from efd</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;sys/eventfd.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;inttypes.h&gt;           /* Definition of PRIu64 &amp; PRIx64 */
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;             /* Definition of uint64_t */
+
+#define handle_error(msg) \
+    do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+int
+main(int argc, char *argv[])
+{
+    int efd;
+    uint64_t u;
+    ssize_t s;
+
+    if (argc &lt; 2) {
+        fprintf(stderr, &quot;Usage: %s &lt;num&gt;...\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    efd = eventfd(0, 0);
+    if (efd == -1)
+        handle_error(&quot;eventfd&quot;);
+
+    switch (fork()) {
+    case 0:
+        for (int j = 1; j &lt; argc; j++) {
+            printf(&quot;Child writing %s to efd\n&quot;, argv[j]);
+            u = strtoull(argv[j], NULL, 0);
+                    /* strtoull() allows various bases */
+            s = write(efd, &amp;u, sizeof(uint64_t));
+            if (s != sizeof(uint64_t))
+                handle_error(&quot;write&quot;);
+        }
+        printf(&quot;Child completed write loop\n&quot;);
+
+        exit(EXIT_SUCCESS);
+
+    default:
+        sleep(2);
+
+        printf(&quot;Parent about to read\n&quot;);
+        s = read(efd, &amp;u, sizeof(uint64_t));
+        if (s != sizeof(uint64_t))
+            handle_error(&quot;read&quot;);
+        printf(&quot;Parent read %&quot;PRIu64&quot; (%#&quot;PRIx64&quot;) from efd\n&quot;, u, u);
+        exit(EXIT_SUCCESS);
+
+    case -1:
+        handle_error(&quot;fork&quot;);
+    }
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>futex</strong>(2), <strong>pipe</strong>(2), <strong>poll</strong>(2), <strong>read</strong>(2), <strong>select</strong>(2), <strong>signalfd</strong>(2), <strong>timerfd_create</strong>(2), <strong>write</strong>(2), <strong>epoll</strong>(7), <strong>sem_overview</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

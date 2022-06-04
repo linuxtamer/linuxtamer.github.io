@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command git-send-pack</title><meta name="description" content="Linux command git-send-pack Push objects over Git protocol to another repository"><meta name="keywords" content="linux, command, git-send-pack, bsd, Push objects over Git protocol to another repository"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>git-send-pack - Push objects over Git protocol to another repository</p>
+<h1>SYNOPSIS</h1>
+<pre><code>git send-pack [--all] [--dry-run] [--force] [--receive-pack=&lt;git-receive-pack&gt;]
+                [--verbose] [--thin] [--atomic]
+                [--[no-]signed|--signed=(true|false|if-asked)]
+                [&lt;host&gt;:]&lt;directory&gt; [&lt;ref&gt;...]</code></pre>
+<h1>DESCRIPTION</h1>
+<p>Usually you would want to use <em>git push</em>, which is a higher-level wrapper of this command, instead. See <strong>git-push</strong>(1).</p>
+<p>Invokes <em>git-receive-pack</em> on a possibly remote repository, and updates it from the current repository, sending named refs.</p>
+<h1>OPTIONS</h1>
+<p>--receive-pack=&lt;git-receive-pack&gt;</p>
+<blockquote>
+<p>Path to the <em>git-receive-pack</em> program on the remote end. Sometimes useful when pushing to a remote repository over ssh, and you do not have the program in a directory on the default $PATH.</p>
+</blockquote>
+<p>--exec=&lt;git-receive-pack&gt;</p>
+<blockquote>
+<p>Same as --receive-pack=&lt;git-receive-pack&gt;.</p>
+</blockquote>
+<p>--all</p>
+<blockquote>
+<p>Instead of explicitly specifying which refs to update, update all heads that locally exist.</p>
+</blockquote>
+<p>--stdin</p>
+<blockquote>
+<p>Take the list of refs from stdin, one per line. If there are refs specified on the command line in addition to this option, then the refs from stdin are processed after those on the command line.</p>
+<p>If <strong>--stateless-rpc</strong> is specified together with this option then the list of refs must be in packet format (pkt-line). Each ref must be in a separate packet, and the list must end with a flush packet.</p>
+</blockquote>
+<p>--dry-run</p>
+<blockquote>
+<p>Do everything except actually send the updates.</p>
+</blockquote>
+<p>--force</p>
+<blockquote>
+<p>Usually, the command refuses to update a remote ref that is not an ancestor of the local ref used to overwrite it. This flag disables the check. What this means is that the remote repository can lose commits; use it with care.</p>
+</blockquote>
+<p>--verbose</p>
+<blockquote>
+<p>Run verbosely.</p>
+</blockquote>
+<p>--thin</p>
+<blockquote>
+<p>Send a "thin" pack, which records objects in deltified form based on objects not included in the pack to reduce network traffic.</p>
+</blockquote>
+<p>--atomic</p>
+<blockquote>
+<p>Use an atomic transaction for updating the refs. If any of the refs fails to update then the entire push will fail without changing any refs.</p>
+</blockquote>
+<p>--[no-]signed, --signed=(true|false|if-asked)</p>
+<blockquote>
+<p>GPG-sign the push request to update refs on the receiving side, to allow it to be checked by the hooks and/or be logged. If <strong>false</strong> or <strong>--no-signed</strong>, no signing will be attempted. If <strong>true</strong> or <strong>--signed</strong>, the push will fail if the server does not support signed pushes. If set to <strong>if-asked</strong>, sign if and only if the server supports signed pushes. The push will also fail if the actual call to <strong>gpg --sign</strong> fails. See <strong>git-receive-pack</strong>(1) for the details on the receiving end.</p>
+</blockquote>
+<p>--push-option=&lt;string&gt;</p>
+<blockquote>
+<p>Pass the specified string as a push option for consumption by hooks on the server side. If the server doesn’t support push options, error out. See <strong>git-push</strong>(1) and <strong>githooks</strong>(5) for details.</p>
+</blockquote>
+<p>&lt;host&gt;</p>
+<blockquote>
+<p>A remote host to house the repository. When this part is specified, <em>git-receive-pack</em> is invoked via ssh.</p>
+</blockquote>
+<p>&lt;directory&gt;</p>
+<blockquote>
+<p>The repository to update.</p>
+</blockquote>
+<p>&lt;ref&gt;...</p>
+<blockquote>
+<p>The remote refs to update.</p>
+</blockquote>
+<h1>SPECIFYING THE REFS</h1>
+<p>There are three ways to specify which refs to update on the remote end.</p>
+<p>With <strong>--all</strong> flag, all refs that exist locally are transferred to the remote side. You cannot specify any <em>&lt;ref&gt;</em> if you use this flag.</p>
+<p>Without <strong>--all</strong> and without any <em>&lt;ref&gt;</em>, the heads that exist both on the local side and on the remote side are updated.</p>
+<p>When one or more <em>&lt;ref&gt;</em> are specified explicitly (whether on the command line or via <strong>--stdin</strong>), it can be either a single pattern, or a pair of such pattern separated by a colon ":" (this means that a ref name cannot have a colon in it). A single pattern <em>&lt;name&gt;</em> is just a shorthand for <em>&lt;name&gt;:&lt;name&gt;</em>.</p>
+<p>Each pattern pair consists of the source side (before the colon) and the destination side (after the colon). The ref to be pushed is determined by finding a match that matches the source side, and where it is pushed is determined by using the destination side. The rules used to match a ref are the same rules used by <em>git rev-parse</em> to resolve a symbolic ref name. See <strong>git-rev-parse</strong>(1).</p>
+<blockquote>
+<p>·</p>
+<p>It is an error if &lt;src&gt; does not match exactly one of the local refs.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>It is an error if &lt;dst&gt; matches more than one remote refs.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>If &lt;dst&gt; does not match any remote ref, either</p>
+<blockquote>
+<p>·</p>
+<p>it has to start with "refs/"; &lt;dst&gt; is used as the destination literally in this case.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>&lt;src&gt; == &lt;dst&gt; and the ref that matched the &lt;src&gt; must not exist in the set of remote refs; the ref matched &lt;src&gt; locally is used as the name of the destination.</p>
+</blockquote>
+</blockquote>
+<p>Without ‘--force`, the &lt;src&gt; ref is stored at the remote only if &lt;dst&gt; does not exist, or &lt;dst&gt; is a proper subset (i.e. an ancestor) of &lt;src&gt;. This check, known as "fast-forward check", is performed in order to avoid accidentally overwriting the remote ref and lose other peoples’ commits from there.</p>
+<p>With <strong>--force</strong>, the fast-forward check is disabled for all refs.</p>
+<p>Optionally, a &lt;ref&gt; parameter can be prefixed with a plus <em>+</em> sign to disable the fast-forward check only on that ref.</p>
+<h1>GIT</h1>
+<p>Part of the <strong>git</strong>(1) suite</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

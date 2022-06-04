@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command realloc</title><meta name="description" content="Linux command realloc allocate and free dynamic memory"><meta name="keywords" content="linux, command, realloc, bsd, allocate and free dynamic memory"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>malloc, free, calloc, realloc, reallocarray - allocate and free dynamic memory</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdlib.h&gt;
+
+void *malloc(size_t size);
+void free(void *ptr);
+void *calloc(size_t nmemb, size_t size);
+void *realloc(void *ptr, size_t size);
+void *reallocarray(void *ptr, size_t nmemb, size_t size);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>reallocarray</strong>():</p>
+<p>Since glibc 2.29: _DEFAULT_SOURCE Glibc 2.28 and earlier: _GNU_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>malloc</strong>() function allocates <em>size</em> bytes and returns a pointer to the allocated memory. <em>The memory is not initialized</em>. If <em>size</em> is 0, then <strong>malloc</strong>() returns either NULL, or a unique pointer value that can later be successfully passed to <strong>free</strong>().</p>
+<p>The <strong>free</strong>() function frees the memory space pointed to by <em>ptr</em>, which must have been returned by a previous call to <strong>malloc</strong>(), <strong>calloc</strong>(), or <strong>realloc</strong>(). Otherwise, or if <em>free(ptr)</em> has already been called before, undefined behavior occurs. If <em>ptr</em> is NULL, no operation is performed.</p>
+<p>The <strong>calloc</strong>() function allocates memory for an array of <em>nmemb</em> elements of <em>size</em> bytes each and returns a pointer to the allocated memory. The memory is set to zero. If <em>nmemb</em> or <em>size</em> is 0, then <strong>calloc</strong>() returns either NULL, or a unique pointer value that can later be successfully passed to <strong>free</strong>(). If the multiplication of <em>nmemb</em> and <em>size</em> would result in integer overflow, then <strong>calloc</strong>() returns an error. By contrast, an integer overflow would not be detected in the following call to <strong>malloc</strong>(), with the result that an incorrectly sized block of memory would be allocated:</p>
+<pre><code>malloc(nmemb * size);</code></pre>
+<p>The <strong>realloc</strong>() function changes the size of the memory block pointed to by <em>ptr</em> to <em>size</em> bytes. The contents will be unchanged in the range from the start of the region up to the minimum of the old and new sizes. If the new size is larger than the old size, the added memory will <em>not</em> be initialized. If <em>ptr</em> is NULL, then the call is equivalent to <em>malloc(size)</em>, for all values of <em>size</em>; if <em>size</em> is equal to zero, and <em>ptr</em> is not NULL, then the call is equivalent to <em>free(ptr)</em>. Unless <em>ptr</em> is NULL, it must have been returned by an earlier call to <strong>malloc</strong>(), <strong>calloc</strong>(), or <strong>realloc</strong>(). If the area pointed to was moved, a <em>free(ptr)</em> is done.</p>
+<p>The <strong>reallocarray</strong>() function changes the size of the memory block pointed to by <em>ptr</em> to be large enough for an array of <em>nmemb</em> elements, each of which is <em>size</em> bytes. It is equivalent to the call</p>
+<p>realloc(ptr, nmemb * size);</p>
+<p>However, unlike that <strong>realloc</strong>() call, <strong>reallocarray</strong>() fails safely in the case where the multiplication would overflow. If such an overflow occurs, <strong>reallocarray</strong>() returns NULL, sets <em>errno</em> to <strong>ENOMEM</strong>, and leaves the original block of memory unchanged.</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>malloc</strong>() and <strong>calloc</strong>() functions return a pointer to the allocated memory, which is suitably aligned for any built-in type. On error, these functions return NULL. NULL may also be returned by a successful call to <strong>malloc</strong>() with a <em>size</em> of zero, or by a successful call to <strong>calloc</strong>() with <em>nmemb</em> or <em>size</em> equal to zero.</p>
+<p>The <strong>free</strong>() function returns no value.</p>
+<p>The <strong>realloc</strong>() function returns a pointer to the newly allocated memory, which is suitably aligned for any built-in type, or NULL if the request failed. The returned pointer may be the same as <em>ptr</em> if the allocation was not moved (e.g., there was room to expand the allocation in-place), or different from <em>ptr</em> if the allocation was moved to a new address. If <em>size</em> was equal to 0, either NULL or a pointer suitable to be passed to <strong>free</strong>() is returned. If <strong>realloc</strong>() fails, the original block is left untouched; it is not freed or moved.</p>
+<p>On success, the <strong>reallocarray</strong>() function returns a pointer to the newly allocated memory. On failure, it returns NULL and the original block of memory is left untouched.</p>
+<h1>ERRORS</h1>
+<p><strong>calloc</strong>(), <strong>malloc</strong>(), <strong>realloc</strong>(), and <strong>reallocarray</strong>() can fail with the following error:</p>
+<dl>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Out of memory. Possibly, the application hit the <strong>RLIMIT_AS</strong> or <strong>RLIMIT_DATA</strong> limit described in <strong>getrlimit</strong>(2).</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>reallocarray</strong>() first appeared in glibc in version 2.26.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>malloc</strong>(), <strong>free</strong>(),<br />
+<strong>calloc</strong>(), <strong>realloc</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p><strong>malloc</strong>(), <strong>free</strong>(), <strong>calloc</strong>(), <strong>realloc</strong>(): POSIX.1-2001, POSIX.1-2008, C89, C99.</p>
+<p><strong>reallocarray</strong>() is a nonstandard extension that first appeared in OpenBSD 5.6 and FreeBSD 11.0.</p>
+<h1>NOTES</h1>
+<p>By default, Linux follows an optimistic memory allocation strategy. This means that when <strong>malloc</strong>() returns non-NULL there is no guarantee that the memory really is available. In case it turns out that the system is out of memory, one or more processes will be killed by the OOM killer. For more information, see the description of <em>/proc/sys/vm/overcommit_memory</em> and <em>/proc/sys/vm/oom_adj</em> in <strong>proc</strong>(5), and the Linux kernel source file <em>Documentation/vm/overcommit-accounting.rst</em>.</p>
+<p>Normally, <strong>malloc</strong>() allocates memory from the heap, and adjusts the size of the heap as required, using <strong>sbrk</strong>(2). When allocating blocks of memory larger than <strong>MMAP_THRESHOLD</strong> bytes, the glibc <strong>malloc</strong>() implementation allocates the memory as a private anonymous mapping using <strong>mmap</strong>(2). <strong>MMAP_THRESHOLD</strong> is 128 kB by default, but is adjustable using <strong>mallopt</strong>(3). Prior to Linux 4.7 allocations performed using <strong>mmap</strong>(2) were unaffected by the <strong>RLIMIT_DATA</strong> resource limit; since Linux 4.7, this limit is also enforced for allocations performed using <strong>mmap</strong>(2).</p>
+<p>To avoid corruption in multithreaded applications, mutexes are used internally to protect the memory-management data structures employed by these functions. In a multithreaded application in which threads simultaneously allocate and free memory, there could be contention for these mutexes. To scalably handle memory allocation in multithreaded applications, glibc creates additional <em>memory allocation arenas</em> if mutex contention is detected. Each arena is a large region of memory that is internally allocated by the system (using <strong>brk</strong>(2) or <strong>mmap</strong>(2)), and managed with its own mutexes.</p>
+<p>SUSv2 requires <strong>malloc</strong>(), <strong>calloc</strong>(), and <strong>realloc</strong>() to set <em>errno</em> to <strong>ENOMEM</strong> upon failure. Glibc assumes that this is done (and the glibc versions of these routines do this); if you use a private malloc implementation that does not set <em>errno</em>, then certain library routines may fail without having a reason in <em>errno</em>.</p>
+<p>Crashes in <strong>malloc</strong>(), <strong>calloc</strong>(), <strong>realloc</strong>(), or <strong>free</strong>() are almost always related to heap corruption, such as overflowing an allocated chunk or freeing the same pointer twice.</p>
+<p>The <strong>malloc</strong>() implementation is tunable via environment variables; see <strong>mallopt</strong>(3) for details.</p>
+<h1>SEE ALSO</h1>
+<p><strong>valgrind</strong>(1), <strong>brk</strong>(2), <strong>mmap</strong>(2), <strong>alloca</strong>(3), <strong>malloc_get_state</strong>(3), <strong>malloc_info</strong>(3), <strong>malloc_trim</strong>(3), <strong>malloc_usable_size</strong>(3), <strong>mallopt</strong>(3), <strong>mcheck</strong>(3), <strong>mtrace</strong>(3), <strong>posix_memalign</strong>(3)</p>
+<p>For details of the GNU C library implementation, see <a href="https://sourceware.org/glibc/wiki/MallocInternals"></a>.</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

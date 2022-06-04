@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command gs</title><meta name="description" content="Linux command gs Ghostscript (PostScript and PDF language interpreter and previewer)"><meta name="keywords" content="linux, command, gs, bsd, Ghostscript (PostScript and PDF language interpreter and previewer)"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>gs - Ghostscript (PostScript and PDF language interpreter and previewer)</p>
+<h1>SYNOPSIS</h1>
+<p><strong>gs</strong> [ <em>options</em> ] [ <em>files</em> ] ...</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>gs</strong> command invokes <strong>Ghostscript</strong>, an interpreter of Adobe Systems' <strong>PostScript</strong>(tm) and <strong>Portable Document Format</strong> (PDF) languages. <strong>gs</strong> reads "files" in sequence and executes them as Ghostscript programs. After doing this, it reads further input from the standard input stream (normally the keyboard), interpreting each line separately and output to an output device (may be a file or an X11 window preview, see below). The interpreter exits gracefully when it encounters the "quit" command (either in a file or from the keyboard), at end-of-file, or at an interrupt signal (such as Control-C at the keyboard).</p>
+<p>The interpreter recognizes many option switches, some of which are described below. Please see the usage documentation for complete information. Switches may appear anywhere in the command line and apply to all files thereafter. Invoking Ghostscript with the <strong>-h</strong> or <strong>-?</strong> switch produces a message which shows several useful switches, all the devices known to that executable, and the search path for fonts; on Unix it also shows the location of detailed documentation.</p>
+<p>Ghostscript may be built to use many different output devices. To see which devices your executable includes, run "<strong>gs -h</strong>".</p>
+<p>Unless you specify a particular device, Ghostscript normally opens the first one of those and directs output to it.</p>
+<p>If you have installed the ghostscript-x Debian package and are under X, the default device is an X11 window (previewer), else ghostscript will use the bbox device and print on stdout the dimension of the postscript file.</p>
+<p>So if the first one in the list is the one you want to use, just issue the command</p>
+<pre><code>	gs myfile.ps</code></pre>
+<p>You can also check the set of available devices from within Ghostscript: invoke Ghostscript and type</p>
+<pre><code>	devicenames ==</code></pre>
+<p>but the first device on the resulting list may not be the default device you determine with "<strong>gs -h</strong>". To specify "AbcXyz" as the initial output device, include the switch</p>
+<pre><code>	-sDEVICE=AbcXyz</code></pre>
+<p>For example, for output to an Epson printer you might use the command</p>
+<pre><code>	gs -sDEVICE=epson myfile.ps</code></pre>
+<p>The "-sDEVICE=" switch must precede the first mention of a file to print, and only the switch's first use has any effect.</p>
+<p>Finally, you can specify a default device in the environment variable <strong>GS_DEVICE</strong>. The order of precedence for these alternatives from highest to lowest (Ghostscript uses the device defined highest in the list) is:</p>
+<p>Some devices can support different resolutions (densities). To specify the resolution on such a printer, use the "-r" switch:</p>
+<pre><code>	gs -sDEVICE=&lt;device&gt; -r&lt;xres&gt;x&lt;yres&gt;</code></pre>
+<p>For example, on a 9-pin Epson-compatible printer, you get the lowest-density (fastest) mode with</p>
+<pre><code>	gs -sDEVICE=epson -r60x72</code></pre>
+<p>and the highest-density (best output quality) mode with</p>
+<pre><code>	gs -sDEVICE=epson -r240x72.</code></pre>
+<p>If you select a printer as the output device, Ghostscript also allows you to choose where Ghostscript sends the output -- on Unix systems, usually to a temporary file. To send the output to a file "foo.xyz", use the switch</p>
+<pre><code>	-sOutputFile=foo.xyz</code></pre>
+<p>You might want to print each page separately. To do this, send the output to a series of files "foo1.xyz, foo2.xyz, ..." using the "-sOutputFile=" switch with "%d" in a filename template:</p>
+<pre><code>	-sOutputFile=foo%d.xyz</code></pre>
+<p>Each resulting file receives one page of output, and the files are numbered in sequence. "%d" is a printf format specification; you can also use a variant like "%02d".</p>
+<p>You can also send output to a pipe. For example, to pipe output to the "<strong>lpr</strong>" command (which, on many Unix systems, directs it to a printer), use the option</p>
+<pre><code>	-sOutputFile=%pipe%lpr</code></pre>
+<p>You can also send output to standard output:</p>
+<pre><code>	-sOutputFile=-</code></pre>
+<p>or</p>
+<pre><code>	-sOutputFile=%stdout%</code></pre>
+<p>In this case you must also use the <strong>-q</strong> switch, to prevent Ghostscript from writing messages to standard output.</p>
+<p>To select a specific paper size, use the command line switch</p>
+<pre><code>	-sPAPERSIZE=&lt;paper_size&gt;</code></pre>
+<p>for instance</p>
+<pre><code>	-sPAPERSIZE=a4</code></pre>
+<p>or</p>
+<pre><code>	-sPAPERSIZE=legal</code></pre>
+<p>Most ISO and US paper sizes are recognized. See the usage documentation for a full list, or the definitions in the initialization file "gs_statd.ps".</p>
+<p>Ghostscript can do many things other than print or view PostScript and PDF files. For example, if you want to know the bounding box of a PostScript (or EPS) file, Ghostscript provides a special "device" that just prints out this information.</p>
+<p>For example, using one of the example files distributed with Ghostscript,</p>
+<pre><code>	gs -sDEVICE=bbox golfer.ps</code></pre>
+<p>prints out</p>
+<pre><code>	%%BoundingBox: 0 25 583 732
+	%%HiResBoundingBox: 0.808497 25.009496 582.994503 731.809445</code></pre>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>--</strong><em> filename arg1 ...</em></dt>
+<dd><p>Takes the next argument as a file name as usual, but takes all remaining arguments (even if they have the syntactic form of switches) and defines the name "ARGUMENTS" in "userdict" (not "systemdict") as an array of those strings, <strong>before</strong> running the file. When Ghostscript finishes executing the file, it exits back to the shell.</p>
+</dd>
+<dt><strong>-D</strong><em>name</em><strong>=</strong><em>token</em></dt>
+<dd><p><br />
+</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-d</strong><em>name</em><strong>=</strong><em>token</em></dt>
+<dd><p>Define a name in "systemdict" with the given definition. The token must be exactly one token (as defined by the "token" operator) and may contain no whitespace.</p>
+</dd>
+<dt><strong>-D</strong><em>name</em></dt>
+<dd><p><br />
+</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-d</strong><em>name</em></dt>
+<dd><p>Define a name in "systemdict" with value=null.</p>
+</dd>
+<dt><strong>-S</strong><em>name</em><strong>=</strong><em>string</em></dt>
+<dd><p><br />
+</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-s</strong><em>name</em><strong>=</strong><em>string</em></dt>
+<dd><p>Define a name in "systemdict" with a given string as value. This is different from <strong>-d</strong>. For example, <strong>-dname=35</strong> is equivalent to the program fragment<br />
+/name 35 def<br />
+whereas <strong>-sname=35</strong> is equivalent to<br />
+/name (35) def</p>
+</dd>
+<dt><strong>-P</strong></dt>
+<dd><p>Makes Ghostscript to look first in the current directory for library files. By default, Ghostscript no longer looks in the current directory, unless, of course, the first explicitly supplied directory is "." in <strong>-I</strong>. See also the <strong>INITIALIZATION FILES</strong> section below, and bundled <strong>Use.htm</strong> for detailed discussion on search paths and how Ghostcript finds files.</p>
+</dd>
+<dt><strong>-q</strong></dt>
+<dd><p>Quiet startup: suppress normal startup messages, and also do the equivalent of <strong>-dQUIET</strong>.</p>
+</dd>
+<dt><strong>-g</strong><em>number1</em><strong>x</strong><em>number2</em></dt>
+<dd><p>Equivalent to <strong>-dDEVICEWIDTH=</strong><em>number1</em> and <strong>-dDEVICEHEIGHT=</strong><em>number2</em>. This is for the benefit of devices (such as X11 windows) that require (or allow) width and height to be specified.</p>
+</dd>
+<dt><strong>-r</strong><em>number</em></dt>
+<dd><p><br />
+</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-r</strong><em>number1</em><strong>x</strong><em>number2</em></dt>
+<dd><p>Equivalent to <strong>-dDEVICEXRESOLUTION=</strong><em>number1</em> and <strong>-dDEVICEYRESOLUTION=</strong><em>number2</em>. This is for the benefit of devices such as printers that support multiple X and Y resolutions. If only one number is given, it is used for both X and Y resolutions.</p>
+</dd>
+<dt><strong>-I</strong><em>directories</em></dt>
+<dd><p>Adds the designated list of directories at the head of the search path for library files.</p>
+</dd>
+<dt><strong>-</strong></dt>
+<dd><p>This is not really a switch, but indicates to Ghostscript that standard input is coming from a file or a pipe and not interactively from the command line. Ghostscript reads from standard input until it reaches end-of-file, executing it like any other file, and then continues with processing the command line. When the command line has been entirely processed, Ghostscript exits rather than going into its interactive mode.</p>
+</dd>
+</dl>
+<p>Note that the normal initialization file "gs_init.ps" makes "systemdict" read-only, so the values of names defined with <strong>-D</strong>, <strong>-d</strong>, <strong>-S</strong>, or <strong>-s</strong> cannot be changed (although, of course, they can be superseded by definitions in "userdict" or other dictionaries.)</p>
+<h1>SPECIAL NAMES</h1>
+<dl>
+<dt><strong>-dNOCACHE</strong></dt>
+<dd><p>Disables character caching. Useful only for debugging.</p>
+</dd>
+<dt><strong>-dNOBIND</strong></dt>
+<dd><p>Disables the "bind" operator. Useful only for debugging.</p>
+</dd>
+<dt><strong>-dNODISPLAY</strong></dt>
+<dd><p>Suppresses the normal initialization of the output device. This may be useful when debugging.</p>
+</dd>
+<dt><strong>-dNOPAUSE</strong></dt>
+<dd><p>Disables the prompt and pause at the end of each page. This may be desirable for applications where another program is driving Ghostscript.</p>
+</dd>
+<dt><strong>-dNOPLATFONTS</strong></dt>
+<dd><p>Disables the use of fonts supplied by the underlying platform (for instance X Windows). This may be needed if the platform fonts look undesirably different from the scalable fonts.</p>
+</dd>
+<dt><strong>-dSAFER</strong></dt>
+<dd><p>Restricts file operations the job can perform. Strongly recommended for spoolers, conversion scripts or other sensitive environments where a badly written or malicious PostScript program code must be prevented from changing important files.</p>
+</dd>
+<dt><strong>-dWRITESYSTEMDICT</strong></dt>
+<dd><p>Leaves "systemdict" writable. This is necessary when running special utility programs, but is strongly discouraged as it bypasses normal Postscript security measures.</p>
+</dd>
+<dt><strong>-sDEVICE=</strong><em>device</em></dt>
+<dd><p>Selects an alternate initial output device, as described above.</p>
+</dd>
+<dt><strong>-sOutputFile=</strong><em>filename</em></dt>
+<dd><p>Selects an alternate output file (or pipe) for the initial output device, as described above.</p>
+</dd>
+</dl>
+<h1>SAFER MODE</h1>
+<p>The <strong>-dSAFER</strong> option disables the "deletefile" and "renamefile" operators and prohibits opening piped commands ("%pipe%<em>cmd</em>"). Only "%stdout" and "%stderr" can be opened for writing. It also disables reading from files, except for "%stdin", files given as a command line argument, and files contained in paths given by LIBPATH and FONTPATH or specified by the system params /FontResourceDir and /GenericResourceDir.</p>
+<p>This mode also sets the .LockSafetyParams parameter of the initial output device to protect against programs that attempt to write to files using the OutputFile device parameter. Since the device parameters specified on the command line, including OutputFile, are set prior to SAFER mode, use of "-sOutputFile=..." on the command line is unrestricted.</p>
+<p>SAFER mode prevents changing the /GenericResourceDir, /FontResourceDir, /SystemParamsPassword, and /StartJobPassword.</p>
+<p>While SAFER mode is not the default, it is the default for many wrapper scripts such as ps2pdf and may be the default in a subsequent release of Ghostscript. Thus when running programs that need to open files or set restricted parameters you should pass the <strong>-dNOSAFER</strong> command line option or its synonym <strong>-dDELAYSAFER</strong>.</p>
+<p>When running with <strong>-dNOSAFER</strong> it is possible to perform a "save" followed by ".setsafe", execute a file or procedure in SAFER mode, and then use "restore" to return to NOSAFER mode. In order to prevent the save object from being restored by the foreign file or procedure, the ".runandhide" operator should be used to hide the save object from the restricted procedure.</p>
+<h1>FILES</h1>
+<p>The locations of many Ghostscript run-time files are compiled into the executable when it is built. Run "<strong>gs -h</strong>" to find the location of Ghostscript documentation on your system, from which you can get more details. On a Debian system they are in <strong>/usr</strong>.</p>
+<dl>
+<dt><strong>/usr/share/ghostscript/[0-9]*.[0.9]*/*</strong></dt>
+<dd><p>Startup files, utilities, and basic font definitions (where [0-9]*.[0.9]* is the ghostscript version)</p>
+</dd>
+<dt><strong>/usr/share/fonts/type1/gsfonts/*</strong></dt>
+<dd><p>More font definitions from the gsfonts package</p>
+</dd>
+<dt><strong>/usr/share/doc/ghostscript/examples/*</strong></dt>
+<dd><p>Ghostscript demonstration files (if ghostscript-doc package is installed)</p>
+</dd>
+<dt><strong>/usr/share/doc/ghostscript/*</strong></dt>
+<dd><p>Diverse document files (may need to install ghostscript-doc package)</p>
+</dd>
+</dl>
+<h1>INITIALIZATION FILES</h1>
+<p>When looking for the initialization files "gs_*.ps", the files related to fonts, or the file for the "run" operator, Ghostscript first tries to open the file with the name as given, using the current working directory if no directory is specified. If this fails, and the file name doesn't specify an explicit directory or drive (for instance, doesn't contain "/" on Unix systems), Ghostscript tries directories in this order:</p>
+<dl>
+<dt>1.</dt>
+<dd><p>the directories specified by the <strong>-I</strong> switches in the command line (see below), if any;</p>
+</dd>
+<dt>2.</dt>
+<dd><p>the directories specified by the <strong>GS_LIB</strong> environment variable, if any;</p>
+</dd>
+<dt>3.</dt>
+<dd><p>the directories specified by the <strong>GS_LIB_DEFAULT</strong> macro in the Ghostscript makefile when the executable was built. <strong>GS_LIB_DEFAULT</strong> is "/usr/share/ghostscript/[0-9]*.[0-9]*/lib" on a Debian system where "[0-9]*.[0-9]*" represents the Ghostscript version number</p>
+</dd>
+</dl>
+<p>Each of these (<strong>GS_LIB_DEFAULT</strong>, <strong>GS_LIB</strong>, and <strong>-I</strong> parameter) may be either a single directory or a list of directories separated by ":".</p>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>GS_OPTIONS</strong></dt>
+<dd><p>String of options to be processed before the command line options</p>
+</dd>
+<dt><strong>GS_DEVICE</strong></dt>
+<dd><p>Used to specify an output device</p>
+</dd>
+<dt><strong>GS_FONTPATH</strong></dt>
+<dd><p>Path names used to search for fonts</p>
+</dd>
+<dt><strong>GS_LIB</strong></dt>
+<dd><p>Path names for initialization files and fonts</p>
+</dd>
+<dt><strong>TEMP</strong></dt>
+<dd><p>Where temporary files are made</p>
+</dd>
+</dl>
+<h1>X RESOURCES</h1>
+<p>Ghostscript, or more properly the X11 display device, looks for the following resources under the program name "Ghostscript":</p>
+<dl>
+<dt><strong>borderWidth</strong></dt>
+<dd><p>The border width in pixels (default = 1).</p>
+</dd>
+<dt><strong>borderColor</strong></dt>
+<dd><p>The name of the border color (default = black).</p>
+</dd>
+<dt><strong>geometry</strong></dt>
+<dd><p>The window size and placement, WxH+X+Y (default is NULL).</p>
+</dd>
+<dt><strong>xResolution</strong></dt>
+<dd><p>The number of x pixels per inch (default is computed from <strong>WidthOfScreen</strong> and <strong>WidthMMOfScreen</strong>).</p>
+</dd>
+<dt><strong>yResolution</strong></dt>
+<dd><p>The number of y pixels per inch (default is computed from <strong>HeightOfScreen</strong> and <strong>HeightMMOfScreen</strong>).</p>
+</dd>
+<dt><strong>useBackingPixmap</strong></dt>
+<dd><p>Determines whether backing store is to be used for saving display window (default = true).</p>
+</dd>
+</dl>
+<p>See the usage document for a more complete list of resources. To set these resources on Unix, put them in a file such as "~/.Xresources" in the following form:</p>
+<pre><code>	Ghostscript*geometry:	 612x792-0+0
+	Ghostscript*xResolution: 72
+	Ghostscript*yResolution: 72</code></pre>
+<p>Then merge these resources into the X server's resource database:</p>
+<pre><code>	% xrdb -merge ~/.Xresources</code></pre>
+<h1>SEE ALSO</h1>
+<p>The various Ghostscript document files (above), especially <strong>Use.htm</strong>. On Debian you may need to install ghostscript-doc before reading the documentation.</p>
+<h1>BUGS</h1>
+<p>See http://bugs.ghostscript.com/ and the Usenet news group comp.lang.postscript.</p>
+<h1>VERSION</h1>
+<p>This document was last revised for Ghostscript version 9.53.3.</p>
+<h1>AUTHOR</h1>
+<p>Artifex Software, Inc. are the primary maintainers of Ghostscript. Russell J. Lang, gsview at ghostgum.com.au, is the author of most of the MS Windows code in Ghostscript.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

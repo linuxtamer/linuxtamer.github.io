@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command endmntent</title><meta name="description" content="Linux command endmntent get filesystem descriptor file entry"><meta name="keywords" content="linux, command, endmntent, bsd, get filesystem descriptor file entry"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getmntent, setmntent, addmntent, endmntent, hasmntopt, getmntent_r - get filesystem descriptor file entry</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;mntent.h&gt;
+
+FILE *setmntent(const char *filename, const char *type);
+
+struct mntent *getmntent(FILE *stream);
+
+int addmntent(FILE *stream, const struct mntent *mnt);
+
+int endmntent(FILE *streamp);
+
+char *hasmntopt(const struct mntent *mnt, const char *opt);
+
+/* GNU extension */
+#include &lt;mntent.h&gt;
+
+struct mntent *getmntent_r(FILE *streamp, struct mntent *mntbuf,
+ char *buf, int buflen);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>getmntent_r</strong>(): Since glibc 2.19: _DEFAULT_SOURCE Glibc 2.19 and earlier: _BSD_SOURCE || _SVID_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>These routines are used to access the filesystem description file <em>/etc/fstab</em> and the mounted filesystem description file <em>/etc/mtab</em>.</p>
+<p>The <strong>setmntent</strong>() function opens the filesystem description file <em>filename</em> and returns a file pointer which can be used by <strong>getmntent</strong>(). The argument <em>type</em> is the type of access required and can take the same values as the <em>mode</em> argument of <strong>fopen</strong>(3). The returned stream should be closed using <strong>endmntent</strong>() rather than <strong>fclose</strong>(3).</p>
+<p>The <strong>getmntent</strong>() function reads the next line of the filesystem description file from <em>stream</em> and returns a pointer to a structure containing the broken out fields from a line in the file. The pointer points to a static area of memory which is overwritten by subsequent calls to <strong>getmntent</strong>().</p>
+<p>The <strong>addmntent</strong>() function adds the <em>mntent</em> structure <em>mnt</em> to the end of the open <em>stream</em>.</p>
+<p>The <strong>endmntent</strong>() function closes the <em>stream</em> associated with the filesystem description file.</p>
+<p>The <strong>hasmntopt</strong>() function scans the <em>mnt_opts</em> field (see below) of the <em>mntent</em> structure <em>mnt</em> for a substring that matches <em>opt</em>. See <em>&lt;mntent.h&gt;</em> and <strong>mount</strong>(8) for valid mount options.</p>
+<p>The reentrant <strong>getmntent_r</strong>() function is similar to <strong>getmntent</strong>(), but stores the <em>struct mount</em> in the provided <em>*mntbuf</em> and stores the strings pointed to by the entries in that struct in the provided array <em>buf</em> of size <em>buflen</em>.</p>
+<p>The <em>mntent</em> structure is defined in <em>&lt;mntent.h&gt;</em> as follows:</p>
+<pre><code>struct mntent {
+    char *mnt_fsname;   /* name of mounted filesystem */
+    char *mnt_dir;      /* filesystem path prefix */
+    char *mnt_type;     /* mount type (see mntent.h) */
+    char *mnt_opts;     /* mount options (see mntent.h) */
+    int   mnt_freq;     /* dump frequency in days */
+    int   mnt_passno;   /* pass number on parallel fsck */
+};</code></pre>
+<p>Since fields in the mtab and fstab files are separated by whitespace, octal escapes are used to represent the characters space (\040), tab (\011), newline (\012), and backslash (\\) in those files when they occur in one of the four strings in a <em>mntent</em> structure. The routines <strong>addmntent</strong>() and <strong>getmntent</strong>() will convert from string representation to escaped representation and back. When converting from escaped representation, the sequence \134 is also converted to a backslash.</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>getmntent</strong>() and <strong>getmntent_r</strong>() functions return a pointer to the <em>mntent</em> structure or NULL on failure.</p>
+<p>The <strong>addmntent</strong>() function returns 0 on success and 1 on failure.</p>
+<p>The <strong>endmntent</strong>() function always returns 1.</p>
+<p>The <strong>hasmntopt</strong>() function returns the address of the substring if a match is found and NULL otherwise.</p>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/fstab</em></dt>
+<dd><p>filesystem description file</p>
+</dd>
+<dt><em>/etc/mtab</em></dt>
+<dd><p>mounted filesystem description file</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>setmntent</strong>(), <strong>endmntent</strong>(), <strong>hasmntopt</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getmntent</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:mntentbuf locale</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>addmntent</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe race:stream locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getmntent_r</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>The nonreentrant functions are from SunOS 4.1.3. A routine <strong>getmntent_r</strong>() was introduced in HP-UX 10, but it returns an <em>int</em>. The prototype shown above is glibc-only.</p>
+<h1>NOTES</h1>
+<p>System V also has a <strong>getmntent</strong>() function but the calling sequence differs, and the returned structure is different. Under System V <em>/etc/mnttab</em> is used. 4.4BSD and Digital UNIX have a routine <strong>getmntinfo</strong>(), a wrapper around the system call <strong>getfsstat</strong>().</p>
+<h1>SEE ALSO</h1>
+<p><strong>fopen</strong>(3), <strong>fstab</strong>(5), <strong>mount</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

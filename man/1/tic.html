@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tic</title><meta name="description" content="Linux command tic the terminfo entry-description compiler"><meta name="keywords" content="linux, command, tic, bsd, the terminfo entry-description compiler"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p><strong>tic</strong> - the <em>terminfo</em> entry-description compiler</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tic</strong> [<strong>-01CDGIKLNTUVWacfgqrstx</strong>] [<strong>-e</strong> <em>names</em>] [<strong>-o</strong> <em>dir</em>] [<strong>-Q</strong>[<em>n</em>]] [<strong>-R</strong> <em>subset</em>] [<strong>-v</strong>[<em>n</em>]] [<strong>-w</strong>[<em>n</em>]] <em>file</em><br />
+</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>tic</strong> command translates a <strong>terminfo</strong> file from source format into compiled format. The compiled format is necessary for use with the library routines in <strong>ncurses</strong>(3NCURSES).</p>
+<p>As described in <strong>term</strong>(5), the database may be either a directory tree (one file per terminal entry) or a hashed database (one record per entry). The <strong>tic</strong> command writes only one type of entry, depending on how it was built:</p>
+<ul>
+<li><p>For directory trees, the top-level directory, e.g., /usr/share/terminfo, specifies the location of the database.</p></li>
+<li><p>For hashed databases, a filename is needed. If the given file is not found by that name, but can be found by adding the suffix ".db", then that is used.</p>
+<p>The default name for the hashed database is the same as the default directory name (only adding a ".db" suffix).</p></li>
+</ul>
+<p>In either case (directory or hashed database), <strong>tic</strong> will create the container if it does not exist. For a directory, this would be the terminfo leaf, versus a "terminfo.db" file.</p>
+<p>The results are normally placed in the system terminfo database <strong>/etc/terminfo</strong>. The compiled terminal description can be placed in a different terminfo database. There are two ways to achieve this:</p>
+<ul>
+<li><p>First, you may override the system default either by using the <strong>-o</strong> option, or by setting the variable <strong>TERMINFO</strong> in your shell environment to a valid database location.</p></li>
+<li><p>Secondly, if <strong>tic</strong> cannot write in <em>/etc/terminfo</em> or the location specified using your TERMINFO variable, it looks for the directory <em>$HOME/.terminfo</em> (or hashed database <em>$HOME/.terminfo.db)</em>; if that location exists, the entry is placed there.</p></li>
+</ul>
+<p>Libraries that read terminfo entries are expected to check in succession</p>
+<ul>
+<li><p>a location specified with the TERMINFO environment variable,</p></li>
+<li><p><em>$HOME/.terminfo</em>,</p></li>
+<li><p>directories listed in the TERMINFO_DIRS environment variable,</p></li>
+<li><p>a compiled-in list of directories (no default value), and</p></li>
+<li><p>the system terminfo database (<em>/etc/terminfo</em>).</p></li>
+</ul>
+<h2>ALIASES</h2>
+<p>This is the same program as infotocap and captoinfo; usually those are linked to, or copied from this program:</p>
+<ul>
+<li><p>When invoked as infotocap, tic sets the <strong>-I</strong> option.</p></li>
+<li><p>When invoked as captoinfo, tic sets the <strong>-C</strong> option.</p></li>
+</ul>
+<h2>OPTIONS</h2>
+<dl>
+<dt><strong>-0</strong></dt>
+<dd><p>restricts the output to a single line</p>
+</dd>
+<dt><strong>-1</strong></dt>
+<dd><p>restricts the output to a single column</p>
+</dd>
+<dt><strong>-a</strong></dt>
+<dd><p>tells <strong>tic</strong> to retain commented-out capabilities rather than discarding them. Capabilities are commented by prefixing them with a period. This sets the <strong>-x</strong> option, because it treats the commented-out entries as user-defined names. If the source is termcap, accept the 2-character names required by version 6. Otherwise these are ignored.</p>
+</dd>
+<dt><strong>-C</strong></dt>
+<dd><p>Force source translation to termcap format. Note: this differs from the <strong>-C</strong> option of <strong>infocmp</strong>(1) in that it does not merely translate capability names, but also translates terminfo strings to termcap format. Capabilities that are not translatable are left in the entry under their terminfo names but commented out with two preceding dots. The actual format used incorporates some improvements for escaped characters from terminfo format. For a stricter BSD-compatible translation, add the <strong>-K</strong> option.</p>
+<p>If this is combined with <strong>-c</strong>, <strong>tic</strong> makes additional checks to report cases where the terminfo values do not have an exact equivalent in termcap form. For example:</p>
+<ul>
+<li><p><strong>sgr</strong> usually will not convert, because termcap lacks the ability to work with more than two parameters, and because termcap lacks many of the arithmetic/logical operators used in terminfo.</p></li>
+<li><p>capabilities with more than one delay or with delays before the end of the string will not convert completely.</p></li>
+</ul>
+</dd>
+<dt><strong>-c</strong></dt>
+<dd><p>tells <strong>tic</strong> to only check <em>file</em> for errors, including syntax problems and bad use-links. If you specify <strong>-C</strong> (<strong>-I</strong>) with this option, the code will print warnings about entries which, after use resolution, are more than 1023 (4096) bytes long. Due to a fixed buffer length in older termcap libraries, as well as buggy checking for the buffer length (and a documented limit in terminfo), these entries may cause core dumps with other implementations.</p>
+<p><strong>tic</strong> checks string capabilities to ensure that those with parameters will be valid expressions. It does this check only for the predefined string capabilities; those which are defined with the <strong>-x</strong> option are ignored.</p>
+</dd>
+<dt><strong>-D</strong></dt>
+<dd><p>tells <strong>tic</strong> to print the database locations that it knows about, and exit. The first location shown is the one to which it would write compiled terminal descriptions. If <strong>tic</strong> is not able to find a writable database location according to the rules summarized above, it will print a diagnostic and exit with an error rather than printing a list of database locations.</p>
+</dd>
+<dt><strong>-e </strong><em>names</em></dt>
+<dd><p>Limit writes and translations to the following comma-separated list of terminals. If any name or alias of a terminal matches one of the names in the list, the entry will be written or translated as normal. Otherwise no output will be generated for it. The option value is interpreted as a file containing the list if it contains a '/'. (Note: depending on how tic was compiled, this option may require <strong>-I</strong> or <strong>-C</strong>.)</p>
+</dd>
+<dt><strong>-f</strong></dt>
+<dd><p>Display complex terminfo strings which contain if/then/else/endif expressions indented for readability.</p>
+</dd>
+<dt><strong>-G</strong></dt>
+<dd><p>Display constant literals in decimal form rather than their character equivalents.</p>
+</dd>
+<dt><strong>-g</strong></dt>
+<dd><p>Display constant character literals in quoted form rather than their decimal equivalents.</p>
+</dd>
+<dt><strong>-I</strong></dt>
+<dd><p>Force source translation to terminfo format.</p>
+</dd>
+<dt><strong>-K</strong></dt>
+<dd><p>Suppress some longstanding ncurses extensions to termcap format, e.g., "\s" for space.</p>
+</dd>
+<dt><strong>-L</strong></dt>
+<dd><p>Force source translation to terminfo format using the long C variable names listed in &lt;<strong>term.h</strong>&gt;</p>
+</dd>
+<dt><strong>-N</strong></dt>
+<dd><p>Disable smart defaults. Normally, when translating from termcap to terminfo, the compiler makes a number of assumptions about the defaults of string capabilities <strong>reset1_string</strong>, <strong>carriage_return</strong>, <strong>cursor_left</strong>, <strong>cursor_down</strong>, <strong>scroll_forward</strong>, <strong>tab</strong>, <strong>newline</strong>, <strong>key_backspace</strong>, <strong>key_left</strong>, and <strong>key_down</strong>, then attempts to use obsolete termcap capabilities to deduce correct values. It also normally suppresses output of obsolete termcap capabilities such as <strong>bs</strong>. This option forces a more literal translation that also preserves the obsolete capabilities.</p>
+</dd>
+<dt><strong>-o</strong><em>dir</em></dt>
+<dd><p>Write compiled entries to given database location. Overrides the TERMINFO environment variable.</p>
+</dd>
+<dt><strong>-Q</strong><em>n</em></dt>
+<dd><p>Rather than show source in terminfo (text) format, print the compiled (binary) format in hexadecimal or base64 form, depending on the option's value:</p>
+<dl>
+<dt>1</dt>
+<dd><p>hexadecimal</p>
+</dd>
+<dt>2</dt>
+<dd><p>base64</p>
+</dd>
+<dt>3</dt>
+<dd><p>hexadecimal and base64</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>-q</strong></dt>
+<dd><p>Suppress comments and blank lines when showing translated source.</p>
+</dd>
+<dt><strong>-R</strong><em>subset</em></dt>
+<dd><p>Restrict output to a given subset. This option is for use with archaic versions of terminfo like those on SVr1, Ultrix, or HP/UX that do not support the full set of SVR4/XSI Curses terminfo; and outright broken ports like AIX 3.x that have their own extensions incompatible with SVr4/XSI. Available subsets are SVr1, Ultrix, HP, BSD and AIX; see <strong>terminfo</strong>(5) for details.</p>
+</dd>
+<dt><strong>-r</strong></dt>
+<dd><p>Force entry resolution (so there are no remaining tc capabilities) even when doing translation to termcap format. This may be needed if you are preparing a termcap file for a termcap library (such as GNU termcap through version 1.3 or BSD termcap through 4.3BSD) that does not handle multiple tc capabilities per entry.</p>
+</dd>
+<dt><strong>-s</strong></dt>
+<dd><p>Summarize the compile by showing the database location into which entries are written, and the number of entries which are compiled.</p>
+</dd>
+<dt><strong>-T</strong></dt>
+<dd><p>eliminates size-restrictions on the generated text. This is mainly useful for testing and analysis, since the compiled descriptions are limited (e.g., 1023 for termcap, 4096 for terminfo).</p>
+</dd>
+<dt><strong>-t</strong></dt>
+<dd><p>tells <strong>tic</strong> to discard commented-out capabilities. Normally when translating from terminfo to termcap, untranslatable capabilities are commented-out.</p>
+</dd>
+<dt><strong>-U</strong></dt>
+<dd><p>tells <strong>tic</strong> to not post-process the data after parsing the source file. Normally, it infers data which is commonly missing in older terminfo data, or in termcaps.</p>
+</dd>
+<dt><strong>-V</strong></dt>
+<dd><p>reports the version of ncurses which was used in this program, and exits.</p>
+</dd>
+<dt><strong>-v</strong><em>n</em></dt>
+<dd><p>specifies that (verbose) output be written to standard error trace information showing <strong>tic</strong>'s progress.</p>
+<p>The optional parameter <em>n</em> is a number from 1 to 10, inclusive, indicating the desired level of detail of information. If ncurses is built without tracing support, the optional parameter is ignored. If <em>n</em> is omitted, the default level is 1. If <em>n</em> is specified and greater than 1, the level of detail is increased.</p>
+<p>The debug flag levels are as follows:</p>
+<dl>
+<dt>1</dt>
+<dd><p>Names of files created and linked</p>
+</dd>
+<dt>2</dt>
+<dd><p>Information related to the use facility</p>
+</dd>
+<dt>3</dt>
+<dd><p>Statistics from the hashing algorithm</p>
+</dd>
+<dt>5</dt>
+<dd><p>String-table memory allocations</p>
+</dd>
+<dt>7</dt>
+<dd><p>Entries into the string-table</p>
+</dd>
+<dt>8</dt>
+<dd><p>List of tokens encountered by scanner</p>
+</dd>
+<dt>9</dt>
+<dd><p>All values computed in construction of the hash table</p>
+</dd>
+</dl>
+<p>If the debug level <em>n</em> is not given, it is taken to be one.</p>
+</dd>
+<dt><strong>-W</strong></dt>
+<dd><p>By itself, the <strong>-w</strong> option will not force long strings to be wrapped. Use the <strong>-W</strong> option to do this.</p>
+<p>If you specify both <strong>-f</strong> and <strong>-W</strong> options, the latter is ignored when <strong>-f</strong> has already split the line.</p>
+</dd>
+<dt><strong>-w</strong><em>n</em></dt>
+<dd><p>specifies the width of the output. The parameter is optional. If it is omitted, it defaults to 60.</p>
+</dd>
+<dt><strong>-x</strong></dt>
+<dd><p>Treat unknown capabilities as user-defined (see <strong>user_caps(5)</strong>). That is, if you supply a capability name which <strong>tic</strong> does not recognize, it will infer its type (boolean, number or string) from the syntax and make an extended table entry for that. User-defined capability strings whose name begins with k are treated as function keys.</p>
+</dd>
+</dl>
+<h2>PARAMETERS</h2>
+<dl>
+<dt><em>file</em></dt>
+<dd><p>contains one or more <strong>terminfo</strong> terminal descriptions in source format [see <strong>terminfo</strong>(5)]. Each description in the file describes the capabilities of a particular terminal.</p>
+<p>If <em>file</em> is -, then the data is read from the standard input. The <em>file</em> parameter may also be the path of a character-device.</p>
+</dd>
+</dl>
+<h2>PROCESSING</h2>
+<p>All but one of the capabilities recognized by <strong>tic</strong> are documented in <strong>terminfo</strong>(5). The exception is the <strong>use</strong> capability.</p>
+<p>When a <strong>use</strong>=<em>entry</em>-<em>name</em> field is discovered in a terminal entry currently being compiled, <strong>tic</strong> reads in the binary from <strong>/etc/terminfo</strong> to complete the entry. (Entries created from <em>file</em> will be used first. <strong>tic</strong> duplicates the capabilities in <em>entry</em>-<em>name</em> for the current entry, with the exception of those capabilities that explicitly are defined in the current entry.</p>
+<p>When an entry, e.g., <strong>entry_name_1</strong>, contains a <strong>use=</strong><em>entry</em>_<em>name</em>_<em>2</em> field, any canceled capabilities in <em>entry</em>_<em>name</em>_<em>2</em> must also appear in <strong>entry_name_1</strong> before <strong>use=</strong> for these capabilities to be canceled in <strong>entry_name_1</strong>.</p>
+<p>Total compiled entries cannot exceed 4096 bytes. The name field cannot exceed 512 bytes. Terminal names exceeding the maximum alias length (32 characters on systems with long filenames, 14 characters otherwise) will be truncated to the maximum alias length and a warning message will be printed.</p>
+<h1>HISTORY</h1>
+<p>System V Release 2 provided a <strong>tic</strong> utility. It accepted a single option: <strong>-v</strong> (optionally followed by a number). According to Ross Ridge's comment in <em>mytinfo</em>, this version of <strong>tic</strong> was unable to represent cancelled capabilities.</p>
+<p>System V Release 3 provided a different <strong>tic</strong> utility, written by Pavel Curtis, (originally named compile in <em>pcurses</em>). This added an option <strong>-c</strong> to check the file for errors, with the caveat that errors in use= links would not be reported. System V Release 3 documented a few warning messages which did not appear in <em>pcurses</em>. While the program itself was changed little as development continued with System V Release 4, the table of capabilities grew from 180 (<em>pcurses</em>) to 464 (Solaris).</p>
+<p>In early development of ncurses (1993), Zeyd Ben-Halim used the table from <em>mytinfo</em> to extend the <em>pcurses</em> table to 469 capabilities (456 matched SVr4, 8 were only in SVr4, 13 were not in SVr4). Of those 13, 11 were ultimately discarded (perhaps to match the draft of X/Open Curses). The exceptions were <strong>memory_lock_above</strong> and <strong>memory_unlock</strong> (see <strong>user_caps</strong>(5)).</p>
+<p>Eric Raymond incorporated parts of <em>mytinfo</em> into ncurses to implement the termcap-to-terminfo source conversion, and extended that to begin development of the corresponding terminfo-to-termcap source conversion, Thomas Dickey completed that development over the course of several years.</p>
+<p>In 1999, Thomas Dickey added the <strong>-x</strong> option to support user-defined capabilities.</p>
+<p>In 2010, Roy Marples provided a <strong>tic</strong> program and terminfo library for NetBSD. That implementation adapts several features from ncurses, including <strong>tic</strong>'s <strong>-x</strong> option.</p>
+<p>The <strong>-c</strong> option tells <strong>tic</strong> to check for problems in the terminfo source file. Continued development provides additional checks:</p>
+<ul>
+<li><p><em>pcurses</em> had 8 warnings</p></li>
+<li><p>ncurses in 1996 had 16 warnings</p></li>
+<li><p>Solaris (SVr4) curses has 28 warnings</p></li>
+<li><p>NetBSD tic in 2019 has 19 warnings.</p></li>
+<li><p>ncurses in 2019 has 96 warnings</p></li>
+</ul>
+<p>The checking done in ncurses' <strong>tic</strong> helps with the conversion to termcap, as well as pointing out errors and inconsistencies. It is also used to ensure consistency with the user-defined capabilities. There are 527 distinct capabilities in ncurses' terminal database; 128 of those are user-defined.</p>
+<h1>PORTABILITY</h1>
+<p>X/Open Curses, Issue 7 (2009) provides a brief description of <strong>tic</strong>. It lists one option: <strong>-c</strong>. The omission of <strong>-v</strong> is unexpected. The change history states that the description is derived from True64 UNIX. According to its manual pages, that system also supported the <strong>-v</strong> option.</p>
+<p>Shortly after Issue 7 was released, Tru64 was discontinued. As of 2019, the surviving implementations of <strong>tic</strong> are SVr4 (AIX, HP-UX and Solaris), ncurses and NetBSD curses. The SVr4 <strong>tic</strong> programs all support the <strong>-v</strong> option. The NetBSD <strong>tic</strong> program follows X/Open's documentation, omitting the <strong>-v</strong> option.</p>
+<p>The X/Open rationale states that some implementations of <strong>tic</strong> read terminal descriptions from the standard input if the <em>file</em> parameter is omitted. None of these implementations do that. Further, it comments that some may choose to read from ./terminfo.src but that is obsolescent behavior from SVr2, and is not (for example) a documented feature of SVr3.</p>
+<h2>COMPATIBILITY</h2>
+<p>There is some evidence that historic <strong>tic</strong> implementations treated description fields with no whitespace in them as additional aliases or short names. This <strong>tic</strong> does not do that, but it does warn when description fields may be treated that way and check them for dangerous characters.</p>
+<h2>EXTENSIONS</h2>
+<p>Unlike the SVr4 <strong>tic</strong> command, this implementation can actually compile termcap sources. In fact, entries in terminfo and termcap syntax can be mixed in a single source file. See <strong>terminfo</strong>(5) for the list of termcap names taken to be equivalent to terminfo names.</p>
+<p>The SVr4 manual pages are not clear on the resolution rules for <strong>use</strong> capabilities. This implementation of <strong>tic</strong> will find <strong>use</strong> targets anywhere in the source file, or anywhere in the file tree rooted at <strong>TERMINFO</strong> (if <strong>TERMINFO</strong> is defined), or in the user's <em>$HOME/.terminfo</em> database (if it exists), or (finally) anywhere in the system's file tree of compiled entries.</p>
+<p>The error messages from this <strong>tic</strong> have the same format as GNU C error messages, and can be parsed by GNU Emacs's compile facility.</p>
+<p>Aside from <strong>-c</strong> and <strong>-v</strong>, options are not portable:</p>
+<ul>
+<li><p>Most of tic's options are not supported by SVr4 <strong>tic</strong>:</p></li>
+</ul>
+<blockquote>
+<p><strong>-0</strong> <strong>-1</strong> <strong>-C</strong> <strong>-G</strong> <strong>-I</strong> <strong>-N</strong> <strong>-R</strong> <strong>-T</strong> <strong>-V</strong> <strong>-a</strong> <strong>-e</strong> <strong>-f</strong> <strong>-g</strong> <strong>-o</strong> <strong>-r</strong> <strong>-s</strong> <strong>-t</strong> <strong>-x</strong></p>
+</blockquote>
+<ul>
+<li><p>The NetBSD <strong>tic</strong> supports a few of the ncurses options</p></li>
+</ul>
+<blockquote>
+<p><strong>-a</strong> <strong>-o</strong> <strong>-x</strong></p>
+</blockquote>
+<blockquote>
+<p>and adds <strong>-S</strong> (a feature which does the same thing as infocmp's <strong>-e</strong> and <strong>-E</strong> options).</p>
+</blockquote>
+<p>The SVr4 <strong>-c</strong> mode does not report bad use= links.</p>
+<p>System V does not compile entries to or read entries from your <em>$HOME/.terminfo</em> database unless TERMINFO is explicitly set to it.</p>
+<h1>FILES</h1>
+<dl>
+<dt><strong>/etc/terminfo/?/*</strong></dt>
+<dd><p>Compiled terminal description database.</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>infocmp</strong>(1), <strong>captoinfo</strong>(1), <strong>infotocap</strong>(1), <strong>toe</strong>(1), <strong>ncurses</strong>(3NCURSES), <strong>term</strong>(5). <strong>terminfo</strong>(5). <strong>user_caps</strong>(5).</p>
+<p>This describes <strong>ncurses</strong> version 6.2 (patch 20201114).</p>
+<h1>AUTHOR</h1>
+<p>Eric S. Raymond &lt;esr@snark.thyrsus.com&gt; and<br />
+Thomas E. Dickey &lt;dickey@invisible-island.net&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

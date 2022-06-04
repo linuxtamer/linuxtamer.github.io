@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command journalctl</title><meta name="description" content="Linux command journalctl Query the systemd journal"><meta name="keywords" content="linux, command, journalctl, bsd, Query the systemd journal"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>journalctl - Query the systemd journal</p>
+<h1>SYNOPSIS</h1>
+<p><strong>journalctl</strong> [OPTIONS...] [MATCHES...]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>journalctl</strong> may be used to query the contents of the <strong>systemd</strong>(1) journal as written by <strong>systemd-journald.service</strong>(8).</p>
+<p>If called without parameters, it will show the full contents of the journal, starting with the oldest entry collected.</p>
+<p>If one or more match arguments are passed, the output is filtered accordingly. A match is in the format "FIELD=VALUE", e.g. "_SYSTEMD_UNIT=httpd.service", referring to the components of a structured journal entry. See <strong>systemd.journal-fields</strong>(7) for a list of well-known fields. If multiple matches are specified matching different fields, the log entries are filtered by both, i.e. the resulting output will show only entries matching all the specified matches of this kind. If two matches apply to the same field, then they are automatically matched as alternatives, i.e. the resulting output will show entries matching any of the specified matches for the same field. Finally, the character "+" may appear as a separate word between other terms on the command line. This causes all matches before and after to be combined in a disjunction (i.e. logical OR).</p>
+<p>It is also possible to filter the entries by specifying an absolute file path as an argument. The file path may be a file or a symbolic link and the file must exist at the time of the query. If a file path refers to an executable binary, an "_EXE=" match for the canonicalized binary path is added to the query. If a file path refers to an executable script, a "_COMM=" match for the script name is added to the query. If a file path refers to a device node, "_KERNEL_DEVICE=" matches for the kernel name of the device and for each of its ancestor devices is added to the query. Symbolic links are dereferenced, kernel names are synthesized, and parent devices are identified from the environment at the time of the query. In general, a device node is the best proxy for an actual device, as log entries do not usually contain fields that identify an actual device. For the resulting log entries to be correct for the actual device, the relevant parts of the environment at the time the entry was logged, in particular the actual device corresponding to the device node, must have been the same as those at the time of the query. Because device nodes generally change their corresponding devices across reboots, specifying a device node path causes the resulting entries to be restricted to those from the current boot.</p>
+<p>Additional constraints may be added using options <strong>--boot</strong>, <strong>--unit=</strong>, etc., to further limit what entries will be shown (logical AND).</p>
+<p>Output is interleaved from all accessible journal files, whether they are rotated or currently being written, and regardless of whether they belong to the system itself or are accessible user journals.</p>
+<p>The set of journal files which will be used can be modified using the <strong>--user</strong>, <strong>--system</strong>, <strong>--directory</strong>, and <strong>--file</strong> options, see below.</p>
+<p>All users are granted access to their private per-user journals. However, by default, only root and users who are members of a few special groups are granted access to the system journal and the journals of other users. Members of the groups "systemd-journal", "adm", and "wheel" can read all journal files. Note that the two latter groups traditionally have additional privileges specified by the distribution. Members of the "wheel" group can often perform administrative tasks.</p>
+<p>The output is paged through <strong>less</strong> by default, and long lines are "truncated" to screen width. The hidden part can be viewed by using the left-arrow and right-arrow keys. Paging can be disabled; see the <strong>--no-pager</strong> option and the "Environment" section below.</p>
+<p>When outputting to a tty, lines are colored according to priority: lines of level ERROR and higher are colored red; lines of level NOTICE and higher are highlighted; lines of level DEBUG are colored lighter grey; other lines are displayed normally.</p>
+<h1>OPTIONS</h1>
+<p>The following options are understood:</p>
+<p><strong>--no-full</strong>, <strong>--full</strong>, <strong>-l</strong></p>
+<blockquote>
+<p>Ellipsize fields when they do not fit in available columns. The default is to show full fields, allowing them to wrap or be truncated by the pager, if one is used.</p>
+<p>The old options <strong>-l</strong>/<strong>--full</strong> are not useful anymore, except to undo <strong>--no-full</strong>.</p>
+</blockquote>
+<p><strong>-a</strong>, <strong>--all</strong></p>
+<blockquote>
+<p>Show all fields in full, even if they include unprintable characters or are very long. By default, fields with unprintable characters are abbreviated as "blob data". (Note that the pager may escape unprintable characters again.)</p>
+</blockquote>
+<p><strong>-f</strong>, <strong>--follow</strong></p>
+<blockquote>
+<p>Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.</p>
+</blockquote>
+<p><strong>-e</strong>, <strong>--pager-end</strong></p>
+<blockquote>
+<p>Immediately jump to the end of the journal inside the implied pager tool. This implies <strong>-n1000</strong> to guarantee that the pager will not buffer logs of unbounded size. This may be overridden with an explicit <strong>-n</strong> with some other numeric value, while <strong>-nall</strong> will disable this cap. Note that this option is only supported for the <strong>less</strong>(1) pager.</p>
+</blockquote>
+<p><strong>-n</strong>, <strong>--lines=</strong></p>
+<blockquote>
+<p>Show the most recent journal events and limit the number of events shown. If <strong>--follow</strong> is used, this option is implied. The argument is a positive integer or "all" to disable line limiting. The default value is 10 if no argument is given.</p>
+</blockquote>
+<p><strong>--no-tail</strong></p>
+<blockquote>
+<p>Show all stored output lines, even in follow mode. Undoes the effect of <strong>--lines=</strong>.</p>
+</blockquote>
+<p><strong>-r</strong>, <strong>--reverse</strong></p>
+<blockquote>
+<p>Reverse output so that the newest entries are displayed first.</p>
+</blockquote>
+<p><strong>-o</strong>, <strong>--output=</strong></p>
+<blockquote>
+<p>Controls the formatting of the journal entries that are shown. Takes one of the following options:</p>
+<p><strong>short</strong></p>
+<blockquote>
+<p>is the default and generates an output that is mostly identical to the formatting of classic syslog files, showing one line per journal entry.</p>
+</blockquote>
+<p><strong>short-full</strong></p>
+<blockquote>
+<p>is very similar, but shows timestamps in the format the <strong>--since=</strong> and <strong>--until=</strong> options accept. Unlike the timestamp information shown in <strong>short</strong> output mode this mode includes weekday, year and timezone information in the output, and is locale-independent.</p>
+</blockquote>
+<p><strong>short-iso</strong></p>
+<blockquote>
+<p>is very similar, but shows ISO 8601 wallclock timestamps.</p>
+</blockquote>
+<p><strong>short-iso-precise</strong></p>
+<blockquote>
+<p>as for <strong>short-iso</strong> but includes full microsecond precision.</p>
+</blockquote>
+<p><strong>short-precise</strong></p>
+<blockquote>
+<p>is very similar, but shows classic syslog timestamps with full microsecond precision.</p>
+</blockquote>
+<p><strong>short-monotonic</strong></p>
+<blockquote>
+<p>is very similar, but shows monotonic timestamps instead of wallclock timestamps.</p>
+</blockquote>
+<p><strong>short-unix</strong></p>
+<blockquote>
+<p>is very similar, but shows seconds passed since January 1st 1970 UTC instead of wallclock timestamps ("UNIX time"). The time is shown with microsecond accuracy.</p>
+</blockquote>
+<p><strong>verbose</strong></p>
+<blockquote>
+<p>shows the full-structured entry items with all fields.</p>
+</blockquote>
+<p><strong>export</strong></p>
+<blockquote>
+<p>serializes the journal into a binary (but mostly text-based) stream suitable for backups and network transfer (see <strong>Journal Export Format</strong>[1] for more information). To import the binary stream back into native journald format use <strong>systemd-journal-remote</strong>(8).</p>
+</blockquote>
+<p><strong>json</strong></p>
+<blockquote>
+<p>formats entries as JSON objects, separated by newline characters (see <strong>Journal JSON Format</strong>[2] for more information). Field values are generally encoded as JSON strings, with three exceptions:</p>
+<blockquote>
+<p>1.</p>
+<p>Fields larger than 4096 bytes are encoded as <strong>null</strong> values. (This may be turned off by passing <strong>--all</strong>, but be aware that this may allocate overly long JSON objects.)</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>Journal entries permit non-unique fields within the same log entry. JSON does not allow non-unique fields within objects. Due to this, if a non-unique field is encountered a JSON array is used as field value, listing all field values as elements.</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>Fields containing non-printable or non-UTF8 bytes are encoded as arrays containing the raw bytes individually formatted as unsigned numbers.</p>
+</blockquote>
+<p>Note that this encoding is reversible (with the exception of the size limit).</p>
+</blockquote>
+<p><strong>json-pretty</strong></p>
+<blockquote>
+<p>formats entries as JSON data structures, but formats them in multiple lines in order to make them more readable by humans.</p>
+</blockquote>
+<p><strong>json-sse</strong></p>
+<blockquote>
+<p>formats entries as JSON data structures, but wraps them in a format suitable for <strong>Server-Sent Events</strong>[3].</p>
+</blockquote>
+<p><strong>json-seq</strong></p>
+<blockquote>
+<p>formats entries as JSON data structures, but prefixes them with an ASCII Record Separator character (0x1E) and suffixes them with an ASCII Line Feed character (0x0A), in accordance with <strong>JavaScript Object Notation (JSON) Text Sequences</strong>[4] ("application/json-seq").</p>
+</blockquote>
+<p><strong>cat</strong></p>
+<blockquote>
+<p>generates a very terse output, only showing the actual message of each journal entry with no metadata, not even a timestamp. If combined with the <strong>--output-fields=</strong> option will output the listed fields for each log record, instead of the message.</p>
+</blockquote>
+<p><strong>with-unit</strong></p>
+<blockquote>
+<p>similar to short-full, but prefixes the unit and user unit names instead of the traditional syslog identifier. Useful when using templated instances, as it will include the arguments in the unit names.</p>
+</blockquote>
+</blockquote>
+<p><strong>--output-fields=</strong></p>
+<blockquote>
+<p>A comma separated list of the fields which should be included in the output. This has an effect only for the output modes which would normally show all fields (<strong>verbose</strong>, <strong>export</strong>, <strong>json</strong>, <strong>json-pretty</strong>, <strong>json-sse</strong> and <strong>json-seq</strong>), as well as on <strong>cat</strong>. For the former, the "__CURSOR", "__REALTIME_TIMESTAMP", "__MONOTONIC_TIMESTAMP", and "_BOOT_ID" fields are always printed.</p>
+</blockquote>
+<p><strong>--utc</strong></p>
+<blockquote>
+<p>Express time in Coordinated Universal Time (UTC).</p>
+</blockquote>
+<p><strong>--no-hostname</strong></p>
+<blockquote>
+<p>Dont show the hostname field of log messages originating from the local host. This switch has an effect only on the <strong>short</strong> family of output modes (see above).</p>
+<p>Note: this option does not remove occurrences of the hostname from log entries themselves, so it does not prevent the hostname from being visible in the logs.</p>
+</blockquote>
+<p><strong>-x</strong>, <strong>--catalog</strong></p>
+<blockquote>
+<p>Augment log lines with explanation texts from the message catalog. This will add explanatory help texts to log messages in the output where this is available. These short help texts will explain the context of an error or log event, possible solutions, as well as pointers to support forums, developer documentation, and any other relevant manuals. Note that help texts are not available for all messages, but only for selected ones. For more information on the message catalog, please refer to the <strong>Message Catalog Developer Documentation</strong>[5].</p>
+<p>Note: when attaching <strong>journalctl</strong> output to bug reports, please do <em>not</em> use <strong>-x</strong>.</p>
+</blockquote>
+<p><strong>-q</strong>, <strong>--quiet</strong></p>
+<blockquote>
+<p>Suppresses all informational messages (i.e. "-- Journal begins at ...", "-- Reboot --"), any warning messages regarding inaccessible system journals when run as a normal user.</p>
+</blockquote>
+<p><strong>-m</strong>, <strong>--merge</strong></p>
+<blockquote>
+<p>Show entries interleaved from all available journals, including remote ones.</p>
+</blockquote>
+<p><strong>-b [[</strong><em>ID</em>][<em>±offset</em>]|<strong>all</strong>], <strong>--boot[=[</strong><em>ID</em>][<em>±offset</em>]|<strong>all</strong>]</p>
+<blockquote>
+<p>Show messages from a specific boot. This will add a match for "_BOOT_ID=".</p>
+<p>The argument may be empty, in which case logs for the current boot will be shown.</p>
+<p>If the boot ID is omitted, a positive <em>offset</em> will look up the boots starting from the beginning of the journal, and an equal-or-less-than zero <em>offset</em> will look up boots starting from the end of the journal. Thus, <strong>1</strong> means the first boot found in the journal in chronological order, <strong>2</strong> the second and so on; while <strong>-0</strong> is the last boot, <strong>-1</strong> the boot before last, and so on. An empty <em>offset</em> is equivalent to specifying <strong>-0</strong>, except when the current boot is not the last boot (e.g. because <strong>--directory</strong> was specified to look at logs from a different machine).</p>
+<p>If the 32-character <em>ID</em> is specified, it may optionally be followed by <em>offset</em> which identifies the boot relative to the one given by boot <em>ID</em>. Negative values mean earlier boots and positive values mean later boots. If <em>offset</em> is not specified, a value of zero is assumed, and the logs for the boot given by <em>ID</em> are shown.</p>
+<p>The special argument <strong>all</strong> can be used to negate the effect of an earlier use of <strong>-b</strong>.</p>
+</blockquote>
+<p><strong>--list-boots</strong></p>
+<blockquote>
+<p>Show a tabular list of boot numbers (relative to the current boot), their IDs, and the timestamps of the first and last message pertaining to the boot.</p>
+</blockquote>
+<p><strong>-k</strong>, <strong>--dmesg</strong></p>
+<blockquote>
+<p>Show only kernel messages. This implies <strong>-b</strong> and adds the match "_TRANSPORT=kernel".</p>
+</blockquote>
+<p><strong>-t</strong>, <strong>--identifier=</strong><em>SYSLOG_IDENTIFIER</em></p>
+<blockquote>
+<p>Show messages for the specified syslog identifier <em>SYSLOG_IDENTIFIER</em>.</p>
+<p>This parameter can be specified multiple times.</p>
+</blockquote>
+<p><strong>-u</strong>, <strong>--unit=</strong><em>UNIT</em><strong>|</strong><em>PATTERN</em></p>
+<blockquote>
+<p>Show messages for the specified systemd unit <em>UNIT</em> (such as a service unit), or for any of the units matched by <em>PATTERN</em>. If a pattern is specified, a list of unit names found in the journal is compared with the specified pattern and all that match are used. For each unit name, a match is added for messages from the unit ("_SYSTEMD_UNIT=<em>UNIT</em>"), along with additional matches for messages from systemd and messages about coredumps for the specified unit. A match is also added for "_SYSTEMD_SLICE=<em>UNIT</em>", such that if the provided <em>UNIT</em> is a <strong>systemd.slice</strong>(5) unit, all logs of children of the slice will be shown.</p>
+<p>This parameter can be specified multiple times.</p>
+</blockquote>
+<p><strong>--user-unit=</strong></p>
+<blockquote>
+<p>Show messages for the specified user session unit. This will add a match for messages from the unit ("_SYSTEMD_USER_UNIT=" and "_UID=") and additional matches for messages from session systemd and messages about coredumps for the specified unit. A match is also added for "_SYSTEMD_USER_SLICE=<em>UNIT</em>", such that if the provided <em>UNIT</em> is a <strong>systemd.slice</strong>(5) unit, all logs of children of the unit will be shown.</p>
+<p>This parameter can be specified multiple times.</p>
+</blockquote>
+<p><strong>-p</strong>, <strong>--priority=</strong></p>
+<blockquote>
+<p>Filter output by message priorities or priority ranges. Takes either a single numeric or textual log level (i.e. between 0/"emerg" and 7/"debug"), or a range of numeric/text log levels in the form FROM..TO. The log levels are the usual syslog log levels as documented in <strong>syslog</strong>(3), i.e. "emerg" (0), "alert" (1), "crit" (2), "err" (3), "warning" (4), "notice" (5), "info" (6), "debug" (7). If a single log level is specified, all messages with this log level or a lower (hence more important) log level are shown. If a range is specified, all messages within the range are shown, including both the start and the end value of the range. This will add "PRIORITY=" matches for the specified priorities.</p>
+</blockquote>
+<p><strong>--facility=</strong></p>
+<blockquote>
+<p>Filter output by syslog facility. Takes a comma-separated list of numbers or facility names. The names are the usual syslog facilities as documented in <strong>syslog</strong>(3). <strong>--facility=help</strong> may be used to display a list of known facility names and exit.</p>
+</blockquote>
+<p><strong>-g</strong>, <strong>--grep=</strong></p>
+<blockquote>
+<p>Filter output to entries where the <em>MESSAGE=</em> field matches the specified regular expression. PERL-compatible regular expressions are used, see <strong>pcre2pattern</strong>(3) for a detailed description of the syntax.</p>
+<p>If the pattern is all lowercase, matching is case insensitive. Otherwise, matching is case sensitive. This can be overridden with the <strong>--case-sensitive</strong> option, see below.</p>
+</blockquote>
+<p><strong>--case-sensitive[=BOOLEAN]</strong></p>
+<blockquote>
+<p>Make pattern matching case sensitive or case insensitive.</p>
+</blockquote>
+<p><strong>-c</strong>, <strong>--cursor=</strong></p>
+<blockquote>
+<p>Start showing entries from the location in the journal specified by the passed cursor.</p>
+</blockquote>
+<p><strong>--cursor-file=</strong><em>FILE</em></p>
+<blockquote>
+<p>If <em>FILE</em> exists and contains a cursor, start showing entries <em>after</em> this location. Otherwise the show entries according the other given options. At the end, write the cursor of the last entry to <em>FILE</em>. Use this option to continually read the journal by sequentially calling <strong>journalctl</strong>.</p>
+</blockquote>
+<p><strong>--after-cursor=</strong></p>
+<blockquote>
+<p>Start showing entries from the location in the journal <em>after</em> the location specified by the passed cursor. The cursor is shown when the <strong>--show-cursor</strong> option is used.</p>
+</blockquote>
+<p><strong>--show-cursor</strong></p>
+<blockquote>
+<p>The cursor is shown after the last entry after two dashes:</p>
+<blockquote>
+<pre><code>-- cursor: s=0639...</code></pre>
+</blockquote>
+<p>The format of the cursor is private and subject to change.</p>
+</blockquote>
+<p><strong>-S</strong>, <strong>--since=</strong>, <strong>-U</strong>, <strong>--until=</strong></p>
+<blockquote>
+<p>Start showing entries on or newer than the specified date, or on or older than the specified date, respectively. Date specifications should be of the format "2012-10-30 18:17:16". If the time part is omitted, "00:00:00" is assumed. If only the seconds component is omitted, ":00" is assumed. If the date component is omitted, the current day is assumed. Alternatively the strings "yesterday", "today", "tomorrow" are understood, which refer to 00:00:00 of the day before the current day, the current day, or the day after the current day, respectively. "now" refers to the current time. Finally, relative times may be specified, prefixed with "-" or "+", referring to times before or after the current time, respectively. For complete time and date specification, see <strong>systemd.time</strong>(7). Note that <strong>--output=short-full</strong> prints timestamps that follow precisely this format.</p>
+</blockquote>
+<p><strong>-F</strong>, <strong>--field=</strong></p>
+<blockquote>
+<p>Print all possible data values the specified field can take in all entries of the journal.</p>
+</blockquote>
+<p><strong>-N</strong>, <strong>--fields</strong></p>
+<blockquote>
+<p>Print all field names currently used in all entries of the journal.</p>
+</blockquote>
+<p><strong>--system</strong>, <strong>--user</strong></p>
+<blockquote>
+<p>Show messages from system services and the kernel (with <strong>--system</strong>). Show messages from service of current user (with <strong>--user</strong>). If neither is specified, show all messages that the user can see.</p>
+</blockquote>
+<p><strong>-M</strong>, <strong>--machine=</strong></p>
+<blockquote>
+<p>Show messages from a running, local container. Specify a container name to connect to.</p>
+</blockquote>
+<p><strong>-D </strong><em>DIR</em>, <strong>--directory=</strong><em>DIR</em></p>
+<blockquote>
+<p>Takes a directory path as argument. If specified, journalctl will operate on the specified journal directory <em>DIR</em> instead of the default runtime and system journal paths.</p>
+</blockquote>
+<p><strong>--file=</strong><em>GLOB</em></p>
+<blockquote>
+<p>Takes a file glob as an argument. If specified, journalctl will operate on the specified journal files matching <em>GLOB</em> instead of the default runtime and system journal paths. May be specified multiple times, in which case files will be suitably interleaved.</p>
+</blockquote>
+<p><strong>--root=</strong><em>ROOT</em></p>
+<blockquote>
+<p>Takes a directory path as an argument. If specified, <strong>journalctl</strong> will operate on journal directories and catalog file hierarchy underneath the specified directory instead of the root directory (e.g. <strong>--update-catalog</strong> will create <em>ROOT</em>/var/lib/systemd/catalog/database, and journal files under <em>ROOT</em>/run/journal/ or <em>ROOT</em>/var/log/journal/ will be displayed).</p>
+</blockquote>
+<p><strong>--image=</strong><em>IMAGE</em></p>
+<blockquote>
+<p>Takes a path to a disk image file or block device node. If specified, <strong>journalctl</strong> will operate on the file system in the indicated disk image. This is similar to <strong>--root=</strong> but operates on file systems stored in disk images or block devices, thus providing an easy way to extract log data from disk images. The disk image should either contain just a file system or a set of file systems within a GPT partition table, following the <strong>Discoverable Partitions Specification</strong>[6]. For further information on supported disk images, see <strong>systemd-nspawn</strong>(1)s switch of the same name.</p>
+</blockquote>
+<p><strong>--namespace=</strong><em>NAMESPACE</em></p>
+<blockquote>
+<p>Takes a journal namespace identifier string as argument. If not specified the data collected by the default namespace is shown. If specified shows the log data of the specified namespace instead. If the namespace is specified as "*" data from all namespaces is shown, interleaved. If the namespace identifier is prefixed with "+" data from the specified namespace and the default namespace is shown, interleaved, but no other. For details about journal namespaces see <strong>systemd-journald.service</strong>(8).</p>
+</blockquote>
+<p><strong>--header</strong></p>
+<blockquote>
+<p>Instead of showing journal contents, show internal header information of the journal fields accessed.</p>
+</blockquote>
+<p><strong>--disk-usage</strong></p>
+<blockquote>
+<p>Shows the current disk usage of all journal files. This shows the sum of the disk usage of all archived and active journal files.</p>
+</blockquote>
+<p><strong>--vacuum-size=</strong>, <strong>--vacuum-time=</strong>, <strong>--vacuum-files=</strong></p>
+<blockquote>
+<p>Removes the oldest archived journal files until the disk space they use falls below the specified size (specified with the usual "K", "M", "G" and "T" suffixes), or all archived journal files contain no data older than the specified timespan (specified with the usual "s", "m", "h", "days", "months", "weeks" and "years" suffixes), or no more than the specified number of separate journal files remain. Note that running <strong>--vacuum-size=</strong> has only an indirect effect on the output shown by <strong>--disk-usage</strong>, as the latter includes active journal files, while the vacuuming operation only operates on archived journal files. Similarly, <strong>--vacuum-files=</strong> might not actually reduce the number of journal files to below the specified number, as it will not remove active journal files.</p>
+<p><strong>--vacuum-size=</strong>, <strong>--vacuum-time=</strong> and <strong>--vacuum-files=</strong> may be combined in a single invocation to enforce any combination of a size, a time and a number of files limit on the archived journal files. Specifying any of these three parameters as zero is equivalent to not enforcing the specific limit, and is thus redundant.</p>
+<p>These three switches may also be combined with <strong>--rotate</strong> into one command. If so, all active files are rotated first, and the requested vacuuming operation is executed right after. The rotation has the effect that all currently active files are archived (and potentially new, empty journal files opened as replacement), and hence the vacuuming operation has the greatest effect as it can take all log data written so far into account.</p>
+</blockquote>
+<p><strong>--list-catalog [</strong><em>128-bit-ID...</em>]<strong> </strong></p>
+<blockquote>
+<p>List the contents of the message catalog as a table of message IDs, plus their short description strings.</p>
+<p>If any <em>128-bit-ID</em>s are specified, only those entries are shown.</p>
+</blockquote>
+<p><strong>--dump-catalog [</strong><em>128-bit-ID...</em>]<strong> </strong></p>
+<blockquote>
+<p>Show the contents of the message catalog, with entries separated by a line consisting of two dashes and the ID (the format is the same as .catalog files).</p>
+<p>If any <em>128-bit-ID</em>s are specified, only those entries are shown.</p>
+</blockquote>
+<p><strong>--update-catalog</strong></p>
+<blockquote>
+<p>Update the message catalog index. This command needs to be executed each time new catalog files are installed, removed, or updated to rebuild the binary catalog index.</p>
+</blockquote>
+<p><strong>--setup-keys</strong></p>
+<blockquote>
+<p>Instead of showing journal contents, generate a new key pair for Forward Secure Sealing (FSS). This will generate a sealing key and a verification key. The sealing key is stored in the journal data directory and shall remain on the host. The verification key should be stored externally. Refer to the <strong>Seal=</strong> option in <strong>journald.conf</strong>(5) for information on Forward Secure Sealing and for a link to a refereed scholarly paper detailing the cryptographic theory it is based on.</p>
+</blockquote>
+<p><strong>--force</strong></p>
+<blockquote>
+<p>When <strong>--setup-keys</strong> is passed and Forward Secure Sealing (FSS) has already been configured, recreate FSS keys.</p>
+</blockquote>
+<p><strong>--interval=</strong></p>
+<blockquote>
+<p>Specifies the change interval for the sealing key when generating an FSS key pair with <strong>--setup-keys</strong>. Shorter intervals increase CPU consumption but shorten the time range of undetectable journal alterations. Defaults to 15min.</p>
+</blockquote>
+<p><strong>--verify</strong></p>
+<blockquote>
+<p>Check the journal file for internal consistency. If the file has been generated with FSS enabled and the FSS verification key has been specified with <strong>--verify-key=</strong>, authenticity of the journal file is verified.</p>
+</blockquote>
+<p><strong>--verify-key=</strong></p>
+<blockquote>
+<p>Specifies the FSS verification key to use for the <strong>--verify</strong> operation.</p>
+</blockquote>
+<p><strong>--sync</strong></p>
+<blockquote>
+<p>Asks the journal daemon to write all yet unwritten journal data to the backing file system and synchronize all journals. This call does not return until the synchronization operation is complete. This command guarantees that any log messages written before its invocation are safely stored on disk at the time it returns.</p>
+</blockquote>
+<p><strong>--flush</strong></p>
+<blockquote>
+<p>Asks the journal daemon to flush any log data stored in /run/log/journal/ into /var/log/journal/, if persistent storage is enabled. This call does not return until the operation is complete. Note that this call is idempotent: the data is only flushed from /run/log/journal/ into /var/log/journal/ once during system runtime (but see <strong>--relinquish-var</strong> below), and this command exits cleanly without executing any operation if this has already happened. This command effectively guarantees that all data is flushed to /var/log/journal/ at the time it returns.</p>
+</blockquote>
+<p><strong>--relinquish-var</strong></p>
+<blockquote>
+<p>Asks the journal daemon for the reverse operation to <strong>--flush</strong>: if requested the daemon will write further log data to /run/log/journal/ and stops writing to /var/log/journal/. A subsequent call to <strong>--flush</strong> causes the log output to switch back to /var/log/journal/, see above.</p>
+</blockquote>
+<p><strong>--smart-relinquish-var</strong></p>
+<blockquote>
+<p>Similar to <strong>--relinquish-var</strong> but executes no operation if the root file system and /var/lib/journal/ reside on the same mount point. This operation is used during system shutdown in order to make the journal daemon stop writing data to /var/log/journal/ in case that directory is located on a mount point that needs to be unmounted.</p>
+</blockquote>
+<p><strong>--rotate</strong></p>
+<blockquote>
+<p>Asks the journal daemon to rotate journal files. This call does not return until the rotation operation is complete. Journal file rotation has the effect that all currently active journal files are marked as archived and renamed, so that they are never written to in future. New (empty) journal files are then created in their place. This operation may be combined with <strong>--vacuum-size=</strong>, <strong>--vacuum-time=</strong> and <strong>--vacuum-file=</strong> into a single command, see above.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<p><strong>--no-pager</strong></p>
+<blockquote>
+<p>Do not pipe output into a pager.</p>
+</blockquote>
+<h1>EXIT STATUS</h1>
+<p>On success, 0 is returned; otherwise, a non-zero failure code is returned.</p>
+<h1>ENVIRONMENT</h1>
+<p><em>$SYSTEMD_PAGER</em></p>
+<blockquote>
+<p>Pager to use when <strong>--no-pager</strong> is not given; overrides <em>$PAGER</em>. If neither <em>$SYSTEMD_PAGER</em> nor <em>$PAGER</em> are set, a set of well-known pager implementations are tried in turn, including <strong>less</strong>(1) and <strong>more</strong>(1), until one is found. If no pager implementation is discovered no pager is invoked. Setting this environment variable to an empty string or the value "cat" is equivalent to passing <strong>--no-pager</strong>.</p>
+</blockquote>
+<p><em>$SYSTEMD_LESS</em></p>
+<blockquote>
+<p>Override the options passed to <strong>less</strong> (by default "FRSXMK").</p>
+<p>Users might want to change two options in particular:</p>
+<p><strong>K</strong></p>
+<blockquote>
+<p>This option instructs the pager to exit immediately when Ctrl+C is pressed. To allow <strong>less</strong> to handle Ctrl+C itself to switch back to the pager command prompt, unset this option.</p>
+<p>If the value of <em>$SYSTEMD_LESS</em> does not include "K", and the pager that is invoked is <strong>less</strong>, Ctrl+C will be ignored by the executable, and needs to be handled by the pager.</p>
+</blockquote>
+<p><strong>X</strong></p>
+<blockquote>
+<p>This option instructs the pager to not send termcap initialization and deinitialization strings to the terminal. It is set by default to allow command output to remain visible in the terminal even after the pager exits. Nevertheless, this prevents some pager functionality from working, in particular paged output cannot be scrolled with the mouse.</p>
+</blockquote>
+<p>See <strong>less</strong>(1) for more discussion.</p>
+</blockquote>
+<p><em>$SYSTEMD_LESSCHARSET</em></p>
+<blockquote>
+<p>Override the charset passed to <strong>less</strong> (by default "utf-8", if the invoking terminal is determined to be UTF-8 compatible).</p>
+</blockquote>
+<p><em>$SYSTEMD_PAGERSECURE</em></p>
+<blockquote>
+<p>Takes a boolean argument. When true, the "secure" mode of the pager is enabled; if false, disabled. If <em>$SYSTEMD_PAGERSECURE</em> is not set at all, secure mode is enabled if the effective UID is not the same as the owner of the login session, see <strong>geteuid</strong>(2) and <strong>sd_pid_get_owner_uid</strong>(3). In secure mode, <strong>LESSSECURE=1</strong> will be set when invoking the pager, and the pager shall disable commands that open or create new files or start new subprocesses. When <em>$SYSTEMD_PAGERSECURE</em> is not set at all, pagers which are not known to implement secure mode will not be used. (Currently only <strong>less</strong>(1) implements secure mode.)</p>
+<p>Note: when commands are invoked with elevated privileges, for example under <strong>sudo</strong>(8) or <strong>pkexec</strong>(1), care must be taken to ensure that unintended interactive features are not enabled. "Secure" mode for the pager may be enabled automatically as describe above. Setting <em>SYSTEMD_PAGERSECURE=0</em> or not removing it from the inherited environment allows the user to invoke arbitrary commands. Note that if the <em>$SYSTEMD_PAGER</em> or <em>$PAGER</em> variables are to be honoured, <em>$SYSTEMD_PAGERSECURE</em> must be set too. It might be reasonable to completely disable the pager using <strong>--no-pager</strong> instead.</p>
+</blockquote>
+<p><em>$SYSTEMD_COLORS</em></p>
+<blockquote>
+<p>The value must be a boolean. Controls whether colorized output should be generated. This can be specified to override the decision that <strong>systemd</strong> makes based on <em>$TERM</em> and what the console is connected to.</p>
+</blockquote>
+<p><em>$SYSTEMD_URLIFY</em></p>
+<blockquote>
+<p>The value must be a boolean. Controls whether clickable links should be generated in the output for terminal emulators supporting this. This can be specified to override the decision that <strong>systemd</strong> makes based on <em>$TERM</em> and other conditions.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>Without arguments, all collected logs are shown unfiltered:</p>
+<blockquote>
+<pre><code>journalctl</code></pre>
+</blockquote>
+<p>With one match specified, all entries with a field matching the expression are shown:</p>
+<blockquote>
+<pre><code>journalctl _SYSTEMD_UNIT=avahi-daemon.service
+journalctl _SYSTEMD_CGROUP=/user.slice/user-42.slice/session-c1.scope</code></pre>
+</blockquote>
+<p>If two different fields are matched, only entries matching both expressions at the same time are shown:</p>
+<blockquote>
+<pre><code>journalctl _SYSTEMD_UNIT=avahi-daemon.service _PID=28097</code></pre>
+</blockquote>
+<p>If two matches refer to the same field, all entries matching either expression are shown:</p>
+<blockquote>
+<pre><code>journalctl _SYSTEMD_UNIT=avahi-daemon.service _SYSTEMD_UNIT=dbus.service</code></pre>
+</blockquote>
+<p>If the separator "+" is used, two expressions may be combined in a logical OR. The following will show all messages from the Avahi service process with the PID 28097 plus all messages from the D-Bus service (from any of its processes):</p>
+<blockquote>
+<pre><code>journalctl _SYSTEMD_UNIT=avahi-daemon.service _PID=28097 + _SYSTEMD_UNIT=dbus.service</code></pre>
+</blockquote>
+<p>To show all fields emitted <em>by</em> a unit and <em>about</em> the unit, option <strong>-u</strong>/<strong>--unit=</strong> should be used. <strong>journalctl -u </strong><em>name</em> expands to a complex filter similar to</p>
+<blockquote>
+<pre><code>_SYSTEMD_UNIT=name.service
+  + UNIT=name.service _PID=1
+  + OBJECT_SYSTEMD_UNIT=name.service _UID=0
+  + COREDUMP_UNIT=name.service _UID=0 MESSAGE_ID=fc2e22bc6ee647b6b90729ab34a250b1
+    </code></pre>
+</blockquote>
+<p>(see <strong>systemd.journal-fields</strong>(7) for an explanation of those patterns).</p>
+<p>Show all logs generated by the D-Bus executable:</p>
+<blockquote>
+<pre><code>journalctl /usr/bin/dbus-daemon</code></pre>
+</blockquote>
+<p>Show all kernel logs from previous boot:</p>
+<blockquote>
+<pre><code>journalctl -k -b -1</code></pre>
+</blockquote>
+<p>Show a live log display from a system service apache.service:</p>
+<blockquote>
+<pre><code>journalctl -f -u apache</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemd-journald.service</strong>(8), <strong>systemctl</strong>(1), <strong>coredumpctl</strong>(1), <strong>systemd.journal-fields</strong>(7), <strong>journald.conf</strong>(5), <strong>systemd.time</strong>(7), <strong>systemd-journal-remote.service</strong>(8), <strong>systemd-journal-upload.service</strong>(8)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>Journal Export Format</p>
+<p>https://www.freedesktop.org/wiki/Software/systemd/export</p></li>
+<li><p>Journal JSON Format</p>
+<p>https://www.freedesktop.org/wiki/Software/systemd/json</p></li>
+<li><p>Server-Sent Events</p>
+<p>https://developer.mozilla.org/en-US/docs/Server-sent_events/Using_server-sent_events</p></li>
+<li><p>JavaScript Object Notation (JSON) Text Sequences</p>
+<p>https://tools.ietf.org/html/rfc7464</p></li>
+<li><p>Message Catalog Developer Documentation</p>
+<p>https://www.freedesktop.org/wiki/Software/systemd/catalog</p></li>
+<li><p>Discoverable Partitions Specification</p>
+<p>https://systemd.io/DISCOVERABLE_PARTITIONS</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

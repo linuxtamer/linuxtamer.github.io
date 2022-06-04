@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command swprintf</title><meta name="description" content="Linux command swprintf formatted wide-character output conversion"><meta name="keywords" content="linux, command, swprintf, bsd, formatted wide-character output conversion"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>wprintf, fwprintf, swprintf, vwprintf, vfwprintf, vswprintf - formatted wide-character output conversion</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;wchar.h&gt;
+
+int wprintf(const wchar_t *format, ...);
+int fwprintf(FILE *stream, const wchar_t *format, ...);
+int swprintf(wchar_t *wcs, size_t maxlen,
+ const wchar_t *format, ...);
+
+int vwprintf(const wchar_t *format, va_list args);
+int vfwprintf(FILE *stream, const wchar_t *format, va_list args);
+int vswprintf(wchar_t *wcs, size_t maxlen,
+ const wchar_t *format, va_list args);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p>All functions shown above:</p>
+<blockquote>
+<p>_XOPEN_SOURCE &gt;= 500 || _ISOC99_SOURCE ||<br />
+_POSIX_C_SOURCE &gt;= 200112L</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>The <strong>wprintf</strong>() family of functions is the wide-character equivalent of the <strong>printf</strong>(3) family of functions. It performs formatted output of wide characters.</p>
+<p>The <strong>wprintf</strong>() and <strong>vwprintf</strong>() functions perform wide-character output to <em>stdout</em>. <em>stdout</em> must not be byte oriented; see <strong>fwide</strong>(3) for more information.</p>
+<p>The <strong>fwprintf</strong>() and <strong>vfwprintf</strong>() functions perform wide-character output to <em>stream</em>. <em>stream</em> must not be byte oriented; see <strong>fwide</strong>(3) for more information.</p>
+<p>The <strong>swprintf</strong>() and <strong>vswprintf</strong>() functions perform wide-character output to an array of wide characters. The programmer must ensure that there is room for at least <em>maxlen</em> wide characters at <em>wcs</em>.</p>
+<p>These functions are like the <strong>printf</strong>(3), <strong>vprintf</strong>(3), <strong>fprintf</strong>(3), <strong>vfprintf</strong>(3), <strong>sprintf</strong>(3), <strong>vsprintf</strong>(3) functions except for the following differences:</p>
+<dl>
+<dt><strong>·</strong></dt>
+<dd><p>The <em>format</em> string is a wide-character string.</p>
+</dd>
+<dt><strong>·</strong></dt>
+<dd><p>The output consists of wide characters, not bytes.</p>
+</dd>
+<dt><strong>·</strong></dt>
+<dd><p><strong>swprintf</strong>() and <strong>vswprintf</strong>() take a <em>maxlen</em> argument, <strong>sprintf</strong>(3) and <strong>vsprintf</strong>(3) do not. (<strong>snprintf</strong>(3) and <strong>vsnprintf</strong>(3) take a <em>maxlen</em> argument, but these functions do not return -1 upon buffer overflow on Linux.)</p>
+</dd>
+</dl>
+<p>The treatment of the conversion characters <strong>c</strong> and <strong>s</strong> is different:</p>
+<dl>
+<dt><strong>c</strong></dt>
+<dd><p>If no <strong>l</strong> modifier is present, the <em>int</em> argument is converted to a wide character by a call to the <strong>btowc</strong>(3) function, and the resulting wide character is written. If an <strong>l</strong> modifier is present, the <em>wint_t</em> (wide character) argument is written.</p>
+</dd>
+<dt><strong>s</strong></dt>
+<dd><p>If no <strong>l</strong> modifier is present: the <em>const char *</em> argument is expected to be a pointer to an array of character type (pointer to a string) containing a multibyte character sequence beginning in the initial shift state. Characters from the array are converted to wide characters (each by a call to the <strong>mbrtowc</strong>(3) function with a conversion state starting in the initial state before the first byte). The resulting wide characters are written up to (but not including) the terminating null wide character (L'\0'). If a precision is specified, no more wide characters than the number specified are written. Note that the precision determines the number of <em>wide characters</em> written, not the number of <em>bytes</em> or <em>screen positions</em>. The array must contain a terminating null byte ('\0'), unless a precision is given and it is so small that the number of converted wide characters reaches it before the end of the array is reached. If an <strong>l</strong> modifier is present: the <em>const wchar_t *</em> argument is expected to be a pointer to an array of wide characters. Wide characters from the array are written up to (but not including) a terminating null wide character. If a precision is specified, no more than the number specified are written. The array must contain a terminating null wide character, unless a precision is given and it is smaller than or equal to the number of wide characters in the array.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>The functions return the number of wide characters written, excluding the terminating null wide character in case of the functions <strong>swprintf</strong>() and <strong>vswprintf</strong>(). They return -1 when an error occurs.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wprintf</strong>(), <strong>fwprintf</strong>(),<br />
+<strong>swprintf</strong>(), <strong>vwprintf</strong>(),<br />
+<strong>vfwprintf</strong>(), <strong>vswprintf</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, C99.</p>
+<h1>NOTES</h1>
+<p>The behavior of <strong>wprintf</strong>() et al. depends on the <strong>LC_CTYPE</strong> category of the current locale.</p>
+<p>If the <em>format</em> string contains non-ASCII wide characters, the program will work correctly only if the <strong>LC_CTYPE</strong> category of the current locale at run time is the same as the <strong>LC_CTYPE</strong> category of the current locale at compile time. This is because the <em>wchar_t</em> representation is platform- and locale-dependent. (The glibc represents wide characters using their Unicode (ISO-10646) code point, but other platforms don't do this. Also, the use of C99 universal character names of the form \unnnn does not solve this problem.) Therefore, in internationalized programs, the <em>format</em> string should consist of ASCII wide characters only, or should be constructed at run time in an internationalized way (e.g., using <strong>gettext</strong>(3) or <strong>iconv</strong>(3), followed by <strong>mbstowcs</strong>(3)).</p>
+<h1>SEE ALSO</h1>
+<p><strong>fprintf</strong>(3), <strong>fputwc</strong>(3), <strong>fwide</strong>(3), <strong>printf</strong>(3), <strong>snprintf</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

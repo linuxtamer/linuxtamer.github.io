@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command rmt</title><meta name="description" content="Linux command rmt remote magnetic tape server"><meta name="keywords" content="linux, command, rmt, bsd, remote magnetic tape server"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>rmt - remote magnetic tape server</p>
+<h1>SYNOPSIS</h1>
+<p><strong>rmt</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>Rmt</strong> provides remote access to files and devices for <strong>tar</strong>(1), <strong>cpio</strong>(1), and similar backup utilities. It is normally called by running <strong>rsh</strong>(1) or <strong>ssh</strong>(1) to the remote machine, optionally using a different login name if one is supplied.</p>
+<p>The calling program communicates with <strong>rmt</strong> by sending requests on its standard input and reading replies from the standard output. A request consists of a request letter followed by an argument (if required) and a newline character. Additional data, if any, are sent after the newline. On success, <strong>rmt</strong> returns</p>
+<p><strong>A</strong><em>number</em><strong>\n</strong></p>
+<p>where <em>number</em> is an ASCII representation of a decimal return code. Additional data are returned after this line. On error, the following response is returned:</p>
+<p><strong>E</strong><em>errno</em><strong>\n</strong><em>error-message</em><strong>\n</strong></p>
+<p>where <em>errno</em> is one of the system error codes, as described in <strong>errno</strong>(3), and <em>error-message</em> is a one-line human-readable description of the error, as printed by <strong>perror</strong>(3).</p>
+<p>Available commands and possible responses are discussed in detail in the subsequent section.</p>
+<h1>COMMANDS</h1>
+<dl>
+<dt><strong>O</strong><em>device</em><strong>\n</strong><em>flags</em><strong>\n</strong></dt>
+<dd><p>Opens the <em>device</em> with given <em>flags</em>. If a device had already been opened, it is closed before opening the new one.</p>
+</dd>
+</dl>
+<p><strong>Arguments</strong></p>
+<blockquote>
+<dl>
+<dt><em>device</em></dt>
+<dd><p>The name of the device to open.</p>
+</dd>
+<dt><em>flags</em></dt>
+<dd><p>Flags for <strong>open</strong>(2): a decimal number, or any valid <strong>O_*</strong> constant from <strong>fcntl.h</strong> (the initial <strong>O_</strong> may be omitted), or a bitwise or (using <strong>|</strong>) of any number of these, e.g.:</p>
+</dd>
+</dl>
+<pre><code>576
+64|512
+CREAT|TRUNC</code></pre>
+<blockquote>
+<p>In addition, a combined form is also allowed, i.e. a decimal mode followed by its symbolic representation. In this case the symbolic representation is given preference.</p>
+</blockquote>
+<p><strong>Reply</strong></p>
+<blockquote>
+<p><strong>A0\n</strong> on success.</p>
+</blockquote>
+<p><strong>Extensions</strong></p>
+<blockquote>
+<p>BSD version allows only decimal number as <em>flags</em>.</p>
+</blockquote>
+<dl>
+<dt><strong>C</strong>[<em>device</em>]<strong>\n</strong></dt>
+<dd><p>Close the currently open device.</p>
+<dl>
+<dt><strong>Arguments</strong></dt>
+<dd><p><br />
+Any arguments are silently ignored.</p>
+</dd>
+<dt><strong>Reply</strong></dt>
+<dd><p><br />
+<strong>A0\n</strong> on success.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>L</strong><em>whence</em><strong>\n</strong><em>offset</em><strong>\n</strong></dt>
+<dd><p>Performs an <strong>lseek</strong>(2) on the currently open device with the specified parameters.</p>
+<dl>
+<dt><strong>Arguments</strong></dt>
+<dd><dl>
+<dt><em>whence</em></dt>
+<dd><p>Where to measure offset from. Valid values are:</p>
+</dd>
+</dl>
+<pre><code>	0, SET, SEEK_SET	seek from the file beginning
+	1, CUR, SEEK_CUR	seek from the current location
+	2, END, SEEK_END	seek from the file end</code></pre>
+</dd>
+<dt><strong>Reply</strong></dt>
+<dd><p><br />
+<strong>A</strong><em>offset</em><strong>\n</strong> on success. The <em>offset</em> is the new offset in file.</p>
+</dd>
+<dt><strong>Extensions</strong></dt>
+<dd><p>BSD version allows only 0,1,2 as <em>whence</em>.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>R</strong><em>count</em><strong>\n</strong></dt>
+<dd><p><br />
+Read <em>count</em> bytes of data from the current device.</p>
+<dl>
+<dt><strong>Arguments</strong></dt>
+<dd><dl>
+<dt><em>count</em></dt>
+<dd><p>number of bytes to read.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>Reply</strong></dt>
+<dd><p><br />
+On success:</p>
+</dd>
+</dl>
+<p><strong>A</strong><em>rdcount</em><strong>\n</strong></p>
+<p>followed by <em>rdcount</em> bytes of data read from the device.</p>
+</dd>
+<dt><strong>W</strong><em>count</em><strong>\n</strong></dt>
+<dd><p>Writes data onto the current device. The command is followed by <em>count</em> bytes of input data.</p>
+<dl>
+<dt><strong>Arguments</strong></dt>
+<dd><dl>
+<dt><em>count</em></dt>
+<dd><p>Number of bytes to write.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>Reply</strong></dt>
+<dd><p><br />
+On success: <strong>A</strong><em>wrcount</em><strong>\n</strong>, where <em>wrcount</em> is the number of bytes actually written.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>I</strong><em>opcode</em><strong>\n</strong><em>count</em><strong>\n</strong></dt>
+<dd><p>Perform a <strong>MTIOCOP</strong> <strong>ioctl</strong>(2) command with the specified paramedters.</p>
+<dl>
+<dt><strong>Arguments</strong></dt>
+<dd><dl>
+<dt><em>opcode</em></dt>
+<dd><p><strong>MTIOCOP</strong> operation code.</p>
+</dd>
+<dt><em>count</em></dt>
+<dd><p>mt_count.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>Reply</strong></dt>
+<dd><p><br />
+On success: <strong>A0\n</strong>.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>S\n</strong></dt>
+<dd><p>Returns the status of the currently open device, as obtained from a <strong>MTIOCGET</strong> <strong>ioctl</strong>(2) call.</p>
+<dl>
+<dt><strong>Arguments</strong></dt>
+<dd><p><br />
+None</p>
+</dd>
+<dt><strong>Reply</strong></dt>
+<dd><p><br />
+On success: <strong>A</strong><em>count</em><strong>\n</strong> followed by <em>count</em> bytes of data.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>tar</strong>(1).</p>
+<h1>BUGS</h1>
+<p>Using this utility as a general-purpose remote file access tool is discouraged.</p>
+<h1>BUG REPORTS</h1>
+<p>Report bugs to &lt;bug-tar@gnu.org&gt;.</p>
+<h1>HISTORY</h1>
+<p>The <strong>rmt</strong> command appeared in 4.2BSD. The GNU <strong>rmt</strong> is written from scratch, using the BSD specification.</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright © 2013, 2018 Free Software Foundation, Inc.<br />
+</p>
+<p>License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;<br />
+</p>
+<p>This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

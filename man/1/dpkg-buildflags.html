@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command dpkg-buildflags</title><meta name="description" content="Linux command dpkg-buildflags returns build flags to use during package build"><meta name="keywords" content="linux, command, dpkg-buildflags, bsd, returns build flags to use during package build"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>dpkg-buildflags - returns build flags to use during package build</p>
+<h1>SYNOPSIS</h1>
+<p><strong>dpkg-buildflags</strong> [<em>option</em>...] [<em>command</em>]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>dpkg-buildflags</strong> is a tool to retrieve compilation flags to use during build of Debian packages.</p>
+<p>The default flags are defined by the vendor but they can be extended/overridden in several ways:</p>
+<ol type="1">
+<li><p>system-wide with <strong>/etc/dpkg/buildflags.conf</strong>;</p></li>
+<li><p>for the current user with <strong><code>$XDG_CONFIG_HOME</code>/dpkg/buildflags.conf</strong> where <strong><code>$XDG_CONFIG_HOME</code></strong> defaults to <strong><code>$HOME</code>/.config</strong>;</p></li>
+<li><p>temporarily by the user with environment variables (see section <strong>ENVIRONMENT</strong>);</p></li>
+<li><p>dynamically by the package maintainer with environment variables set via <strong>debian/rules</strong> (see section <strong>ENVIRONMENT</strong>).</p></li>
+</ol>
+<p>The configuration files can contain four types of directives:</p>
+<ul>
+<li><p>Override the flag named <em>flag</em> to have the value <em>value</em>.</p></li>
+<li><p>Strip from the flag named <em>flag</em> all the build flags listed in <em>value</em>.</p></li>
+<li><p>Extend the flag named <em>flag</em> by appending the options given in <em>value</em>. A space is prepended to the appended value if the flag's current value is non-empty.</p></li>
+<li><p>Extend the flag named <em>flag</em> by prepending the options given in <em>value</em>. A space is appended to the prepended value if the flag's current value is non-empty.</p></li>
+</ul>
+<p>The configuration files can contain comments on lines starting with a hash (#). Empty lines are also ignored.</p>
+<h1>COMMANDS</h1>
+<ul>
+<li><p>Print to standard output all compilation flags and their values. It prints one flag per line separated from its value by an equal sign (“<em>flag</em>=<em>value</em>”). This is the default action.</p></li>
+<li><p>Print the list of flags supported by the current vendor (one per line). See the <strong>SUPPORTED FLAGS</strong> section for more information about them.</p></li>
+<li><p>Display any information that can be useful to explain the behaviour of <strong>dpkg-buildflags</strong> (since dpkg 1.16.5): relevant environment variables, current vendor, state of all feature flags. Also print the resulting compiler flags with their origin. This is intended to be run from <strong>debian/rules</strong>, so that the build log keeps a clear trace of the build flags used. This can be useful to diagnose problems related to them.</p></li>
+<li><p>Print to standard output commands that can be used to export all the compilation flags for some particular tool. If the <em>format</em> value is not given, <strong>sh</strong> is assumed. Only compilation flags starting with an upper case character are included, others are assumed to not be suitable for the environment. Supported formats:</p>
+<ul>
+<li><p>Shell commands to set and export all the compilation flags in the environment. The flag values are quoted so the output is ready for evaluation by a shell.</p></li>
+<li><p>Arguments to pass to a build program's command line to use all the compilation flags (since dpkg 1.17.0). The flag values are quoted in shell syntax.</p></li>
+<li><p>This is a legacy alias for <strong>cmdline</strong>.</p></li>
+<li><p>Make directives to set and export all the compilation flags in the environment. Output can be written to a Makefile fragment and evaluated using an <strong>include</strong> directive.</p></li>
+</ul></li>
+<li><p>Print the value of the flag on standard output. Exits with 0 if the flag is known otherwise exits with 1.</p></li>
+<li><p>Print the origin of the value that is returned by <strong>--get</strong>. Exits with 0 if the flag is known otherwise exits with 1. The origin can be one of the following values:</p>
+<ul>
+<li><p>the original flag set by the vendor is returned;</p></li>
+<li><p>the flag is set/modified by a system-wide configuration;</p></li>
+<li><p>the flag is set/modified by a user-specific configuration;</p></li>
+<li><p>the flag is set/modified by an environment-specific configuration.</p></li>
+</ul></li>
+<li><p>Print any information that can be useful to explain the behaviour of the program: current vendor, relevant environment variables, feature areas, state of all feature flags, and the compiler flags with their origin (since dpkg 1.19.0). For example: Vendor: Debian Environment: DEB_CFLAGS_SET=-O0 -Wall Area: qa Features: bug=no canary=no Area: reproducible Features: timeless=no Flag: CFLAGS Value: -O0 -Wall Origin: env Flag: CPPFLAGS Value: -D_FORTIFY_SOURCE=2 Origin: vendor</p></li>
+<li><p>Print the features enabled for a given area (since dpkg 1.16.2). The only currently recognized areas on Debian and derivatives are <strong>future</strong>, <strong>qa</strong>, <strong>reproducible</strong>, <strong>sanitize</strong> and <strong>hardening</strong>, see the <strong>FEATURE AREAS</strong> section for more details. Exits with 0 if the area is known otherwise exits with 1. The output is in RFC822 format, with one section per feature. For example: Feature: pie Enabled: yes Feature: stackprotector Enabled: yes</p></li>
+<li><p>Show the usage message and exit.</p></li>
+<li><p>Show the version and exit.</p></li>
+</ul>
+<h1>SUPPORTED FLAGS</h1>
+<ul>
+<li><p>Options for the C compiler. The default value set by the vendor includes <strong>-g</strong> and the default optimization level (<strong>-O2</strong> usually, or <strong>-O0</strong> if the <strong>DEB_BUILD_OPTIONS</strong> environment variable defines <em>noopt</em>).</p></li>
+<li><p>Options for the C preprocessor. Default value: empty.</p></li>
+<li><p>Options for the C++ compiler. Same as <strong>CFLAGS</strong>.</p></li>
+<li><p>Options for the Objective C compiler. Same as <strong>CFLAGS</strong>.</p></li>
+<li><p>Options for the Objective C++ compiler. Same as <strong>CXXFLAGS</strong>.</p></li>
+<li><p>Options for the GNU Java compiler (gcj). A subset of <strong>CFLAGS</strong>.</p></li>
+<li><p>Options for the D compiler (ldc or gdc). Since dpkg 1.20.6.</p></li>
+<li><p>Options for the Fortran 77 compiler. A subset of <strong>CFLAGS</strong>.</p></li>
+<li><p>Options for the Fortran 9x compiler. Same as <strong>FFLAGS</strong>.</p></li>
+<li><p>Options passed to the compiler when linking executables or shared objects (if the linker is called directly, then <strong>-Wl</strong> and <strong>,</strong> have to be stripped from these options). Default value: empty.</p></li>
+</ul>
+<p>New flags might be added in the future if the need arises (for example to support other languages).</p>
+<h1>FEATURE AREAS</h1>
+<p>Each area feature can be enabled and disabled in the <strong>DEB_BUILD_OPTIONS</strong> and <strong>DEB_BUILD_MAINT_OPTIONS</strong> environment variable's area value with the ‘<strong>+</strong>’ and ‘<strong>-</strong>’ modifier. For example, to enable the <strong>hardening</strong> “pie” feature and disable the “fortify” feature you can do this in <strong>debian/rules</strong>:</p>
+<p>export DEB_BUILD_MAINT_OPTIONS=hardening=+pie,-fortify</p>
+<p>The special feature <strong>all</strong> (valid in any area) can be used to enable or disable all area features at the same time. Thus disabling everything in the <strong>hardening</strong> area and enabling only “format” and “fortify” can be achieved with:</p>
+<p>export DEB_BUILD_MAINT_OPTIONS=hardening=-all,+format,+fortify</p>
+<h2>future</h2>
+<p>Several compile-time options (detailed below) can be used to enable features that should be enabled by default, but cannot due to backwards compatibility reasons.</p>
+<ul>
+<li><p>This setting (disabled by default) enables Large File Support on 32-bit architectures where their ABI does not include LFS by default, by adding <strong>-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64</strong> to <strong>CPPFLAGS</strong>.</p></li>
+</ul>
+<h2>qa</h2>
+<p>Several compile-time options (detailed below) can be used to help detect problems in the source code or build system.</p>
+<ul>
+<li><p>This setting (disabled by default) adds any warning option that reliably detects problematic source code. The warnings are fatal. The only currently supported flags are <strong>CFLAGS</strong> and <strong>CXXFLAGS</strong> with flags set to <strong>-Werror=array-bounds</strong>, <strong>-Werror=clobbered</strong>, <strong>-Werror=implicit-function-declaration</strong> and <strong>-Werror=volatile-register-var</strong>.</p></li>
+<li><p>This setting (disabled by default) adds dummy canary options to the build flags, so that the build logs can be checked for how the build flags propagate and to allow finding any omission of normal build flag settings. The only currently supported flags are <strong>CPPFLAGS</strong>, <strong>CFLAGS</strong>, <strong>OBJCFLAGS</strong>, <strong>CXXFLAGS</strong> and <strong>OBJCXXFLAGS</strong> with flags set to <strong>-D_ _DEB_CANARY_</strong><em>flag</em>_<em>random-id</em><strong>_ _</strong>, and <strong>LDFLAGS</strong> set to <strong>-Wl,-z,deb-canary-</strong><em>random-id</em>.</p></li>
+</ul>
+<h2>sanitize</h2>
+<p>Several compile-time options (detailed below) can be used to help sanitize a resulting binary against memory corruptions, memory leaks, use after free, threading data races and undefined behavior bugs. <strong>Note</strong>: these options should <strong>not</strong> be used for production builds as they can reduce reliability for conformant code, reduce security or even functionality.</p>
+<ul>
+<li><p>This setting (disabled by default) adds <strong>-fsanitize=address</strong> to <strong>LDFLAGS</strong> and <strong>-fsanitize=address -fno-omit-frame-pointer</strong> to <strong>CFLAGS</strong> and <strong>CXXFLAGS</strong>.</p></li>
+<li><p>This setting (disabled by default) adds <strong>-fsanitize=thread</strong> to <strong>CFLAGS</strong>, <strong>CXXFLAGS</strong> and <strong>LDFLAGS</strong>.</p></li>
+<li><p>This setting (disabled by default) adds <strong>-fsanitize=leak</strong> to <strong>LDFLAGS</strong>. It gets automatically disabled if either the <strong>address</strong> or the <strong>thread</strong> features are enabled, as they imply it.</p></li>
+<li><p>This setting (disabled by default) adds <strong>-fsanitize=undefined</strong> to <strong>CFLAGS</strong>, <strong>CXXFLAGS</strong> and <strong>LDFLAGS</strong>.</p></li>
+</ul>
+<h2>hardening</h2>
+<p>Several compile-time options (detailed below) can be used to help harden a resulting binary against memory corruption attacks, or provide additional warning messages during compilation. Except as noted below, these are enabled by default for architectures that support them.</p>
+<ul>
+<li><p>This setting (enabled by default) adds <strong>-Wformat -Werror=format-security</strong> to <strong>CFLAGS</strong>, <strong>CXXFLAGS</strong>, <strong>OBJCFLAGS</strong> and <strong>OBJCXXFLAGS</strong>. This will warn about improper format string uses, and will fail when format functions are used in a way that represent possible security problems. At present, this warns about calls to <strong>printf</strong> and <strong>scanf</strong> functions where the format string is not a string literal and there are no format arguments, as in <strong>printf(foo);</strong> instead of <strong>printf(%s, foo);</strong> This may be a security hole if the format string came from untrusted input and contains ‘%n’.</p></li>
+<li><p>This setting (enabled by default) adds <strong>-D_FORTIFY_SOURCE=2</strong> to <strong>CPPFLAGS</strong>. During code generation the compiler knows a great deal of information about buffer sizes (where possible), and attempts to replace insecure unlimited length buffer function calls with length-limited ones. This is especially useful for old, crufty code. Additionally, format strings in writable memory that contain ‘%n’ are blocked. If an application depends on such a format string, it will need to be worked around. Note that for this option to have any effect, the source must also be compiled with <strong>-O1</strong> or higher. If the environment variable <strong>DEB_BUILD_OPTIONS</strong> contains <em>noopt</em>, then <strong>fortify</strong> support will be disabled, due to new warnings being issued by glibc 2.16 and later.</p></li>
+<li><p>This setting (enabled by default if stackprotectorstrong is not in use) adds <strong>-fstack-protector --param=ssp-buffer-size=4</strong> to <strong>CFLAGS</strong>, <strong>CXXFLAGS</strong>, <strong>OBJCFLAGS</strong>, <strong>OBJCXXFLAGS</strong>, <strong>GCJFLAGS</strong>, <strong>FFLAGS</strong> and <strong>FCFLAGS</strong>. This adds safety checks against stack overwrites. This renders many potential code injection attacks into aborting situations. In the best case this turns code injection vulnerabilities into denial of service or into non-issues (depending on the application). This feature requires linking against glibc (or another provider of <strong>_ _stack_chk_fail</strong>), so needs to be disabled when building with <strong>-nostdlib</strong> or <strong>-ffreestanding</strong> or similar.</p></li>
+<li><p>This setting (enabled by default) adds <strong>-fstack-protector-strong</strong> to <strong>CFLAGS</strong>, <strong>CXXFLAGS</strong>, <strong>OBJCFLAGS</strong>, <strong>OBJCXXFLAGS</strong>, <strong>GCJFLAGS</strong>, <strong>FFLAGS</strong> and <strong>FCFLAGS</strong>. This is a stronger variant of <strong>stackprotector</strong>, but without significant performance penalties. Disabling <strong>stackprotector</strong> will also disable this setting. This feature has the same requirements as <strong>stackprotector</strong>, and in addition also requires gcc 4.9 and later.</p></li>
+<li><p>This setting (enabled by default) adds <strong>-Wl,-z,relro</strong> to <strong>LDFLAGS</strong>. During program load, several ELF memory sections need to be written to by the linker. This flags the loader to turn these sections read-only before turning over control to the program. Most notably this prevents GOT overwrite attacks. If this option is disabled, <strong>bindnow</strong> will become disabled as well.</p></li>
+<li><p>This setting (disabled by default) adds <strong>-Wl,-z,now</strong> to <strong>LDFLAGS</strong>. During program load, all dynamic symbols are resolved, allowing for the entire PLT to be marked read-only (due to <strong>relro</strong> above). The option cannot become enabled if <strong>relro</strong> is not enabled.</p></li>
+<li><p>This setting (with no global default since dpkg 1.18.23, as it is enabled by default now by gcc on the amd64, arm64, armel, armhf, hurd-i386, i386, kfreebsd-amd64, kfreebsd-i386, mips, mipsel, mips64el, powerpc, ppc64, ppc64el, riscv64, s390x, sparc and sparc64 Debian architectures) adds the required options to enable or disable PIE via gcc specs files, if needed, depending on whether gcc injects on that architecture the flags by itself or not. When the setting is enabled and gcc injects the flags, it adds nothing. When the setting is enabled and gcc does not inject the flags, it adds <strong>-fPIE</strong> (via <em>/usr/share/dpkg/pie-compiler.specs</em>) to <strong>CFLAGS</strong>, <strong>CXXFLAGS</strong>, <strong>OBJCFLAGS</strong>, <strong>OBJCXXFLAGS</strong>, <strong>GCJFLAGS</strong>, <strong>FFLAGS</strong> and <strong>FCFLAGS</strong>, and <strong>-fPIE -pie</strong> (via <em>/usr/share/dpkg/pie-link.specs</em>) to <strong>LDFLAGS</strong>. When the setting is disabled and gcc injects the flags, it adds <strong>-fno-PIE</strong> (via <em>/usr/share/dpkg/no-pie-compile.specs</em>) to <strong>CFLAGS</strong>, <strong>CXXFLAGS</strong>, <strong>OBJCFLAGS</strong>, <strong>OBJCXXFLAGS</strong>, <strong>GCJFLAGS</strong>, <strong>FFLAGS</strong> and <strong>FCFLAGS</strong>, and <strong>-fno-PIE -no-pie</strong> (via <em>/usr/share/dpkg/no-pie-link.specs</em>) to <strong>LDFLAGS</strong>. Position Independent Executable are needed to take advantage of Address Space Layout Randomization, supported by some kernel versions. While ASLR can already be enforced for data areas in the stack and heap (brk and mmap), the code areas must be compiled as position-independent. Shared libraries already do this (<strong>-fPIC</strong>), so they gain ASLR automatically, but binary .text regions need to be build PIE to gain ASLR. When this happens, ROP (Return Oriented Programming) attacks are much harder since there are no static locations to bounce off of during a memory corruption attack. PIE is not compatible with <strong>-fPIC</strong>, so in general care must be taken when building shared objects. But because the PIE flags emitted get injected via gcc specs files, it should always be safe to unconditionally set them regardless of the object type being compiled or linked. Static libraries can be used by programs or other shared libraries. Depending on the flags used to compile all the objects within a static library, these libraries will be usable by different sets of objects:</p>
+<ul>
+<li><p>Cannot be linked into a PIE program, nor a shared library.</p></li>
+<li><p>Can be linked into any program, but not a shared library (recommended).</p></li>
+<li><p>Can be linked into any program and shared library.</p></li>
+</ul>
+<p>If there is a need to set these flags manually, bypassing the gcc specs injection, there are several things to take into account. Unconditionally and explicitly passing <strong>-fPIE</strong>, <strong>-fpie</strong> or <strong>-pie</strong> to a build-system using libtool is safe as these flags will get stripped when building shared libraries. Otherwise on projects that build both programs and shared libraries you might need to make sure that when building the shared libraries <strong>-fPIC</strong> is always passed last (so that it overrides any previous <strong>-PIE</strong>) to compilation flags such as <strong>CFLAGS</strong>, and <strong>-shared</strong> is passed last (so that it overrides any previous <strong>-pie</strong>) to linking flags such as <strong>LDFLAGS</strong>. <strong>Note:</strong> This should not be needed with the default gcc specs machinery. Additionally, since PIE is implemented via a general register, some register starved architectures (but not including i386 anymore since optimizations implemented in gcc &gt;= 5) can see performance losses of up to 15% in very text-segment-heavy application workloads; most workloads see less than 1%. Architectures with more general registers (e.g. amd64) do not see as high a worst-case penalty.</p></li>
+</ul>
+<h2>reproducible</h2>
+<p>The compile-time options detailed below can be used to help improve build reproducibility or provide additional warning messages during compilation. Except as noted below, these are enabled by default for architectures that support them.</p>
+<ul>
+<li><p>This setting (enabled by default) adds <strong>-Wdate-time</strong> to <strong>CPPFLAGS</strong>. This will cause warnings when the <strong>_ _TIME_ _</strong>, <strong>_ _DATE_ _</strong> and <strong>_ _TIMESTAMP_ _</strong> macros are used.</p></li>
+<li><p>This setting (enabled by default) adds <strong>-ffile-prefix-map=</strong><em>BUILDPATH</em><strong>=.</strong> to <strong>CFLAGS</strong>, <strong>CXXFLAGS</strong>, <strong>OBJCFLAGS</strong>, <strong>OBJCXXFLAGS</strong>, <strong>GCJFLAGS</strong>, <strong>FFLAGS</strong> and <strong>FCFLAGS</strong> where <strong>BUILDPATH</strong> is set to the top-level directory of the package being built. This has the effect of removing the build path from any generated file. If both <strong>fixdebugpath</strong> and <strong>fixfilepath</strong> are set, this option takes precedence, because it is a superset of the former.</p></li>
+<li><p>This setting (enabled by default) adds <strong>-fdebug-prefix-map=</strong><em>BUILDPATH</em><strong>=.</strong> to <strong>CFLAGS</strong>, <strong>CXXFLAGS</strong>, <strong>OBJCFLAGS</strong>, <strong>OBJCXXFLAGS</strong>, <strong>GCJFLAGS</strong>, <strong>FFLAGS</strong> and <strong>FCFLAGS</strong> where <strong>BUILDPATH</strong> is set to the top-level directory of the package being built. This has the effect of removing the build path from any generated debug symbols.</p></li>
+</ul>
+<h1>ENVIRONMENT</h1>
+<p>There are 2 sets of environment variables doing the same operations, the first one (DEB_<em>flag</em>_<em>op</em>) should never be used within <strong>debian/rules</strong>. It's meant for any user that wants to rebuild the source package with different build flags. The second set (DEB_<em>flag</em>_MAINT_<em>op</em>) should only be used in <strong>debian/rules</strong> by package maintainers to change the resulting build flags.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>This variable can be used to force the value returned for the given <em>flag</em>.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>This variable can be used to provide a space separated list of options that will be stripped from the set of flags returned for the given <em>flag</em>.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>This variable can be used to append supplementary options to the value returned for the given <em>flag</em>.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>This variable can be used to prepend supplementary options to the value returned for the given <em>flag</em>.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>These variables can be used by a user or maintainer to disable/enable various area features that affect build flags. The <strong>DEB_BUILD_MAINT_OPTIONS</strong> variable overrides any setting in the <strong>DEB_BUILD_OPTIONS</strong> feature areas. See the <strong>FEATURE AREAS</strong> section for details.</p>
+<ul>
+<li><p>This setting defines the current vendor. If not set, it will discover the current vendor by reading <strong>/etc/dpkg/origins/default</strong>.</p></li>
+<li><p>This variable sets the build path (since dpkg 1.18.8) to use in features such as <strong>fixdebugpath</strong> so that they can be controlled by the caller. This variable is currently Debian and derivatives-specific.</p></li>
+<li><p>Sets the color mode (since dpkg 1.18.5). The currently accepted values are: <strong>auto</strong> (default), <strong>always</strong> and <strong>never</strong>.</p></li>
+<li><p>If set, it will be used to decide whether to activate Native Language Support, also known as internationalization (or i18n) support (since dpkg 1.19.0). The accepted values are: <strong>0</strong> and <strong>1</strong> (default).</p></li>
+</ul>
+<h1>FILES</h1>
+<h2>Configuration files</h2>
+<ul>
+<li><p>System wide configuration file.</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>User configuration file.</p>
+<h2>Packaging support</h2>
+<ul>
+<li><p>Makefile snippet that will load (and optionally export) all flags supported by <strong>dpkg-buildflags</strong> into variables (since dpkg 1.16.1).</p></li>
+</ul>
+<h1>EXAMPLES</h1>
+<p>To pass build flags to a build command in a Makefile: $(MAKE) $(shell dpkg-buildflags --export=cmdline) ./configure $(shell dpkg-buildflags --export=cmdline)</p>
+<p>To set build flags in a shell script or shell fragment, <strong>eval</strong> can be used to interpret the output and to export the flags in the environment: eval "$(dpkg-buildflags --export=sh)" &amp;&amp; make</p>
+<p>or to set the positional parameters to pass to a command: eval "set -- $(dpkg-buildflags --export=cmdline)" for dir in a b c; do (cd $dir &amp;&amp; ./configure "$@" &amp;&amp; make); done</p>
+<h2>Usage in debian/rules</h2>
+<p>You should call <strong>dpkg-buildflags</strong> or include <strong>buildflags.mk</strong> from the <strong>debian/rules</strong> file to obtain the needed build flags to pass to the build system. Note that older versions of <strong>dpkg-buildpackage</strong> (before dpkg 1.16.1) exported these flags automatically. However, you should not rely on this, since this breaks manual invocation of <strong>debian/rules</strong>.</p>
+<p>For packages with autoconf-like build systems, you can pass the relevant options to configure or <strong>make</strong>(1) directly, as shown above.</p>
+<p>For other build systems, or when you need more fine-grained control about which flags are passed where, you can use <strong>--get</strong>. Or you can include <strong>buildflags.mk</strong> instead, which takes care of calling <strong>dpkg-buildflags</strong> and storing the build flags in make variables.</p>
+<p>If you want to export all buildflags into the environment (where they can be picked up by your build system): DPKG_EXPORT_BUILDFLAGS = 1 include /usr/share/dpkg/buildflags.mk</p>
+<p>For some extra control over what is exported, you can manually export the variables (as none are exported by default): include /usr/share/dpkg/buildflags.mk export CPPFLAGS CFLAGS LDFLAGS</p>
+<p>And you can of course pass the flags to commands manually: include /usr/share/dpkg/buildflags.mk build-arch: $(CC) -o hello hello.c $(CPPFLAGS) $(CFLAGS) $(LDFLAGS)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

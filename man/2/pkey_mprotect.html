@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pkey_mprotect</title><meta name="description" content="Linux command pkey_mprotect set protection on a region of memory"><meta name="keywords" content="linux, command, pkey_mprotect, bsd, set protection on a region of memory"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mprotect, pkey_mprotect - set protection on a region of memory</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/mman.h&gt;
+
+int mprotect(void *addr, size_t len, int prot);
+
+#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;sys/mman.h&gt;
+
+int pkey_mprotect(void *addr, size_t len, int prot, int pkey);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>mprotect</strong>() changes the access protections for the calling process's memory pages containing any part of the address range in the interval [<em>addr</em>, <em>addr</em>+<em>len</em>-1]. <em>addr</em> must be aligned to a page boundary.</p>
+<p>If the calling process tries to access memory in a manner that violates the protections, then the kernel generates a <strong>SIGSEGV</strong> signal for the process.</p>
+<p><em>prot</em> is a combination of the following access flags: <strong>PROT_NONE</strong> or a bitwise-or of the other values in the following list:</p>
+<dl>
+<dt><strong>PROT_NONE</strong></dt>
+<dd><p>The memory cannot be accessed at all.</p>
+</dd>
+<dt><strong>PROT_READ</strong></dt>
+<dd><p>The memory can be read.</p>
+</dd>
+<dt><strong>PROT_WRITE</strong></dt>
+<dd><p>The memory can be modified.</p>
+</dd>
+<dt><strong>PROT_EXEC</strong></dt>
+<dd><p>The memory can be executed.</p>
+</dd>
+<dt><strong>PROT_SEM</strong> (since Linux 2.5.7)</dt>
+<dd><p>The memory can be used for atomic operations. This flag was introduced as part of the <strong>futex</strong>(2) implementation (in order to guarantee the ability to perform atomic operations required by commands such as <strong>FUTEX_WAIT</strong>), but is not currently used in on any architecture.</p>
+</dd>
+<dt><strong>PROT_SAO</strong> (since Linux 2.6.26)</dt>
+<dd><p>The memory should have strong access ordering. This feature is specific to the PowerPC architecture (version 2.06 of the architecture specification adds the SAO CPU feature, and it is available on POWER 7 or PowerPC A2, for example).</p>
+</dd>
+</dl>
+<p>Additionally (since Linux 2.6.0), <em>prot</em> can have one of the following flags set:</p>
+<dl>
+<dt><strong>PROT_GROWSUP</strong></dt>
+<dd><p>Apply the protection mode up to the end of a mapping that grows upwards. (Such mappings are created for the stack area on architectures—for example, HP-PARISC—that have an upwardly growing stack.)</p>
+</dd>
+<dt><strong>PROT_GROWSDOWN</strong></dt>
+<dd><p>Apply the protection mode down to the beginning of a mapping that grows downward (which should be a stack segment or a segment mapped with the <strong>MAP_GROWSDOWN</strong> flag set).</p>
+</dd>
+</dl>
+<p>Like <strong>mprotect</strong>(), <strong>pkey_mprotect</strong>() changes the protection on the pages specified by <em>addr</em> and <em>len</em>. The <em>pkey</em> argument specifies the protection key (see <strong>pkeys</strong>(7)) to assign to the memory. The protection key must be allocated with <strong>pkey_alloc</strong>(2) before it is passed to <strong>pkey_mprotect</strong>(). For an example of the use of this system call, see <strong>pkeys</strong>(7).</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>mprotect</strong>() and <strong>pkey_mprotect</strong>() return zero. On error, these system calls return -1, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>The memory cannot be given the specified access. This can happen, for example, if you <strong>mmap</strong>(2) a file to which you have read-only access, then ask <strong>mprotect</strong>() to mark it <strong>PROT_WRITE</strong>.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>addr</em> is not a valid pointer, or not a multiple of the system page size.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(<strong>pkey_mprotect</strong>()) <em>pkey</em> has not been allocated with <strong>pkey_alloc</strong>(2)</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Both <strong>PROT_GROWSUP</strong> and <strong>PROT_GROWSDOWN</strong> were specified in <em>prot</em>.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Invalid flags specified in <em>prot</em>.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(PowerPC architecture) <strong>PROT_SAO</strong> was specified in <em>prot</em>, but SAO hardware feature is not available.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Internal kernel structures could not be allocated.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Addresses in the range [<em>addr</em>, <em>addr</em>+<em>len</em>-1] are invalid for the address space of the process, or specify one or more pages that are not mapped. (Before kernel 2.4.19, the error <strong>EFAULT</strong> was incorrectly produced for these cases.)</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Changing the protection of a memory region would result in the total number of mappings with distinct attributes (e.g., read versus read/write protection) exceeding the allowed maximum. (For example, making the protection of a range <strong>PROT_READ</strong> in the middle of a region currently protected as <strong>PROT_READ|PROT_WRITE</strong> would result in three mappings: two read/write mappings at each end and a read-only mapping in the middle.)</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>pkey_mprotect</strong>() first appeared in Linux 4.9; library support was added in glibc 2.27.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>mprotect</strong>(): POSIX.1-2001, POSIX.1-2008, SVr4. POSIX says that the behavior of <strong>mprotect</strong>() is unspecified if it is applied to a region of memory that was not obtained via <strong>mmap</strong>(2).</p>
+<p><strong>pkey_mprotect</strong>() is a nonportable Linux extension.</p>
+<h1>NOTES</h1>
+<p>On Linux, it is always permissible to call <strong>mprotect</strong>() on any address in a process's address space (except for the kernel vsyscall area). In particular, it can be used to change existing code mappings to be writable.</p>
+<p>Whether <strong>PROT_EXEC</strong> has any effect different from <strong>PROT_READ</strong> depends on processor architecture, kernel version, and process state. If <strong>READ_IMPLIES_EXEC</strong> is set in the process's personality flags (see <strong>personality</strong>(2)), specifying <strong>PROT_READ</strong> will implicitly add <strong>PROT_EXEC</strong>.</p>
+<p>On some hardware architectures (e.g., i386), <strong>PROT_WRITE</strong> implies <strong>PROT_READ</strong>.</p>
+<p>POSIX.1 says that an implementation may permit access other than that specified in <em>prot</em>, but at a minimum can allow write access only if <strong>PROT_WRITE</strong> has been set, and must not allow any access if <strong>PROT_NONE</strong> has been set.</p>
+<p>Applications should be careful when mixing use of <strong>mprotect</strong>() and <strong>pkey_mprotect</strong>(). On x86, when <strong>mprotect</strong>() is used with <em>prot</em> set to <strong>PROT_EXEC</strong> a pkey may be allocated and set on the memory implicitly by the kernel, but only when the pkey was 0 previously.</p>
+<p>On systems that do not support protection keys in hardware, <strong>pkey_mprotect</strong>() may still be used, but <em>pkey</em> must be set to -1. When called this way, the operation of <strong>pkey_mprotect</strong>() is equivalent to <strong>mprotect</strong>().</p>
+<h1>EXAMPLES</h1>
+<p>The program below demonstrates the use of <strong>mprotect</strong>(). The program allocates four pages of memory, makes the third of these pages read-only, and then executes a loop that walks upward through the allocated region modifying bytes.</p>
+<p>An example of what we might see when running the program is the following:</p>
+<pre><code>$ ./a.out
+Start of region:        0x804c000
+Got SIGSEGV at address: 0x804e000</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;malloc.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;sys/mman.h&gt;
+
+#define handle_error(msg) \
+    do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+static char *buffer;
+
+static void
+handler(int sig, siginfo_t *si, void *unused)
+{
+    /* Note: calling printf() from a signal handler is not safe
+       (and should not be done in production programs), since
+       printf() is not async-signal-safe; see signal-safety(7).
+       Nevertheless, we use printf() here as a simple way of
+       showing that the handler was called. */
+
+    printf(&quot;Got SIGSEGV at address: %p\n&quot;, si-&gt;si_addr);
+    exit(EXIT_FAILURE);
+}
+
+int
+main(int argc, char *argv[])
+{
+    int pagesize;
+    struct sigaction sa;
+
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&amp;sa.sa_mask);
+    sa.sa_sigaction = handler;
+    if (sigaction(SIGSEGV, &amp;sa, NULL) == -1)
+        handle_error(&quot;sigaction&quot;);
+
+    pagesize = sysconf(_SC_PAGE_SIZE);
+    if (pagesize == -1)
+        handle_error(&quot;sysconf&quot;);
+
+    /* Allocate a buffer aligned on a page boundary;
+       initial protection is PROT_READ | PROT_WRITE */
+
+    buffer = memalign(pagesize, 4 * pagesize);
+    if (buffer == NULL)
+        handle_error(&quot;memalign&quot;);
+
+    printf(&quot;Start of region:        %p\n&quot;, buffer);
+
+    if (mprotect(buffer + pagesize * 2, pagesize,
+                PROT_READ) == -1)
+        handle_error(&quot;mprotect&quot;);
+
+    for (char *p = buffer ; ; )
+        *(p++) = &#39;a&#39;;
+
+    printf(&quot;Loop completed\n&quot;);     /* Should never happen */
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>mmap</strong>(2), <strong>sysconf</strong>(3), <strong>pkeys</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

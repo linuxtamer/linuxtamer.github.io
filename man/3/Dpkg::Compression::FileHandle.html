@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command Dpkg::Compression::FileHandle</title><meta name="description" content="Linux command Dpkg::Compression::FileHandle class dealing transparently with file compression"><meta name="keywords" content="linux, command, Dpkg::Compression::FileHandle, bsd, class dealing transparently with file compression"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>Dpkg::Compression::FileHandle - class dealing transparently with file compression</p>
+<h1>SYNOPSIS</h1>
+<p>use Dpkg::Compression::FileHandle; my ($fh, @lines); $fh = Dpkg::Compression::FileHandle-&gt;new(filename =&gt; sample.gz); print $fh "Something\n"; close $fh; $fh = Dpkg::Compression::FileHandle-&gt;new(); open($fh, &gt;, sample.bz2); print $fh "Something\n"; close $fh; $fh = Dpkg::Compression::FileHandle-&gt;new(); $fh-&gt;open(sample.xz, w); $fh-&gt;print("Something\n"); $fh-&gt;close(); $fh = Dpkg::Compression::FileHandle-&gt;new(filename =&gt; sample.gz); @lines = &lt;$fh&gt;; close $fh; $fh = Dpkg::Compression::FileHandle-&gt;new(); open($fh, &lt;, sample.bz2); @lines = &lt;$fh&gt;; close $fh; $fh = Dpkg::Compression::FileHandle-&gt;new(); $fh-&gt;open(sample.xz, r); @lines = $fh-&gt;getlines(); $fh-&gt;close();</p>
+<h1>DESCRIPTION</h1>
+<p>Dpkg::Compression::FileHandle is a class that can be used like any filehandle and that deals transparently with compressed files. By default, the compression scheme is guessed from the filename but you can override this behaviour with the method <code>set_compression</code>.</p>
+<p>If you don't open the file explicitly, it will be auto-opened on the first read or write operation based on the filename set at creation time (or later with the <code>set_filename</code> method).</p>
+<p>Once a file has been opened, the filehandle must be closed before being able to open another file.</p>
+<h1>STANDARD FUNCTIONS</h1>
+<p>The standard functions acting on filehandles should accept a Dpkg::Compression::FileHandle object transparently including <code>open</code> (only when using the variant with 3 parameters), <code>close</code>, <code>binmode</code>, <code>eof</code>, <code>fileno</code>, <code>getc</code>, <code>print</code>, <code>printf</code>, <code>read</code>, <code>sysread</code>, <code>say</code>, <code>write</code>, <code>syswrite</code>, <code>seek</code>, <code>sysseek</code>, <code>tell</code>.</p>
+<p>Note however that <code>seek</code> and <code>sysseek</code> will only work on uncompressed files as compressed files are really pipes to the compressor programs and you can't seek on a pipe.</p>
+<h1>FileHandle METHODS</h1>
+<p>The class inherits from IO::File so all methods that work on this class should work for Dpkg::Compression::FileHandle too. There may be exceptions though.</p>
+<h1>PUBLIC METHODS</h1>
+<ul>
+<li><p>Creates a new filehandle supporting on-the-fly compression/decompression. Supported options are filename, compression, compression_level (see respective set_* functions) and add_comp_ext. If add_comp_ext evaluates to true, then the extension corresponding to the selected compression scheme is automatically added to the recorded filename. It's obviously incompatible with automatic detection of the compression method.</p></li>
+<li><p>Ensure the file is opened in the requested mode (r for read and w for write). The options are passed down to the compressor's <strong>spawn()</strong> call, if one is used. Opens the file with the recorded filename if needed. If the file is already open but not in the requested mode, then it errors out.</p></li>
+<li><p>Defines the compression method used. <code>$comp</code> should one of the methods supported by <strong>Dpkg::Compression</strong> or none or auto. none indicates that the file is uncompressed and auto indicates that the method must be guessed based on the filename extension used.</p></li>
+<li><p>Indicate the desired compression level. It should be a value accepted by the function <code>compression_is_valid_level</code> of <strong>Dpkg::Compression</strong>.</p></li>
+<li><p>Use <code>$name</code> as filename when the file must be opened/created. If <code>$add_comp_ext</code> is passed, it indicates whether the default extension of the compression method must be automatically added to the filename (or not).</p></li>
+<li><p>Returns the filename that would be used when the filehandle must be opened (both in read and write mode). This function errors out if add_comp_ext is enabled while the compression method is set to auto. The returned filename includes the extension of the compression method if add_comp_ext is enabled.</p></li>
+<li><p>Returns 0 if no compression is used and the compression method used otherwise. If the compression is set to auto, the value returned depends on the extension of the filename obtained with the <strong>get_filename</strong> method.</p></li>
+<li><p>Returns the real underlying filehandle. Useful if you want to pass it along in a derived class.</p></li>
+</ul>
+<h1>DERIVED CLASSES</h1>
+<p>If you want to create a class that inherits from Dpkg::Compression::FileHandle you must be aware that the object is a reference to a GLOB that is returned by <strong>Symbol::gensym()</strong> and as such it's not a HASH.</p>
+<p>You can store internal data in a hash but you have to use <code>*$self-</code>{...}&gt; to access the associated hash like in the example below:</p>
+<p>sub set_option { my ($self, $value) = @_; *$self-&gt;{option} = $value; }</p>
+<h1>CHANGES</h1>
+<h2>Version 1.01 (dpkg 1.17.11)</h2>
+<p>New argument: <code>$fh</code>-&gt;<strong>ensure_open()</strong> accepts an <code>%opts</code> argument.</p>
+<h2>Version 1.00 (dpkg 1.15.6)</h2>
+<p>Mark the module as public.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

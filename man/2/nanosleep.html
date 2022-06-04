@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command nanosleep</title><meta name="description" content="Linux command nanosleep high-resolution sleep"><meta name="keywords" content="linux, command, nanosleep, bsd, high-resolution sleep"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>nanosleep - high-resolution sleep</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;time.h&gt;</strong></p>
+<p><strong>int nanosleep(const struct timespec *</strong><em>req</em><strong>, struct timespec *</strong><em>rem</em><strong>);</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>nanosleep</strong>(): _POSIX_C_SOURCE &gt;= 199309L</p>
+<h1>DESCRIPTION</h1>
+<p><strong>nanosleep</strong>() suspends the execution of the calling thread until either at least the time specified in <em>*req</em> has elapsed, or the delivery of a signal that triggers the invocation of a handler in the calling thread or that terminates the process.</p>
+<p>If the call is interrupted by a signal handler, <strong>nanosleep</strong>() returns -1, sets <em>errno</em> to <strong>EINTR</strong>, and writes the remaining time into the structure pointed to by <em>rem</em> unless <em>rem</em> is NULL. The value of <em>*rem</em> can then be used to call <strong>nanosleep</strong>() again and complete the specified pause (but see NOTES).</p>
+<p>The structure <em>timespec</em> is used to specify intervals of time with nanosecond precision. It is defined as follows:</p>
+<pre><code>struct timespec {
+    time_t tv_sec;        /* seconds */
+    long   tv_nsec;       /* nanoseconds */
+};</code></pre>
+<p>The value of the nanoseconds field must be in the range 0 to 999999999.</p>
+<p>Compared to <strong>sleep</strong>(3) and <strong>usleep</strong>(3), <strong>nanosleep</strong>() has the following advantages: it provides a higher resolution for specifying the sleep interval; POSIX.1 explicitly specifies that it does not interact with signals; and it makes the task of resuming a sleep that has been interrupted by a signal handler easier.</p>
+<h1>RETURN VALUE</h1>
+<p>On successfully sleeping for the requested interval, <strong>nanosleep</strong>() returns 0. If the call is interrupted by a signal handler or encounters an error, then it returns -1, with <em>errno</em> set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>Problem with copying information from user space.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>The pause has been interrupted by a signal that was delivered to the thread (see <strong>signal</strong>(7)). The remaining sleep time has been written into <em>*rem</em> so that the thread can easily call <strong>nanosleep</strong>() again and continue with the pause.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The value in the <em>tv_nsec</em> field was not in the range 0 to 999999999 or <em>tv_sec</em> was negative.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>If the interval specified in <em>req</em> is not an exact multiple of the granularity underlying clock (see <strong>time</strong>(7)), then the interval will be rounded up to the next multiple. Furthermore, after the sleep completes, there may still be a delay before the CPU becomes free to once again execute the calling thread.</p>
+<p>The fact that <strong>nanosleep</strong>() sleeps for a relative interval can be problematic if the call is repeatedly restarted after being interrupted by signals, since the time between the interruptions and restarts of the call will lead to drift in the time when the sleep finally completes. This problem can be avoided by using <strong>clock_nanosleep</strong>(2) with an absolute time value.</p>
+<p>POSIX.1 specifies that <strong>nanosleep</strong>() should measure time against the <strong>CLOCK_REALTIME</strong> clock. However, Linux measures the time using the <strong>CLOCK_MONOTONIC</strong> clock. This probably does not matter, since the POSIX.1 specification for <strong>clock_settime</strong>(2) says that discontinuous changes in <strong>CLOCK_REALTIME</strong> should not affect <strong>nanosleep</strong>():</p>
+<blockquote>
+<p>Setting the value of the <strong>CLOCK_REALTIME</strong> clock via <strong>clock_settime</strong>(2) shall have no effect on threads that are blocked waiting for a relative time service based upon this clock, including the <strong>nanosleep</strong>() function; ... Consequently, these time services shall expire when the requested relative interval elapses, independently of the new or old value of the clock.</p>
+</blockquote>
+<h2>Old behavior</h2>
+<p>In order to support applications requiring much more precise pauses (e.g., in order to control some time-critical hardware), <strong>nanosleep</strong>() would handle pauses of up to 2 milliseconds by busy waiting with microsecond precision when called from a thread scheduled under a real-time policy like <strong>SCHED_FIFO</strong> or <strong>SCHED_RR</strong>. This special extension was removed in kernel 2.5.39, and is thus not available in Linux 2.6.0 and later kernels.</p>
+<h1>BUGS</h1>
+<p>If a program that catches signals and uses <strong>nanosleep</strong>() receives signals at a very high rate, then scheduling delays and rounding errors in the kernel's calculation of the sleep interval and the returned <em>remain</em> value mean that the <em>remain</em> value may steadily <em>increase</em> on successive restarts of the <strong>nanosleep</strong>() call. To avoid such problems, use <strong>clock_nanosleep</strong>(2) with the <strong>TIMER_ABSTIME</strong> flag to sleep to an absolute deadline.</p>
+<p>In Linux 2.4, if <strong>nanosleep</strong>() is stopped by a signal (e.g., <strong>SIGTSTP</strong>), then the call fails with the error <strong>EINTR</strong> after the thread is resumed by a <strong>SIGCONT</strong> signal. If the system call is subsequently restarted, then the time that the thread spent in the stopped state is <em>not</em> counted against the sleep interval. This problem is fixed in Linux 2.6.0 and later kernels.</p>
+<h1>SEE ALSO</h1>
+<p><strong>clock_nanosleep</strong>(2), <strong>restart_syscall</strong>(2), <strong>sched_setscheduler</strong>(2), <strong>timer_create</strong>(2), <strong>sleep</strong>(3), <strong>usleep</strong>(3), <strong>time</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

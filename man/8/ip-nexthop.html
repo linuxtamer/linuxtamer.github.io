@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command ip-nexthop</title><meta name="description" content="Linux command ip-nexthop nexthop object management"><meta name="keywords" content="linux, command, ip-nexthop, bsd, nexthop object management"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>ip-nexthop - nexthop object management</p>
+<h1>SYNOPSIS</h1>
+<p><strong>ip</strong> [ <em>ip-OPTIONS</em> ] <strong>nexthop</strong> { <em>COMMAND</em> | <strong>help</strong> }</p>
+<p><strong>ip nexthop</strong> { <strong>show</strong> | <strong>flush</strong> } <em>SELECTOR</em></p>
+<p><strong>ip nexthop</strong> { <strong>add</strong> | <strong>replace</strong> } id <em>ID</em> <em>NH</em></p>
+<p><strong>ip nexthop</strong> { <strong>get</strong> | <strong>del</strong> } id <em>ID</em></p>
+<p><em>SELECTOR</em> := [ <strong>id</strong> <em>ID</em> ] [ <strong>dev</strong> <em>DEV</em> ] [ <strong>vrf</strong> <em>NAME</em> ] [ <strong>master</strong> <em>DEV</em> ] [ <strong>groups</strong> ] [ <strong>fdb</strong> ]</p>
+<p><em>NH</em> := { <strong>blackhole</strong> | [ <strong>via</strong> <em>ADDRESS</em> ] [ <strong>dev</strong> <em>DEV</em> ] [ <strong>onlink</strong> ] [ <strong>encap</strong> <em>ENCAP</em> ] [ <strong>fdb</strong> ] | <strong>group</strong> <em>GROUP</em> [ <strong>fdb</strong> ] }</p>
+<p><em>ENCAP</em> := [ <em>ENCAP_MPLS</em> ]</p>
+<p><em>ENCAP_MPLS</em> := <strong>mpls</strong> [ <em>LABEL</em> ] [ <strong>ttl</strong> <em>TTL</em> ]</p>
+<p><em>GROUP</em> := <strong>id</strong>[,<strong>weight</strong>[/...]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>ip nexthop</strong> is used to manipulate entries in the kernel's nexthop tables.</p>
+<dl>
+<dt>ip nexthop add id ID</dt>
+<dd><p>add new nexthop entry</p>
+</dd>
+<dt>ip nexthop replace id ID</dt>
+<dd><p>change the configuration of a nexthop or add new one</p>
+<dl>
+<dt><strong>via</strong><em> [ FAMILY ] ADDRESS</em></dt>
+<dd><p>the address of the nexthop router, in the address family FAMILY. Address family must match address family of nexthop instance.</p>
+</dd>
+<dt><strong>dev</strong><em> NAME</em></dt>
+<dd><p>is the output device.</p>
+</dd>
+<dt><strong>onlink</strong></dt>
+<dd><p>pretend that the nexthop is directly attached to this link, even if it does not match any interface prefix.</p>
+</dd>
+<dt><strong>encap</strong><em> ENCAPTYPE ENCAPHDR</em></dt>
+<dd><p>attach tunnel encapsulation attributes to this route.</p>
+</dd>
+</dl>
+<p><em>ENCAPTYPE</em> is a string specifying the supported encapsulation type. Namely:</p>
+<p><strong>mpls</strong> - encapsulation type MPLS</p>
+<p><em>ENCAPHDR</em> is a set of encapsulation attributes specific to the <em>ENCAPTYPE.</em></p>
+<p><strong>mpls</strong></p>
+<p><em>MPLSLABEL</em> - mpls label stack with labels separated by <em>/</em></p>
+<p><strong>ttl</strong> <em>TTL</em> - TTL to use for MPLS header or 0 to inherit from IP header</p>
+<dl>
+<dt><strong>group</strong><em> GROUP</em></dt>
+<dd><p>create a nexthop group. Group specification is id with an optional weight (id,weight) and a '/' as a separator between entries.</p>
+</dd>
+<dt><strong>blackhole</strong></dt>
+<dd><p>create a blackhole nexthop</p>
+</dd>
+<dt><strong>fdb</strong></dt>
+<dd><p>nexthop and nexthop groups for use with layer-2 fdb entries. A fdb nexthop group can only have fdb nexthops. Example: Used to represent a vxlan remote vtep ip. layer-2 vxlan fdb entry pointing to an ecmp nexthop group containing multiple remote vtep ips.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl>
+<dt>ip nexthop delete id ID</dt>
+<dd><p>delete nexthop with given id.</p>
+</dd>
+</dl>
+<dl>
+<dt>ip nexthop show</dt>
+<dd><p>show the contents of the nexthop table or the nexthops selected by some criteria.</p>
+<dl>
+<dt><strong>dev</strong><em> DEV </em></dt>
+<dd><p>show the nexthops using the given device.</p>
+</dd>
+<dt><strong>vrf</strong><em> NAME </em></dt>
+<dd><p>show the nexthops using devices associated with the vrf name</p>
+</dd>
+<dt><strong>master</strong><em> DEV </em></dt>
+<dd><p>show the nexthops using devices enslaved to given master device</p>
+</dd>
+<dt><strong>groups</strong></dt>
+<dd><p>show only nexthop groups</p>
+</dd>
+<dt><strong>fdb</strong></dt>
+<dd><p>show only fdb nexthops and nexthop groups</p>
+</dd>
+</dl>
+</dd>
+<dt>ip nexthop flush</dt>
+<dd><p>flushes nexthops selected by some criteria. Criteria options are the same as show.</p>
+</dd>
+</dl>
+<dl>
+<dt>ip nexthop get id ID</dt>
+<dd><p>get a single nexthop by id</p>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<p>ip nexthop ls</p>
+<blockquote>
+<p>Show all nexthop entries in the kernel.</p>
+</blockquote>
+<p>ip nexthop add id 1 via 192.168.1.1 dev eth0</p>
+<blockquote>
+<p>Adds an IPv4 nexthop with id 1 using the gateway 192.168.1.1 out device eth0.</p>
+</blockquote>
+<p>ip nexthop add id 2 encap mpls 200/300 via 10.1.1.1 dev eth0</p>
+<blockquote>
+<p>Adds an IPv4 nexthop with mpls encapsulation attributes attached to it.</p>
+</blockquote>
+<p>ip nexthop add id 3 group 1/2</p>
+<blockquote>
+<p>Adds a nexthop with id 3. The nexthop is a group using nexthops with ids 1 and 2 at equal weight.</p>
+</blockquote>
+<p>ip nexthop add id 4 group 1,5/2,11</p>
+<blockquote>
+<p>Adds a nexthop with id 4. The nexthop is a group using nexthops with ids 1 and 2 with nexthop 1 at weight 5 and nexthop 2 at weight 11.</p>
+</blockquote>
+<p>ip nexthop add id 5 via 192.168.1.2 fdb</p>
+<blockquote>
+<p>Adds a fdb nexthop with id 5.</p>
+</blockquote>
+<p>ip nexthop add id 7 group 5/6 fdb</p>
+<blockquote>
+<p>Adds a fdb nexthop group with id 7. A fdb nexthop group can only have fdb nexthops.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><br />
+<strong>ip</strong>(8)</p>
+<h1>AUTHOR</h1>
+<p>Original Manpage by David Ahern &lt;dsahern@kernel.org&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command get_current_dir_name</title><meta name="description" content="Linux command get_current_dir_name get current working directory"><meta name="keywords" content="linux, command, get_current_dir_name, bsd, get current working directory"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getcwd, getwd, get_current_dir_name - get current working directory</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+
+char *getcwd(char *buf, size_t size);
+
+char *getwd(char *buf);
+
+char *get_current_dir_name(void);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>get_current_dir_name</strong>():</p>
+<blockquote>
+<p>_GNU_SOURCE</p>
+</blockquote>
+<p><strong>getwd</strong>():</p>
+<blockquote>
+<dl>
+<dt>Since glibc 2.12:</dt>
+<dd>
+</dd>
+</dl>
+<pre><code>(_XOPEN_SOURCE &gt;= 500) &amp;&amp; ! (_POSIX_C_SOURCE &gt;= 200809L)
+    || /* Glibc since 2.19: */ _DEFAULT_SOURCE
+    || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE</code></pre>
+<dl>
+<dt>Before glibc 2.12:</dt>
+<dd><p>_BSD_SOURCE || _XOPEN_SOURCE &gt;= 500</p>
+</dd>
+</dl>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>These functions return a null-terminated string containing an absolute pathname that is the current working directory of the calling process. The pathname is returned as the function result and via the argument <em>buf</em>, if present.</p>
+<p>The <strong>getcwd</strong>() function copies an absolute pathname of the current working directory to the array pointed to by <em>buf</em>, which is of length <em>size</em>.</p>
+<p>If the length of the absolute pathname of the current working directory, including the terminating null byte, exceeds <em>size</em> bytes, NULL is returned, and <em>errno</em> is set to <strong>ERANGE</strong>; an application should check for this error, and allocate a larger buffer if necessary.</p>
+<p>As an extension to the POSIX.1-2001 standard, glibc's <strong>getcwd</strong>() allocates the buffer dynamically using <strong>malloc</strong>(3) if <em>buf</em> is NULL. In this case, the allocated buffer has the length <em>size</em> unless <em>size</em> is zero, when <em>buf</em> is allocated as big as necessary. The caller should <strong>free</strong>(3) the returned buffer.</p>
+<p><strong>get_current_dir_name</strong>() will <strong>malloc</strong>(3) an array big enough to hold the absolute pathname of the current working directory. If the environment variable <strong>PWD</strong> is set, and its value is correct, then that value will be returned. The caller should <strong>free</strong>(3) the returned buffer.</p>
+<p><strong>getwd</strong>() does not <strong>malloc</strong>(3) any memory. The <em>buf</em> argument should be a pointer to an array at least <strong>PATH_MAX</strong> bytes long. If the length of the absolute pathname of the current working directory, including the terminating null byte, exceeds <strong>PATH_MAX</strong> bytes, NULL is returned, and <em>errno</em> is set to <strong>ENAMETOOLONG</strong>. (Note that on some systems, <strong>PATH_MAX</strong> may not be a compile-time constant; furthermore, its value may depend on the filesystem, see <strong>pathconf</strong>(3).) For portability and security reasons, use of <strong>getwd</strong>() is deprecated.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, these functions return a pointer to a string containing the pathname of the current working directory. In the case of <strong>getcwd</strong>() and <strong>getwd</strong>() this is the same value as <em>buf</em>.</p>
+<p>On failure, these functions return NULL, and <em>errno</em> is set to indicate the error. The contents of the array pointed to by <em>buf</em> are undefined on error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>Permission to read or search a component of the filename was denied.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>buf</em> points to a bad address.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The <em>size</em> argument is zero and <em>buf</em> is not a null pointer.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><strong>getwd</strong>(): <em>buf</em> is NULL.</p>
+</dd>
+<dt><strong>ENAMETOOLONG</strong></dt>
+<dd><p><strong>getwd</strong>(): The size of the null-terminated absolute pathname string exceeds <strong>PATH_MAX</strong> bytes.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>The current working directory has been unlinked.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Out of memory.</p>
+</dd>
+<dt><strong>ERANGE</strong></dt>
+<dd><p>The <em>size</em> argument is less than the length of the absolute pathname of the working directory, including the terminating null byte. You need to allocate a bigger array and try again.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getcwd</strong>(), <strong>getwd</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>get_current_dir_name</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe env</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p><strong>getcwd</strong>() conforms to POSIX.1-2001. Note however that POSIX.1-2001 leaves the behavior of <strong>getcwd</strong>() unspecified if <em>buf</em> is NULL.</p>
+<p><strong>getwd</strong>() is present in POSIX.1-2001, but marked LEGACY. POSIX.1-2008 removes the specification of <strong>getwd</strong>(). Use <strong>getcwd</strong>() instead. POSIX.1-2001 does not define any errors for <strong>getwd</strong>().</p>
+<p><strong>get_current_dir_name</strong>() is a GNU extension.</p>
+<h1>NOTES</h1>
+<p>Under Linux, these functions make use of the <strong>getcwd</strong>() system call (available since Linux 2.1.92). On older systems they would query <em>/proc/self/cwd</em>. If both system call and proc filesystem are missing, a generic implementation is called. Only in that case can these calls fail under Linux with <strong>EACCES</strong>.</p>
+<p>These functions are often used to save the location of the current working directory for the purpose of returning to it later. Opening the current directory (".") and calling <strong>fchdir</strong>(2) to return is usually a faster and more reliable alternative when sufficiently many file descriptors are available, especially on platforms other than Linux.</p>
+<h2>C library/kernel differences</h2>
+<p>On Linux, the kernel provides a <strong>getcwd</strong>() system call, which the functions described in this page will use if possible. The system call takes the same arguments as the library function of the same name, but is limited to returning at most <strong>PATH_MAX</strong> bytes. (Before Linux 3.12, the limit on the size of the returned pathname was the system page size. On many architectures, <strong>PATH_MAX</strong> and the system page size are both 4096 bytes, but a few architectures have a larger page size.) If the length of the pathname of the current working directory exceeds this limit, then the system call fails with the error <strong>ENAMETOOLONG</strong>. In this case, the library functions fall back to a (slower) alternative implementation that returns the full pathname.</p>
+<p>Following a change in Linux 2.6.36, the pathname returned by the <strong>getcwd</strong>() system call will be prefixed with the string "(unreachable)" if the current directory is not below the root directory of the current process (e.g., because the process set a new filesystem root using <strong>chroot</strong>(2) without changing its current directory into the new root). Such behavior can also be caused by an unprivileged user by changing the current directory into another mount namespace. When dealing with pathname from untrusted sources, callers of the functions described in this page should consider checking whether the returned pathname starts with '/' or '(' to avoid misinterpreting an unreachable path as a relative pathname.</p>
+<h1>BUGS</h1>
+<p>Since the Linux 2.6.36 change that added "(unreachable)" in the circumstances described above, the glibc implementation of <strong>getcwd</strong>() has failed to conform to POSIX and returned a relative pathname when the API contract requires an absolute pathname. With glibc 2.27 onwards this is corrected; calling <strong>getcwd</strong>() from such a pathname will now result in failure with <strong>ENOENT</strong>.</p>
+<h1>SEE ALSO</h1>
+<p><strong>pwd</strong>(1), <strong>chdir</strong>(2), <strong>fchdir</strong>(2), <strong>open</strong>(2), <strong>unlink</strong>(2), <strong>free</strong>(3), <strong>malloc</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

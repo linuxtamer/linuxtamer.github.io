@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command modify_ldt</title><meta name="description" content="Linux command modify_ldt get or set a per-process LDT entry"><meta name="keywords" content="linux, command, modify_ldt, bsd, get or set a per-process LDT entry"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>modify_ldt - get or set a per-process LDT entry</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+
+int modify_ldt(int func, void *ptr, unsigned long bytecount);</code></pre>
+<p><em>Note</em>: There is no glibc wrapper for this system call; see NOTES.</p>
+<h1>DESCRIPTION</h1>
+<p><strong>modify_ldt</strong>() reads or writes the local descriptor table (LDT) for a process. The LDT is an array of segment descriptors that can be referenced by user code. Linux allows processes to configure a per-process (actually per-mm) LDT. For more information about the LDT, see the Intel Software Developer's Manual or the AMD Architecture Programming Manual.</p>
+<p>When <em>func</em> is 0, <strong>modify_ldt</strong>() reads the LDT into the memory pointed to by <em>ptr</em>. The number of bytes read is the smaller of <em>bytecount</em> and the actual size of the LDT, although the kernel may act as though the LDT is padded with additional trailing zero bytes. On success, <strong>modify_ldt</strong>() will return the number of bytes read.</p>
+<p>When <em>func</em> is 1 or 0x11, <strong>modify_ldt</strong>() modifies the LDT entry indicated by <em>ptr-&gt;entry_number</em>. <em>ptr</em> points to a <em>user_desc</em> structure and <em>bytecount</em> must equal the size of this structure.</p>
+<p>The <em>user_desc</em> structure is defined in <em>&lt;asm/ldt.h&gt;</em> as:</p>
+<pre><code>struct user_desc {
+    unsigned int  entry_number;
+    unsigned int  base_addr;
+    unsigned int  limit;
+    unsigned int  seg_32bit:1;
+    unsigned int  contents:2;
+    unsigned int  read_exec_only:1;
+    unsigned int  limit_in_pages:1;
+    unsigned int  seg_not_present:1;
+    unsigned int  useable:1;
+};</code></pre>
+<p>In Linux 2.4 and earlier, this structure was named <em>modify_ldt_ldt_s</em>.</p>
+<p>The <em>contents</em> field is the segment type (data, expand-down data, non-conforming code, or conforming code). The other fields match their descriptions in the CPU manual, although <strong>modify_ldt</strong>() cannot set the hardware-defined "accessed" bit described in the CPU manual.</p>
+<p>A <em>user_desc</em> is considered "empty" if <em>read_exec_only</em> and <em>seg_not_present</em> are set to 1 and all of the other fields are 0. An LDT entry can be cleared by setting it to an "empty" <em>user_desc</em> or, if <em>func</em> is 1, by setting both <em>base</em> and <em>limit</em> to 0.</p>
+<p>A conforming code segment (i.e., one with <em>contents==3</em>) will be rejected if <em>func</em> is 1 or if <em>seg_not_present</em> is 0.</p>
+<p>When <em>func</em> is 2, <strong>modify_ldt</strong>() will read zeros. This appears to be a leftover from Linux 2.4.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>modify_ldt</strong>() returns either the actual number of bytes read (for reading) or 0 (for writing). On failure, <strong>modify_ldt</strong>() returns -1 and sets <em>errno</em> to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>ptr</em> points outside the address space.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>ptr</em> is 0, or <em>func</em> is 1 and <em>bytecount</em> is not equal to the size of the structure <em>user_desc</em>, or <em>func</em> is 1 or 0x11 and the new LDT entry has invalid values.</p>
+</dd>
+<dt><strong>ENOSYS</strong></dt>
+<dd><p><em>func</em> is neither 0, 1, 2, nor 0x11.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>This call is Linux-specific and should not be used in programs intended to be portable.</p>
+<h1>NOTES</h1>
+<p>Glibc does not provide a wrapper for this system call; call it using <strong>syscall</strong>(2).</p>
+<p><strong>modify_ldt</strong>() should not be used for thread-local storage, as it slows down context switches and only supports a limited number of threads. Threading libraries should use <strong>set_thread_area</strong>(2) or <strong>arch_prctl</strong>(2) instead, except on extremely old kernels that do not support those system calls.</p>
+<p>The normal use for <strong>modify_ldt</strong>() is to run legacy 16-bit or segmented 32-bit code. Not all kernels allow 16-bit segments to be installed, however.</p>
+<p>Even on 64-bit kernels, <strong>modify_ldt</strong>() cannot be used to create a long mode (i.e., 64-bit) code segment. The undocumented field "lm" in <em>user_desc</em> is not useful, and, despite its name, does not result in a long mode segment.</p>
+<h1>BUGS</h1>
+<p>On 64-bit kernels before Linux 3.19, setting the "lm" bit in <em>user_desc</em> prevents the descriptor from being considered empty. Keep in mind that the "lm" bit does not exist in the 32-bit headers, but these buggy kernels will still notice the bit even when set in a 32-bit process.</p>
+<h1>SEE ALSO</h1>
+<p><strong>arch_prctl</strong>(2), <strong>set_thread_area</strong>(2), <strong>vm86</strong>(2)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

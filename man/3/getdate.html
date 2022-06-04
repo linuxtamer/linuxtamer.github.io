@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command getdate</title><meta name="description" content="Linux command getdate convert a date-plus-time string to broken-down time"><meta name="keywords" content="linux, command, getdate, bsd, convert a date-plus-time string to broken-down time"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getdate, getdate_r - convert a date-plus-time string to broken-down time</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;time.h&gt;</strong></p>
+<p><strong>struct tm *getdate(const char *</strong><em>string</em><strong>);</strong></p>
+<p><strong>extern int getdate_err;</strong></p>
+<p><strong>#include &lt;time.h&gt;</strong></p>
+<p><strong>int getdate_r(const char *</strong><em>string</em><strong>, struct tm *</strong><em>res</em><strong>);</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>getdate</strong>():</p>
+<blockquote>
+<p>_XOPEN_SOURCE &gt;= 500</p>
+</blockquote>
+<p><br />
+<strong>getdate_r</strong>():</p>
+<blockquote>
+<p>_GNU_SOURCE</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>The function <strong>getdate</strong>() converts a string representation of a date and time, contained in the buffer pointed to by <em>string</em>, into a broken-down time. The broken-down time is stored in a <em>tm</em> structure, and a pointer to this structure is returned as the function result. This <em>tm</em> structure is allocated in static storage, and consequently it will be overwritten by further calls to <strong>getdate</strong>().</p>
+<p>In contrast to <strong>strptime</strong>(3), (which has a <em>format</em> argument), <strong>getdate</strong>() uses the formats found in the file whose full pathname is given in the environment variable <strong>DATEMSK</strong>. The first line in the file that matches the given input string is used for the conversion.</p>
+<p>The matching is done case insensitively. Superfluous whitespace, either in the pattern or in the string to be converted, is ignored.</p>
+<p>The conversion specifications that a pattern can contain are those given for <strong>strptime</strong>(3). One more conversion specification is specified in POSIX.1-2001:</p>
+<dl>
+<dt><strong>%Z</strong></dt>
+<dd><p>Timezone name. This is not implemented in glibc.</p>
+</dd>
+</dl>
+<p>When <strong>%Z</strong> is given, the structure containing the broken-down time is initialized with values corresponding to the current time in the given timezone. Otherwise, the structure is initialized to the broken-down time corresponding to the current local time (as by a call to <strong>localtime</strong>(3)).</p>
+<p>When only the day of the week is given, the day is taken to be the first such day on or after today.</p>
+<p>When only the month is given (and no year), the month is taken to be the first such month equal to or after the current month. If no day is given, it is the first day of the month.</p>
+<p>When no hour, minute and second are given, the current hour, minute and second are taken.</p>
+<p>If no date is given, but we know the hour, then that hour is taken to be the first such hour equal to or after the current hour.</p>
+<p><strong>getdate_r</strong>() is a GNU extension that provides a reentrant version of <strong>getdate</strong>(). Rather than using a global variable to report errors and a static buffer to return the broken down time, it returns errors via the function result value, and returns the resulting broken-down time in the caller-allocated buffer pointed to by the argument <em>res</em>.</p>
+<h1>RETURN VALUE</h1>
+<p>When successful, <strong>getdate</strong>() returns a pointer to a <em>struct tm</em>. Otherwise, it returns NULL and sets the global variable <em>getdate_err</em> to one of the error numbers shown below. Changes to <em>errno</em> are unspecified.</p>
+<p>On success <strong>getdate_r</strong>() returns 0; on error it returns one of the error numbers shown below.</p>
+<h1>ERRORS</h1>
+<p>The following errors are returned via <em>getdate_err</em> (for <strong>getdate</strong>()) or as the function result (for <strong>getdate_r</strong>()):</p>
+<dl>
+<dt><strong>1</strong></dt>
+<dd><p>The <strong>DATEMSK</strong> environment variable is not defined, or its value is an empty string.</p>
+</dd>
+<dt><strong>2</strong></dt>
+<dd><p>The template file specified by <strong>DATEMSK</strong> cannot be opened for reading.</p>
+</dd>
+<dt><strong>3</strong></dt>
+<dd><p>Failed to get file status information.</p>
+</dd>
+<dt><strong>4</strong></dt>
+<dd><p>The template file is not a regular file.</p>
+</dd>
+<dt><strong>5</strong></dt>
+<dd><p>An error was encountered while reading the template file.</p>
+</dd>
+<dt><strong>6</strong></dt>
+<dd><p>Memory allocation failed (not enough memory available).</p>
+</dd>
+<dt><strong>7</strong></dt>
+<dd><p>There is no line in the file that matches the input.</p>
+</dd>
+<dt><strong>8</strong></dt>
+<dd><p>Invalid input specification.</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>DATEMSK</strong></dt>
+<dd><p>File containing format patterns.</p>
+</dd>
+<dt><strong>TZ</strong>, <strong>LC_TIME</strong></dt>
+<dd><p>Variables used by <strong>strptime</strong>(3).</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getdate</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:getdate env locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getdate_r</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe env locale</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>The POSIX.1 specification for <strong>strptime</strong>(3) contains conversion specifications using the <strong>%E</strong> or <strong>%O</strong> modifier, while such specifications are not given for <strong>getdate</strong>(). In glibc, <strong>getdate</strong>() is implemented using <strong>strptime</strong>(3), so that precisely the same conversions are supported by both.</p>
+<h1>EXAMPLES</h1>
+<p>The program below calls <strong>getdate</strong>() for each of its command-line arguments, and for each call displays the values in the fields of the returned <em>tm</em> structure. The following shell session demonstrates the operation of the program:</p>
+<pre><code>$ TFILE=$PWD/tfile
+$ echo &#39;%A&#39; &gt; $TFILE  # Full name of the day of the week
+$ echo &#39;%T&#39; &gt;&gt; $TFILE # ISO date (YYYY-MM-DD)
+$ echo &#39;%F&#39; &gt;&gt; $TFILE # Time (HH:MM:SS)
+$ date
+$ export DATEMSK=$TFILE
+$ ./a.out Tuesday &#39;2009-12-28&#39; &#39;12:22:33&#39;
+Sun Sep  7 06:03:36 CEST 2008
+Call 1 (&quot;Tuesday&quot;) succeeded:
+    tm_sec   = 36
+    tm_min   = 3
+    tm_hour  = 6
+    tm_mday  = 9
+    tm_mon   = 8
+    tm_year  = 108
+    tm_wday  = 2
+    tm_yday  = 252
+    tm_isdst = 1
+Call 2 (&quot;2009-12-28&quot;) succeeded:
+    tm_sec   = 36
+    tm_min   = 3
+    tm_hour  = 6
+    tm_mday  = 28
+    tm_mon   = 11
+    tm_year  = 109
+    tm_wday  = 1
+    tm_yday  = 361
+    tm_isdst = 0
+Call 3 (&quot;12:22:33&quot;) succeeded:
+    tm_sec   = 33
+    tm_min   = 22
+    tm_hour  = 12
+    tm_mday  = 7
+    tm_mon   = 8
+    tm_year  = 108
+    tm_wday  = 0
+    tm_yday  = 250
+    tm_isdst = 1</code></pre>
+<h2>Program source</h2>
+<pre><code>#define _GNU_SOURCE
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    struct tm *tmp;
+
+    for (int j = 1; j &lt; argc; j++) {
+        tmp = getdate(argv[j]);
+
+        if (tmp == NULL) {
+            printf(&quot;Call %d failed; getdate_err = %d\n&quot;,
+                   j, getdate_err);
+            continue;
+        }
+
+        printf(&quot;Call %d (\&quot;%s\&quot;) succeeded:\n&quot;, j, argv[j]);
+        printf(&quot;    tm_sec   = %d\n&quot;, tmp-&gt;tm_sec);
+        printf(&quot;    tm_min   = %d\n&quot;, tmp-&gt;tm_min);
+        printf(&quot;    tm_hour  = %d\n&quot;, tmp-&gt;tm_hour);
+        printf(&quot;    tm_mday  = %d\n&quot;, tmp-&gt;tm_mday);
+        printf(&quot;    tm_mon   = %d\n&quot;, tmp-&gt;tm_mon);
+        printf(&quot;    tm_year  = %d\n&quot;, tmp-&gt;tm_year);
+        printf(&quot;    tm_wday  = %d\n&quot;, tmp-&gt;tm_wday);
+        printf(&quot;    tm_yday  = %d\n&quot;, tmp-&gt;tm_yday);
+        printf(&quot;    tm_isdst = %d\n&quot;, tmp-&gt;tm_isdst);
+    }
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>time</strong>(2), <strong>localtime</strong>(3), <strong>setlocale</strong>(3), <strong>strftime</strong>(3), <strong>strptime</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

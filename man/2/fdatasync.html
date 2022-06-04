@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fdatasync</title><meta name="description" content="Linux command fdatasync synchronize a file's in-core state with storage device"><meta name="keywords" content="linux, command, fdatasync, bsd, synchronize a file's in-core state with storage device"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>fsync, fdatasync - synchronize a file's in-core state with storage device</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;unistd.h&gt;</strong></p>
+<p><strong>int fsync(int </strong><em>fd</em><strong>);</strong></p>
+<p><strong>int fdatasync(int </strong><em>fd</em><strong>);</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>fsync</strong>(): Glibc 2.16 and later: No feature test macros need be defined Glibc up to and including 2.15: _BSD_SOURCE || _XOPEN_SOURCE || /* since glibc 2.8: */ _POSIX_C_SOURCE &gt;= 200112L<br />
+<strong>fdatasync</strong>(): _POSIX_C_SOURCE &gt;= 199309L || _XOPEN_SOURCE &gt;= 500</p>
+<h1>DESCRIPTION</h1>
+<p><strong>fsync</strong>() transfers ("flushes") all modified in-core data of (i.e., modified buffer cache pages for) the file referred to by the file descriptor <em>fd</em> to the disk device (or other permanent storage device) so that all changed information can be retrieved even if the system crashes or is rebooted. This includes writing through or flushing a disk cache if present. The call blocks until the device reports that the transfer has completed.</p>
+<p>As well as flushing the file data, <strong>fsync</strong>() also flushes the metadata information associated with the file (see <strong>inode</strong>(7)).</p>
+<p>Calling <strong>fsync</strong>() does not necessarily ensure that the entry in the directory containing the file has also reached disk. For that an explicit <strong>fsync</strong>() on a file descriptor for the directory is also needed.</p>
+<p><strong>fdatasync</strong>() is similar to <strong>fsync</strong>(), but does not flush modified metadata unless that metadata is needed in order to allow a subsequent data retrieval to be correctly handled. For example, changes to <em>st_atime</em> or <em>st_mtime</em> (respectively, time of last access and time of last modification; see <strong>inode</strong>(7)) do not require flushing because they are not necessary for a subsequent data read to be handled correctly. On the other hand, a change to the file size (<em>st_size</em>, as made by say <strong>ftruncate</strong>(2)), would require a metadata flush.</p>
+<p>The aim of <strong>fdatasync</strong>() is to reduce disk activity for applications that do not require all metadata to be synchronized with the disk.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, these system calls return zero. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not a valid open file descriptor.</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>An error occurred during synchronization. This error may relate to data written to some other file descriptor on the same file. Since Linux 4.13, errors from write-back will be reported to all file descriptors that might have written the data which triggered the error. Some filesystems (e.g., NFS) keep close track of which data came through which file descriptor, and give more precise reporting. Other filesystems (e.g., most local filesystems) will report errors to all file descriptors that were open on the file when the error was recorded.</p>
+</dd>
+<dt><strong>ENOSPC</strong></dt>
+<dd><p>Disk space was exhausted while synchronizing.</p>
+</dd>
+<dt><strong>EROFS</strong>, <strong>EINVAL</strong></dt>
+<dd><p><em>fd</em> is bound to a special file (e.g., a pipe, FIFO, or socket) which does not support synchronization.</p>
+</dd>
+<dt><strong>ENOSPC</strong>, <strong>EDQUOT</strong></dt>
+<dd><p><em>fd</em> is bound to a file on NFS or another filesystem which does not allocate space at the time of a <strong>write</strong>(2) system call, and some previous write failed due to insufficient storage space.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, 4.3BSD.</p>
+<p>On POSIX systems on which <strong>fdatasync</strong>() is available, <strong>_POSIX_SYNCHRONIZED_IO</strong> is defined in <em>&lt;unistd.h&gt;</em> to a value greater than 0. (See also <strong>sysconf</strong>(3).)</p>
+<h1>NOTES</h1>
+<p>On some UNIX systems (but not Linux), <em>fd</em> must be a <em>writable</em> file descriptor.</p>
+<p>In Linux 2.2 and earlier, <strong>fdatasync</strong>() is equivalent to <strong>fsync</strong>(), and so has no performance advantage.</p>
+<p>The <strong>fsync</strong>() implementations in older kernels and lesser used filesystems do not know how to flush disk caches. In these cases disk caches need to be disabled using <strong>hdparm</strong>(8) or <strong>sdparm</strong>(8) to guarantee safe operation.</p>
+<h1>SEE ALSO</h1>
+<p><strong>sync</strong>(1), <strong>bdflush</strong>(2), <strong>open</strong>(2), <strong>posix_fadvise</strong>(2), <strong>pwritev</strong>(2), <strong>sync</strong>(2), <strong>sync_file_range</strong>(2), <strong>fflush</strong>(3), <strong>fileno</strong>(3), <strong>hdparm</strong>(8), <strong>mount</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

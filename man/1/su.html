@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command su</title><meta name="description" content="Linux command su run a command with substitute user and group ID"><meta name="keywords" content="linux, command, su, bsd, run a command with substitute user and group ID"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>su - run a command with substitute user and group ID</p>
+<h1>SYNOPSIS</h1>
+<p><strong>su</strong> [options] [<strong>-</strong>] [<em>user</em> [<em>argument</em>...]]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>su</strong> allows commands to be run with a substitute user and group ID.</p>
+<p>When called with no <em>user</em> specified, <strong>su</strong> defaults to running an interactive shell as <em>root</em>. When <em>user</em> is specified, additional <em>argument</em>s can be supplied, in which case they are passed to the shell.</p>
+<p>For backward compatibility, <strong>su</strong> defaults to not change the current directory and to only set the environment variables <strong>HOME</strong> and <strong>SHELL</strong> (plus <strong>USER</strong> and <strong>LOGNAME</strong> if the target <em>user</em> is not root). It is recommended to always use the <strong>--login</strong> option (instead of its shortcut <strong>-</strong>) to avoid side effects caused by mixing environments.</p>
+<p>This version of <strong>su</strong> uses PAM for authentication, account and session management. Some configuration options found in other <strong>su</strong> implementations, such as support for a wheel group, have to be configured via PAM.</p>
+<p><strong>su</strong> is mostly designed for unprivileged users, the recommended solution for privileged users (e.g., scripts executed by root) is to use non-set-user-ID command <strong>runuser</strong>(1) that does not require authentication and provide separate PAM configuration. If the PAM session is not required at all then the recommend solution is to use command <strong>setpriv</strong>(1).</p>
+<p>Note that <strong>su</strong> in all cases use PAM (pam_getenvlist<strong>(3))</strong> to do the final environment modification. Command-line options such as <strong>--login</strong> and <strong>--preserve-environment</strong> affect the environment before it is modified by PAM.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-c</strong>,<strong> --command</strong>=<strong><em>command</em></strong></dt>
+<dd><p>Pass <em>command</em> to the shell with the <strong>-c</strong> option.</p>
+</dd>
+<dt><strong>-f</strong>,<strong> --fast</strong></dt>
+<dd><p>Pass <strong>-f</strong> to the shell, which may or may not be useful, depending on the shell.</p>
+</dd>
+<dt><strong>-g</strong>,<strong> --group</strong>=<strong><em>group</em></strong></dt>
+<dd><p>Specify the primary group. This option is available to the root user only.</p>
+</dd>
+<dt><strong>-G</strong>,<strong> --supp-group</strong>=<strong><em>group</em></strong></dt>
+<dd><p>Specify a supplementary group. This option is available to the root user only. The first specified supplementary group is also used as a primary group if the option <strong>--group</strong> is not specified.</p>
+</dd>
+<dt><strong>-</strong>,<strong> -l</strong>,<strong> --login</strong></dt>
+<dd><p>Start the shell as a login shell with an environment similar to a real login:</p>
+<dl>
+<dt>o</dt>
+<dd><p>clears all the environment variables except <strong>TERM</strong> and variables specified by <strong>--whitelist-environment</strong></p>
+</dd>
+<dt>o</dt>
+<dd><p>initializes the environment variables <strong>HOME</strong>, <strong>SHELL</strong>, <strong>USER</strong>, <strong>LOGNAME</strong>, and <strong>PATH</strong></p>
+</dd>
+<dt>o</dt>
+<dd><p>changes to the target user's home directory</p>
+</dd>
+<dt>o</dt>
+<dd><p>sets argv[0] of the shell to '<strong>-</strong>' in order to make the shell a login shell</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>-m</strong>,<strong> -p</strong>,<strong> --preserve-environment</strong></dt>
+<dd><p>Preserve the entire environment, i.e., do not set <strong>HOME</strong>, <strong>SHELL</strong>, <strong>USER</strong> or <strong>LOGNAME</strong>. This option is ignored if the option <strong>--login</strong> is specified.</p>
+</dd>
+<dt><strong>-P</strong>,<strong> --pty</strong></dt>
+<dd><p>Create a pseudo-terminal for the session. The independent terminal provides better security as the user does not share a terminal with the original session. This can be used to avoid TIOCSTI ioctl terminal injection and other security attacks against terminal file descriptors. The entire session can also be moved to the background (e.g., "su --pty - username -c application &amp;"). If the pseudo-terminal is enabled, then <strong>su</strong> works as a proxy between the sessions (copy stdin and stdout).</p>
+<p>This feature is mostly designed for interactive sessions. If the standard input is not a terminal, but for example a pipe (e.g., echo "date" | su --pty), then the ECHO flag for the pseudo-terminal is disabled to avoid messy output.</p>
+</dd>
+<dt><strong>-s</strong>,<strong> --shell</strong>=<strong><em>shell</em></strong></dt>
+<dd><p>Run the specified <em>shell</em> instead of the default. The shell to run is selected according to the following rules, in order:</p>
+<dl>
+<dt>o</dt>
+<dd><p>the shell specified with <strong>--shell</strong></p>
+</dd>
+<dt>o</dt>
+<dd><p>the shell specified in the environment variable <strong>SHELL</strong>, if the <strong>--preserve-environment</strong> option is used</p>
+</dd>
+<dt>o</dt>
+<dd><p>the shell listed in the passwd entry of the target user</p>
+</dd>
+<dt>o</dt>
+<dd><p>/bin/sh</p>
+</dd>
+</dl>
+<p>If the target user has a restricted shell (i.e., not listed in /etc/shells), the <strong>--shell</strong> option and the <strong>SHELL</strong> environment variables are ignored unless the calling user is root.</p>
+</dd>
+<dt><strong>--session-command=</strong><em>command</em></dt>
+<dd><p>Same as <strong>-c</strong>, but do not create a new session. (Discouraged.)</p>
+</dd>
+<dt><strong>-w</strong>,<strong> --whitelist-environment</strong>=<strong><em>list</em></strong></dt>
+<dd><p>Don't reset the environment variables specified in the comma-separated <em>list</em> when clearing the environment for <strong>--login</strong>. The whitelist is ignored for the environment variables <strong>HOME</strong>, <strong>SHELL</strong>, <strong>USER</strong>, <strong>LOGNAME</strong>, and <strong>PATH</strong>.</p>
+</dd>
+<dt><strong>-V</strong>,<strong> --version</strong></dt>
+<dd><p>Display version information and exit.</p>
+</dd>
+<dt><strong>-h</strong>,<strong> --help</strong></dt>
+<dd><p>Display help text and exit.</p>
+</dd>
+</dl>
+<h1>SIGNALS</h1>
+<p>Upon receiving either <strong>SIGINT</strong>, <strong>SIGQUIT</strong> or <strong>SIGTERM</strong>, <strong>su</strong> terminates its child and afterwards terminates itself with the received signal. The child is terminated by SIGTERM, after unsuccessful attempt and 2 seconds of delay the child is killed by SIGKILL.</p>
+<h1>CONFIG FILES</h1>
+<p><strong>su</strong> reads the <em>/etc/default/su</em> and <em>/etc/login.defs</em> configuration files. The following configuration items are relevant for <strong>su:</strong></p>
+<p><strong>FAIL_DELAY</strong> (number)</p>
+<blockquote>
+<p>Delay in seconds in case of an authentication failure. The number must be a non-negative integer.</p>
+</blockquote>
+<p><strong>ENV_PATH</strong> (string)</p>
+<blockquote>
+<p>Defines the <strong>PATH</strong> environment variable for a regular user. The default value is <em>/usr/local/bin:/bin:/usr/bin</em>.</p>
+</blockquote>
+<p><strong>ENV_ROOTPATH</strong> (string)<br />
+<strong>ENV_SUPATH</strong> (string)</p>
+<blockquote>
+<p>Defines the PATH environment variable for root. <strong>ENV_SUPATH</strong> takes precedence. The default value is <em>/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin</em>.</p>
+</blockquote>
+<p><strong>ALWAYS_SET_PATH</strong> (boolean)</p>
+<blockquote>
+<p>If set to <em>yes</em> and --login and --preserve-environment were not specified <strong>su</strong> initializes <strong>PATH</strong>.</p>
+</blockquote>
+<p>The environment variable <strong>PATH</strong> may be different on systems where <em>/bin</em> and <em>/sbin</em> are merged into <em>/usr</em>; this variable is also affected by the <strong>--login</strong> command-line option and the PAM system setting (e.g., <strong>pam_env</strong>(8)).</p>
+<h1>EXIT STATUS</h1>
+<p><strong>su</strong> normally returns the exit status of the command it executed. If the command was killed by a signal, <strong>su</strong> returns the number of the signal plus 128.</p>
+<p>Exit status generated by <strong>su</strong> itself:</p>
+<blockquote>
+<dl>
+<dt>1</dt>
+<dd><p>Generic error before executing the requested command</p>
+</dd>
+<dt>126</dt>
+<dd><p>The requested command could not be executed</p>
+</dd>
+<dt>127</dt>
+<dd><p>The requested command was not found</p>
+</dd>
+</dl>
+</blockquote>
+<h1>FILES</h1>
+<dl>
+<dt>/etc/pam.d/su</dt>
+<dd><p>default PAM configuration file</p>
+</dd>
+<dt>/etc/pam.d/su-l</dt>
+<dd><p>PAM configuration file if --login is specified</p>
+</dd>
+<dt>/etc/default/su</dt>
+<dd><p>command specific logindef config file</p>
+</dd>
+<dt>/etc/login.defs</dt>
+<dd><p>global logindef config file</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>For security reasons, <strong>su</strong> always logs failed log-in attempts to the btmp file, but it does not write to the <em>lastlog</em> file at all. This solution can be used to control <strong>su</strong> behavior by PAM configuration. If you want to use the <strong>pam_lastlog</strong>(8) module to print warning message about failed log-in attempts then <strong>pam_lastlog</strong>(8) has to be configured to update the <em>lastlog</em> file as well. For example by:</p>
+<blockquote>
+<p><br />
+session required pam_lastlog.so nowtmp</p>
+</blockquote>
+<h1>HISTORY</h1>
+<p>This <strong>su</strong> command was derived from coreutils' <strong>su</strong>, which was based on an implementation by David MacKenzie. The util-linux version has been refactored by Karel Zak.</p>
+<h1>SEE ALSO</h1>
+<p><strong>setpriv</strong>(1), <strong>login.defs</strong>(5), <strong>shells</strong>(5), <strong>pam</strong>(8), <strong>runuser</strong>(1)</p>
+<h1>AVAILABILITY</h1>
+<p>The su command is part of the util-linux package and is available from <a href="https://www.kernel.org/pub/linux/utils/util-linux/">Linux Kernel Archive</a>.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command oldolduname</title><meta name="description" content="Linux command oldolduname get name and information about current kernel"><meta name="keywords" content="linux, command, oldolduname, bsd, get name and information about current kernel"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>uname - get name and information about current kernel</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/utsname.h&gt;</strong></p>
+<p><strong>int uname(struct utsname *</strong><em>buf</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>uname</strong>() returns system information in the structure pointed to by <em>buf</em>. The <em>utsname</em> struct is defined in <em>&lt;sys/utsname.h&gt;</em>:</p>
+<pre><code>struct utsname {
+    char sysname[];    /* Operating system name (e.g., &quot;Linux&quot;) */
+    char nodename[];   /* Name within &quot;some implementation-defined
+                          network&quot; */
+    char release[];    /* Operating system release
+                          (e.g., &quot;2.6.28&quot;) */
+    char version[];    /* Operating system version */
+    char machine[];    /* Hardware identifier */
+#ifdef _GNU_SOURCE
+    char domainname[]; /* NIS or YP domain name */
+#endif
+};</code></pre>
+<p>The length of the arrays in a <em>struct utsname</em> is unspecified (see NOTES); the fields are terminated by a null byte ('\0').</p>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>buf</em> is not valid.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4. There is no <strong>uname</strong>() call in 4.3BSD.</p>
+<p>The <em>domainname</em> member (the NIS or YP domain name) is a GNU extension.</p>
+<h1>NOTES</h1>
+<p>This is a system call, and the operating system presumably knows its name, release and version. It also knows what hardware it runs on. So, four of the fields of the struct are meaningful. On the other hand, the field <em>nodename</em> is meaningless: it gives the name of the present machine in some undefined network, but typically machines are in more than one network and have several names. Moreover, the kernel has no way of knowing about such things, so it has to be told what to answer here. The same holds for the additional <em>domainname</em> field.</p>
+<p>To this end, Linux uses the system calls <strong>sethostname</strong>(2) and <strong>setdomainname</strong>(2). Note that there is no standard that says that the hostname set by <strong>sethostname</strong>(2) is the same string as the <em>nodename</em> field of the struct returned by <strong>uname</strong>() (indeed, some systems allow a 256-byte hostname and an 8-byte nodename), but this is true on Linux. The same holds for <strong>setdomainname</strong>(2) and the <em>domainname</em> field.</p>
+<p>The length of the fields in the struct varies. Some operating systems or libraries use a hardcoded 9 or 33 or 65 or 257. Other systems use <strong>SYS_NMLN</strong> or <strong>_SYS_NMLN</strong> or <strong>UTSLEN</strong> or <strong>_UTSNAME_LENGTH</strong>. Clearly, it is a bad idea to use any of these constants; just use sizeof(...). Often 257 is chosen in order to have room for an internet hostname.</p>
+<p>Part of the utsname information is also accessible via <em>/proc/sys/kernel/</em>{<em>ostype</em>, <em>hostname</em>, <em>osrelease</em>, <em>version</em>, <em>domainname</em>}.</p>
+<h2>C library/kernel differences</h2>
+<p>Over time, increases in the size of the <em>utsname</em> structure have led to three successive versions of <strong>uname</strong>(): <em>sys_olduname</em>() (slot <em>__NR_oldolduname</em>), <em>sys_uname</em>() (slot <em>__NR_olduname</em>), and <em>sys_newuname</em>() (slot <em>__NR_uname)</em>. The first one used length 9 for all fields; the second used 65; the third also uses 65 but adds the <em>domainname</em> field. The glibc <strong>uname</strong>() wrapper function hides these details from applications, invoking the most recent version of the system call provided by the kernel.</p>
+<h1>SEE ALSO</h1>
+<p><strong>uname</strong>(1), <strong>getdomainname</strong>(2), <strong>gethostname</strong>(2), <strong>uts_namespaces</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

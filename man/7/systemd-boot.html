@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-boot</title><meta name="description" content="Linux command systemd-boot A simple UEFI boot manager"><meta name="keywords" content="linux, command, systemd-boot, bsd, A simple UEFI boot manager"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-boot, sd-boot - A simple UEFI boot manager</p>
+<h1>DESCRIPTION</h1>
+<p><strong>systemd-boot</strong> (short: <strong>sd-boot</strong>) is a simple UEFI boot manager. It provides a graphical menu to select the entry to boot and an editor for the kernel command line. <strong>systemd-boot</strong> supports systems with UEFI firmware only.</p>
+<p><strong>systemd-boot</strong> loads boot entry information from the EFI system partition (ESP), usually mounted at /efi/, /boot/, or /boot/efi/ during OS runtime, as well as from the Extended Boot Loader partition if it exists (usually mounted to /boot/). Configuration file fragments, kernels, initrds and other EFI images to boot generally need to reside on the ESP or the Extended Boot Loader partition. Linux kernels must be built with <strong>CONFIG_EFI_STUB</strong> to be able to be directly executed as an EFI image. During boot <strong>systemd-boot</strong> automatically assembles a list of boot entries from the following sources:</p>
+<blockquote>
+<p>·</p>
+<p>Boot entries defined with <strong>Boot Loader Specification</strong>[1] description files located in /loader/entries/ on the ESP and the Extended Boot Loader Partition. These usually describe Linux kernel images with associated initrd images, but alternatively may also describe arbitrary other EFI executables.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Unified kernel images following the <strong>Boot Loader Specification</strong>[1], as executable EFI binaries in /EFI/Linux/ on the ESP and the Extended Boot Loader Partition.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The Microsoft Windows EFI boot manager, if installed</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The Apple MacOS X boot manager, if installed</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The EFI Shell binary, if installed</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>A reboot into the UEFI firmware setup option, if supported by the firmware</p>
+</blockquote>
+<p><strong>systemd-boot</strong> supports the following features:</p>
+<blockquote>
+<p>·</p>
+<p>Basic boot manager configuration changes (such as timeout configuration, default boot entry selection, ...) may be made directly from the boot loader UI at boot-time, as well as during system runtime with EFI variables.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The boot manager integrates with the <strong>systemctl</strong> command to implement features such as <strong>systemctl reboot --boot-loader-entry=...</strong> (for rebooting into a specific boot menu entry, i.e. "reboot into Windows") and <strong>systemctl reboot --boot-loader-menu=...</strong> (for rebooting into the boot loader menu), by implementing the <strong>Boot Loader Interface</strong>[2]. See <strong>systemctl</strong>(1) for details.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>An EFI variable set by the boot loader informs the OS about the ESP partition used during boot. This is then used to automatically mount the correct ESP partition to /efi/ or /boot/ during OS runtime. See <strong>systemd-gpt-auto-generator</strong>(8) for details.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The boot manager provides information about the boot time spent in UEFI firmware using the <strong>Boot Loader Interface</strong>[2]. This information can be displayed using <strong>systemd-analyze</strong>(1).</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The boot manager implements boot counting and automatic fallback to older, working boot entries on failure. See <strong>Automatic Boot Assessment</strong>[3].</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The boot manager optionally reads a random seed from the ESP partition, combines it with a system token stored in a persistent EFI variable and derives a random seed to use by the OS as entropy pool initialization, providing a full entropy pool during early boot.</p>
+</blockquote>
+<p><strong>bootctl</strong>(1) may be used from a running system to locate the ESP and the Extended Boot Loader Partition, list available entries, and install <strong>systemd-boot</strong> itself.</p>
+<p><strong>kernel-install</strong>(8) may be used to copy kernel images onto the ESP or the Extended Boot Loader Partition and to generate description files compliant with the Boot Loader Specification.</p>
+<h1>KEY BINDINGS</h1>
+<p>The following keys may be used in the boot menu:</p>
+<p>↑ (Up), ↓ (Down), j, k, PageUp, PageDown, Home, End</p>
+<blockquote>
+<p>Navigate up/down in the entry list</p>
+</blockquote>
+<p>↵ (Enter), → (Right)</p>
+<blockquote>
+<p>Boot selected entry</p>
+</blockquote>
+<p>d</p>
+<blockquote>
+<p>Make selected entry the default</p>
+</blockquote>
+<p>e</p>
+<blockquote>
+<p>Edit the kernel command line for selected entry</p>
+</blockquote>
+<p>+, t</p>
+<blockquote>
+<p>Increase the timeout before default entry is booted</p>
+</blockquote>
+<p>-, T</p>
+<blockquote>
+<p>Decrease the timeout</p>
+</blockquote>
+<p>v</p>
+<blockquote>
+<p>Show systemd-boot, UEFI, and firmware versions</p>
+</blockquote>
+<p>P</p>
+<blockquote>
+<p>Print status</p>
+</blockquote>
+<p>Q</p>
+<blockquote>
+<p>Quit</p>
+</blockquote>
+<p>h, ?, F1</p>
+<blockquote>
+<p>Show a help screen</p>
+</blockquote>
+<p>Ctrl+l</p>
+<blockquote>
+<p>Reprint the screen</p>
+</blockquote>
+<p>The following keys may be pressed during bootup or in the boot menu to directly boot a specific entry:</p>
+<p>l</p>
+<blockquote>
+<p>Linux</p>
+</blockquote>
+<p>w</p>
+<blockquote>
+<p>Windows</p>
+</blockquote>
+<p>a</p>
+<blockquote>
+<p>OS X</p>
+</blockquote>
+<p>s</p>
+<blockquote>
+<p>EFI shell</p>
+</blockquote>
+<p>1, 2, 3, 4, 5, 6, 7, 8, 9</p>
+<blockquote>
+<p>Boot entry number 1 ... 9</p>
+</blockquote>
+<p>The boot menu is shown when a non-zero menu timeout has been configured. If the menu timeout has been set to zero, it is sufficient to press any key — before the boot loader initializes — to bring up the boot menu, except for the keys listed immediately above as they directly boot into the selected boot menu item. Note that depending on the firmware implementation the time window where key presses are accepted before the boot loader initializes might be short. If the window is missed, reboot and try again, possibly pressing a suitable key (e.g. the space bar) continuously; on most systems it should be possible to hit the time window after a few attempts. To avoid this problem, consider setting a non-zero timeout, thus showing the boot menu unconditionally. Some desktop environments might offer an option to directly boot into the boot menu, to avoid the problem altogether. Alternatively, use the command line <strong>systemctl reboot --boot-loader-menu=0</strong> from the shell.</p>
+<p>In the editor, most keys simply insert themselves, but the following keys may be used to perform additional actions:</p>
+<p>← (Left), → (Right), Home, End</p>
+<blockquote>
+<p>Navigate left/right</p>
+</blockquote>
+<p>Esc</p>
+<blockquote>
+<p>Abort the edit and quit the editor</p>
+</blockquote>
+<p>Ctrl+k</p>
+<blockquote>
+<p>Clear the command line</p>
+</blockquote>
+<p>Ctrl+w, Alt+Backspace</p>
+<blockquote>
+<p>Delete word backwards</p>
+</blockquote>
+<p>Alt+d</p>
+<blockquote>
+<p>Delete word forwards</p>
+</blockquote>
+<p>↵ (Enter)</p>
+<blockquote>
+<p>Boot entry with the edited command line</p>
+</blockquote>
+<p>Note that unless configured otherwise in the UEFI firmware, systemd-boot will use the US keyboard layout, so key labels might not match for keys like +/-.</p>
+<h1>FILES</h1>
+<p>The files <strong>systemd-boot</strong> processes generally reside on the UEFI ESP which is usually mounted to /efi/, /boot/ or /boot/efi/ during OS runtime. It also processes files on the Extended Boot Loader partition which is typically mounted to /boot/, if it exists. <strong>systemd-boot</strong> reads runtime configuration such as the boot timeout and default entry from /loader/loader.conf on the ESP (in combination with data read from EFI variables). See <strong>loader.conf</strong>(5). Boot entry description files following the <strong>Boot Loader Specification</strong>[1] are read from /loader/entries/ on the ESP and the Extended Boot Loader partition. Unified kernel boot entries following the <strong>Boot Loader Specification</strong>[1] are read from /EFI/Linux/ on the ESP and the Extended Boot Loader partition. Optionally, a random seed for early boot entropy pool provisioning is stored in /loader/random-seed in the ESP.</p>
+<h1>EFI VARIABLES</h1>
+<p>The following EFI variables are defined, set and read by <strong>systemd-boot</strong>, under the vendor UUID "4a67b082-0a4c-41cf-b6c7-440b29bb8c4", for communication between the OS and the boot loader:</p>
+<p><em>LoaderBootCountPath</em></p>
+<blockquote>
+<p>If boot counting is enabled, contains the path to the file in whose name the boot counters are encoded. Set by the boot loader. <strong>systemd-bless-boot.service</strong>(8) uses this information to mark a boot as successful as determined by the successful activation of the boot-complete.target target unit.</p>
+</blockquote>
+<p><em>LoaderConfigTimeout</em>, <em>LoaderConfigTimeoutOneShot</em></p>
+<blockquote>
+<p>The menu timeout in seconds. Read by the boot loader. <em>LoaderConfigTimeout</em> is maintained persistently, while <em>LoaderConfigTimeoutOneShot</em> is a one-time override which is read once (in which case it takes precedence over <em>LoaderConfigTimeout</em>) and then removed. <em>LoaderConfigTimeout</em> may be manipulated with the t/T keys, see above.</p>
+</blockquote>
+<p><em>LoaderDevicePartUUID</em></p>
+<blockquote>
+<p>Contains the partition UUID of the EFI System Partition the boot loader was run from. Set by the boot loader. <strong>systemd-gpt-auto-generator</strong>(8) uses this information to automatically find the disk booted from, in order to discover various other partitions on the same disk automatically.</p>
+</blockquote>
+<p><em>LoaderEntries</em></p>
+<blockquote>
+<p>A list of the identifiers of all discovered boot loader entries. Set by the boot loader.</p>
+</blockquote>
+<p><em>LoaderEntryDefault</em>, <em>LoaderEntryOneShot</em></p>
+<blockquote>
+<p>The identifier of the default boot loader entry. Set primarily by the OS and read by the boot loader. <em>LoaderEntryOneShot</em> sets the default entry for the next boot only, while <em>LoaderEntryDefault</em> sets it persistently for all future boots. <strong>bootctl</strong>(1)s <strong>set-default</strong> and <strong>set-oneshot</strong> commands make use of these variables. The boot loader modifies <em>LoaderEntryDefault</em> on request, when the d key is used, see above.</p>
+</blockquote>
+<p><em>LoaderEntrySelected</em></p>
+<blockquote>
+<p>The identifier of the boot loader entry currently being booted. Set by the boot loader.</p>
+</blockquote>
+<p><em>LoaderFeatures</em></p>
+<blockquote>
+<p>A set of flags indicating the features the boot loader supports. Set by the boot loader. Use <strong>bootctl</strong>(1) to view this data.</p>
+</blockquote>
+<p><em>LoaderFirmwareInfo</em>, <em>LoaderFirmwareType</em></p>
+<blockquote>
+<p>Brief firmware information. Set by the boot loader. Use <strong>bootctl</strong>(1) to view this data.</p>
+</blockquote>
+<p><em>LoaderImageIdentifier</em></p>
+<blockquote>
+<p>The path of executable of the boot loader used for the current boot, relative to the EFI System Partitions root directory. Set by the boot loader. Use <strong>bootctl</strong>(1) to view this data.</p>
+</blockquote>
+<p><em>LoaderInfo</em></p>
+<blockquote>
+<p>Brief information about the boot loader. Set by the boot loader. Use <strong>bootctl</strong>(1) to view this data.</p>
+</blockquote>
+<p><em>LoaderTimeExecUSec</em>, <em>LoaderTimeInitUSec</em>, <em>LoaderTimeMenuUsec</em></p>
+<blockquote>
+<p>Information about the time spent in various parts of the boot loader. Set by the boot loader. Use <strong>systemd-analyze</strong>(1) to view this data.</p>
+</blockquote>
+<p><em>LoaderRandomSeed</em></p>
+<blockquote>
+<p>A binary random seed <strong>systemd-boot</strong> may optionally pass to the OS. This is a volatile EFI variable that is hashed at boot from the combination of a random seed stored in the ESP (in /loader/random-seed) and a "system token" persistently stored in the EFI variable <em>LoaderSystemToken</em> (see below). During early OS boot the system manager reads this variable and passes it to the OS kernels random pool, crediting the full entropy it contains. This is an efficient way to ensure the system starts up with a fully initialized kernel random pool — as early as the initial RAM disk phase. <strong>systemd-boot</strong> reads the random seed from the ESP, combines it with the "system token", and both derives a new random seed to update in-place the seed stored in the ESP, and the random seed to pass to the OS from it via SHA256 hashing in counter mode. This ensures that different physical systems that boot the same "golden" OS image — i.e. containing the same random seed file in the ESP — will still pass a different random seed to the OS. It is made sure the random seed stored in the ESP is fully overwritten before the OS is booted, to ensure different random seed data is used between subsequent boots.</p>
+<p>See <strong>Random Seeds</strong>[4] for further information.</p>
+</blockquote>
+<p><em>LoaderSystemToken</em></p>
+<blockquote>
+<p>A binary random data field, that is used for generating the random seed to pass to the OS (see above). Note that this random data is generally only generated once, during OS installation, and is then never updated again.</p>
+</blockquote>
+<p>Many of these variables are defined by the <strong>Boot Loader Interface</strong>[2].</p>
+<h1>BOOT COUNTING</h1>
+<p><strong>systemd-boot</strong> implements a simple boot counting mechanism on top of the <strong>Boot Loader Specification</strong>[1], for automatic and unattended fallback to older kernel versions/boot loader entries when a specific entry continuously fails. Any boot loader entry file and unified kernel image file that contains a "+" followed by one or two numbers (if two they need to be separated by a "-"), before the .conf or .efi suffix is subject to boot counting: the first of the two numbers (tries left) is decreased by one on every boot attempt, the second of the two numbers (tries done) is increased by one (if tries done is absent it is considered equivalent to 0). Depending on the current value of these two counters the boot entry is considered to be in one of three states:</p>
+<blockquote>
+<p>1.</p>
+<p>If the tries left counter of an entry is greater than zero the entry is considered to be in indeterminate state. This means the entry has not completed booting successfully yet, but also hasnt been determined not to work.</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>If the tries left counter of an entry is zero it is considered to be in bad state. This means no further attempts to boot this item will be made (that is, unless all other boot entries are also in bad state), as all attempts to boot this entry have not completed successfully.</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>If the tries left and tries done counters of an entry are absent it is considered to be in good state. This means further boot counting for the entry is turned off, as it successfully booted at least once. The <strong>systemd-bless-boot.service</strong>(8) service moves the currently booted entry from indeterminate into good state when a boot attempt completed successfully.</p>
+</blockquote>
+<p>Generally, when new entries are added to the boot loader, they first start out in indeterminate state, i.e. with a tries left counter greater than zero. The boot entry remains in this state until either it managed to complete a full boot successfully at least once (in which case it will be in good state) — or the tries left counter reaches zero (in which case it will be in bad state).</p>
+<p>Example: lets say a boot loader entry file foo.conf is set up for 3 boot tries. The installer will hence create it under the name foo+3.conf. On first boot, the boot loader will rename it to foo+2-1.conf. If that boot does not complete successfully, the boot loader will rename it to foo+1-2.conf on the following boot. If that fails too, it will finally be renamed foo+0-3.conf by the boot loader on next boot, after which it will be considered bad. If the boot succeeds however the entry file will be renamed to foo.conf by the OS, so that it is considered good from then on.</p>
+<p>The boot menu takes the tries left counter into account when sorting the menu entries: entries in bad state are ordered at the beginning of the list, and entries in good or indeterminate at the end. The user can freely choose to boot any entry of the menu, including those already marked bad. If the menu entry to boot is automatically determined, this means that good or indeterminate entries are generally preferred (as the bottom item of the menu is the one booted by default), and bad entries will only be considered if there are no good or indeterminate entries left.</p>
+<p>The <strong>kernel-install</strong>(8) kernel install framework optionally sets the initial tries left counter to the value specified in /etc/kernel/tries when a boot loader entry is first created.</p>
+<h1>SEE ALSO</h1>
+<p><strong>bootctl</strong>(1), <strong>loader.conf</strong>(5), <strong>systemd-bless-boot.service</strong>(8), <strong>systemd-boot-system-token.service</strong>(8), <strong>kernel-install</strong>(8), <strong>Boot Loader Specification</strong>[1], <strong>Boot Loader Interface</strong>[2]</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>Boot Loader Specification</p>
+<p>https://systemd.io/BOOT_LOADER_SPECIFICATION</p></li>
+<li><p>Boot Loader Interface</p>
+<p>https://systemd.io/BOOT_LOADER_INTERFACE</p></li>
+<li><p>Automatic Boot Assessment</p>
+<p>https://systemd.io/AUTOMATIC_BOOT_ASSESSMENT</p></li>
+<li><p>Random Seeds</p>
+<p>https://systemd.io/RANDOM_SEEDS</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

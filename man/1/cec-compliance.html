@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command cec-compliance</title><meta name="description" content="Linux command cec-compliance An application to verify remote CEC devices"><meta name="keywords" content="linux, command, cec-compliance, bsd, An application to verify remote CEC devices"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>cec-compliance - An application to verify remote CEC devices</p>
+<h1>SYNOPSIS</h1>
+<p><strong>cec-compliance</strong> [<em>-h</em>] [<em>-d &lt;dev&gt;</em>] [other options]</p>
+<h1>DESCRIPTION</h1>
+<p>The cec-compliance utility can be used to test how well remote CEC devices comply with the CEC specification. It can also be used to test the local CEC adapter (with the <em>-A</em> option).</p>
+<p>By default it will run through all tests, but if one or more of the feature test options is given, then only those tests will be performed. A set of core tests is always run.</p>
+<p>The CEC adapter needs to be configured before it is used to run tests with <strong>cec-compliance</strong>. Use <strong>cec-ctl</strong> for configuration.</p>
+<p>If the CEC adapter has claimed several logical addresses, the test set is run from each logical address in succession. The remote device needs to report a valid physical address in order to run tests on it.</p>
+<p>When running compliance tests, <strong>cec-follower</strong> should be run on the same adapter. <strong>cec-follower</strong> will reply to messages that are not handled by <strong>cec-compliance</strong>. <strong>cec-follower</strong> will also monitor the device under test for behaviors that are not compliant with the specification. Before each test-run <strong>cec-follower</strong> should be restarted if it is already running, to initialize the emulated device with a clean and known initial state.</p>
+<p>Some tests require interactive mode (with the <em>-i</em> option) to confirm that the test passed. When in interactive mode, the user is asked to observe or perform actions on the remote device. Some tests also give conclusive test results when run in interactive mode.</p>
+<p>When testing the local CEC adapter's compliance with the CEC API, there must be at least one remote device present in order to test transmitting and receiving.</p>
+<p>The compliance tests can have several possible outcomes besides passing and failing:</p>
+<p>OK The test passed.</p>
+<p>OK (Unexpected) The test passed, but it was unexpected for the device under test to support it. This might for example occur when a TV replies to messages in the Deck Control feature.</p>
+<p>OK (Not Supported) The feature that was tested is not supported by the device under test, and that feature was not mandatory for the device to pass.</p>
+<p>OK (Presumed) Nothing went wrong during the test, but the test cannot positively verify that the required effects of the test occurred. The test runner should verify that the test passed by manually observing the device under test. This is typically the test result for tests that send messages that are not replied to, but which induce some side effect on the device under test, such as a TV switching to another input or sending a Remote Control command.</p>
+<p>OK (Refused) The device supports the feature or message being tested, but responded &lt;Feature Abort&gt; ["Refused"] to indicate that it cannot perform the given operation. This might for example occur when trying to test the One Touch Record feature on a TV with copy protection enabled.</p>
+<p>FAIL The test failed and was expected to pass on the device.</p>
+<p>OK (Expected Failure) Failed but this was expected. This can only happen if the <strong>--expect</strong> option was used that specified that a particular test would return a FAIL result.</p>
+<p>FAIL (Expected X, got Y) The test returned a different result than was expected. This can only happen if the <strong>--expect</strong> option was used that specified that a particular test would return a specific non-FAIL result.</p>
+<p>Some tests depend on other tests being successful. These are not run if the tests they depend on failed, and they will not be shown in the test listing.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-d</strong>, <strong>--device</strong> <em>&lt;dev&gt;</em></dt>
+<dd><p>Use device &lt;dev&gt; as the CEC device. If &lt;dev&gt; is a number, then /dev/cec&lt;dev&gt; is used.</p>
+</dd>
+<dt><strong>-D</strong>, <strong>--driver</strong> <em>&lt;drv&gt;</em></dt>
+<dd><p>Use a cec device that has driver name <em>&lt;drv&gt;</em>, as returned by the CEC_ADAP_G_CAPS ioctl. This option can be combined with <strong>-a</strong> to uniquely identify a CEC device without having to rely on the device node number.</p>
+</dd>
+<dt><strong>-a</strong>, <strong>--adapter</strong> <em>&lt;adap-name&gt;</em></dt>
+<dd><p>Use a cec device that has adapter name <em>&lt;adap-name&gt;</em>, as returned by the CEC_ADAP_G_CAPS ioctl. This option can be combined with <strong>-D</strong> to uniquely identify a CEC device without having to rely on the device node number.</p>
+</dd>
+<dt><strong>-E</strong>, <strong>--exit-on-fail</strong></dt>
+<dd><p>Exit this application when the first failure occurs instead of continuing with a possible inconsistent state.</p>
+</dd>
+<dt><strong>-l</strong>, <strong>--list-tests</strong></dt>
+<dd><p>List all tests and the possible test results. This is used by the <strong>--expect</strong> option.</p>
+</dd>
+<dt><strong>-e</strong>, <strong>--expect</strong> <em>&lt;test&gt;</em>=<em>&lt;result&gt;</em></dt>
+<dd><p><strong>-n</strong>, <strong>--expect-with-no-warnings</strong> <em>&lt;test&gt;</em>=<em>&lt;result&gt;</em> Fail if the test gave a different result. The <strong>--list-tests</strong> option lists all the possible tests and what result values can be used.</p>
+</dd>
+</dl>
+<p>This can be used in test scripts to verify that a specific result was returned by the test. One use-case is to verify that an optional feature is actually supported, so an <em>OK</em> result instead of an <em>OK (Not Supported)</em> result is expected.</p>
+<p>It can also be used to accept known failures. In that case the test will not fail, but return an <em>OK (Expected Failure)</em> result.</p>
+<p>The <strong>--expect-with-no-warnings</strong> variant is more strict and will also check that the test produced no warnings.</p>
+<dl>
+<dt><strong>-v</strong>, <strong>--verbose</strong></dt>
+<dd><p>Turn on verbose reporting.</p>
+</dd>
+<dt><strong>-w</strong>, <strong>--wall-clock</strong></dt>
+<dd><p>Show timestamps as wall-clock time. This also turns on verbose reporting.</p>
+</dd>
+<dt><strong>-T</strong>, <strong>--trace</strong></dt>
+<dd><p>Trace all called ioctls. Useful for debugging.</p>
+</dd>
+<dt><strong>-h</strong>, <strong>--help</strong></dt>
+<dd><p>Prints the help message.</p>
+</dd>
+<dt><strong>-W</strong>, <strong>--exit-on-warn</strong></dt>
+<dd><p>Exit this application when the first warning occurs instead of continuing.</p>
+</dd>
+<dt><strong>-s</strong>, <strong>--skip-info</strong></dt>
+<dd><p>Skip the Driver Info output section.</p>
+</dd>
+<dt><strong>-C</strong>, <strong>--color</strong> <em>&lt;when&gt;</em></dt>
+<dd><p>Highlight OK/warn/fail/FAIL strings with colors. OK is marked green, warn is marked bold, and fail/FAIL are marked bright red if enabled. <em>&lt;when&gt;</em> can be <em>always</em>, <em>never</em>, or <em>auto</em> (the default).</p>
+</dd>
+<dt><strong>-N</strong>, <strong>--no-warnings</strong></dt>
+<dd><p>Turn off warning messages.</p>
+</dd>
+<dt><strong>-r</strong>, <strong>--remote</strong> <em>&lt;la&gt;</em></dt>
+<dd><p>As initiator test the remote logical address &lt;la&gt; or all LAs if no LA was given.</p>
+</dd>
+<dt><strong>-i</strong>, <strong>--interactive</strong></dt>
+<dd><p>Interactive mode when doing remote tests.</p>
+</dd>
+<dt><strong>-R</strong>, <strong>--reply-threshold</strong> <em>&lt;timeout&gt;</em></dt>
+<dd><p>Warn if replies take longer than this threshold (default 1000ms).</p>
+</dd>
+<dt><strong>-t</strong>, <strong>--timeout</strong> <em>&lt;secs&gt;</em></dt>
+<dd><p>Set the standby/resume timeout to the given number of seconds. Default is 60s.</p>
+</dd>
+<dt><strong>-A</strong>, <strong>--test-adapter</strong></dt>
+<dd><p>Test the CEC adapter API</p>
+</dd>
+<dt><strong>-F</strong>, <strong>--test-fuzzing</strong></dt>
+<dd><p>Test the remote CEC adapter by randomly creating CEC messages. This runs forever until an error occurs.</p>
+</dd>
+<dt><strong>--test-core</strong></dt>
+<dd><p>Test the core functionality</p>
+</dd>
+<dt><strong>--test-audio-rate-control</strong></dt>
+<dd><p>Test the Audio Rate Control feature</p>
+</dd>
+<dt><strong>--test-audio-return-channel-control</strong></dt>
+<dd><p>Test the Audio Return Channel Control feature</p>
+</dd>
+<dt><strong>--test-capability-discovery-and-control</strong></dt>
+<dd><p>Test the Capability Discovery and Control feature</p>
+</dd>
+<dt><strong>--test-deck-control</strong></dt>
+<dd><p>Test the Deck Control feature</p>
+</dd>
+<dt><strong>--test-device-menu-control</strong></dt>
+<dd><p>Test the Device Menu Control feature</p>
+</dd>
+<dt><strong>--test-device-osd-transfer</strong></dt>
+<dd><p>Test the Device OSD Transfer feature</p>
+</dd>
+<dt><strong>--test-dynamic-audio-lipsync</strong></dt>
+<dd><p>Test the Dynamic Audio Lipsync feature</p>
+</dd>
+<dt><strong>--test-osd-display</strong></dt>
+<dd><p>Test the OSD Display feature</p>
+</dd>
+<dt><strong>--test-one-touch-play</strong></dt>
+<dd><p>Test the One Touch Play feature</p>
+</dd>
+<dt><strong>--test-one-touch-record</strong></dt>
+<dd><p>Test the One Touch Record feature</p>
+</dd>
+<dt><strong>--test-power-status</strong></dt>
+<dd><p>Test the Power Status feature</p>
+</dd>
+<dt><strong>--test-remote-control-passthrough</strong></dt>
+<dd><p>Test the Remote Control Passthrough feature</p>
+</dd>
+<dt><strong>--test-routing-control</strong></dt>
+<dd><p>Test the Routing Control feature</p>
+</dd>
+<dt><strong>--test-system-audio-control</strong></dt>
+<dd><p>Test the System Audio Control feature</p>
+</dd>
+<dt><strong>--test-system-information</strong></dt>
+<dd><p>Test the System Information feature</p>
+</dd>
+<dt><strong>--test-timer-programming</strong></dt>
+<dd><p>Test the Timer Programming feature</p>
+</dd>
+<dt><strong>--test-tuner-control</strong></dt>
+<dd><p>Test the Tuner Control feature</p>
+</dd>
+<dt><strong>--test-vendor-specific-commands</strong></dt>
+<dd><p>Test the Vendor Specific Commands feature</p>
+</dd>
+<dt><strong>--test-standby-resume</strong></dt>
+<dd><p>Test standby and resume functionality. This will activate testing of Standby, Give Device Power Status and One Touch Play.</p>
+</dd>
+</dl>
+<h1>EXIT STATUS</h1>
+<p>On success, it returns 0. Otherwise, it will return the error code.</p>
+<h1>EXAMPLE</h1>
+<p>We want to test the compliance of a TV when it is interacting with a Playback device. The device node of the CEC adapter which the TV is connected to is /dev/cec1.</p>
+<p>The local CEC adapter first needs to be configured as a Playback device, and it must have an appropriate physical address. It is important that the physical address is correct, so as to not confuse the device under test. For example, if the CEC adapter is connected to the first input of the TV, the physical address 1.0.0.0 should generally be used.</p>
+<p>cec-ctl -d1 --playback --phys-addr 1.0.0.0</p>
+<p>Most CEC adapters will automatically detect the physical address, and for those adapters the <em>--phys-addr</em> option is not needed.</p>
+<p>Next, <strong>cec-follower</strong> also has to be started on the same device:</p>
+<p>cec-follower -d1</p>
+<p><strong>cec-compliance</strong> can now be run towards the TV by supplying the <em>-r</em> option with the logical address 0:</p>
+<p>cec-compliance -d1 -r0</p>
+<h1>BUGS</h1>
+<p>This manual page is a work in progress.</p>
+<p>Bug reports or questions about this utility should be sent to the linux-media@vger.kernel.org mailinglist.</p>
+<h1>SEE ALSO</h1>
+<p><strong>cec-follower</strong>(1), <strong>cec-ctl</strong>(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

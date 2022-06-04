@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command set_thread_area</title><meta name="description" content="Linux command set_thread_area manipulate thread-local storage information"><meta name="keywords" content="linux, command, set_thread_area, bsd, manipulate thread-local storage information"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>get_thread_area, set_thread_area - manipulate thread-local storage information</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;linux/unistd.h&gt;
+
+#if defined __i386__ || defined __x86_64__
+# include &lt;asm/ldt.h&gt;
+
+int get_thread_area(struct user_desc *u_info);
+int set_thread_area(struct user_desc *u_info);
+
+#elif defined __m68k__
+
+int get_thread_area(void);
+int set_thread_area(unsigned long tp);
+
+#elif defined __mips__
+
+int set_thread_area(unsigned long addr);
+
+#endif</code></pre>
+<p><em>Note</em>: There are no glibc wrappers for these system calls; see NOTES.</p>
+<h1>DESCRIPTION</h1>
+<p>These calls provide architecture-specific support for a thread-local storage implementation. At the moment, <strong>set_thread_area</strong>() is available on m68k, MIPS, and x86 (both 32-bit and 64-bit variants); <strong>get_thread_area</strong>() is available on m68k and x86.</p>
+<p>On m68k and MIPS, <strong>set_thread_area</strong>() allows storing an arbitrary pointer (provided in the <strong>tp</strong> argument on m68k and in the <strong>addr</strong> argument on MIPS) in the kernel data structure associated with the calling thread; this pointer can later be retrieved using <strong>get_thread_area</strong>() (see also NOTES for information regarding obtaining the thread pointer on MIPS).</p>
+<p>On x86, Linux dedicates three global descriptor table (GDT) entries for thread-local storage. For more information about the GDT, see the Intel Software Developer's Manual or the AMD Architecture Programming Manual.</p>
+<p>Both of these system calls take an argument that is a pointer to a structure of the following type:</p>
+<pre><code>struct user_desc {
+    unsigned int  entry_number;
+    unsigned int  base_addr;
+    unsigned int  limit;
+    unsigned int  seg_32bit:1;
+    unsigned int  contents:2;
+    unsigned int  read_exec_only:1;
+    unsigned int  limit_in_pages:1;
+    unsigned int  seg_not_present:1;
+    unsigned int  useable:1;
+#ifdef __x86_64__
+    unsigned int  lm:1;
+#endif
+};</code></pre>
+<p><strong>get_thread_area</strong>() reads the GDT entry indicated by <em>u_info-&gt;entry_number</em> and fills in the rest of the fields in <em>u_info</em>.</p>
+<p><strong>set_thread_area</strong>() sets a TLS entry in the GDT.</p>
+<p>The TLS array entry set by <strong>set_thread_area</strong>() corresponds to the value of <em>u_info-&gt;entry_number</em> passed in by the user. If this value is in bounds, <strong>set_thread_area</strong>() writes the TLS descriptor pointed to by <em>u_info</em> into the thread's TLS array.</p>
+<p>When <strong>set_thread_area</strong>() is passed an <em>entry_number</em> of -1, it searches for a free TLS entry. If <strong>set_thread_area</strong>() finds a free TLS entry, the value of <em>u_info-&gt;entry_number</em> is set upon return to show which entry was changed.</p>
+<p>A <em>user_desc</em> is considered "empty" if <em>read_exec_only</em> and <em>seg_not_present</em> are set to 1 and all of the other fields are 0. If an "empty" descriptor is passed to <strong>set_thread_area</strong>(), the corresponding TLS entry will be cleared. See BUGS for additional details.</p>
+<p>Since Linux 3.19, <strong>set_thread_area</strong>() cannot be used to write non-present segments, 16-bit segments, or code segments, although clearing a segment is still acceptable.</p>
+<h1>RETURN VALUE</h1>
+<p>On x86, these system calls return 0 on success, and -1 on failure, with <em>errno</em> set appropriately.</p>
+<p>On MIPS and m68k, <strong>set_thread_area</strong>() always returns 0. On m68k, <strong>get_thread_area</strong>() returns the thread area pointer value (previously set via <strong>set_thread_area</strong>()).</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>u_info</em> is an invalid pointer.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>u_info-&gt;entry_number</em> is out of bounds.</p>
+</dd>
+<dt><strong>ENOSYS</strong></dt>
+<dd><p><strong>get_thread_area</strong>() or <strong>set_thread_area</strong>() was invoked as a 64-bit system call.</p>
+</dd>
+<dt><strong>ESRCH</strong></dt>
+<dd><p>(<strong>set_thread_area</strong>()) A free TLS entry could not be located.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>set_thread_area</strong>() first appeared in Linux 2.5.29. <strong>get_thread_area</strong>() first appeared in Linux 2.5.32.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>set_thread_area</strong>() and <strong>get_thread_area</strong>() are Linux-specific and should not be used in programs that are intended to be portable.</p>
+<h1>NOTES</h1>
+<p>Glibc does not provide wrappers for these system calls, since they are generally intended for use only by threading libraries. In the unlikely event that you want to call them directly, use <strong>syscall</strong>(2).</p>
+<p><strong>arch_prctl</strong>(2) can interfere with <strong>set_thread_area</strong>() on x86. See <strong>arch_prctl</strong>(2) for more details. This is not normally a problem, as <strong>arch_prctl</strong>(2) is normally used only by 64-bit programs.</p>
+<p>On MIPS, the current value of the thread area pointer can be obtained using the instruction:</p>
+<pre><code>rdhwr dest, $29</code></pre>
+<p>This instruction traps and is handled by kernel.</p>
+<h1>BUGS</h1>
+<p>On 64-bit kernels before Linux 3.19, one of the padding bits in <em>user_desc</em>, if set, would prevent the descriptor from being considered empty (see <strong>modify_ldt</strong>(2)). As a result, the only reliable way to clear a TLS entry is to use <strong>memset</strong>(3) to zero the entire <em>user_desc</em> structure, including padding bits, and then to set the <em>read_exec_only</em> and <em>seg_not_present</em> bits. On Linux 3.19, a <em>user_desc</em> consisting entirely of zeros except for <em>entry_number</em> will also be interpreted as a request to clear a TLS entry, but this behaved differently on older kernels.</p>
+<p>Prior to Linux 3.19, the DS and ES segment registers must not reference TLS entries.</p>
+<h1>SEE ALSO</h1>
+<p><strong>arch_prctl</strong>(2), <strong>modify_ldt</strong>(2), <strong>ptrace</strong>(2) (<strong>PTRACE_GET_THREAD_AREA</strong> and <strong>PTRACE_SET_THREAD_AREA</strong>)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

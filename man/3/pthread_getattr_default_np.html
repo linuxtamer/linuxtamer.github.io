@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pthread_getattr_default_np</title><meta name="description" content="Linux command pthread_getattr_default_np get or set default thread-creation attributes"><meta name="keywords" content="linux, command, pthread_getattr_default_np, bsd, get or set default thread-creation attributes"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pthread_getattr_default_np, pthread_setattr_default_np, - get or set default thread-creation attributes</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;pthread.h&gt;
+
+int pthread_getattr_default_np(pthread_attr_t *attr);
+int pthread_setattr_default_np(pthread_attr_t *attr);
+
+Compile and link with -pthread.</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>pthread_setattr_default_np</strong>() function sets the default attributes used for creation of a new thread—that is, the attributes that are used when <strong>pthread_create</strong>(3) is called with a second argument that is NULL. The default attributes are set using the attributes supplied in <em>*attr</em>, a previously initialized thread attributes object. Note the following details about the supplied attributes object:</p>
+<ul>
+<li><p>The attribute settings in the object must be valid.</p></li>
+<li><p>The <em>stack address</em> attribute must not be set in the object.</p></li>
+<li><p>Setting the <em>stack size</em> attribute to zero means leave the default stack size unchanged.</p></li>
+</ul>
+<p>The <strong>pthread_getattr_default_np</strong>() function initializes the thread attributes object referred to by <em>attr</em> so that it contains the default attributes used for thread creation.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(<strong>pthread_setattr_default_np</strong>()) One of the attribute settings in <em>attr</em> is invalid, or the stack address attribute is set in <em>attr</em>.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>(<strong>pthread_setattr_default_np</strong>()) Insufficient memory.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>These functions are available in glibc since version 2.18.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>pthread_getattr_default_np</strong>(), <strong>pthread_setattr_default_np</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>These functions are nonstandard GNU extensions; hence the suffix "_np" (nonportable) in their names.</p>
+<h1>EXAMPLES</h1>
+<p>The program below uses <strong>pthread_getattr_default_np</strong>() to fetch the default thread-creation attributes and then displays various settings from the returned thread attributes object. When running the program, we see the following output:</p>
+<pre><code>$ ./a.out
+Stack size:          8388608
+Guard size:          4096
+Scheduling policy:   SCHED_OTHER
+Scheduling priority: 0
+Detach state:        JOINABLE
+Inherit scheduler:   INHERIT</code></pre>
+<h2>Program source</h2>
+<pre><code>#define _GNU_SOURCE
+#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;errno.h&gt;
+
+#define errExitEN(en, msg) \
+                        do { errno = en; perror(msg); \
+                             exit(EXIT_FAILURE); } while (0)
+
+static void
+display_pthread_attr(pthread_attr_t *attr)
+{
+    int s;
+    size_t stacksize;
+    size_t guardsize;
+    int policy;
+    struct sched_param schedparam;
+    int detachstate;
+    int inheritsched;
+
+    s = pthread_attr_getstacksize(attr, &amp;stacksize);
+    if (s != 0)
+        errExitEN(s, &quot;pthread_attr_getstacksize&quot;);
+    printf(&quot;Stack size:          %zd\n&quot;, stacksize);
+
+    s = pthread_attr_getguardsize(attr, &amp;guardsize);
+    if (s != 0)
+        errExitEN(s, &quot;pthread_attr_getguardsize&quot;);
+    printf(&quot;Guard size:          %zd\n&quot;, guardsize);
+
+    s = pthread_attr_getschedpolicy(attr, &amp;policy);
+    if (s != 0)
+        errExitEN(s, &quot;pthread_attr_getschedpolicy&quot;);
+    printf(&quot;Scheduling policy:   %s\n&quot;,
+            (policy == SCHED_FIFO) ? &quot;SCHED_FIFO&quot; :
+            (policy == SCHED_RR) ? &quot;SCHED_RR&quot; :
+            (policy == SCHED_OTHER) ? &quot;SCHED_OTHER&quot; : &quot;[unknown]&quot;);
+
+    s = pthread_attr_getschedparam(attr, &amp;schedparam);
+    if (s != 0)
+        errExitEN(s, &quot;pthread_attr_getschedparam&quot;);
+    printf(&quot;Scheduling priority: %d\n&quot;, schedparam.sched_priority);
+
+    s = pthread_attr_getdetachstate(attr, &amp;detachstate);
+    if (s != 0)
+        errExitEN(s, &quot;pthread_attr_getdetachstate&quot;);
+    printf(&quot;Detach state:        %s\n&quot;,
+            (detachstate == PTHREAD_CREATE_DETACHED) ? &quot;DETACHED&quot; :
+            (detachstate == PTHREAD_CREATE_JOINABLE) ? &quot;JOINABLE&quot; :
+            &quot;???&quot;);
+
+    s = pthread_attr_getinheritsched(attr, &amp;inheritsched);
+    if (s != 0)
+        errExitEN(s, &quot;pthread_attr_getinheritsched&quot;);
+    printf(&quot;Inherit scheduler:   %s\n&quot;,
+            (inheritsched == PTHREAD_INHERIT_SCHED) ? &quot;INHERIT&quot; :
+            (inheritsched == PTHREAD_EXPLICIT_SCHED) ? &quot;EXPLICIT&quot; :
+            &quot;???&quot;);
+}
+
+int
+main(int argc, char *argv[])
+{
+    int s;
+    pthread_attr_t attr;
+
+    s = pthread_getattr_default_np(&amp;attr);
+    if (s != 0)
+        errExitEN(s, &quot;pthread_getattr_default_np&quot;);
+
+    display_pthread_attr(&amp;attr);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>pthread_attr_getaffinity_np</strong>(3), <strong>pthread_attr_getdetachstate</strong>(3), <strong>pthread_attr_getguardsize</strong>(3), <strong>pthread_attr_getinheritsched</strong>(3), <strong>pthread_attr_getschedparam</strong>(3), <strong>pthread_attr_getschedpolicy</strong>(3), <strong>pthread_attr_getscope</strong>(3), <strong>pthread_attr_getstack</strong>(3), <strong>pthread_attr_getstackaddr</strong>(3), <strong>pthread_attr_getstacksize</strong>(3), <strong>pthread_attr_init</strong>(3), <strong>pthread_create</strong>(3), <strong>pthreads</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

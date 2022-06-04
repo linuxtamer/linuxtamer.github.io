@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command dbus-send</title><meta name="description" content="Linux command dbus-send Send a message to a message bus"><meta name="keywords" content="linux, command, dbus-send, bsd, Send a message to a message bus"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>dbus-send - Send a message to a message bus</p>
+<h1>SYNOPSIS</h1>
+<p><strong>dbus-send</strong> [--system | --session | --bus=<em>ADDRESS</em> | --peer=<em>ADDRESS</em>] [--dest=<em>NAME</em>] [--print-reply [<em>=literal</em>]] [--reply-timeout=<em>MSEC</em>] [--type=<em>TYPE</em>] <em>OBJECT_PATH</em> <em>INTERFACE.MEMBER</em> [<em>CONTENTS</em>...]<br />
+</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>dbus-send</strong> command is used to send a message to a D-Bus message bus. See <strong>http://www.freedesktop.org/software/dbus/</strong> for more information about the big picture.</p>
+<p>There are two well-known message buses: the systemwide message bus (installed on many systems as the "messagebus" service) and the per-user-login-session message bus (started each time a user logs in). The <strong>--system</strong> and <strong>--session</strong> options direct <strong>dbus-send</strong> to send messages to the system or session buses respectively. If neither is specified, <strong>dbus-send</strong> sends to the session bus.</p>
+<p>Nearly all uses of <strong>dbus-send</strong> must provide the <strong>--dest</strong> argument which is the name of a connection on the bus to send the message to. If <strong>--dest</strong> is omitted, no destination is set.</p>
+<p>The object path and the name of the message to send must always be specified. Following arguments, if any, are the message contents (message arguments). These are given as type-specified values and may include containers (arrays, dicts, and variants) as described below.</p>
+<blockquote>
+<pre><code>&lt;contents&gt;   ::= &lt;item&gt; | &lt;container&gt; [ &lt;item&gt; | &lt;container&gt;...]
+&lt;item&gt;       ::= &lt;type&gt;:&lt;value&gt;
+&lt;container&gt;  ::= &lt;array&gt; | &lt;dict&gt; | &lt;variant&gt;
+&lt;array&gt;      ::= array:&lt;type&gt;:&lt;value&gt;[,&lt;value&gt;...]
+&lt;dict&gt;       ::= dict:&lt;type&gt;:&lt;type&gt;:&lt;key&gt;,&lt;value&gt;[,&lt;key&gt;,&lt;value&gt;...]
+&lt;variant&gt;    ::= variant:&lt;type&gt;:&lt;value&gt;
+&lt;type&gt;       ::= string | int16 | uint16 | int32 | uint32 | int64 | uint64 | double | byte | boolean | objpath</code></pre>
+</blockquote>
+<p>D-Bus supports more types than these, but <strong>dbus-send</strong> currently does not. Also, <strong>dbus-send</strong> does not permit empty containers or nested containers (e.g. arrays of variants).</p>
+<p>Here is an example invocation:</p>
+<blockquote>
+<pre><code>
+  dbus-send --dest=org.freedesktop.ExampleName               \
+            /org/freedesktop/sample/object/name              \
+            org.freedesktop.ExampleInterface.ExampleMethod   \
+            int32:47 string:hello world double:65.32       \
+            array:string:&quot;1st item&quot;,&quot;next item&quot;,&quot;last item&quot;  \
+            dict:string:int32:&quot;one&quot;,1,&quot;two&quot;,2,&quot;three&quot;,3      \
+            variant:int32:-8                                 \
+            objpath:/org/freedesktop/sample/object/name
+</code></pre>
+</blockquote>
+<p>Note that the interface is separated from a method or signal name by a dot, though in the actual protocol the interface and the interface member are separate fields.</p>
+<h1>OPTIONS</h1>
+<p>The following options are supported:</p>
+<p><strong>--dest=</strong><em>NAME</em></p>
+<blockquote>
+<p>Specify the name of the connection to receive the message.</p>
+</blockquote>
+<p><strong>--print-reply</strong></p>
+<blockquote>
+<p>Block for a reply to the message sent, and print any reply received in a human-readable form. It also means the message type (<strong>--type=</strong>) is <strong>method_call</strong>.</p>
+</blockquote>
+<p><strong>--print-reply=literal</strong></p>
+<blockquote>
+<p>Block for a reply to the message sent, and print the body of the reply. If the reply is an object path or a string, it is printed literally, with no punctuation, escape characters etc.</p>
+</blockquote>
+<p><strong>--reply-timeout=</strong><em>MSEC</em></p>
+<blockquote>
+<p>Wait for a reply for up to <em>MSEC</em> milliseconds. The default is implementation-defined, typically 25 seconds.</p>
+</blockquote>
+<p><strong>--system</strong></p>
+<blockquote>
+<p>Send to the system message bus.</p>
+</blockquote>
+<p><strong>--session</strong></p>
+<blockquote>
+<p>Send to the session message bus. (This is the default.)</p>
+</blockquote>
+<p><strong>--bus=</strong><em>ADDRESS</em></p>
+<blockquote>
+<p>Register on a message bus at <em>ADDRESS</em>, typically a <strong>dbus-daemon</strong>.</p>
+</blockquote>
+<p><strong>--peer=</strong><em>ADDRESS</em></p>
+<blockquote>
+<p>Send to a non-message-bus D-Bus server at <em>ADDRESS</em>. In this case <strong>dbus-send</strong> will not call the Hello method.</p>
+</blockquote>
+<p><strong>--type=</strong><em>TYPE</em></p>
+<blockquote>
+<p>Specify <strong>method_call</strong> or <strong>signal</strong> (defaults to "<strong>signal</strong>").</p>
+</blockquote>
+<h1>AUTHOR</h1>
+<p>dbus-send was written by Philip Blundell.</p>
+<h1>BUGS</h1>
+<p>Please send bug reports to the D-Bus mailing list or bug tracker, see <strong>http://www.freedesktop.org/software/dbus/</strong></p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-run-generator</title><meta name="description" content="Linux command systemd-run-generator Generator for invoking commands specified on the kernel command line as system service"><meta name="keywords" content="linux, command, systemd-run-generator, bsd, Generator for invoking commands specified on the kernel command line as system service"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-run-generator - Generator for invoking commands specified on the kernel command line as system service</p>
+<h1>SYNOPSIS</h1>
+<p>/lib/systemd/system-generators/systemd-run-generator</p>
+<h1>DESCRIPTION</h1>
+<p>systemd-run-generator is a generator that reads the kernel command line and understands three options:</p>
+<p>If the <strong>systemd.run=</strong> option is specified and followed by a command line, a unit named kernel-command-line.service is generated for it and booted into. The service has <em>Type=oneshot</em> set, and has <em>SuccessAction=exit</em> and <em>FailureAction=exit</em> configured by default, thus ensuring that the system is shut down as soon as the command completes. The exit status of the command line is propagated to the invoking container manager, if this applies (which might propagate this further, to the calling shell — e.g. <strong>systemd-nspawn</strong>(7) does this). If this option is used multiple times the unit file will contain multiple <em>ExecStart=</em> lines, to execute all commands in order. The command is started as regular service, i.e. with <em>DefaultDependencies=</em> on.</p>
+<p>Use <strong>systemd.run_success_action=</strong> and <strong>systemd.run_failure_action=</strong> to tweak how to react to the process completing. In particular assigning "none" will leave the system running after the command completes. For further details on supported arguments, see <strong>systemd.unit</strong>(5).</p>
+<p>systemd-run-generator implements <strong>systemd.generator</strong>(7).</p>
+<h1>EXAMPLE</h1>
+<p>Use a command like the following to add a user to the user database inside a container run with <strong>systemd-nspawn</strong>(7):</p>
+<blockquote>
+<pre><code># systemd-nspawn -D mycontainer -b systemd.run=&quot;adduser test&quot;</code></pre>
+</blockquote>
+<p>(Note the requirement for double quoting in the command line above. The first level of quoting () is processed and removed by the command shell used to invoke <strong>systemd-nspawn</strong>. The second level of quoting ("") is propagated to the kernel command line of the container and processed and removed by <strong>systemd-run-generator</strong>. Both together make sure both words of the specified command line <strong>adduser test</strong> end up in the generated unit file together and are neither split apart by the command shell nor by the generator.)</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemctl</strong>(1), <strong>kernel-command-line</strong>(7), <strong>systemd-nspawn</strong>(7), <strong>systemd.unit</strong>(5), <strong>systemd.service</strong>(5)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

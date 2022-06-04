@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pidfd_send_signal</title><meta name="description" content="Linux command pidfd_send_signal send a signal to a process specified by a file descriptor"><meta name="keywords" content="linux, command, pidfd_send_signal, bsd, send a signal to a process specified by a file descriptor"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pidfd_send_signal - send a signal to a process specified by a file descriptor</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;signal.h&gt;
+
+int pidfd_send_signal(int pidfd, int sig, siginfo_t *info,
+ unsigned int flags);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>pidfd_send_signal</strong>() system call sends the signal <em>sig</em> to the target process referred to by <em>pidfd</em>, a PID file descriptor that refers to a process.</p>
+<p>If the <em>info</em> argument points to a <em>siginfo_t</em> buffer, that buffer should be populated as described in <strong>rt_sigqueueinfo</strong>(2).</p>
+<p>If the <em>info</em> argument is a NULL pointer, this is equivalent to specifying a pointer to a <em>siginfo_t</em> buffer whose fields match the values that are implicitly supplied when a signal is sent using <strong>kill</strong>(2):</p>
+<ul>
+<li><p><em>si_signo</em> is set to the signal number;</p></li>
+<li><p><em>si_errno</em> is set to 0;</p></li>
+<li><p><em>si_code</em> is set to <strong>SI_USER</strong>;</p></li>
+<li><p><em>si_pid</em> is set to the caller's PID; and</p></li>
+<li><p><em>si_uid</em> is set to the caller's real user ID.</p></li>
+</ul>
+<p>The calling process must either be in the same PID namespace as the process referred to by <em>pidfd</em>, or be in an ancestor of that namespace.</p>
+<p>The <em>flags</em> argument is reserved for future use; currently, this argument must be specified as 0.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>pidfd_send_signal</strong>() returns 0. On error, -1 is returned and <em>errno</em> is set to indicate the cause of the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>pidfd</em> is not a valid PID file descriptor.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>sig</em> is not a valid signal.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The calling process is not in a PID namespace from which it can send a signal to the target process.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>flags</em> is not 0.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The calling process does not have permission to send the signal to the target process.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p><em>pidfd</em> doesn't refer to the calling process, and <em>info.si_code</em> is invalid (see <strong>rt_sigqueueinfo</strong>(2)).</p>
+</dd>
+<dt><strong>ESRCH</strong></dt>
+<dd><p>The target process does not exist (i.e., it has terminated and been waited on).</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>pidfd_send_signal</strong>() first appeared in Linux 5.1.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>pidfd_send_signal</strong>() is Linux specific.</p>
+<h1>NOTES</h1>
+<p>Currently, there is no glibc wrapper for this system call; call it using <strong>syscall</strong>(2).</p>
+<h2>PID file descriptors</h2>
+<p>The <em>pidfd</em> argument is a PID file descriptor, a file descriptor that refers to process. Such a file descriptor can be obtained in any of the following ways:</p>
+<ul>
+<li><p>by opening a <em>/proc/[pid]</em> directory;</p></li>
+<li><p>using <strong>pidfd_open</strong>(2); or</p></li>
+<li><p>via the PID file descriptor that is returned by a call to <strong>clone</strong>(2) or <strong>clone3</strong>(2) that specifies the <strong>CLONE_PIDFD</strong> flag.</p></li>
+</ul>
+<p>The <strong>pidfd_send_signal</strong>() system call allows the avoidance of race conditions that occur when using traditional interfaces (such as <strong>kill</strong>(2)) to signal a process. The problem is that the traditional interfaces specify the target process via a process ID (PID), with the result that the sender may accidentally send a signal to the wrong process if the originally intended target process has terminated and its PID has been recycled for another process. By contrast, a PID file descriptor is a stable reference to a specific process; if that process terminates, <strong>pidfd_send_signal</strong>() fails with the error <strong>ESRCH</strong>.</p>
+<h1>EXAMPLES</h1>
+<pre><code>#define _GNU_SOURCE
+#include &lt;limits.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/syscall.h&gt;
+
+#ifndef __NR_pidfd_send_signal
+#define __NR_pidfd_send_signal 424
+#endif
+
+static int
+pidfd_send_signal(int pidfd, int sig, siginfo_t *info,
+        unsigned int flags)
+{
+    return syscall(__NR_pidfd_send_signal, pidfd, sig, info, flags);
+}
+
+int
+main(int argc, char *argv[])
+{
+    siginfo_t info;
+    char path[PATH_MAX];
+    int pidfd, sig;
+
+    if (argc != 3) {
+        fprintf(stderr, &quot;Usage: %s &lt;pid&gt; &lt;signal&gt;\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    sig = atoi(argv[2]);
+
+    /* Obtain a PID file descriptor by opening the /proc/PID directory
+       of the target process */
+
+    snprintf(path, sizeof(path), &quot;/proc/%s&quot;, argv[1]);
+
+    pidfd = open(path, O_RDONLY);
+    if (pidfd == -1) {
+        perror(&quot;open&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Populate a &#39;siginfo_t&#39; structure for use with
+       pidfd_send_signal() */
+
+    memset(&amp;info, 0, sizeof(info));
+    info.si_code = SI_QUEUE;
+    info.si_signo = sig;
+    info.si_errno = 0;
+    info.si_uid = getuid();
+    info.si_pid = getpid();
+    info.si_value.sival_int = 1234;
+
+    /* Send the signal */
+
+    if (pidfd_send_signal(pidfd, sig, &amp;info, 0) == -1) {
+        perror(&quot;pidfd_send_signal&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>clone</strong>(2), <strong>kill</strong>(2), <strong>pidfd_open</strong>(2), <strong>rt_sigqueueinfo</strong>(2), <strong>sigaction</strong>(2), <strong>pid_namespaces</strong>(7), <strong>signal</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sched_getattr</title><meta name="description" content="Linux command sched_getattr set and get scheduling policy and attributes"><meta name="keywords" content="linux, command, sched_getattr, bsd, set and get scheduling policy and attributes"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sched_setattr, sched_getattr - set and get scheduling policy and attributes</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sched.h&gt;
+
+int sched_setattr(pid_t pid, struct sched_attr *attr,
+ unsigned int flags);
+
+int sched_getattr(pid_t pid, struct sched_attr *attr,
+ unsigned int size, unsigned int flags);</code></pre>
+<h1>DESCRIPTION</h1>
+<h2>sched_setattr()</h2>
+<p>The <strong>sched_setattr</strong>() system call sets the scheduling policy and associated attributes for the thread whose ID is specified in <em>pid</em>. If <em>pid</em> equals zero, the scheduling policy and attributes of the calling thread will be set.</p>
+<p>Currently, Linux supports the following "normal" (i.e., non-real-time) scheduling policies as values that may be specified in <em>policy</em>:</p>
+<dl>
+<dt><strong>SCHED_OTHER</strong></dt>
+<dd><p>the standard round-robin time-sharing policy;</p>
+</dd>
+<dt><strong>SCHED_BATCH</strong></dt>
+<dd><p>for "batch" style execution of processes; and</p>
+</dd>
+<dt><strong>SCHED_IDLE</strong></dt>
+<dd><p>for running <em>very</em> low priority background jobs.</p>
+</dd>
+</dl>
+<p>Various "real-time" policies are also supported, for special time-critical applications that need precise control over the way in which runnable threads are selected for execution. For the rules governing when a process may use these policies, see <strong>sched</strong>(7). The real-time policies that may be specified in <em>policy</em> are:</p>
+<dl>
+<dt><strong>SCHED_FIFO</strong></dt>
+<dd><p>a first-in, first-out policy; and</p>
+</dd>
+<dt><strong>SCHED_RR</strong></dt>
+<dd><p>a round-robin policy.</p>
+</dd>
+</dl>
+<p>Linux also provides the following policy:</p>
+<dl>
+<dt><strong>SCHED_DEADLINE</strong></dt>
+<dd><p>a deadline scheduling policy; see <strong>sched</strong>(7) for details.</p>
+</dd>
+</dl>
+<p>The <em>attr</em> argument is a pointer to a structure that defines the new scheduling policy and attributes for the specified thread. This structure has the following form:</p>
+<pre><code>struct sched_attr {
+    u32 size;              /* Size of this structure */
+    u32 sched_policy;      /* Policy (SCHED_*) */
+    u64 sched_flags;       /* Flags */
+    s32 sched_nice;        /* Nice value (SCHED_OTHER,
+                              SCHED_BATCH) */
+    u32 sched_priority;    /* Static priority (SCHED_FIFO,
+                              SCHED_RR) */
+    /* Remaining fields are for SCHED_DEADLINE */
+    u64 sched_runtime;
+    u64 sched_deadline;
+    u64 sched_period;
+};</code></pre>
+<p>The fields of the <em>sched_attr</em> structure are as follows:</p>
+<dl>
+<dt><strong>size</strong></dt>
+<dd><p>This field should be set to the size of the structure in bytes, as in <em>sizeof(struct sched_attr)</em>. If the provided structure is smaller than the kernel structure, any additional fields are assumed to be '0'. If the provided structure is larger than the kernel structure, the kernel verifies that all additional fields are 0; if they are not, <strong>sched_setattr</strong>() fails with the error <strong>E2BIG</strong> and updates <em>size</em> to contain the size of the kernel structure.</p>
+<p>The above behavior when the size of the user-space <em>sched_attr</em> structure does not match the size of the kernel structure allows for future extensibility of the interface. Malformed applications that pass oversize structures won't break in the future if the size of the kernel <em>sched_attr</em> structure is increased. In the future, it could also allow applications that know about a larger user-space <em>sched_attr</em> structure to determine whether they are running on an older kernel that does not support the larger structure.</p>
+</dd>
+<dt><em>sched_policy</em></dt>
+<dd><p>This field specifies the scheduling policy, as one of the <strong>SCHED_*</strong> values listed above.</p>
+</dd>
+<dt><em>sched_flags</em></dt>
+<dd><p>This field contains zero or more of the following flags that are ORed together to control scheduling behavior:</p>
+<dl>
+<dt><strong>SCHED_FLAG_RESET_ON_FORK</strong></dt>
+<dd><p>Children created by <strong>fork</strong>(2) do not inherit privileged scheduling policies. See <strong>sched</strong>(7) for details.</p>
+</dd>
+<dt><strong>SCHED_FLAG_RECLAIM</strong> (since Linux 4.13)</dt>
+<dd><p>This flag allows a <strong>SCHED_DEADLINE</strong> thread to reclaim bandwidth unused by other real-time threads.</p>
+</dd>
+<dt><strong>SCHED_FLAG_DL_OVERRUN</strong> (since Linux 4.16)</dt>
+<dd><p>This flag allows an application to get informed about run-time overruns in <strong>SCHED_DEADLINE</strong> threads. Such overruns may be caused by (for example) coarse execution time accounting or incorrect parameter assignment. Notification takes the form of a <strong>SIGXCPU</strong> signal which is generated on each overrun.</p>
+<p>This <strong>SIGXCPU</strong> signal is <em>process-directed</em> (see <strong>signal</strong>(7)) rather than thread-directed. This is probably a bug. On the one hand, <strong>sched_setattr</strong>() is being used to set a per-thread attribute. On the other hand, if the process-directed signal is delivered to a thread inside the process other than the one that had a run-time overrun, the application has no way of knowing which thread overran.</p>
+</dd>
+</dl>
+</dd>
+<dt><em>sched_nice</em></dt>
+<dd><p>This field specifies the nice value to be set when specifying <em>sched_policy</em> as <strong>SCHED_OTHER</strong> or <strong>SCHED_BATCH</strong>. The nice value is a number in the range -20 (high priority) to +19 (low priority); see <strong>sched</strong>(7).</p>
+</dd>
+<dt><em>sched_priority</em></dt>
+<dd><p>This field specifies the static priority to be set when specifying <em>sched_policy</em> as <strong>SCHED_FIFO</strong> or <strong>SCHED_RR</strong>. The allowed range of priorities for these policies can be determined using <strong>sched_get_priority_min</strong>(2) and <strong>sched_get_priority_max</strong>(2). For other policies, this field must be specified as 0.</p>
+</dd>
+<dt><em>sched_runtime</em></dt>
+<dd><p>This field specifies the "Runtime" parameter for deadline scheduling. The value is expressed in nanoseconds. This field, and the next two fields, are used only for <strong>SCHED_DEADLINE</strong> scheduling; for further details, see <strong>sched</strong>(7).</p>
+</dd>
+<dt><em>sched_deadline</em></dt>
+<dd><p>This field specifies the "Deadline" parameter for deadline scheduling. The value is expressed in nanoseconds.</p>
+</dd>
+<dt><em>sched_period</em></dt>
+<dd><p>This field specifies the "Period" parameter for deadline scheduling. The value is expressed in nanoseconds.</p>
+</dd>
+</dl>
+<p>The <em>flags</em> argument is provided to allow for future extensions to the interface; in the current implementation it must be specified as 0.</p>
+<h2>sched_getattr()</h2>
+<p>The <strong>sched_getattr</strong>() system call fetches the scheduling policy and the associated attributes for the thread whose ID is specified in <em>pid</em>. If <em>pid</em> equals zero, the scheduling policy and attributes of the calling thread will be retrieved.</p>
+<p>The <em>size</em> argument should be set to the size of the <em>sched_attr</em> structure as known to user space. The value must be at least as large as the size of the initially published <em>sched_attr</em> structure, or the call fails with the error <strong>EINVAL</strong>.</p>
+<p>The retrieved scheduling attributes are placed in the fields of the <em>sched_attr</em> structure pointed to by <em>attr</em>. The kernel sets <em>attr.size</em> to the size of its <em>sched_attr</em> structure.</p>
+<p>If the caller-provided <em>attr</em> buffer is larger than the kernel's <em>sched_attr</em> structure, the additional bytes in the user-space structure are not touched. If the caller-provided structure is smaller than the kernel <em>sched_attr</em> structure, the kernel will silently not return any values which would be stored outside the provided space. As with <strong>sched_setattr</strong>(), these semantics allow for future extensibility of the interface.</p>
+<p>The <em>flags</em> argument is provided to allow for future extensions to the interface; in the current implementation it must be specified as 0.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>sched_setattr</strong>() and <strong>sched_getattr</strong>() return 0. On error, -1 is returned, and <em>errno</em> is set to indicate the cause of the error.</p>
+<h1>ERRORS</h1>
+<p><strong>sched_getattr</strong>() and <strong>sched_setattr</strong>() can both fail for the following reasons:</p>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>attr</em> is NULL; or <em>pid</em> is negative; or <em>flags</em> is not zero.</p>
+</dd>
+<dt><strong>ESRCH</strong></dt>
+<dd><p>The thread whose ID is <em>pid</em> could not be found.</p>
+</dd>
+</dl>
+<p>In addition, <strong>sched_getattr</strong>() can fail for the following reasons:</p>
+<dl>
+<dt><strong>E2BIG</strong></dt>
+<dd><p>The buffer specified by <em>size</em> and <em>attr</em> is too small.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>size</em> is invalid; that is, it is smaller than the initial version of the <em>sched_attr</em> structure (48 bytes) or larger than the system page size.</p>
+</dd>
+</dl>
+<p>In addition, <strong>sched_setattr</strong>() can fail for the following reasons:</p>
+<dl>
+<dt><strong>E2BIG</strong></dt>
+<dd><p>The buffer specified by <em>size</em> and <em>attr</em> is larger than the kernel structure, and one or more of the excess bytes is nonzero.</p>
+</dd>
+<dt><strong>EBUSY</strong></dt>
+<dd><p><strong>SCHED_DEADLINE</strong> admission control failure, see <strong>sched</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>attr.sched_policy</em> is not one of the recognized policies; <em>attr.sched_flags</em> contains a flag other than <strong>SCHED_FLAG_RESET_ON_FORK</strong>; or <em>attr.sched_priority</em> is invalid; or <em>attr.sched_policy</em> is <strong>SCHED_DEADLINE</strong> and the deadline scheduling parameters in <em>attr</em> are invalid.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The caller does not have appropriate privileges.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The CPU affinity mask of the thread specified by <em>pid</em> does not include all CPUs in the system (see <strong>sched_setaffinity</strong>(2)).</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>These system calls first appeared in Linux 3.14.</p>
+<h1>CONFORMING TO</h1>
+<p>These system calls are nonstandard Linux extensions.</p>
+<h1>NOTES</h1>
+<p><strong>sched_setattr</strong>() provides a superset of the functionality of <strong>sched_setscheduler</strong>(2), <strong>sched_setparam</strong>(2), <strong>nice</strong>(2), and (other than the ability to set the priority of all processes belonging to a specified user or all processes in a specified group) <strong>setpriority</strong>(2). Analogously, <strong>sched_getattr</strong>() provides a superset of the functionality of <strong>sched_getscheduler</strong>(2), <strong>sched_getparam</strong>(2), and (partially) <strong>getpriority</strong>(2).</p>
+<h1>BUGS</h1>
+<p>In Linux versions up to 3.15, <strong>sched_setattr</strong>() failed with the error <strong>EFAULT</strong> instead of <strong>E2BIG</strong> for the case described in ERRORS.</p>
+<p>In Linux versions up to 5.3, <strong>sched_getattr</strong>() failed with the error <strong>EFBIG</strong> if the in-kernel <em>sched_attr</em> structure was larger than the <em>size</em> passed by user space.</p>
+<h1>SEE ALSO</h1>
+<p><strong>chrt</strong>(1), <strong>nice</strong>(2), <strong>sched_get_priority_max</strong>(2), <strong>sched_get_priority_min</strong>(2), <strong>sched_getaffinity</strong>(2), <strong>sched_getparam</strong>(2), <strong>sched_getscheduler</strong>(2), <strong>sched_rr_get_interval</strong>(2), <strong>sched_setaffinity</strong>(2), <strong>sched_setparam</strong>(2), <strong>sched_setscheduler</strong>(2), <strong>sched_yield</strong>(2), <strong>setpriority</strong>(2), <strong>pthread_getschedparam</strong>(3), <strong>pthread_setschedparam</strong>(3), <strong>pthread_setschedprio</strong>(3), <strong>capabilities</strong>(7), <strong>cpuset</strong>(7), <strong>sched</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

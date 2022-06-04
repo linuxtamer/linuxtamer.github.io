@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mq_timedreceive</title><meta name="description" content="Linux command mq_timedreceive receive a message from a message queue"><meta name="keywords" content="linux, command, mq_timedreceive, bsd, receive a message from a message queue"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mq_receive, mq_timedreceive - receive a message from a message queue</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;mqueue.h&gt;
+
+ssize_t mq_receive(mqd_t mqdes, char *msg_ptr,
+ size_t msg_len, unsigned int *msg_prio);
+
+#include &lt;time.h&gt;
+#include &lt;mqueue.h&gt;
+
+ssize_t mq_timedreceive(mqd_t mqdes, char *msg_ptr,
+ size_t msg_len, unsigned int *msg_prio,
+ const struct timespec *abs_timeout);</code></pre>
+<p>Link with <em>-lrt</em>.</p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>mq_timedreceive</strong>():</p>
+<blockquote>
+<p>_POSIX_C_SOURCE &gt;= 200112L</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p><strong>mq_receive</strong>() removes the oldest message with the highest priority from the message queue referred to by the message queue descriptor <em>mqdes</em>, and places it in the buffer pointed to by <em>msg_ptr</em>. The <em>msg_len</em> argument specifies the size of the buffer pointed to by <em>msg_ptr</em>; this must be greater than or equal to the <em>mq_msgsize</em> attribute of the queue (see <strong>mq_getattr</strong>(3)). If <em>msg_prio</em> is not NULL, then the buffer to which it points is used to return the priority associated with the received message.</p>
+<p>If the queue is empty, then, by default, <strong>mq_receive</strong>() blocks until a message becomes available, or the call is interrupted by a signal handler. If the <strong>O_NONBLOCK</strong> flag is enabled for the message queue description, then the call instead fails immediately with the error <strong>EAGAIN</strong>.</p>
+<p><strong>mq_timedreceive</strong>() behaves just like <strong>mq_receive</strong>(), except that if the queue is empty and the <strong>O_NONBLOCK</strong> flag is not enabled for the message queue description, then <em>abs_timeout</em> points to a structure which specifies how long the call will block. This value is an absolute timeout in seconds and nanoseconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC), specified in the following structure:</p>
+<pre><code>struct timespec {
+    time_t tv_sec;        /* seconds */
+    long   tv_nsec;       /* nanoseconds */
+};</code></pre>
+<p>If no message is available, and the timeout has already expired by the time of the call, <strong>mq_timedreceive</strong>() returns immediately.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>mq_receive</strong>() and <strong>mq_timedreceive</strong>() return the number of bytes in the received message; on error, -1 is returned, with <em>errno</em> set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>The queue was empty, and the <strong>O_NONBLOCK</strong> flag was set for the message queue description referred to by <em>mqdes</em>.</p>
+</dd>
+<dt><strong>EBADF</strong></dt>
+<dd><p>The descriptor specified in <em>mqdes</em> was invalid or not opened for reading.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>The call was interrupted by a signal handler; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The call would have blocked, and <em>abs_timeout</em> was invalid, either because <em>tv_sec</em> was less than zero, or because <em>tv_nsec</em> was less than zero or greater than 1000 million.</p>
+</dd>
+<dt><strong>EMSGSIZE</strong></dt>
+<dd><p><em>msg_len</em> was less than the <em>mq_msgsize</em> attribute of the message queue.</p>
+</dd>
+<dt><strong>ETIMEDOUT</strong></dt>
+<dd><p>The call timed out before a message could be transferred.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>mq_receive</strong>(), <strong>mq_timedreceive</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>On Linux, <strong>mq_timedreceive</strong>() is a system call, and <strong>mq_receive</strong>() is a library function layered on top of that system call.</p>
+<h1>SEE ALSO</h1>
+<p><strong>mq_close</strong>(3), <strong>mq_getattr</strong>(3), <strong>mq_notify</strong>(3), <strong>mq_open</strong>(3), <strong>mq_send</strong>(3), <strong>mq_unlink</strong>(3), <strong>mq_overview</strong>(7), <strong>time</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

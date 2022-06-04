@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command lspci</title><meta name="description" content="Linux command lspci list all PCI devices"><meta name="keywords" content="linux, command, lspci, bsd, list all PCI devices"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>lspci - list all PCI devices</p>
+<h1>SYNOPSIS</h1>
+<p><strong>lspci</strong> [<strong>options</strong>]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>lspci</strong> is a utility for displaying information about PCI buses in the system and devices connected to them.</p>
+<p>By default, it shows a brief list of devices. Use the options described below to request either a more verbose output or output intended for parsing by other programs.</p>
+<p>If you are going to report bugs in PCI device drivers or in <em>lspci</em> itself, please include output of "lspci -vvx" or even better "lspci -vvxxx" (however, see below for possible caveats).</p>
+<p>Some parts of the output, especially in the highly verbose modes, are probably intelligible only to experienced PCI hackers. For exact definitions of the fields, please consult either the PCI specifications or the <strong>header.h</strong> and <strong>/usr/include/linux/pci.h</strong> include files.</p>
+<p>Access to some parts of the PCI configuration space is restricted to root on many operating systems, so the features of <em>lspci</em> available to normal users are limited. However, <em>lspci</em> tries its best to display as much as available and mark all other information with <em>&lt;access denied&gt;</em> text.</p>
+<h1>OPTIONS</h1>
+<h2>Basic display modes</h2>
+<dl>
+<dt><strong>-m</strong></dt>
+<dd><p>Dump PCI device data in a backward-compatible machine readable form. See below for details.</p>
+</dd>
+<dt><strong>-mm</strong></dt>
+<dd><p>Dump PCI device data in a machine readable form for easy parsing by scripts. See below for details.</p>
+</dd>
+<dt><strong>-t</strong></dt>
+<dd><p>Show a tree-like diagram containing all buses, bridges, devices and connections between them.</p>
+</dd>
+</dl>
+<h2>Display options</h2>
+<dl>
+<dt><strong>-v</strong></dt>
+<dd><p>Be verbose and display detailed information about all devices.</p>
+</dd>
+<dt><strong>-vv</strong></dt>
+<dd><p>Be very verbose and display more details. This level includes everything deemed useful.</p>
+</dd>
+<dt><strong>-vvv</strong></dt>
+<dd><p>Be even more verbose and display everything we are able to parse, even if it doesn't look interesting at all (e.g., undefined memory regions).</p>
+</dd>
+<dt><strong>-k</strong></dt>
+<dd><p>Show kernel drivers handling each device and also kernel modules capable of handling it. Turned on by default when <strong>-v</strong> is given in the normal mode of output. (Currently works only on Linux with kernel 2.6 or newer.)</p>
+</dd>
+<dt><strong>-x</strong></dt>
+<dd><p>Show hexadecimal dump of the standard part of the configuration space (the first 64 bytes or 128 bytes for CardBus bridges).</p>
+</dd>
+<dt><strong>-xxx</strong></dt>
+<dd><p>Show hexadecimal dump of the whole PCI configuration space. It is available only to root as several PCI devices <strong>crash</strong> when you try to read some parts of the config space (this behavior probably doesn't violate the PCI standard, but it's at least very stupid). However, such devices are rare, so you needn't worry much.</p>
+</dd>
+<dt><strong>-xxxx</strong></dt>
+<dd><p>Show hexadecimal dump of the extended (4096-byte) PCI configuration space available on PCI-X 2.0 and PCI Express buses.</p>
+</dd>
+<dt><strong>-b</strong></dt>
+<dd><p>Bus-centric view. Show all IRQ numbers and addresses as seen by the cards on the PCI bus instead of as seen by the kernel.</p>
+</dd>
+<dt><strong>-D</strong></dt>
+<dd><p>Always show PCI domain numbers. By default, lspci suppresses them on machines which have only domain 0.</p>
+</dd>
+<dt><strong>-P</strong></dt>
+<dd><p>Identify PCI devices by path through each bridge, instead of by bus number.</p>
+</dd>
+<dt><strong>-PP</strong></dt>
+<dd><p>Identify PCI devices by path through each bridge, showing the bus number as well as the device number.</p>
+</dd>
+</dl>
+<h2>Options to control resolving ID's to names</h2>
+<dl>
+<dt><strong>-n</strong></dt>
+<dd><p>Show PCI vendor and device codes as numbers instead of looking them up in the PCI ID list.</p>
+</dd>
+<dt><strong>-nn</strong></dt>
+<dd><p>Show PCI vendor and device codes as both numbers and names.</p>
+</dd>
+<dt><strong>-q</strong></dt>
+<dd><p>Use DNS to query the central PCI ID database if a device is not found in the local <strong>pci.ids</strong> file. If the DNS query succeeds, the result is cached in <strong>~/.pciids-cache</strong> and it is recognized in subsequent runs even if <strong>-q</strong> is not given any more. Please use this switch inside automated scripts only with caution to avoid overloading the database servers.</p>
+</dd>
+<dt><strong>-qq</strong></dt>
+<dd><p>Same as <strong>-q</strong>, but the local cache is reset.</p>
+</dd>
+<dt><strong>-Q</strong></dt>
+<dd><p>Query the central database even for entries which are recognized locally. Use this if you suspect that the displayed entry is wrong.</p>
+</dd>
+</dl>
+<h2>Options for selection of devices</h2>
+<dl>
+<dt><strong>-s [[[[&lt;domain&gt;]:]&lt;bus&gt;]:][&lt;device&gt;][.[&lt;func&gt;]]</strong></dt>
+<dd><p>Show only devices in the specified domain (in case your machine has several host bridges, they can either share a common bus number space or each of them can address a PCI domain of its own; domains are numbered from 0 to ffff), bus (0 to ff), device (0 to 1f) and function (0 to 7). Each component of the device address can be omitted or set to "*", both meaning "any value". All numbers are hexadecimal. E.g., "0:" means all devices on bus 0, "0" means all functions of device 0 on any bus, "0.3" selects third function of device 0 on all buses and ".4" shows only the fourth function of each device.</p>
+</dd>
+<dt><strong>-d [&lt;vendor&gt;]:[&lt;device&gt;][:&lt;class&gt;]</strong></dt>
+<dd><p>Show only devices with specified vendor, device and class ID. The ID's are given in hexadecimal and may be omitted or given as "*", both meaning "any value".</p>
+</dd>
+</dl>
+<h2>Other options</h2>
+<dl>
+<dt><strong>-i &lt;file&gt;</strong></dt>
+<dd><p>Use <strong>&lt;file&gt;</strong> as the PCI ID list instead of /usr/share/misc/pci.ids.</p>
+</dd>
+<dt><strong>-p &lt;file&gt;</strong></dt>
+<dd><p>Use <strong>&lt;file&gt;</strong> as the map of PCI ID's handled by kernel modules. By default, lspci uses /lib/modules/<em>kernel_version</em>/modules.pcimap. Applies only to Linux systems with recent enough module tools.</p>
+</dd>
+<dt><strong>-M</strong></dt>
+<dd><p>Invoke bus mapping mode which performs a thorough scan of all PCI devices, including those behind misconfigured bridges, etc. This option gives meaningful results only with a direct hardware access mode, which usually requires root privileges. Please note that the bus mapper only scans PCI domain 0.</p>
+</dd>
+<dt><strong>--version</strong></dt>
+<dd><p>Shows <em>lspci</em> version. This option should be used stand-alone.</p>
+</dd>
+</dl>
+<h2>PCI access options</h2>
+<p>The PCI utilities use the PCI library to talk to PCI devices (see <strong>pcilib</strong>(7) for details). You can use the following options to influence its behavior:</p>
+<dl>
+<dt><strong>-A &lt;method&gt;</strong></dt>
+<dd><p>The library supports a variety of methods to access the PCI hardware. By default, it uses the first access method available, but you can use this option to override this decision. See <strong>-A help</strong> for a list of available methods and their descriptions.</p>
+</dd>
+<dt><strong>-O &lt;param&gt;=&lt;value&gt;</strong></dt>
+<dd><p>The behavior of the library is controlled by several named parameters. This option allows one to set the value of any of the parameters. Use <strong>-O help</strong> for a list of known parameters and their default values.</p>
+</dd>
+<dt><strong>-H1</strong></dt>
+<dd><p>Use direct hardware access via Intel configuration mechanism 1. (This is a shorthand for <strong>-A intel-conf1</strong>.)</p>
+</dd>
+<dt><strong>-H2</strong></dt>
+<dd><p>Use direct hardware access via Intel configuration mechanism 2. (This is a shorthand for <strong>-A intel-conf2</strong>.)</p>
+</dd>
+<dt><strong>-F &lt;file&gt;</strong></dt>
+<dd><p>Instead of accessing real hardware, read the list of devices and values of their configuration registers from the given file produced by an earlier run of lspci -x. This is very useful for analysis of user-supplied bug reports, because you can display the hardware configuration in any way you want without disturbing the user with requests for more dumps.</p>
+</dd>
+<dt><strong>-G</strong></dt>
+<dd><p>Increase debug level of the library.</p>
+</dd>
+</dl>
+<h1>MACHINE READABLE OUTPUT</h1>
+<p>If you intend to process the output of lspci automatically, please use one of the machine-readable output formats (<strong>-m</strong>, <strong>-vm</strong>, <strong>-vmm</strong>) described in this section. All other formats are likely to change between versions of lspci.</p>
+<p>All numbers are always printed in hexadecimal. If you want to process numeric ID's instead of names, please add the <strong>-n</strong> switch.</p>
+<h2>Simple format (-m)</h2>
+<p>In the simple format, each device is described on a single line, which is formatted as parameters suitable for passing to a shell script, i.e., values separated by whitespaces, quoted and escaped if necessary. Some of the arguments are positional: slot, class, vendor name, device name, subsystem vendor name and subsystem name (the last two are empty if the device has no subsystem); the remaining arguments are option-like:</p>
+<dl>
+<dt><strong>-r</strong><em>rev</em></dt>
+<dd><p>Revision number.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-p</strong><em>progif</em></dt>
+<dd><p>Programming interface.</p>
+</dd>
+</dl>
+<p>The relative order of positional arguments and options is undefined. New options can be added in future versions, but they will always have a single argument not separated from the option by any spaces, so they can be easily ignored if not recognized.</p>
+<h2>Verbose format (-vmm)</h2>
+<p>The verbose output is a sequence of records separated by blank lines. Each record describes a single device by a sequence of lines, each line containing a single `<em>tag</em>: <em>value</em>' pair. The <em>tag</em> and the <em>value</em> are separated by a single tab character. Neither the records nor the lines within a record are in any particular order. Tags are case-sensitive.</p>
+<p>The following tags are defined:</p>
+<dl>
+<dt><strong>Slot</strong></dt>
+<dd><p>The name of the slot where the device resides ([<em>domain</em>:]<em>bus</em>:<em>device</em>.<em>function</em>). This tag is always the first in a record.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>Class</strong></dt>
+<dd><p>Name of the class.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>Vendor</strong></dt>
+<dd><p>Name of the vendor.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>Device</strong></dt>
+<dd><p>Name of the device.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>SVendor</strong></dt>
+<dd><p>Name of the subsystem vendor (optional).</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>SDevice</strong></dt>
+<dd><p>Name of the subsystem (optional).</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>PhySlot</strong></dt>
+<dd><p>The physical slot where the device resides (optional, Linux only).</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>Rev</strong></dt>
+<dd><p>Revision number (optional).</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>ProgIf</strong></dt>
+<dd><p>Programming interface (optional).</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>Driver</strong></dt>
+<dd><p>Kernel driver currently handling the device (optional, Linux only).</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>Module</strong></dt>
+<dd><p>Kernel module reporting that it is capable of handling the device (optional, Linux only). Multiple lines with this tag can occur.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>NUMANode</strong></dt>
+<dd><p>NUMA node this device is connected to (optional, Linux only).</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>IOMMUGroup</strong></dt>
+<dd><p>IOMMU group that this device is part of (optional, Linux only).</p>
+</dd>
+</dl>
+<p>New tags can be added in future versions, so you should silently ignore any tags you don't recognize.</p>
+<h2>Backward-compatible verbose format (-vm)</h2>
+<p>In this mode, lspci tries to be perfectly compatible with its old versions. It's almost the same as the regular verbose format, but the <strong>Device</strong> tag is used for both the slot and the device name, so it occurs twice in a single record. Please avoid using this format in any new code.</p>
+<h1>FILES</h1>
+<dl>
+<dt><strong>/usr/share/misc/pci.ids</strong></dt>
+<dd><p>A list of all known PCI ID's (vendors, devices, classes and subclasses). Maintained at https://pci-ids.ucw.cz/, use the <strong>update-pciids</strong> utility to download the most recent version.</p>
+</dd>
+<dt><strong>/usr/share/misc/pci.ids.gz</strong></dt>
+<dd><p>If lspci is compiled with support for compression, this file is tried before pci.ids.</p>
+</dd>
+<dt><strong>~/.pciids-cache</strong></dt>
+<dd><p>All ID's found in the DNS query mode are cached in this file.</p>
+</dd>
+</dl>
+<h1>BUGS</h1>
+<p>Sometimes, lspci is not able to decode the configuration registers completely. This usually happens when not enough documentation was available to the authors. In such cases, it at least prints the <strong>&lt;?&gt;</strong> mark to signal that there is potentially something more to say. If you know the details, patches will be of course welcome.</p>
+<p>Access to the extended configuration space is currently supported only by the <strong>linux_sysfs</strong> back-end.</p>
+<h1>SEE ALSO</h1>
+<p><strong>setpci</strong>(8), <strong>pci.ids</strong>(5), <strong>update-pciids</strong>(8), <strong>pcilib</strong>(7)</p>
+<h1>AUTHOR</h1>
+<p>The PCI Utilities are maintained by Martin Mares &lt;mj@ucw.cz&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

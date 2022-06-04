@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command gitcli</title><meta name="description" content="Linux command gitcli Git command-line interface and conventions"><meta name="keywords" content="linux, command, gitcli, bsd, Git command-line interface and conventions"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>gitcli - Git command-line interface and conventions</p>
+<h1>SYNOPSIS</h1>
+<p>gitcli</p>
+<h1>DESCRIPTION</h1>
+<p>This manual describes the convention used throughout Git CLI.</p>
+<p>Many commands take revisions (most often "commits", but sometimes "tree-ish", depending on the context and command) and paths as their arguments. Here are the rules:</p>
+<blockquote>
+<p>·</p>
+<p>Revisions come first and then paths. E.g. in <strong>git diff v1.0 v2.0 arch/x86 include/asm-x86</strong>, <strong>v1.0</strong> and <strong>v2.0</strong> are revisions and <strong>arch/x86</strong> and <strong>include/asm-x86</strong> are paths.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>When an argument can be misunderstood as either a revision or a path, they can be disambiguated by placing <strong>--</strong> between them. E.g. <strong>git diff -- HEAD</strong> is, "I have a file called HEAD in my work tree. Please show changes between the version I staged in the index and what I have in the work tree for that file", not "show difference between the HEAD commit and the work tree as a whole". You can say <strong>git diff HEAD --</strong> to ask for the latter.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Without disambiguating <strong>--</strong>, Git makes a reasonable guess, but errors out and asking you to disambiguate when ambiguous. E.g. if you have a file called HEAD in your work tree, <strong>git diff HEAD</strong> is ambiguous, and you have to say either <strong>git diff HEAD --</strong> or <strong>git diff -- HEAD</strong> to disambiguate.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Because <strong>--</strong> disambiguates revisions and paths in some commands, it cannot be used for those commands to separate options and revisions. You can use <strong>--end-of-options</strong> for this (it also works for commands that do not distinguish between revisions in paths, in which case it is simply an alias for <strong>--</strong>).</p>
+<p>When writing a script that is expected to handle random user-input, it is a good practice to make it explicit which arguments are which by placing disambiguating <strong>--</strong> at appropriate places.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Many commands allow wildcards in paths, but you need to protect them from getting globbed by the shell. These two mean different things:</p>
+<blockquote>
+<pre><code>$ git restore *.c
+$ git restore \*.c</code></pre>
+</blockquote>
+<p>The former lets your shell expand the fileglob, and you are asking the dot-C files in your working tree to be overwritten with the version in the index. The latter passes the <strong>*.c</strong> to Git, and you are asking the paths in the index that match the pattern to be checked out to your working tree. After running <strong>git add hello.c; rm hello.c</strong>, you will <em>not</em> see <strong>hello.c</strong> in your working tree with the former, but with the latter you will.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Just as the filesystem <em>.</em> (period) refers to the current directory, using a <em>.</em> as a repository name in Git (a dot-repository) is a relative path and means your current repository.</p>
+</blockquote>
+<p>Here are the rules regarding the "flags" that you should follow when you are scripting Git:</p>
+<blockquote>
+<p>·</p>
+<p>it’s preferred to use the non-dashed form of Git commands, which means that you should prefer <strong>git foo</strong> to <strong>git-foo</strong>.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>splitting short options to separate words (prefer <strong>git foo -a -b</strong> to <strong>git foo -ab</strong>, the latter may not even work).</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>when a command-line option takes an argument, use the <em>stuck</em> form. In other words, write <strong>git foo -oArg</strong> instead of <strong>git foo -o Arg</strong> for short options, and <strong>git foo --long-opt=Arg</strong> instead of <strong>git foo --long-opt Arg</strong> for long options. An option that takes optional option-argument must be written in the <em>stuck</em> form.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>when you give a revision parameter to a command, make sure the parameter is not ambiguous with a name of a file in the work tree. E.g. do not write <strong>git log -1 HEAD</strong> but write <strong>git log -1 HEAD --</strong>; the former will not work if you happen to have a file called <strong>HEAD</strong> in the work tree.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>many commands allow a long option <strong>--option</strong> to be abbreviated only to their unique prefix (e.g. if there is no other option whose name begins with <strong>opt</strong>, you may be able to spell <strong>--opt</strong> to invoke the <strong>--option</strong> flag), but you should fully spell them out when writing your scripts; later versions of Git may introduce a new option whose name shares the same prefix, e.g. <strong>--optimize</strong>, to make a short prefix that used to be unique no longer unique.</p>
+</blockquote>
+<h1>ENHANCED OPTION PARSER</h1>
+<p>From the Git 1.5.4 series and further, many Git commands (not all of them at the time of the writing though) come with an enhanced option parser.</p>
+<p>Here is a list of the facilities provided by this option parser.</p>
+<h2>Magic Options</h2>
+<p>Commands which have the enhanced option parser activated all understand a couple of magic command-line options:</p>
+<p>-h</p>
+<blockquote>
+<p>gives a pretty printed usage of the command.</p>
+<blockquote>
+<pre><code>$ git describe -h
+usage: git describe [&lt;options&gt;] &lt;commit-ish&gt;*
+   or: git describe [&lt;options&gt;] --dirty
+
+    --contains            find the tag that comes after the commit
+    --debug               debug search strategy on stderr
+    --all                 use any ref
+    --tags                use any tag, even unannotated
+    --long                always use long format
+    --abbrev[=&lt;n&gt;]        use &lt;n&gt; digits to display SHA-1s</code></pre>
+</blockquote>
+<p>Note that some subcommand (e.g. <strong>git grep</strong>) may behave differently when there are things on the command line other than <strong>-h</strong>, but <strong>git subcmd -h</strong> without anything else on the command line is meant to consistently give the usage.</p>
+</blockquote>
+<p>--help-all</p>
+<blockquote>
+<p>Some Git commands take options that are only used for plumbing or that are deprecated, and such options are hidden from the default usage. This option gives the full list of options.</p>
+</blockquote>
+<h2>Negating options</h2>
+<p>Options with long option names can be negated by prefixing <strong>--no-</strong>. For example, <strong>git branch</strong> has the option <strong>--track</strong> which is <em>on</em> by default. You can use <strong>--no-track</strong> to override that behaviour. The same goes for <strong>--color</strong> and <strong>--no-color</strong>.</p>
+<h2>Aggregating short options</h2>
+<p>Commands that support the enhanced option parser allow you to aggregate short options. This means that you can for example use <strong>git rm -rf</strong> or <strong>git clean -fdx</strong>.</p>
+<h2>Abbreviating long options</h2>
+<p>Commands that support the enhanced option parser accepts unique prefix of a long option as if it is fully spelled out, but use this with a caution. For example, <strong>git commit --amen</strong> behaves as if you typed <strong>git commit --amend</strong>, but that is true only until a later version of Git introduces another option that shares the same prefix, e.g. <strong>git commit --amenity</strong> option.</p>
+<h2>Separating argument from the option</h2>
+<p>You can write the mandatory option parameter to an option as a separate word on the command line. That means that all the following uses work:</p>
+<blockquote>
+<pre><code>$ git foo --long-opt=Arg
+$ git foo --long-opt Arg
+$ git foo -oArg
+$ git foo -o Arg</code></pre>
+</blockquote>
+<p>However, this is <strong>NOT</strong> allowed for switches with an optional value, where the <em>stuck</em> form must be used:</p>
+<blockquote>
+<pre><code>$ git describe --abbrev HEAD     # correct
+$ git describe --abbrev=10 HEAD  # correct
+$ git describe --abbrev 10 HEAD  # NOT WHAT YOU MEANT</code></pre>
+</blockquote>
+<h1>NOTES ON FREQUENTLY CONFUSED OPTIONS</h1>
+<p>Many commands that can work on files in the working tree and/or in the index can take <strong>--cached</strong> and/or <strong>--index</strong> options. Sometimes people incorrectly think that, because the index was originally called cache, these two are synonyms. They are <strong>not</strong> — these two options mean very different things.</p>
+<blockquote>
+<p>·</p>
+<p>The <strong>--cached</strong> option is used to ask a command that usually works on files in the working tree to <strong>only</strong> work with the index. For example, <strong>git grep</strong>, when used without a commit to specify from which commit to look for strings in, usually works on files in the working tree, but with the <strong>--cached</strong> option, it looks for strings in the index.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The <strong>--index</strong> option is used to ask a command that usually works on files in the working tree to <strong>also</strong> affect the index. For example, <strong>git stash apply</strong> usually merges changes recorded in a stash entry to the working tree, but with the <strong>--index</strong> option, it also merges changes to the index as well.</p>
+</blockquote>
+<p><strong>git apply</strong> command can be used with <strong>--cached</strong> and <strong>--index</strong> (but not at the same time). Usually the command only affects the files in the working tree, but with <strong>--index</strong>, it patches both the files and their index entries, and with <strong>--cached</strong>, it modifies only the index entries.</p>
+<p>See also <strong>https://lore.kernel.org/git/7v64clg5u9.fsf@assigned-by-dhcp.cox.net/</strong> and <strong>https://lore.kernel.org/git/7vy7ej9g38.fsf@gitster.siamese.dyndns.org/</strong> for further information.</p>
+<p>Some other commands that also work on files in the working tree and/or in the index can take <strong>--staged</strong> and/or <strong>--worktree</strong>.</p>
+<blockquote>
+<p>·</p>
+<p><strong>--staged</strong> is exactly like <strong>--cached</strong>, which is used to ask a command to only work on the index, not the working tree.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>--worktree</strong> is the opposite, to ask a command to work on the working tree only, not the index.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The two options can be specified together to ask a command to work on both the index and the working tree.</p>
+</blockquote>
+<h1>GIT</h1>
+<p>Part of the <strong>git</strong>(1) suite</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

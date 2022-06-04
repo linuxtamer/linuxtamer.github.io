@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pthread_setname_np</title><meta name="description" content="Linux command pthread_setname_np set/get the name of a thread"><meta name="keywords" content="linux, command, pthread_setname_np, bsd, set/get the name of a thread"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pthread_setname_np, pthread_getname_np - set/get the name of a thread</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;pthread.h&gt;
+int pthread_setname_np(pthread_t thread, const char *name);
+int pthread_getname_np(pthread_t thread,
+ char *name, size_t len);</code></pre>
+<p>Compile and link with <em>-pthread</em>.</p>
+<h1>DESCRIPTION</h1>
+<p>By default, all the threads created using <strong>pthread_create</strong>() inherit the program name. The <strong>pthread_setname_np</strong>() function can be used to set a unique name for a thread, which can be useful for debugging multithreaded applications. The thread name is a meaningful C language string, whose length is restricted to 16 characters, including the terminating null byte ('\0'). The <em>thread</em> argument specifies the thread whose name is to be changed; <em>name</em> specifies the new name.</p>
+<p>The <strong>pthread_getname_np</strong>() function can be used to retrieve the name of the thread. The <em>thread</em> argument specifies the thread whose name is to be retrieved. The buffer <em>name</em> is used to return the thread name; <em>len</em> specifies the number of bytes available in <em>name</em>. The buffer specified by <em>name</em> should be at least 16 characters in length. The returned thread name in the output buffer will be null terminated.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, these functions return 0; on error, they return a nonzero error number.</p>
+<h1>ERRORS</h1>
+<p>The <strong>pthread_setname_np</strong>() function can fail with the following error:</p>
+<dl>
+<dt><strong>ERANGE</strong></dt>
+<dd><p>The length of the string specified pointed to by <em>name</em> exceeds the allowed limit.</p>
+</dd>
+</dl>
+<p>The <strong>pthread_getname_np</strong>() function can fail with the following error:</p>
+<dl>
+<dt><strong>ERANGE</strong></dt>
+<dd><p>The buffer specified by <em>name</em> and <em>len</em> is too small to hold the thread name.</p>
+</dd>
+</dl>
+<p>If either of these functions fails to open <em>/proc/self/task/[tid]/comm</em>, then the call may fail with one of the errors described in <strong>open</strong>(2).</p>
+<h1>VERSIONS</h1>
+<p>These functions first appeared in glibc in version 2.12.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>pthread_setname_np</strong>(), <strong>pthread_getname_np</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>These functions are nonstandard GNU extensions; hence the suffix "_np" (nonportable) in the names.</p>
+<h1>NOTES</h1>
+<p><strong>pthread_setname_np</strong>() internally writes to the thread-specific <em>comm</em> file under the <em>/proc</em> filesystem: <em>/proc/self/task/[tid]/comm</em>. <strong>pthread_getname_np</strong>() retrieves it from the same location.</p>
+<h1>EXAMPLES</h1>
+<p>The program below demonstrates the use of <strong>pthread_setname_np</strong>() and <strong>pthread_getname_np</strong>().</p>
+<p>The following shell session shows a sample run of the program:</p>
+<pre><code>$ ./a.out
+Created a thread. Default name is: a.out
+The thread name after setting it is THREADFOO.
+^Z                           # Suspend the program
+[1]+  Stopped           ./a.out
+$ ps H -C a.out -o &#39;pid tid cmd comm&#39;
+  PID   TID CMD                         COMMAND
+ 5990  5990 ./a.out                     a.out
+ 5990  5991 ./a.out                     THREADFOO
+$ cat /proc/5990/task/5990/comm
+a.out
+$ cat /proc/5990/task/5991/comm
+THREADFOO</code></pre>
+<h2>Program source</h2>
+<pre><code>#define _GNU_SOURCE
+#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define NAMELEN 16
+
+#define errExitEN(en, msg) \
+                        do { errno = en; perror(msg); \
+                             exit(EXIT_FAILURE); } while (0)
+
+static void *
+threadfunc(void *parm)
+{
+    sleep(5);          // allow main program to set the thread name
+    return NULL;
+}
+
+int
+main(int argc, char **argv)
+{
+    pthread_t thread;
+    int rc;
+    char thread_name[NAMELEN];
+
+    rc = pthread_create(&amp;thread, NULL, threadfunc, NULL);
+    if (rc != 0)
+        errExitEN(rc, &quot;pthread_create&quot;);
+
+    rc = pthread_getname_np(thread, thread_name, NAMELEN);
+    if (rc != 0)
+        errExitEN(rc, &quot;pthread_getname_np&quot;);
+
+    printf(&quot;Created a thread. Default name is: %s\n&quot;, thread_name);
+    rc = pthread_setname_np(thread, (argc &gt; 1) ? argv[1] : &quot;THREADFOO&quot;);
+    if (rc != 0)
+        errExitEN(rc, &quot;pthread_setname_np&quot;);
+
+    sleep(2);
+
+    rc = pthread_getname_np(thread, thread_name,
+                            (argc &gt; 2) ? atoi(argv[1]) : NAMELEN);
+    if (rc != 0)
+        errExitEN(rc, &quot;pthread_getname_np&quot;);
+    printf(&quot;The thread name after setting it is %s.\n&quot;, thread_name);
+
+    rc = pthread_join(thread, NULL);
+    if (rc != 0)
+        errExitEN(rc, &quot;pthread_join&quot;);
+
+    printf(&quot;Done\n&quot;);
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>prctl</strong>(2), <strong>pthread_create</strong>(3), <strong>pthreads</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

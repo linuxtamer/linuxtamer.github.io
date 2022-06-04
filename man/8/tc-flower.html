@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-flower</title><meta name="description" content="Linux command tc-flower flow based traffic control filter"><meta name="keywords" content="linux, command, tc-flower, bsd, flow based traffic control filter"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>flower - flow based traffic control filter</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc</strong> <strong>filter</strong> ... <strong>flower</strong> [ <em>MATCH_LIST</em> ] [ <strong>action</strong> <em>ACTION_SPEC</em> ] [ <strong>classid</strong> <em>CLASSID</em> ] [ <strong>hw_tc</strong> <em>TCID</em> ]</p>
+<p><em>MATCH_LIST</em> := [ <em>MATCH_LIST</em> ] <em>MATCH</em></p>
+<p><em>MATCH</em> := { <strong>indev</strong> <em>ifname</em> | <strong>verbose</strong> | <strong>skip_sw</strong> | <strong>skip_hw</strong> | { <strong>dst_mac</strong> | <strong>src_mac</strong> } <em>MASKED_LLADDR</em> | <strong>vlan_id</strong> <em>VID</em> | <strong>vlan_prio</strong> <em>PRIORITY</em> | <strong>vlan_ethtype</strong> { <strong>ipv4</strong> | <strong>ipv6</strong> | <em>ETH_TYPE</em> } | <strong>cvlan_id</strong> <em>VID</em> | <strong>cvlan_prio</strong> <em>PRIORITY</em> | <strong>cvlan_ethtype</strong> { <strong>ipv4</strong> | <strong>ipv6</strong> | <em>ETH_TYPE</em> } | <strong>mpls</strong> <em>LSE_LIST</em> | <strong>mpls_label</strong> <em>LABEL</em> | <strong>mpls_tc</strong> <em>TC</em> | <strong>mpls_bos</strong> <em>BOS</em> | <strong>mpls_ttl</strong> <em>TTL</em> | <strong>ip_proto</strong> { <strong>tcp</strong> | <strong>udp</strong> | <strong>sctp</strong> | <strong>icmp</strong> | <strong>icmpv6</strong> | <em>IP_PROTO</em> } | <strong>ip_tos</strong> <em>MASKED_IP_TOS</em> | <strong>ip_ttl</strong> <em>MASKED_IP_TTL</em> | { <strong>dst_ip</strong> | <strong>src_ip</strong> } <em>PREFIX</em> | { <strong>dst_port</strong> | <strong>src_port</strong> } { <em>MASKED_NUMBER</em> | <em>min_port_number-max_port_number</em> } | <strong>tcp_flags</strong> <em>MASKED_TCP_FLAGS</em> | <strong>type</strong> <em>MASKED_TYPE</em> | <strong>code</strong> <em>MASKED_CODE</em> | { <strong>arp_tip</strong> | <strong>arp_sip</strong> } <em>IPV4_PREFIX</em> | <strong>arp_op</strong> { <strong>request</strong> | <strong>reply</strong> | <em>OP</em> } | { <strong>arp_tha</strong> | <strong>arp_sha</strong> } <em>MASKED_LLADDR</em> | <strong>enc_key_id</strong> <em>KEY-ID</em> | { <strong>enc_dst_ip</strong> | <strong>enc_src_ip</strong> } { <em>ipv4_address</em> | <em>ipv6_address</em> } | <strong>enc_dst_port</strong> <em>port_number</em> | <strong>enc_tos</strong> <em>TOS</em> | <strong>enc_ttl</strong> <em>TTL</em> | { <strong>geneve_opts</strong> | <strong>vxlan_opts</strong> | <strong>erspan_opts</strong> } <em>OPTIONS</em> | <strong>ip_flags</strong> <em>IP_FLAGS</em> }</p>
+<p><em>LSE_LIST</em> := [ <em>LSE_LIST</em> ] <em>LSE</em></p>
+<p><em>LSE</em> := <strong>lse depth</strong> <em>DEPTH</em> { <strong>label</strong> <em>LABEL</em> | <strong>tc</strong> <em>TC</em> | <strong>bos</strong> <em>BOS</em> | <strong>ttl</strong> <em>TTL</em> }</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>flower</strong> filter matches flows to the set of keys specified and assigns an arbitrarily chosen class ID to packets belonging to them. Additionally (or alternatively) an action from the generic action framework may be called.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>action</strong><em> ACTION_SPEC</em></dt>
+<dd><p>Apply an action from the generic actions framework on matching packets.</p>
+</dd>
+<dt><strong>classid</strong><em> CLASSID</em></dt>
+<dd><p>Specify a class to pass matching packets on to. <em>CLASSID</em> is in the form <strong>X</strong>:<strong>Y</strong>, while <strong>X</strong> and <strong>Y</strong> are interpreted as numbers in hexadecimal format.</p>
+</dd>
+<dt><strong>hw_tc</strong><em> TCID</em></dt>
+<dd><p>Specify a hardware traffic class to pass matching packets on to. TCID is in the range 0 through 15.</p>
+</dd>
+<dt><strong>indev</strong><em> ifname</em></dt>
+<dd><p>Match on incoming interface name. Obviously this makes sense only for forwarded flows. <em>ifname</em> is the name of an interface which must exist at the time of <strong>tc</strong> invocation.</p>
+</dd>
+<dt><strong>verbose</strong></dt>
+<dd><p>Enable verbose logging, including offloading errors when not using <strong>skip_sw</strong> flag.</p>
+</dd>
+<dt><strong>skip_sw</strong></dt>
+<dd><p>Do not process filter by software. If hardware has no offload support for this filter, or TC offload is not enabled for the interface, operation will fail.</p>
+</dd>
+<dt><strong>skip_hw</strong></dt>
+<dd><p>Do not process filter by hardware.</p>
+</dd>
+<dt><strong>dst_mac</strong><em> MASKED_LLADDR</em><br />
+<strong>src_mac</strong><em> MASKED_LLADDR</em></dt>
+<dd><p>Match on source or destination MAC address. A mask may be optionally provided to limit the bits of the address which are matched. A mask is provided by following the address with a slash and then the mask. It may be provided in LLADDR format, in which case it is a bitwise mask, or as a number of high bits to match. If the mask is missing then a match on all bits is assumed.</p>
+</dd>
+<dt><strong>vlan_id</strong><em> VID</em></dt>
+<dd><p>Match on vlan tag id. <em>VID</em> is an unsigned 12bit value in decimal format.</p>
+</dd>
+<dt><strong>vlan_prio</strong><em> PRIORITY</em></dt>
+<dd><p>Match on vlan tag priority. <em>PRIORITY</em> is an unsigned 3bit value in decimal format.</p>
+</dd>
+<dt><strong>vlan_ethtype</strong><em> VLAN_ETH_TYPE</em></dt>
+<dd><p>Match on layer three protocol. <em>VLAN_ETH_TYPE</em> may be either <strong>ipv4</strong>, <strong>ipv6</strong> or an unsigned 16bit value in hexadecimal format. To match on QinQ packet, it must be 802.1Q or 802.1AD.</p>
+</dd>
+<dt><strong>cvlan_id</strong><em> VID</em></dt>
+<dd><p>Match on QinQ inner vlan tag id. <em>VID</em> is an unsigned 12bit value in decimal format.</p>
+</dd>
+<dt><strong>cvlan_prio</strong><em> PRIORITY</em></dt>
+<dd><p>Match on QinQ inner vlan tag priority. <em>PRIORITY</em> is an unsigned 3bit value in decimal format.</p>
+</dd>
+<dt><strong>cvlan_ethtype</strong><em> VLAN_ETH_TYPE</em></dt>
+<dd><p>Match on QinQ layer three protocol. <em>VLAN_ETH_TYPE</em> may be either <strong>ipv4</strong>, <strong>ipv6</strong> or an unsigned 16bit value in hexadecimal format.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>mpls</strong><em> LSE_LIST</em></dt>
+<dd><p>Match on the MPLS label stack. <em>LSE_LIST</em> is a list of Label Stack Entries, each introduced by the <strong>lse</strong> keyword. This option can't be used together with the standalone <strong>mpls_label</strong>, <strong>mpls_tc</strong>, <strong>mpls_bos</strong> and <strong>mpls_ttl</strong> options.</p>
+<dl>
+<dt><strong>lse</strong><em> LSE_OPTIONS</em></dt>
+<dd><p>Match on an MPLS Label Stack Entry. <em>LSE_OPTIONS</em> is a list of options that describe the properties of the LSE to match.</p>
+<dl>
+<dt><strong>depth</strong><em> DEPTH</em></dt>
+<dd><p>The depth of the Label Stack Entry to consider. Depth starts at 1 (the outermost Label Stack Entry). The maximum usable depth may be limited by the kernel. This option is mandatory. <em>DEPTH</em> is an unsigned 8 bit value in decimal format.</p>
+</dd>
+<dt><strong>label</strong><em> LABEL</em></dt>
+<dd><p>Match on the MPLS Label field at the specified <strong>depth</strong>. <em>LABEL</em> is an unsigned 20 bit value in decimal format.</p>
+</dd>
+<dt><strong>tc</strong><em> TC</em></dt>
+<dd><p>Match on the MPLS Traffic Class field at the specified <strong>depth</strong>. <em>TC</em> is an unsigned 3 bit value in decimal format.</p>
+</dd>
+<dt><strong>bos</strong><em> BOS</em></dt>
+<dd><p>Match on the MPLS Bottom Of Stack field at the specified <strong>depth</strong>. <em>BOS</em> is a 1 bit value in decimal format.</p>
+</dd>
+<dt><strong>ttl</strong><em> TTL</em></dt>
+<dd><p>Match on the MPLS Time To Live field at the specified <strong>depth</strong>. <em>TTL</em> is an unsigned 8 bit value in decimal format.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl>
+<dt><strong>mpls_label</strong><em> LABEL</em></dt>
+<dd><p>Match the label id in the outermost MPLS label stack entry. <em>LABEL</em> is an unsigned 20 bit value in decimal format.</p>
+</dd>
+<dt><strong>mpls_tc</strong><em> TC</em></dt>
+<dd><p>Match on the MPLS TC field, which is typically used for packet priority, in the outermost MPLS label stack entry. <em>TC</em> is an unsigned 3 bit value in decimal format.</p>
+</dd>
+<dt><strong>mpls_bos</strong><em> BOS</em></dt>
+<dd><p>Match on the MPLS Bottom Of Stack field in the outermost MPLS label stack entry. <em>BOS</em> is a 1 bit value in decimal format.</p>
+</dd>
+<dt><strong>mpls_ttl</strong><em> TTL</em></dt>
+<dd><p>Match on the MPLS Time To Live field in the outermost MPLS label stack entry. <em>TTL</em> is an unsigned 8 bit value in decimal format.</p>
+</dd>
+<dt><strong>ip_proto</strong><em> IP_PROTO</em></dt>
+<dd><p>Match on layer four protocol. <em>IP_PROTO</em> may be <strong>tcp</strong>, <strong>udp</strong>, <strong>sctp</strong>, <strong>icmp</strong>, <strong>icmpv6</strong> or an unsigned 8bit value in hexadecimal format.</p>
+</dd>
+<dt><strong>ip_tos</strong><em> MASKED_IP_TOS</em></dt>
+<dd><p>Match on ipv4 TOS or ipv6 traffic-class - eight bits in hexadecimal format. A mask may be optionally provided to limit the bits which are matched. A mask is provided by following the value with a slash and then the mask. If the mask is missing then a match on all bits is assumed.</p>
+</dd>
+<dt><strong>ip_ttl</strong><em> MASKED_IP_TTL</em></dt>
+<dd><p>Match on ipv4 TTL or ipv6 hop-limit - eight bits value in decimal or hexadecimal format. A mask may be optionally provided to limit the bits which are matched. Same logic is used for the mask as with matching on ip_tos.</p>
+</dd>
+<dt><strong>dst_ip</strong><em> PREFIX</em><br />
+<strong>src_ip</strong><em> PREFIX</em></dt>
+<dd><p>Match on source or destination IP address. <em>PREFIX</em> must be a valid IPv4 or IPv6 address, depending on the <strong>protocol</strong> option to tc filter, optionally followed by a slash and the prefix length. If the prefix is missing, <strong>tc</strong> assumes a full-length host match.</p>
+</dd>
+<dt><em><strong>dst_port</strong></em> { <em>MASKED_NUMBER</em> | <em> MIN_VALUE-MAX_VALUE </em>}<br />
+<em><strong>src_port</strong></em> { <em>MASKED_NUMBER</em> | <em> MIN_VALUE-MAX_VALUE </em>}</dt>
+<dd><p>Match on layer 4 protocol source or destination port number, with an optional mask. Alternatively, the minimum and maximum values can be specified to match on a range of layer 4 protocol source or destination port numbers. Only available for <strong>ip_proto</strong> values <strong>udp</strong>, <strong>tcp</strong> and <strong>sctp</strong> which have to be specified in beforehand.</p>
+</dd>
+<dt><strong>tcp_flags</strong><em> MASKED_TCP_FLAGS</em></dt>
+<dd><p>Match on TCP flags represented as 12bit bitfield in in hexadecimal format. A mask may be optionally provided to limit the bits which are matched. A mask is provided by following the value with a slash and then the mask. If the mask is missing then a match on all bits is assumed.</p>
+</dd>
+<dt><strong>type</strong><em> MASKED_TYPE</em><br />
+<strong>code</strong><em> MASKED_CODE</em></dt>
+<dd><p>Match on ICMP type or code. A mask may be optionally provided to limit the bits of the address which are matched. A mask is provided by following the address with a slash and then the mask. The mask must be as a number which represents a bitwise mask If the mask is missing then a match on all bits is assumed. Only available for <strong>ip_proto</strong> values <strong>icmp</strong> and <strong>icmpv6</strong> which have to be specified in beforehand.</p>
+</dd>
+<dt><strong>arp_tip</strong><em> IPV4_PREFIX</em><br />
+<strong>arp_sip</strong><em> IPV4_PREFIX</em></dt>
+<dd><p>Match on ARP or RARP sender or target IP address. <em>IPV4_PREFIX</em> must be a valid IPv4 address optionally followed by a slash and the prefix length. If the prefix is missing, <strong>tc</strong> assumes a full-length host match.</p>
+</dd>
+<dt><strong>arp_op</strong><em> ARP_OP</em></dt>
+<dd><p>Match on ARP or RARP operation. <em>ARP_OP</em> may be <strong>request</strong>, <strong>reply</strong> or an integer value 0, 1 or 2. A mask may be optionally provided to limit the bits of the operation which are matched. A mask is provided by following the address with a slash and then the mask. It may be provided as an unsigned 8 bit value representing a bitwise mask. If the mask is missing then a match on all bits is assumed.</p>
+</dd>
+<dt><strong>arp_sha</strong><em> MASKED_LLADDR</em><br />
+<strong>arp_tha</strong><em> MASKED_LLADDR</em></dt>
+<dd><p>Match on ARP or RARP sender or target MAC address. A mask may be optionally provided to limit the bits of the address which are matched. A mask is provided by following the address with a slash and then the mask. It may be provided in LLADDR format, in which case it is a bitwise mask, or as a number of high bits to match. If the mask is missing then a match on all bits is assumed.</p>
+</dd>
+<dt><strong>enc_key_id</strong><em> NUMBER</em><br />
+<strong>enc_dst_ip</strong><em> PREFIX</em><br />
+<strong>enc_src_ip</strong><em> PREFIX</em><br />
+<strong>enc_dst_port</strong><em> NUMBER</em><br />
+<strong>enc_tos</strong><em> NUMBER</em><br />
+<strong>enc_ttl</strong><em> NUMBER</em><br />
+</dt>
+<dd>
+</dd>
+<dt><strong>ct_state</strong><em> CT_STATE</em><br />
+<strong>ct_zone</strong><em> CT_MASKED_ZONE</em><br />
+<strong>ct_mark</strong><em> CT_MASKED_MARK</em><br />
+<strong>ct_label</strong><em> CT_MASKED_LABEL</em></dt>
+<dd><p>Matches on connection tracking info</p>
+<dl>
+<dt><em>CT_STATE</em></dt>
+<dd><p>Match the connection state, and can be combination of [{+|-}flag] flags, where flag can be one of</p>
+<dl>
+<dt>trk - Tracked connection.</dt>
+<dd>
+</dd>
+<dt>new - New connection.</dt>
+<dd>
+</dd>
+<dt>est - Established connection.</dt>
+<dd>
+</dd>
+<dt>Example: +trk+est</dt>
+<dd>
+</dd>
+</dl>
+</dd>
+<dt><em>CT_MASKED_ZONE</em></dt>
+<dd><p>Match the connection zone, and can be masked.</p>
+</dd>
+<dt><em>CT_MASKED_MARK</em></dt>
+<dd><p>32bit match on the connection mark, and can be masked.</p>
+</dd>
+<dt><em>CT_MASKED_LABEL</em></dt>
+<dd><p>128bit match on the connection label, and can be masked.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>geneve_opts</strong><em> OPTIONS</em><br />
+<strong>vxlan_opts</strong><em> OPTIONS</em><br />
+<strong>erspan_opts</strong><em> OPTIONS</em></dt>
+<dd><p>Match on IP tunnel metadata. Key id <em>NUMBER</em> is a 32 bit tunnel key id (e.g. VNI for VXLAN tunnel). <em>PREFIX</em> must be a valid IPv4 or IPv6 address optionally followed by a slash and the prefix length. If the prefix is missing, <strong>tc</strong> assumes a full-length host match. Dst port <em>NUMBER</em> is a 16 bit UDP dst port. Tos <em>NUMBER</em> is an 8 bit tos (dscp+ecn) value, ttl <em>NUMBER</em> is an 8 bit time-to-live value. geneve_opts <em>OPTIONS</em> must be a valid list of comma-separated geneve options where each option consists of a key optionally followed by a slash and corresponding mask. If the masks is missing, <strong>tc</strong> assumes a full-length match. The options can be described in the form CLASS:TYPE:DATA/CLASS_MASK:TYPE_MASK:DATA_MASK, where CLASS is represented as a 16bit hexadecimal value, TYPE as an 8bit hexadecimal value and DATA as a variable length hexadecimal value. vxlan_opts <em>OPTIONS</em> doesn't support multiple options, and it consists of a key followed by a slash and corresponding mask. If the mask is missing, <strong>tc</strong> assumes a full-length match. The option can be described in the form GBP/GBP_MASK, where GBP is represented as a 32bit number. erspan_opts <em>OPTIONS</em> doesn't support multiple options, and it consists of a key followed by a slash and corresponding mask. If the mask is missing, <strong>tc</strong> assumes a full-length match. The option can be described in the form VERSION:INDEX:DIR:HWID/VERSION:INDEX_MASK:DIR_MASK:HWID_MASK, where VERSION is represented as a 8bit number, INDEX as an 32bit number, DIR and HWID as a 8bit number. Multiple options is not supported. Note INDEX/INDEX_MASK is used when VERSION is 1, and DIR/DIR_MASK and HWID/HWID_MASK are used when VERSION is 2.</p>
+</dd>
+<dt><strong>ip_flags</strong><em> IP_FLAGS</em></dt>
+<dd><p><em>IP_FLAGS</em> may be either <strong>frag</strong>, <strong>nofrag</strong>, <strong>firstfrag</strong> or <strong>nofirstfrag</strong> where frag and nofrag could be used to match on fragmented packets or not, respectively. firstfrag and nofirstfrag can be used to further distinguish fragmented packet. firstfrag can be used to indicate the first fragmented packet. nofirstfrag can be used to indicates subsequent fragmented packets or non-fragmented packets.</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>As stated above where applicable, matches of a certain layer implicitly depend on the matches of the next lower layer. Precisely, layer one and two matches (<strong>indev</strong>, <strong>dst_mac</strong> and <strong>src_mac</strong>) have no dependency, MPLS and layer three matches (<strong>mpls</strong>, <strong>mpls_label</strong>, <strong>mpls_tc</strong>, <strong>mpls_bos</strong>, <strong>mpls_ttl</strong>, <strong>ip_proto</strong>, <strong>dst_ip</strong>, <strong>src_ip</strong>, <strong>arp_tip</strong>, <strong>arp_sip</strong>, <strong>arp_op</strong>, <strong>arp_tha</strong>, <strong>arp_sha</strong> and <strong>ip_flags</strong>) depend on the <strong>protocol</strong> option of tc filter, layer four port matches (<strong>dst_port</strong> and <strong>src_port</strong>) depend on <strong>ip_proto</strong> being set to <strong>tcp</strong>, <strong>udp</strong> or <strong>sctp,</strong> and finally ICMP matches (<strong>code</strong> and <strong>type</strong>) depend on <strong>ip_proto</strong> being set to <strong>icmp</strong> or <strong>icmpv6.</strong></p>
+<p>There can be only used one mask per one prio. If user needs to specify different mask, he has to use different prio.</p>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8), <strong>tc-flow</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

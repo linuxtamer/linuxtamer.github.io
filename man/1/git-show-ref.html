@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command git-show-ref</title><meta name="description" content="Linux command git-show-ref List references in a local repository"><meta name="keywords" content="linux, command, git-show-ref, bsd, List references in a local repository"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>git-show-ref - List references in a local repository</p>
+<h1>SYNOPSIS</h1>
+<pre><code>git show-ref [-q|--quiet] [--verify] [--head] [-d|--dereference]
+             [-s|--hash[=&lt;n&gt;]] [--abbrev[=&lt;n&gt;]] [--tags]
+             [--heads] [--] [&lt;pattern&gt;...]
+git show-ref --exclude-existing[=&lt;pattern&gt;]</code></pre>
+<h1>DESCRIPTION</h1>
+<p>Displays references available in a local repository along with the associated commit IDs. Results can be filtered using a pattern and tags can be dereferenced into object IDs. Additionally, it can be used to test whether a particular ref exists.</p>
+<p>By default, shows the tags, heads, and remote refs.</p>
+<p>The --exclude-existing form is a filter that does the inverse. It reads refs from stdin, one ref per line, and shows those that don’t exist in the local repository.</p>
+<p>Use of this utility is encouraged in favor of directly accessing files under the <strong>.git</strong> directory.</p>
+<h1>OPTIONS</h1>
+<p>--head</p>
+<blockquote>
+<p>Show the HEAD reference, even if it would normally be filtered out.</p>
+</blockquote>
+<p>--heads, --tags</p>
+<blockquote>
+<p>Limit to "refs/heads" and "refs/tags", respectively. These options are not mutually exclusive; when given both, references stored in "refs/heads" and "refs/tags" are displayed.</p>
+</blockquote>
+<p>-d, --dereference</p>
+<blockquote>
+<p>Dereference tags into object IDs as well. They will be shown with "^{}" appended.</p>
+</blockquote>
+<p>-s, --hash[=&lt;n&gt;]</p>
+<blockquote>
+<p>Only show the SHA-1 hash, not the reference name. When combined with --dereference the dereferenced tag will still be shown after the SHA-1.</p>
+</blockquote>
+<p>--verify</p>
+<blockquote>
+<p>Enable stricter reference checking by requiring an exact ref path. Aside from returning an error code of 1, it will also print an error message if <strong>--quiet</strong> was not specified.</p>
+</blockquote>
+<p>--abbrev[=&lt;n&gt;]</p>
+<blockquote>
+<p>Abbreviate the object name. When using <strong>--hash</strong>, you do not have to say <strong>--hash --abbrev</strong>; <strong>--hash=n</strong> would do.</p>
+</blockquote>
+<p>-q, --quiet</p>
+<blockquote>
+<p>Do not print any results to stdout. When combined with <strong>--verify</strong> this can be used to silently check if a reference exists.</p>
+</blockquote>
+<p>--exclude-existing[=&lt;pattern&gt;]</p>
+<blockquote>
+<p>Make <em>git show-ref</em> act as a filter that reads refs from stdin of the form "<strong>^(?:&lt;anything&gt;\s)?&lt;refname&gt;(?:\^{})?$</strong>" and performs the following actions on each: (1) strip "^{}" at the end of line if any; (2) ignore if pattern is provided and does not head-match refname; (3) warn if refname is not a well-formed refname and skip; (4) ignore if refname is a ref that exists in the local repository; (5) otherwise output the line.</p>
+</blockquote>
+<p>&lt;pattern&gt;...</p>
+<blockquote>
+<p>Show references matching one or more patterns. Patterns are matched from the end of the full name, and only complete parts are matched, e.g. <em>master</em> matches <em>refs/heads/master</em>, <em>refs/remotes/origin/master</em>, <em>refs/tags/jedi/master</em> but not <em>refs/heads/mymaster</em> or <em>refs/remotes/master/jedi</em>.</p>
+</blockquote>
+<h1>OUTPUT</h1>
+<p>The output is in the format: <em>&lt;SHA-1 ID&gt;</em> <em>&lt;space&gt;</em> <em>&lt;reference name&gt;</em>.</p>
+<blockquote>
+<pre><code>$ git show-ref --head --dereference
+832e76a9899f560a90ffd62ae2ce83bbeff58f54 HEAD
+832e76a9899f560a90ffd62ae2ce83bbeff58f54 refs/heads/master
+832e76a9899f560a90ffd62ae2ce83bbeff58f54 refs/heads/origin
+3521017556c5de4159da4615a39fa4d5d2c279b5 refs/tags/v0.99.9c
+6ddc0964034342519a87fe013781abf31c6db6ad refs/tags/v0.99.9c^{}
+055e4ae3ae6eb344cbabf2a5256a49ea66040131 refs/tags/v1.0rc4
+423325a2d24638ddcc82ce47be5e40be550f4507 refs/tags/v1.0rc4^{}
+...</code></pre>
+</blockquote>
+<p>When using --hash (and not --dereference) the output format is: <em>&lt;SHA-1 ID&gt;</em></p>
+<blockquote>
+<pre><code>$ git show-ref --heads --hash
+2e3ba0114a1f52b47df29743d6915d056be13278
+185008ae97960c8d551adcd9e23565194651b5d1
+03adf42c988195b50e1a1935ba5fcbc39b2b029b
+...</code></pre>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>To show all references called "master", whether tags or heads or anything else, and regardless of how deep in the reference naming hierarchy they are, use:</p>
+<blockquote>
+<pre><code>        git show-ref master</code></pre>
+</blockquote>
+<p>This will show "refs/heads/master" but also "refs/remote/other-repo/master", if such references exists.</p>
+<p>When using the <strong>--verify</strong> flag, the command requires an exact path:</p>
+<blockquote>
+<pre><code>        git show-ref --verify refs/heads/master</code></pre>
+</blockquote>
+<p>will only match the exact branch called "master".</p>
+<p>If nothing matches, <em>git show-ref</em> will return an error code of 1, and in the case of verification, it will show an error message.</p>
+<p>For scripting, you can ask it to be quiet with the "--quiet" flag, which allows you to do things like</p>
+<blockquote>
+<pre><code>        git show-ref --quiet --verify -- &quot;refs/heads/$headname&quot; ||
+                echo &quot;$headname is not a valid branch&quot;</code></pre>
+</blockquote>
+<p>to check whether a particular branch exists or not (notice how we don’t actually want to show any results, and we want to use the full refname for it in order to not trigger the problem with ambiguous partial matches).</p>
+<p>To show only tags, or only proper branch heads, use "--tags" and/or "--heads" respectively (using both means that it shows tags and heads, but not other random references under the refs/ subdirectory).</p>
+<p>To do automatic tag object dereferencing, use the "-d" or "--dereference" flag, so you can do</p>
+<blockquote>
+<pre><code>        git show-ref --tags --dereference</code></pre>
+</blockquote>
+<p>to get a listing of all tags together with what they dereference.</p>
+<h1>FILES</h1>
+<p><strong>.git/refs/*</strong>, <strong>.git/packed-refs</strong></p>
+<h1>SEE ALSO</h1>
+<p><strong>git-for-each-ref</strong>(1), <strong>git-ls-remote</strong>(1), <strong>git-update-ref</strong>(1), <strong>gitrepository-layout</strong>(5)</p>
+<h1>GIT</h1>
+<p>Part of the <strong>git</strong>(1) suite</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

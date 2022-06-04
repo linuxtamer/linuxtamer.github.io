@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command settimeofday</title><meta name="description" content="Linux command settimeofday get / set time"><meta name="keywords" content="linux, command, settimeofday, bsd, get / set time"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>gettimeofday, settimeofday - get / set time</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/time.h&gt;
+
+int gettimeofday(struct timeval *tv, struct timezone *tz);
+
+int settimeofday(const struct timeval *tv&quot;,conststructtimezone*&quot;tz);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>settimeofday</strong>(): Since glibc 2.19: _DEFAULT_SOURCE Glibc 2.19 and earlier: _BSD_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>The functions <strong>gettimeofday</strong>() and <strong>settimeofday</strong>() can get and set the time as well as a timezone.</p>
+<p>The <em>tv</em> argument is a <em>struct timeval</em> (as specified in <em>&lt;sys/time.h&gt;</em>):</p>
+<pre><code>struct timeval {
+    time_t      tv_sec;     /* seconds */
+    suseconds_t tv_usec;    /* microseconds */
+};</code></pre>
+<p>and gives the number of seconds and microseconds since the Epoch (see <strong>time</strong>(2)).</p>
+<p>The <em>tz</em> argument is a <em>struct timezone</em>:</p>
+<pre><code>struct timezone {
+    int tz_minuteswest;     /* minutes west of Greenwich */
+    int tz_dsttime;         /* type of DST correction */
+};</code></pre>
+<p>If either <em>tv</em> or <em>tz</em> is NULL, the corresponding structure is not set or returned. (However, compilation warnings will result if <em>tv</em> is NULL.)</p>
+<p>The use of the <em>timezone</em> structure is obsolete; the <em>tz</em> argument should normally be specified as NULL. (See NOTES below.)</p>
+<p>Under Linux, there are some peculiar "warp clock" semantics associated with the <strong>settimeofday</strong>() system call if on the very first call (after booting) that has a non-NULL <em>tz</em> argument, the <em>tv</em> argument is NULL and the <em>tz_minuteswest</em> field is nonzero. (The <em>tz_dsttime</em> field should be zero for this case.) In such a case it is assumed that the CMOS clock is on local time, and that it has to be incremented by this amount to get UTC system time. No doubt it is a bad idea to use this feature.</p>
+<h1>RETURN VALUE</h1>
+<p><strong>gettimeofday</strong>() and <strong>settimeofday</strong>() return 0 for success, or -1 for failure (in which case <em>errno</em> is set appropriately).</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>One of <em>tv</em> or <em>tz</em> pointed outside the accessible address space.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(<strong>settimeofday</strong>()): <em>timezone</em> is invalid.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(<strong>settimeofday</strong>()): <em>tv.tv_sec</em> is negative or <em>tv.tv_usec</em> is outside the range [0..999,999].</p>
+</dd>
+<dt><strong>EINVAL</strong> (since Linux 4.3)</dt>
+<dd><p>(<strong>settimeofday</strong>()): An attempt was made to set the time to a value less than the current value of the <strong>CLOCK_MONOTONIC</strong> clock (see <strong>clock_gettime</strong>(2)).</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The calling process has insufficient privilege to call <strong>settimeofday</strong>(); under Linux the <strong>CAP_SYS_TIME</strong> capability is required.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>SVr4, 4.3BSD. POSIX.1-2001 describes <strong>gettimeofday</strong>() but not <strong>settimeofday</strong>(). POSIX.1-2008 marks <strong>gettimeofday</strong>() as obsolete, recommending the use of <strong>clock_gettime</strong>(2) instead.</p>
+<h1>NOTES</h1>
+<p>The time returned by <strong>gettimeofday</strong>() <em>is</em> affected by discontinuous jumps in the system time (e.g., if the system administrator manually changes the system time). If you need a monotonically increasing clock, see <strong>clock_gettime</strong>(2).</p>
+<p>Macros for operating on <em>timeval</em> structures are described in <strong>timeradd</strong>(3).</p>
+<p>Traditionally, the fields of <em>struct timeval</em> were of type <em>long</em>.</p>
+<h2>C library/kernel differences</h2>
+<p>On some architectures, an implementation of <strong>gettimeofday</strong>() is provided in the <strong>vdso</strong>(7).</p>
+<h2>The tz_dsttime field</h2>
+<p>On a non-Linux kernel, with glibc, the <em>tz_dsttime</em> field of <em>struct timezone</em> will be set to a nonzero value by <strong>gettimeofday</strong>() if the current timezone has ever had or will have a daylight saving rule applied. In this sense it exactly mirrors the meaning of <strong>daylight</strong>(3) for the current zone. On Linux, with glibc, the setting of the <em>tz_dsttime</em> field of <em>struct timezone</em> has never been used by <strong>settimeofday</strong>() or <strong>gettimeofday</strong>(). Thus, the following is purely of historical interest.</p>
+<p>On old systems, the field <em>tz_dsttime</em> contains a symbolic constant (values are given below) that indicates in which part of the year Daylight Saving Time is in force. (Note: this value is constant throughout the year: it does not indicate that DST is in force, it just selects an algorithm.) The daylight saving time algorithms defined are as follows:</p>
+<pre><code>DST_NONE     /* not on DST */
+DST_USA      /* USA style DST */
+DST_AUST     /* Australian style DST */
+DST_WET      /* Western European DST */
+DST_MET      /* Middle European DST */
+DST_EET      /* Eastern European DST */
+DST_CAN      /* Canada */
+DST_GB       /* Great Britain and Eire */
+DST_RUM      /* Romania */
+DST_TUR      /* Turkey */
+DST_AUSTALT  /* Australian style with shift in 1986 */</code></pre>
+<p>Of course it turned out that the period in which Daylight Saving Time is in force cannot be given by a simple algorithm, one per country; indeed, this period is determined by unpredictable political decisions. So this method of representing timezones has been abandoned.</p>
+<h1>SEE ALSO</h1>
+<p><strong>date</strong>(1), <strong>adjtimex</strong>(2), <strong>clock_gettime</strong>(2), <strong>time</strong>(2), <strong>ctime</strong>(3), <strong>ftime</strong>(3), <strong>timeradd</strong>(3), <strong>capabilities</strong>(7), <strong>time</strong>(7), <strong>vdso</strong>(7), <strong>hwclock</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fopen</title><meta name="description" content="Linux command fopen stream open functions"><meta name="keywords" content="linux, command, fopen, bsd, stream open functions"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>fopen, fdopen, freopen - stream open functions</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdio.h&gt;
+
+FILE *fopen(const char *pathname, const char *mode);
+
+FILE *fdopen(int fd, const char *mode);
+
+FILE *freopen(const char *pathname, const char *mode, FILE *stream);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>fdopen</strong>(): _POSIX_C_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>fopen</strong>() function opens the file whose name is the string pointed to by <em>pathname</em> and associates a stream with it.</p>
+<p>The argument <em>mode</em> points to a string beginning with one of the following sequences (possibly followed by additional characters, as described below):</p>
+<dl>
+<dt><strong>r</strong></dt>
+<dd><p>Open text file for reading. The stream is positioned at the beginning of the file.</p>
+</dd>
+<dt><strong>r+</strong></dt>
+<dd><p>Open for reading and writing. The stream is positioned at the beginning of the file.</p>
+</dd>
+<dt><strong>w</strong></dt>
+<dd><p>Truncate file to zero length or create text file for writing. The stream is positioned at the beginning of the file.</p>
+</dd>
+<dt><strong>w+</strong></dt>
+<dd><p>Open for reading and writing. The file is created if it does not exist, otherwise it is truncated. The stream is positioned at the beginning of the file.</p>
+</dd>
+<dt><strong>a</strong></dt>
+<dd><p>Open for appending (writing at end of file). The file is created if it does not exist. The stream is positioned at the end of the file.</p>
+</dd>
+<dt><strong>a+</strong></dt>
+<dd><p>Open for reading and appending (writing at end of file). The file is created if it does not exist. Output is always appended to the end of the file. POSIX is silent on what the initial read position is when using this mode. For glibc, the initial file position for reading is at the beginning of the file, but for Android/BSD/MacOS, the initial file position for reading is at the end of the file.</p>
+</dd>
+</dl>
+<p>The <em>mode</em> string can also include the letter 'b' either as a last character or as a character between the characters in any of the two-character strings described above. This is strictly for compatibility with C89 and has no effect; the 'b' is ignored on all POSIX conforming systems, including Linux. (Other systems may treat text files and binary files differently, and adding the 'b' may be a good idea if you do I/O to a binary file and expect that your program may be ported to non-UNIX environments.)</p>
+<p>See NOTES below for details of glibc extensions for <em>mode</em>.</p>
+<p>Any created file will have the mode <strong>S_IRUSR</strong> | <strong>S_IWUSR</strong> | <strong>S_IRGRP</strong> | <strong>S_IWGRP</strong> | <strong>S_IROTH</strong> | <strong>S_IWOTH</strong> (0666), as modified by the process's umask value (see <strong>umask</strong>(2)).</p>
+<p>Reads and writes may be intermixed on read/write streams in any order. Note that ANSI C requires that a file positioning function intervene between output and input, unless an input operation encounters end-of-file. (If this condition is not met, then a read is allowed to return the result of writes other than the most recent.) Therefore it is good practice (and indeed sometimes necessary under Linux) to put an <strong>fseek</strong>(3) or <strong>fgetpos</strong>(3) operation between write and read operations on such a stream. This operation may be an apparent no-op (as in <em>fseek(..., 0L, SEEK_CUR)</em> called for its synchronizing side effect).</p>
+<p>Opening a file in append mode (<strong>a</strong> as the first character of <em>mode</em>) causes all subsequent write operations to this stream to occur at end-of-file, as if preceded the call:</p>
+<pre><code>fseek(stream, 0, SEEK_END);</code></pre>
+<p>The file descriptor associated with the stream is opened as if by a call to <strong>open</strong>(2) with the following flags:</p>
+<blockquote>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">fopen() mode</td>
+<td style="text-align: left;">open() flags</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><em>r</em></td>
+<td style="text-align: left;">O_RDONLY</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><em>w</em></td>
+<td style="text-align: left;">O_WRONLY | O_CREAT | O_TRUNC</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><em>a</em></td>
+<td style="text-align: left;">O_WRONLY | O_CREAT | O_APPEND</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><em>r+</em></td>
+<td style="text-align: left;">O_RDWR</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><em>w+</em></td>
+<td style="text-align: left;">O_RDWR | O_CREAT | O_TRUNC</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><em>a+</em></td>
+<td style="text-align: left;">O_RDWR | O_CREAT | O_APPEND</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<h2>fdopen()</h2>
+<p>The <strong>fdopen</strong>() function associates a stream with the existing file descriptor, <em>fd</em>. The <em>mode</em> of the stream (one of the values "r", "r+", "w", "w+", "a", "a+") must be compatible with the mode of the file descriptor. The file position indicator of the new stream is set to that belonging to <em>fd</em>, and the error and end-of-file indicators are cleared. Modes "w" or "w+" do not cause truncation of the file. The file descriptor is not dup'ed, and will be closed when the stream created by <strong>fdopen</strong>() is closed. The result of applying <strong>fdopen</strong>() to a shared memory object is undefined.</p>
+<h2>freopen()</h2>
+<p>The <strong>freopen</strong>() function opens the file whose name is the string pointed to by <em>pathname</em> and associates the stream pointed to by <em>stream</em> with it. The original stream (if it exists) is closed. The <em>mode</em> argument is used just as in the <strong>fopen</strong>() function.</p>
+<p>If the <em>pathname</em> argument is a null pointer, <strong>freopen</strong>() changes the mode of the stream to that specified in <em>mode</em>; that is, <strong>freopen</strong>() reopens the pathname that is associated with the stream. The specification for this behavior was added in the C99 standard, which says:</p>
+<blockquote>
+<p>In this case, the file descriptor associated with the stream need not be closed if the call to <strong>freopen</strong>() succeeds. It is implementation-defined which changes of mode are permitted (if any), and under what circumstances.</p>
+</blockquote>
+<p>The primary use of the <strong>freopen</strong>() function is to change the file associated with a standard text stream (<em>stderr</em>, <em>stdin</em>, or <em>stdout</em>).</p>
+<h1>RETURN VALUE</h1>
+<p>Upon successful completion <strong>fopen</strong>(), <strong>fdopen</strong>(), and <strong>freopen</strong>() return a <em>FILE</em> pointer. Otherwise, NULL is returned and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The <em>mode</em> provided to <strong>fopen</strong>(), <strong>fdopen</strong>(), or <strong>freopen</strong>() was invalid.</p>
+</dd>
+</dl>
+<p>The <strong>fopen</strong>(), <strong>fdopen</strong>(), and <strong>freopen</strong>() functions may also fail and set <em>errno</em> for any of the errors specified for the routine <strong>malloc</strong>(3).</p>
+<p>The <strong>fopen</strong>() function may also fail and set <em>errno</em> for any of the errors specified for the routine <strong>open</strong>(2).</p>
+<p>The <strong>fdopen</strong>() function may also fail and set <em>errno</em> for any of the errors specified for the routine <strong>fcntl</strong>(2).</p>
+<p>The <strong>freopen</strong>() function may also fail and set <em>errno</em> for any of the errors specified for the routines <strong>open</strong>(2), <strong>fclose</strong>(3), and <strong>fflush</strong>(3).</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fopen</strong>(), <strong>fdopen</strong>(), <strong>freopen</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p><strong>fopen</strong>(), <strong>freopen</strong>(): POSIX.1-2001, POSIX.1-2008, C89, C99.</p>
+<p><strong>fdopen</strong>(): POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<h2>Glibc notes</h2>
+<p>The GNU C library allows the following extensions for the string specified in <em>mode</em>:</p>
+<dl>
+<dt><strong>c</strong> (since glibc 2.3.3)</dt>
+<dd><p>Do not make the open operation, or subsequent read and write operations, thread cancellation points. This flag is ignored for <strong>fdopen</strong>().</p>
+</dd>
+<dt><strong>e</strong> (since glibc 2.7)</dt>
+<dd><p>Open the file with the <strong>O_CLOEXEC</strong> flag. See <strong>open</strong>(2) for more information. This flag is ignored for <strong>fdopen</strong>().</p>
+</dd>
+<dt><strong>m</strong> (since glibc 2.3)</dt>
+<dd><p>Attempt to access the file using <strong>mmap</strong>(2), rather than I/O system calls (<strong>read</strong>(2), <strong>write</strong>(2)). Currently, use of <strong>mmap</strong>(2) is attempted only for a file opened for reading.</p>
+</dd>
+<dt><strong>x</strong></dt>
+<dd><p>Open the file exclusively (like the <strong>O_EXCL</strong> flag of <strong>open</strong>(2)). If the file already exists, <strong>fopen</strong>() fails, and sets <em>errno</em> to <strong>EEXIST</strong>. This flag is ignored for <strong>fdopen</strong>().</p>
+</dd>
+</dl>
+<p>In addition to the above characters, <strong>fopen</strong>() and <strong>freopen</strong>() support the following syntax in <em>mode</em>:</p>
+<p><strong> ,ccs=</strong><em>string</em></p>
+<p>The given <em>string</em> is taken as the name of a coded character set and the stream is marked as wide-oriented. Thereafter, internal conversion functions convert I/O to and from the character set <em>string</em>. If the <strong>,ccs=</strong><em>string</em> syntax is not specified, then the wide-orientation of the stream is determined by the first file operation. If that operation is a wide-character operation, the stream is marked wide-oriented, and functions to convert to the coded character set are loaded.</p>
+<h1>BUGS</h1>
+<p>When parsing for individual flag characters in <em>mode</em> (i.e., the characters preceding the "ccs" specification), the glibc implementation of <strong>fopen</strong>() and <strong>freopen</strong>() limits the number of characters examined in <em>mode</em> to 7 (or, in glibc versions before 2.14, to 6, which was not enough to include possible specifications such as "rb+cmxe"). The current implementation of <strong>fdopen</strong>() parses at most 5 characters in <em>mode</em>.</p>
+<h1>SEE ALSO</h1>
+<p><strong>open</strong>(2), <strong>fclose</strong>(3), <strong>fileno</strong>(3), <strong>fmemopen</strong>(3), <strong>fopencookie</strong>(3), <strong>open_memstream</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

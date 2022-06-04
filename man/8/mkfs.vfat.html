@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mkfs.vfat</title><meta name="description" content="Linux command mkfs.vfat create an MS-DOS FAT filesystem"><meta name="keywords" content="linux, command, mkfs.vfat, bsd, create an MS-DOS FAT filesystem"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mkfs.fat - create an MS-DOS FAT filesystem</p>
+<h1>SYNOPSIS</h1>
+<p><strong>mkfs.fat</strong> [<em>OPTIONS</em>] <em>DEVICE</em> [<em>BLOCK-COUNT</em>]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>mkfs.fat</strong> is used to create a FAT filesystem on a device or in an image file. <em>DEVICE</em> is the special file corresponding to the device (e.g. /dev/sdXX) or the image file (which does not need to exist when the option <strong>-C</strong> is given). <em>BLOCK-COUNT</em> is the number of blocks on the device and size of one block is always 1024 bytes, independently of the sector size or the cluster size. Therefore <em>BLOCK-COUNT</em> specifies size of filesystem in KiB unit and not in the number of sectors (like for all other <strong>mkfs.fat</strong> options). If omitted, <strong>mkfs.fat</strong> automatically chooses a filesystem size to fill the available space.</p>
+<p>Two different variants of the FAT filesystem are supported. Standard is the FAT12, FAT16 and FAT32 filesystems as defined by Microsoft and widely used on hard disks and removable media like USB sticks and SD cards. The other is the legacy Atari variant used on Atari ST.</p>
+<p>In Atari mode, if not directed otherwise by the user, <strong>mkfs.fat</strong> will always use 2 sectors per cluster, since GEMDOS doesn't like other values very much. It will also obey the maximum number of sectors GEMDOS can handle. Larger filesystems are managed by raising the logical sector size. An Atari-compatible serial number for the filesystem is generated, and a 12 bit FAT is used only for filesystems that have one of the usual floppy sizes (720k, 1.2M, 1.44M, 2.88M), a 16 bit FAT otherwise. This can be overridden with the <strong>-F</strong> option. Some PC-specific boot sector fields aren't written, and a boot message (option <strong>-m</strong>) is ignored.</p>
+<h1>OPTIONS</h1>
+<ul>
+<li><p>Normally, for any filesystem except very small ones, <strong>mkfs.fat</strong> will align all the data structures to cluster size, to make sure that as long as the partition is properly aligned, so will all the data structures in the filesystem. This option disables alignment; this may provide a handful of additional clusters of storage at the expense of a significant performance degradation on RAIDs, flash media or large-sector hard disks.</p></li>
+<li><p>Select using the Atari variation of the FAT filesystem if that isn't active already, otherwise select standard FAT filesystem. This is selected by default if <strong>mkfs.fat</strong> is run on 68k Atari Linux.</p></li>
+<li><p>Selects the location of the backup boot sector for FAT32. Default depends on number of reserved sectors, but usually is sector 6. If there is a free space available after the backup boot sector then backup of the FAT32 info sector is put after the backup boot sector, usually at sector 7. The backup must be within the range of reserved sectors. Value 0 completely disables creating of backup boot and info FAT32 sectors.</p></li>
+<li><p>Check the device for bad blocks before creating the filesystem.</p></li>
+<li><p>Create the file given as <em>DEVICE</em><strong> on the command line, and write the</strong> to-be-created filesystem to it. This can be used to create the new filesystem in a file instead of on a real device, and to avoid using <strong>dd in advance to create a file of appropriate</strong> size. With this option, the <em>BLOCK-COUNT</em><strong> must be given, because otherwise the</strong> intended size of the filesystem wouldn't be known. The file created is a sparse file, which actually only contains the meta-data areas (boot sector, FATs, and root directory). The data portions won't be stored on the disk, but the file nevertheless will have the correct size. The resulting file can be copied later to a floppy disk or other device, or mounted through a loop device.</p></li>
+<li><p>Specify the BIOS drive number to be stored in the FAT boot sector. For hard disks and removable medias it is usually 0x80–0xFF (0x80 is first hard disk C:, 0x81 is second hard disk D:, ...), for floppy devices or partitions to be used for floppy emulation it is 0x00–0x7F (0x00 is first floppy A:, 0x01 is second floppy B:).</p></li>
+<li><p>Specify the number of file allocation tables in the filesystem. The default is 2.</p></li>
+<li><p>Specifies the type of file allocation tables used (12, 16 or 32 bit). If nothing is specified, <strong>mkfs.fat will automatically select between 12, 16</strong> and 32 bit, whatever fits better for the filesystem size.</p></li>
+<li><p>Specify <em>HEADS</em><strong> and </strong><em>SECTORS-PER-TRACK</em><strong> numbers which represents</strong> disk geometry of <em>DEVICE</em><strong>.</strong> Both numbers are stored into the FAT boot sector. Number <em>SECTORS-PER-TRACK</em><strong> is used also for aligning the total count of FAT</strong> sectors. By default disk geometry is read from <em>DEVICE</em><strong> itself.</strong> If it is not available then <em>LBA-Assist Translation</em><strong> and translation table</strong> from the <em>SD Card Part 2 File System Specification</em><strong> based on total number</strong> of disk sectors is used.</p></li>
+<li><p>Specify the number of so-called <em>hidden sectors</em><strong>, as stored in the FAT boot</strong> sector: this number represents the beginning sector of the partition containing the file system. Normally this is an offset (in sectors) relative to the start of the disk, although for MBR logical volumes contained in an extended partition of type 0x05 (a non-LBA extended partition), a quirk in the MS-DOS implementation of FAT requires it to be relative to the partition's immediate containing Extended Boot Record. Boot code and other software handling FAT volumes may also rely on this field being set up correctly; most modern FAT implementations will ignore it. By default, if the <em>DEVICE</em><strong> is a partition block device, mkfs.fat uses</strong> the partition offset relative to disk start. Otherwise, <strong>mkfs.fat assumes zero.</strong> Use this option to override this behaviour.</p></li>
+<li><p>Sets the volume ID of the newly created filesystem; <em>VOLUME-ID</em><strong> is a 32-bit</strong> hexadecimal number (for example, 2e24ec82). The default is a number which depends on the filesystem creation time.</p></li>
+<li><p>Ignore and disable safety checks. By default <strong>mkfs.fat refuses to create a filesystem on a device with</strong> partitions or virtual mapping. <strong>mkfs.fat will complain and tell you that it refuses to work.</strong> This is different when using MO disks. One doesn't always need partitions on MO disks. The filesystem can go directly to the whole disk. Under other OSes this is known as the <em>superfloppy</em><strong> format.</strong> This switch will force <strong>mkfs.fat to work properly.</strong></p></li>
+<li><p>Read the bad blocks list from <em>FILENAME</em><strong>.</strong></p></li>
+<li><p>Sets the message the user receives on attempts to boot this filesystem without having properly installed an operating system. The message file must not exceed 418 bytes once line feeds have been converted to carriage return-line feed combinations, and tabs have been expanded. If the filename is a hyphen (-), the text is taken from standard input.</p></li>
+<li><p>Specify the media type to be stored in the FAT boot sector. This value is usually 0xF8 for hard disks and is 0xF0 or a value from 0xF9 to 0xFF for floppies or partitions to be used for floppy emulation.</p></li>
+<li><p>Fill (fake) MBR table with disk signature one partition which starts at sector 0 (includes MBR itself) and spans whole disk device. It is needed only for non-removable disks used on Microsoft Windows systems and only when formatting whole unpartitioned disk. Location of the disk signature and partition table overlaps with the end of the first FAT sector (boot code location), therefore there is no additional space usage. Default is <em>auto</em><strong> mode in which mkfs.fat put MBR table only for</strong> non-removable disks when formatting whole unpartitioned disk.</p></li>
+<li><p>Sets the volume name (label) of the filesystem. The volume name can be up to 11 characters long. Supplying an empty string, a string consisting only of white space or the string "NO NAME" as <em>VOLUME-NAME</em><strong> has the same effect as not giving the</strong> <strong>-n option.</strong> The default is no label.</p></li>
+<li><p>Use DOS codepage <em>PAGE</em><strong> to encode label.</strong> By default codepage 850 is used.</p></li>
+<li><p>Select the minimal number of entries available in the root directory. The default is 112 or 224 for floppies and 512 for hard disks. Note that this is minimal number and it may be increased by <strong>mkfs.fat</strong> due to alignment of structures. See also <strong>mkfs.fat option -a.</strong></p></li>
+<li><p>Select the minimal number of reserved sectors. With FAT32 format at least 2 reserved sectors are needed, the default is 32. Otherwise the default is 1 (only the boot sector). Note that this is minimal number and it may be increased by <strong>mkfs.fat</strong> due to alignment of structures. See also <strong>mkfs.fat option -a.</strong></p></li>
+<li><p>Specify the number of disk sectors per cluster. Must be a power of 2, i.e. 1, 2, 4, 8, ... 128.</p></li>
+<li><p>Specify the number of bytes per logical sector. Must be a power of 2 and greater than or equal to 512, i.e. 512, 1024, 2048, 4096, 8192, 16384, or 32768. Values larger than 4096 are not conforming to the FAT file system specification and may not work everywhere.</p></li>
+<li><p>Verbose execution.</p></li>
+<li><p>Write the filesystem at a specific sector into the device file. This is useful for creating a filesystem in a partitioned disk image without having to set up a loop device.</p></li>
+<li><p>Create a filesystem of variant <em>TYPE</em><strong>.</strong> Acceptable values are <em>standard</em><strong> and </strong><em>atari</em><strong> (in any combination of</strong> upper/lower case). See above under DESCRIPTION for the differences.</p></li>
+<li><p>Display option summary and exit.</p></li>
+<li><p>Use constants for normally randomly generated or time based data such as volume ID and creation time. Multiple runs of <strong>mkfs.fat on the same device create identical results</strong> with this option. Its main purpose is testing <strong>mkfs.fat.</strong></p></li>
+</ul>
+<h1>BUGS</h1>
+<p><strong>mkfs.fat can not create boot-able filesystems.</strong> This isn't as easy as you might think at first glance for various reasons and has been discussed a lot already. <strong>mkfs.fat simply will not support it ;)</strong></p>
+<h1>SEE ALSO</h1>
+<p><strong>fatlabel</strong>(8), <strong>fsck.fat</strong>(8)</p>
+<h1>HOMEPAGE</h1>
+<p>The home for the <strong>dosfstools project is its</strong> <a href="https://github.com/dosfstools/dosfstools">GitHub project page</a>.</p>
+<h1>AUTHORS</h1>
+<p><strong>dosfstools were written by</strong> <a href="mailto:werner.almesberger@lrc.di.epfl.ch">Werner Almesberger</a>, <a href="mailto:Roman.Hodek@informatik.uni-erlangen.de">Roman Hodek</a>, and others. Current maintainers are <a href="mailto:aeb@debian.org">Andreas Bombe</a> and <a href="mailto:pali.rohar@gmail.com">Pali Rohár</a>.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

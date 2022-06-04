@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sudo_plugin</title><meta name="description" content="Linux command sudo_plugin Sudo Plugin API"><meta name="keywords" content="linux, command, sudo_plugin, bsd, Sudo Plugin API"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<p>Starting with version 1.8,</p>
+<p>supports a plugin API for policy and session logging. Plugins may be compiled as dynamic shared objects (the default on systems that support them) or compiled statically into the</p>
+<p>binary itself. By default, the</p>
+<p>policy plugin and an associated I/O logging plugin are used. Via the plugin API,</p>
+<p>can be configured to use alternate policy and/or I/O logging plugins provided by third parties. The plugins to be used are specified in the</p>
+<p>file.</p>
+<p>The API is versioned with a major and minor number. The minor version number is incremented when additions are made. The major number is incremented when incompatible changes are made. A plugin should be check the version passed to it and make sure that the major version matches.</p>
+<p>The plugin API is defined by the</p>
+<p>header file.</p>
+<p>A policy plugin must declare and populate a</p>
+<p>struct in the global scope. This structure contains pointers to the functions that implement the</p>
+<p>policy checks. The name of the symbol should be specified in</p>
+<p>along with a path to the plugin so that</p>
+<p>can load it.</p>
+<p>struct policy_plugin { #define SUDO_POLICY_PLUGIN 1 unsigned int type; /* always SUDO_POLICY_PLUGIN */ unsigned int version; /* always SUDO_API_VERSION */ int (*open)(unsigned int version, sudo_conv_t conversation, sudo_printf_t plugin_printf, char * const settings[], char * const user_info[], char * const user_env[], char * const plugin_options[], const char **errstr); void (*close)(int exit_status, int error); int (*show_version)(int verbose); int (*check_policy)(int argc, char * const argv[], char *env_add[], char **command_info[], char **argv_out[], char **user_env_out[], const char **errstr); int (*list)(int argc, char * const argv[], int verbose, const char *list_user, const char **errstr); int (*validate)(const char **errstr); void (*invalidate)(int remove); int (*init_session)(struct passwd *pwd, char **user_env[], const char **errstr); void (*register_hooks)(int version, int (*register_hook)(struct sudo_hook *hook)); void (*deregister_hooks)(int version, int (*deregister_hook)(struct sudo_hook *hook)); struct sudo_plugin_event * (*event_alloc)(void); };</p>
+<p>The policy_plugin struct has the following fields:</p>
+<p>The</p>
+<p>field should always be set to SUDO_POLICY_PLUGIN.</p>
+<p>The</p>
+<p>field should be set to</p>
+<p>This allows</p>
+<p>to determine the API version the plugin was built against.</p>
+<p>int (*open)(unsigned int version, sudo_conv_t conversation, sudo_printf_t plugin_printf, char * const settings[], char * const user_info[], char * const user_env[], char * const plugin_options[], const char **errstr);</p>
+<p>Returns 1 on success, 0 on failure, -1 if a general error occurred, or -2 if there was a usage error. In the latter case,</p>
+<p>will print a usage message before it exits. If an error occurs, the plugin may optionally call the</p>
+<p>or</p>
+<p>function with</p>
+<p>to present additional error information to the user.</p>
+<p>The function arguments are as follows:</p>
+<p>The version passed in by</p>
+<p>allows the plugin to determine the major and minor version number of the plugin API supported by</p>
+<p>A pointer to the</p>
+<p>function that can be used by the plugin to interact with the user (see</p>
+<p>for details). Returns 0 on success and -1 on failure.</p>
+<p>A pointer to a</p>
+<p>function that may be used to display informational or error messages (see</p>
+<p>for details). Returns the number of characters printed on success and -1 on failure.</p>
+<p>A vector of user-supplied</p>
+<p>settings in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer. These settings correspond to options the user specified when running</p>
+<p>As such, they will only be present when the corresponding option has been specified on the command line.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>The following values may be set by</p>
+<p>Authentication type, if specified by the</p>
+<p>option, to use on systems where</p>
+<p>authentication is supported.</p>
+<p>If specified, the user has requested via the</p>
+<p>option that</p>
+<p>close all files descriptors with a value of</p>
+<p>or higher. The plugin may optionally pass this, or another value, back in the</p>
+<p>list.</p>
+<p>The root directory (see</p>
+<p>to run the command in, as specified by the user via the</p>
+<p>option. The plugin may ignore or restrict the user's ability to specify a new root directory. Only available starting with API version 1.16.</p>
+<p>The working directory to run the command in, as specified by the user via the</p>
+<p>option. The plugin may ignore or restrict the user's ability to specify a new working directory. Only available starting with API version 1.16.</p>
+<p>A debug file path name followed by a space and a comma-separated list of debug flags that correspond to the plugin's</p>
+<p>entry in</p>
+<p>if there is one. The flags are passed to the plugin exactly as they appear in</p>
+<p>The syntax used by</p>
+<p>and the</p>
+<p>plugin is</p>
+<p>but a plugin is free to use a different format so long as it does not include a comma</p>
+<p>Prior to</p>
+<p>1.8.12, there was no way to specify plugin-specific</p>
+<p>so the value was always the same as that used by the</p>
+<p>front end and did not include a path name, only the flags themselves. As of version 1.7 of the plugin interface,</p>
+<p>will only pass</p>
+<p>if</p>
+<p>contains a plugin-specific</p>
+<p>entry.</p>
+<p>Set to true if the user specified the</p>
+<p>option along with a command, indicating that the user wishes to ignore any cached authentication credentials.</p>
+<p>to true. This allows</p>
+<p>with no arguments to be used similarly to</p>
+<p>If the plugin does not to support this usage, it may return a value of -2 from the</p>
+<p>function, which will cause</p>
+<p>to print a usage message and exit.</p>
+<p>If the user does not specify a program on the command line,</p>
+<p>will pass the plugin the path to the user's shell and set</p>
+<p>login class to use when setting resource limits and nice value, if specified by the</p>
+<p>option.</p>
+<p>Set to true if the user specified the</p>
+<p>option, indicating that the user wishes to run a login shell.</p>
+<p>The maximum number of groups a user may belong to. This will only be present if there is a corresponding setting in</p>
+<p>A space-separated list of IP network addresses and netmasks in the form</p>
+<p>e.g.,</p>
+<p>The address and netmask pairs may be either IPv4 or IPv6, depending on what the operating system supports. If the address contains a colon</p>
+<p>it is an IPv6 address, else it is IPv4.</p>
+<p>Set to true if the user specified the</p>
+<p>option, indicating that</p>
+<p>should operate in non-interactive mode. The plugin may reject a command run in non-interactive mode if user interaction is required.</p>
+<p>The default plugin directory used by the</p>
+<p>front end. This is the default directory set at compile time and may not correspond to the directory the running plugin was loaded from. It may be used by a plugin to locate support files.</p>
+<p>The path name of plugin loaded by the</p>
+<p>front end. The path name will be a fully-qualified unless the plugin was statically compiled into</p>
+<p>Set to true if the user specified the</p>
+<p>option, indicating that the user wishes to preserve the environment.</p>
+<p>Set to true if the user specified the</p>
+<p>option, indicating that the user wishes to preserve the group vector instead of setting it based on the runas user.</p>
+<p>The command name that sudo was run as, typically</p>
+<p>or</p>
+<p>The prompt to use when requesting a password, if specified via the</p>
+<p>option.</p>
+<p>The name of the remote host to run the command on, if specified via the</p>
+<p>option. Support for running the command on a remote host is meant to be implemented via a helper program that is executed in place of the user-specified command. The</p>
+<p>front end is only capable of executing commands on the local host. Only available starting with API version 1.4.</p>
+<p>Set to true if the user specified the</p>
+<p>option, indicating that the user wishes to run a shell.</p>
+<p>The group name or gid to run the command as, if specified via the</p>
+<p>option.</p>
+<p>The user name or uid to run the command as, if specified via the</p>
+<p>option.</p>
+<p>SELinux role to use when executing the command, if specified by the</p>
+<p>option.</p>
+<p>SELinux type to use when executing the command, if specified by the</p>
+<p>option.</p>
+<p>Set to true if the user specified the</p>
+<p>option. If true, set the</p>
+<p>environment variable to the target user's home directory.</p>
+<p>Set to true when the</p>
+<p>option is specified or if invoked as</p>
+<p>The plugin shall substitute an editor into</p>
+<p>in the</p>
+<p>function or return -2 with a usage error if the plugin does not support</p>
+<p>For more information, see the</p>
+<p>section.</p>
+<p>Command timeout specified by the user via the</p>
+<p>option. Not all plugins support command timeouts and the ability of the user to set a timeout may be restricted by policy. The format of the timeout string is plugin-specific.</p>
+<p>Additional settings may be added in the future so the plugin should silently ignore settings that it does not recognize.</p>
+<p>A vector of information about the user running the command in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>The following values may be set by</p>
+<p>The number of columns the user's terminal supports. If there is no terminal device available, a default value of 80 is used.</p>
+<p>The user's current working directory.</p>
+<p>The effective group-ID of the user invoking</p>
+<p>The effective user-ID of the user invoking</p>
+<p>The real group-ID of the user invoking</p>
+<p>The user's supplementary group list formatted as a string of comma-separated group-IDs.</p>
+<p>The local machine's hostname as returned by the</p>
+<p>system call.</p>
+<p>The number of lines the user's terminal supports. If there is no terminal device available, a default value of 24 is used.</p>
+<p>The ID of the process group that the running</p>
+<p>process is a member of. Only available starting with API version 1.2.</p>
+<p>The process ID of the running</p>
+<p>process. Only available starting with API version 1.2.</p>
+<p>The parent process ID of the running</p>
+<p>process. Only available starting with API version 1.2.</p>
+<p>The maximum size to which the process's address space may grow (in bytes), if supported by the operating system. The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The largest size core dump file that may be created (in bytes). The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The maximum amount of CPU time that the process may use (in seconds). The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The maximum size of the data segment for the process (in bytes). The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The largest size file that the process may create (in bytes). The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The maximum number of locks that the process may establish, if supported by the operating system. The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The maximum size that the process may lock in memory (in bytes), if supported by the operating system. The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The maximum number of files that the process may have open. The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The maximum number of processes that the user may run simultaneously. The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The maximum size to which the process's resident set size may grow (in bytes). The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The maximum size to which the process's stack may grow (in bytes). The soft and hard limits are separated by a comma. A value of</p>
+<p>indicates that there is no limit. Only available starting with API version 1.16.</p>
+<p>The session ID of the running</p>
+<p>process or 0 if</p>
+<p>is not part of a POSIX job control session. Only available starting with API version 1.2.</p>
+<p>The ID of the foreground process group associated with the terminal device associated with the</p>
+<p>process or 0 if there is no terminal present. Only available starting with API version 1.2.</p>
+<p>The path to the user's terminal device. If the user has no terminal device associated with the session, the value will be empty, as in</p>
+<p>The real user-ID of the user invoking</p>
+<p>The invoking user's file creation mask. Only available starting with API version 1.10.</p>
+<p>The name of the user invoking</p>
+<p>The user's environment in the form of a</p>
+<p>strings.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>Any (non-comment) strings immediately after the plugin path are passed as arguments to the plugin. These arguments are split on a white space boundary and are passed to the plugin in the form of a</p>
+<p>array of strings. If no arguments were specified,</p>
+<p>will be the</p>
+<p>pointer.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.2. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>void (*close)(int exit_status, int error);</p>
+<p>The</p>
+<p>function is called when</p>
+<p>is finished, shortly before it exits. Starting with API version 1.15,</p>
+<p>is called regardless of whether or not a command was actually executed. This makes it possible for plugins to perform cleanup even when a command was not run. It is not possible to tell whether a command was run based solely on the arguments passed to the</p>
+<p>function. To determine if a command was actually run, the plugin must keep track of whether or not the</p>
+<p>function returned successfully.</p>
+<p>The function arguments are as follows:</p>
+<p>The command's exit status, as returned by the</p>
+<p>system call, or zero if no command was run. The value of</p>
+<p>is undefined if</p>
+<p>is non-zero.</p>
+<p>If the command could not be executed, this is set to the value of</p>
+<p>set by the</p>
+<p>system call. The plugin is responsible for displaying error information via the</p>
+<p>or</p>
+<p>function. If the command was successfully executed, the value of</p>
+<p>is zero.</p>
+<p>If no</p>
+<p>function is defined, no I/O logging plugins are loaded, and neither the</p>
+<p>not</p>
+<p>options are set in the</p>
+<p>list, the</p>
+<p>front end may execute the command directly instead of running it as a child process.</p>
+<p>int (*show_version)(int verbose);</p>
+<p>The</p>
+<p>function is called by</p>
+<p>when the user specifies the</p>
+<p>option. The plugin may display its version information to the user via the</p>
+<p>or</p>
+<p>function using</p>
+<p>If the user requests detailed version information, the verbose flag will be set.</p>
+<p>Returns 1 on success, 0 on failure, -1 if a general error occurred, or -2 if there was a usage error, although the return value is currently ignored.</p>
+<p>int (*check_policy)(int argc, char * const argv[], char *env_add[], char **command_info[], char **argv_out[], char **user_env_out[], const char **errstr);</p>
+<p>The</p>
+<p>function is called by</p>
+<p>to determine whether the user is allowed to run the specified commands.</p>
+<p>If the</p>
+<p>option was enabled in the</p>
+<p>array passed to the</p>
+<p>function, the user has requested</p>
+<p>mode.</p>
+<p>is a mechanism for editing one or more files where an editor is run with the user's credentials instead of with elevated privileges.</p>
+<p>achieves this by creating user-writable temporary copies of the files to be edited and then overwriting the originals with the temporary copies after editing is complete. If the plugin supports</p>
+<p>it should choose the editor to be used, potentially from a variable in the user's environment, such as</p>
+<p>and include it in</p>
+<p>(note that environment variables may include command line options). The files to be edited should be copied from</p>
+<p>into</p>
+<p>separated from the editor and its arguments by a</p>
+<p>element. The</p>
+<p>will be removed by</p>
+<p>before the editor is executed. The plugin should also set</p>
+<p>in the</p>
+<p>list.</p>
+<p>The</p>
+<p>function returns 1 if the command is allowed, 0 if not allowed, -1 for a general error, or -2 for a usage error or if</p>
+<p>was specified but is unsupported by the plugin. In the latter case,</p>
+<p>will print a usage message before it exits. If an error occurs, the plugin may optionally call the</p>
+<p>or</p>
+<p>function with</p>
+<p>to present additional error information to the user.</p>
+<p>The function arguments are as follows:</p>
+<p>The number of elements in</p>
+<p>not counting the final</p>
+<p>pointer.</p>
+<p>The argument vector describing the command the user wishes to run, in the same form as what would be passed to the</p>
+<p>system call. The vector is terminated by a</p>
+<p>pointer.</p>
+<p>Additional environment variables specified by the user on the command line in the form of a</p>
+<p>vector of</p>
+<p>strings. The plugin may reject the command if one or more variables are not allowed to be set, or it may silently ignore such variables.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>Information about the command being run in the form of</p>
+<p>strings. These values are used by</p>
+<p>to set the execution environment when running a command. The plugin is responsible for creating and populating the vector, which must be terminated with a</p>
+<p>pointer. The following values are recognized by</p>
+<p>The root directory to use when running the command.</p>
+<p>If specified,</p>
+<p>will close all files descriptors with a value of</p>
+<p>or higher.</p>
+<p>Fully qualified path to the command to be executed.</p>
+<p>The current working directory to change to when executing the command. If</p>
+<p>is unable to change to the new working directory, the command will not be run unless</p>
+<p>is also set (see below).</p>
+<p>If enabled,</p>
+<p>will treat an inability to change to the new working directory as a non-fatal error. This setting has no effect unless</p>
+<p>is also set.</p>
+<p>By default,</p>
+<p>runs a command as the foreground process as long as</p>
+<p>itself is running in the foreground. When</p>
+<p>is enabled and the command is being run in a pseudo-terminal (due to I/O logging or the</p>
+<p>setting), the command will be run as a background process. Attempts to read from the controlling terminal (or to change terminal settings) will result in the command being suspended with the</p>
+<p>signal (or</p>
+<p>in the case of terminal settings). If this happens when</p>
+<p>is a foreground process, the command will be granted the controlling terminal and resumed in the foreground with no user intervention required. The advantage of initially running the command in the background is that</p>
+<p>need not read from the terminal unless the command explicitly requests it. Otherwise, any terminal input must be passed to the command, whether it has required it or not (the kernel buffers terminals so it is not possible to tell whether the command really wants the input). This is different from historic</p>
+<p>behavior or when the command is not being run in a pseudo-terminal.</p>
+<p>For this to work seamlessly, the operating system must support the automatic restarting of system calls. Unfortunately, not all operating systems do this by default, and even those that do may have bugs. For example, macOS fails to restart the</p>
+<p>and</p>
+<p>system calls (this is a bug in macOS). Furthermore, because this behavior depends on the command stopping with the</p>
+<p>or</p>
+<p>signals, programs that catch these signals and suspend themselves with a different signal (usually</p>
+<p>will not be automatically foregrounded. Some versions of the linux</p>
+<p>command behave this way. Because of this, a plugin should not set</p>
+<p>unless it is explicitly enabled by the administrator and there should be a way to enabled or disable it on a per-command basis.</p>
+<p>This setting has no effect unless I/O logging is enabled or</p>
+<p>is enabled.</p>
+<p>If specified,</p>
+<p>will use the</p>
+<p>system call to execute the command instead of</p>
+<p>The specified</p>
+<p>must refer to an open file descriptor.</p>
+<p>Set to true if the I/O logging plugins, if any, should compress the log data. This is a hint to the I/O logging plugin which may choose to ignore it.</p>
+<p>The group that will own newly created I/O log files and directories. This is a hint to the I/O logging plugin which may choose to ignore it.</p>
+<p>The file permission mode to use when creating I/O log files and directories. This is a hint to the I/O logging plugin which may choose to ignore it.</p>
+<p>The user that will own newly created I/O log files and directories. This is a hint to the I/O logging plugin which may choose to ignore it.</p>
+<p>Fully qualified path to the file or directory in which I/O log is to be stored. This is a hint to the I/O logging plugin which may choose to ignore it. If no I/O logging plugin is loaded, this setting has no effect.</p>
+<p>Set to true if the I/O logging plugins, if any, should log the standard input if it is not connected to a terminal device. This is a hint to the I/O logging plugin which may choose to ignore it.</p>
+<p>Set to true if the I/O logging plugins, if any, should log the standard output if it is not connected to a terminal device. This is a hint to the I/O logging plugin which may choose to ignore it.</p>
+<p>Set to true if the I/O logging plugins, if any, should log the standard error if it is not connected to a terminal device. This is a hint to the I/O logging plugin which may choose to ignore it.</p>
+<p>Set to true if the I/O logging plugins, if any, should log all terminal input. This only includes input typed by the user and not from a pipe or redirected from a file. This is a hint to the I/O logging plugin which may choose to ignore it.</p>
+<p>Set to true if the I/O logging plugins, if any, should log all terminal output. This only includes output to the screen, not output to a pipe or file. This is a hint to the I/O logging plugin which may choose to ignore it.</p>
+<p>login class to use when setting resource limits and nice value (optional). This option is only set on systems that support login classes.</p>
+<p>Nice value (priority) to use when executing the command. The nice value, if specified, overrides the priority associated with the</p>
+<p>on</p>
+<p>systems.</p>
+<p>If set, prevent the command from executing other programs.</p>
+<p>A comma-separated list of file descriptors that should be preserved, regardless of the value of the</p>
+<p>setting. Only available starting with API version 1.5.</p>
+<p>If set,</p>
+<p>will preserve the user's group vector instead of initializing the group vector based on</p>
+<p>Effective group-ID to run the command as. If not specified, the value of</p>
+<p>is used.</p>
+<p>Effective user-ID to run the command as. If not specified, the value of</p>
+<p>is used.</p>
+<p>Group-ID to run the command as.</p>
+<p>The name of the group the command will run as, if it is different from the</p>
+<p>default group. This value is provided for auditing purposes only, the</p>
+<p>front-end uses</p>
+<p>and</p>
+<p>when executing the command.</p>
+<p>The supplementary group vector to use for the command in the form of a comma-separated list of group-IDs. If</p>
+<p>is set, this option is ignored.</p>
+<p>User-ID to run the command as.</p>
+<p>The name of the user the command will run as, which should correspond to</p>
+<p>(or</p>
+<p>if</p>
+<p>is not set). This value is provided for auditing purposes only, the</p>
+<p>front-end uses</p>
+<p>and</p>
+<p>when executing the command.</p>
+<p>SELinux role to use when executing the command.</p>
+<p>SELinux type to use when executing the command.</p>
+<p>Create a utmp (or utmpx) entry when a pseudo-terminal is allocated. By default, the new entry will be a copy of the user's existing utmp entry (if any), with the tty, time, type and pid fields updated.</p>
+<p>Set to true when in</p>
+<p>mode. The plugin may enable</p>
+<p>mode even if</p>
+<p>was not invoked as</p>
+<p>This allows the plugin to perform command substitution and transparently enable</p>
+<p>when the user attempts to run an editor.</p>
+<p>Set to false to disable directory writability checks in</p>
+<p>By default,</p>
+<p>1.8.16 and higher will check all directory components of the path to be edited for writability by the invoking user. Symbolic links will not be followed in writable directories and</p>
+<p>will refuse to edit a file located in a writable directory. These restrictions are not enforced when</p>
+<p>is run by root. The</p>
+<p>option can be set to false to disable this check. Only available starting with API version 1.8.</p>
+<p>Set to true to allow</p>
+<p>to edit files that are symbolic links. By default,</p>
+<p>1.8.15 and higher will refuse to open a symbolic link. The</p>
+<p>option can be used to restore the older behavior and allow</p>
+<p>to open symbolic links. Only available starting with API version 1.8.</p>
+<p>Command timeout. If non-zero then when the timeout expires the command will be killed.</p>
+<p>The file creation mask to use when executing the command. This value may be overridden by PAM or login.conf on some systems unless the</p>
+<p>option is also set.</p>
+<p>Force the value specified by the</p>
+<p>option to override any umask set by PAM or login.conf.</p>
+<p>Allocate a pseudo-terminal to run the command in, regardless of whether or not I/O logging is in use. By default,</p>
+<p>will only run the command in a pseudo-terminal when an I/O log plugin is loaded.</p>
+<p>User name to use when constructing a new utmp (or utmpx) entry when</p>
+<p>is enabled. This option can be used to set the user field in the utmp entry to the user the command runs as rather than the invoking user. If not set,</p>
+<p>will base the new entry on the invoking user's existing entry.</p>
+<p>Unsupported values will be ignored.</p>
+<p>The</p>
+<p>argument vector to pass to the</p>
+<p>system call when executing the command. The plugin is responsible for allocating and populating the vector.</p>
+<p>The</p>
+<p>environment vector to use when executing the command. The plugin is responsible for allocating and populating the vector.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>int (*list)(int argc, char * const argv[], int verbose, const char *list_user, const char **errstr);</p>
+<p>List available privileges for the invoking user. Returns 1 on success, 0 on failure and -1 on error. On error, the plugin may optionally call the</p>
+<p>or</p>
+<p>function with</p>
+<p>to present additional error information to the user.</p>
+<p>Privileges should be output via the</p>
+<p>or</p>
+<p>function using</p>
+<p>The function arguments are as follows:</p>
+<p>The number of elements in</p>
+<p>not counting the final</p>
+<p>pointer.</p>
+<p>If</p>
+<p>an argument vector describing a command the user wishes to check against the policy in the same form as what would be passed to the</p>
+<p>system call. If the command is permitted by the policy, the fully-qualified path to the command should be displayed along with any command line arguments.</p>
+<p>Flag indicating whether to list in verbose mode or not.</p>
+<p>The name of a different user to list privileges for if the policy allows it. If</p>
+<p>the plugin should list the privileges of the invoking user.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>int (*validate)(const char **errstr);</p>
+<p>The</p>
+<p>function is called when</p>
+<p>is run with the</p>
+<p>option. For policy plugins such as</p>
+<p>that cache authentication credentials, this function will validate and cache the credentials.</p>
+<p>The</p>
+<p>function should be</p>
+<p>if the plugin does not support credential caching.</p>
+<p>Returns 1 on success, 0 on failure and -1 on error. On error, the plugin may optionally call the</p>
+<p>or</p>
+<p>function with</p>
+<p>to present additional error information to the user.</p>
+<p>The function arguments are as follows:</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>void (*invalidate)(int remove);</p>
+<p>The</p>
+<p>function is called when</p>
+<p>is run with the</p>
+<p>or</p>
+<p>option. For policy plugins such as</p>
+<p>that cache authentication credentials, this function will invalidate the credentials. If the</p>
+<p>flag is set, the plugin may remove the credentials instead of simply invalidating them.</p>
+<p>The</p>
+<p>function should be</p>
+<p>if the plugin does not support credential caching.</p>
+<p>int (*init_session)(struct passwd *pwd, char **user_env_out[]);</p>
+<p>The</p>
+<p>function is called before</p>
+<p>sets up the execution environment for the command. It is run in the parent</p>
+<p>process and before any uid or gid changes. This can be used to perform session setup that is not supported by</p>
+<p>such as opening the PAM session. The</p>
+<p>function can be used to tear down the session that was opened by</p>
+<p>The</p>
+<p>argument points to a passwd struct for the user the command will be run as if the uid the command will run as was found in the password database, otherwise it will be</p>
+<p>The</p>
+<p>argument points to the environment the command will run in, in the form of a</p>
+<p>vector of</p>
+<p>strings. This is the same string passed back to the front end via the Policy Plugin's</p>
+<p>parameter. If the</p>
+<p>function needs to modify the user environment, it should update the pointer stored in</p>
+<p>The expected use case is to merge the contents of the PAM environment (if any) with the contents of</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.2. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>Returns 1 on success, 0 on failure and -1 on error. On error, the plugin may optionally call the</p>
+<p>or</p>
+<p>function with</p>
+<p>to present additional error information to the user.</p>
+<p>void (*register_hooks)(int version, int (*register_hook)(struct sudo_hook *hook));</p>
+<p>The</p>
+<p>function is called by the sudo front end to register any hooks the plugin needs. If the plugin does not support hooks,</p>
+<p>should be set to the</p>
+<p>pointer.</p>
+<p>The</p>
+<p>argument describes the version of the hooks API supported by the</p>
+<p>front end.</p>
+<p>The</p>
+<p>function should be used to register any supported hooks the plugin needs. It returns 0 on success, 1 if the hook type is not supported and -1 if the major version in</p>
+<p>does not match the front end's major hook API version.</p>
+<p>See the</p>
+<p>section below for more information about hooks.</p>
+<p>NOTE: the</p>
+<p>function is only available starting with API version 1.2. If the</p>
+<p>front end doesn't support API version 1.2 or higher,</p>
+<p>will not be called.</p>
+<p>void (*deregister_hooks)(int version, int (*deregister_hook)(struct sudo_hook *hook));</p>
+<p>The</p>
+<p>function is called by the sudo front end to deregister any hooks the plugin has registered. If the plugin does not support hooks,</p>
+<p>should be set to the</p>
+<p>pointer.</p>
+<p>The</p>
+<p>argument describes the version of the hooks API supported by the</p>
+<p>front end.</p>
+<p>The</p>
+<p>function should be used to deregister any hooks that were put in place by the</p>
+<p>function. If the plugin tries to deregister a hook that the front end does not support,</p>
+<p>will return an error.</p>
+<p>See the</p>
+<p>section below for more information about hooks.</p>
+<p>NOTE: the</p>
+<p>function is only available starting with API version 1.2. If the</p>
+<p>front end doesn't support API version 1.2 or higher,</p>
+<p>will not be called.</p>
+<p>struct sudo_plugin_event * (*event_alloc)(void);</p>
+<p>The</p>
+<p>function is used to allocate a</p>
+<p>which provides access to the main</p>
+<p>event loop. Unlike the other fields, the</p>
+<p>pointer is filled in by the</p>
+<p>front end, not by the plugin.</p>
+<p>See the</p>
+<p>section below for more information about events.</p>
+<p>NOTE: the</p>
+<p>function is only available starting with API version 1.15. If the</p>
+<p>front end doesn't support API version 1.15 or higher,</p>
+<p>will not be set.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>/* Plugin API version major/minor. */ #define SUDO_API_VERSION_MAJOR 1 #define SUDO_API_VERSION_MINOR 13 #define SUDO_API_MKVERSION(x, y) ((x &lt;&lt; 16) | y) #define SUDO_API_VERSION SUDO_API_MKVERSION(SUDO_API_VERSION_MAJOR,\ SUDO_API_VERSION_MINOR)</p>
+<p>/* Getters and setters for API version */ #define SUDO_API_VERSION_GET_MAJOR(v) ((v) &gt;&gt; 16) #define SUDO_API_VERSION_GET_MINOR(v) ((v) &amp; 0xffff) #define SUDO_API_VERSION_SET_MAJOR(vp, n) do { \ *(vp) = (*(vp) &amp; 0x0000ffff) | ((n) &lt;&lt; 16); \ } while(0) #define SUDO_API_VERSION_SET_MINOR(vp, n) do { \ *(vp) = (*(vp) &amp; 0xffff0000) | (n); \ } while(0)</p>
+<p>struct io_plugin { #define SUDO_IO_PLUGIN 2 unsigned int type; /* always SUDO_IO_PLUGIN */ unsigned int version; /* always SUDO_API_VERSION */ int (*open)(unsigned int version, sudo_conv_t conversation, sudo_printf_t plugin_printf, char * const settings[], char * const user_info[], char * const command_info[], int argc, char * const argv[], char * const user_env[], char * const plugin_options[], const char **errstr); void (*close)(int exit_status, int error); /* wait status or error */ int (*show_version)(int verbose); int (*log_ttyin)(const char *buf, unsigned int len, const char **errstr); int (*log_ttyout)(const char *buf, unsigned int len, const char **errstr); int (*log_stdin)(const char *buf, unsigned int len, const char **errstr); int (*log_stdout)(const char *buf, unsigned int len, const char **errstr); int (*log_stderr)(const char *buf, unsigned int len, const char **errstr); void (*register_hooks)(int version, int (*register_hook)(struct sudo_hook *hook)); void (*deregister_hooks)(int version, int (*deregister_hook)(struct sudo_hook *hook)); int (*change_winsize)(unsigned int lines, unsigned int cols, const char **errstr); int (*log_suspend)(int signo, const char **errstr); struct sudo_plugin_event * (*event_alloc)(void); };</p>
+<p>When an I/O plugin is loaded,</p>
+<p>runs the command in a pseudo-terminal. This makes it possible to log the input and output from the user's session. If any of the standard input, standard output or standard error do not correspond to a tty,</p>
+<p>will open a pipe to capture the I/O for logging before passing it on.</p>
+<p>The log_ttyin function receives the raw user input from the terminal device (note that this will include input even when echo is disabled, such as when a password is read). The log_ttyout function receives output from the pseudo-terminal that is suitable for replaying the user's session at a later time. The</p>
+<p>and</p>
+<p>functions are only called if the standard input, standard output or standard error respectively correspond to something other than a tty.</p>
+<p>Any of the logging functions may be set to the</p>
+<p>pointer if no logging is to be performed. If the open function returns 0, no I/O will be sent to the plugin.</p>
+<p>If a logging function returns an error</p>
+<p>the running command will be terminated and all of the plugin's logging functions will be disabled. Other I/O logging plugins will still receive any remaining input or output that has not yet been processed.</p>
+<p>If an input logging function rejects the data by returning 0, the command will be terminated and the data will not be passed to the command, though it will still be sent to any other I/O logging plugins. If an output logging function rejects the data by returning 0, the command will be terminated and the data will not be written to the terminal, though it will still be sent to any other I/O logging plugins.</p>
+<p>The audit_plugin struct has the following fields:</p>
+<p>The</p>
+<p>field should always be set to</p>
+<p>The</p>
+<p>field should be set to</p>
+<p>This allows</p>
+<p>to determine the API version the plugin was built against.</p>
+<p>int (*open)(unsigned int version, sudo_conv_t conversation, sudo_printf_t plugin_printf, char * const settings[], char * const user_info[], char * const command_info[], int argc, char * const argv[], char * const user_env[], char * const plugin_options[]);</p>
+<p>The</p>
+<p>function is run before the</p>
+<p>or</p>
+<p>functions are called. It is only called if the version is being requested or if the policy plugin's</p>
+<p>function has returned successfully. It returns 1 on success, 0 on failure, -1 if a general error occurred, or -2 if there was a usage error. In the latter case,</p>
+<p>will print a usage message before it exits. If an error occurs, the plugin may optionally call the</p>
+<p>or</p>
+<p>function with</p>
+<p>to present additional error information to the user.</p>
+<p>The function arguments are as follows:</p>
+<p>The version passed in by</p>
+<p>allows the plugin to determine the major and minor version number of the plugin API supported by</p>
+<p>A pointer to the</p>
+<p>function that may be used by the</p>
+<p>function to display version information (see</p>
+<p>below). The</p>
+<p>function may also be used to display additional error message to the user. The</p>
+<p>function returns 0 on success and -1 on failure.</p>
+<p>A pointer to a</p>
+<p>function that may be used by the</p>
+<p>function to display version information (see show_version below). The</p>
+<p>function may also be used to display additional error message to the user. The</p>
+<p>function returns number of characters printed on success and -1 on failure.</p>
+<p>A vector of user-supplied</p>
+<p>settings in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer. These settings correspond to options the user specified when running</p>
+<p>As such, they will only be present when the corresponding option has been specified on the command line.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible settings.</p>
+<p>A vector of information about the user running the command in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible strings.</p>
+<p>A vector of information describing the command being run in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible strings.</p>
+<p>The number of elements in</p>
+<p>not counting the final</p>
+<p>pointer. It can be zero, when</p>
+<p>is called with</p>
+<p>If</p>
+<p>an argument vector describing a command the user wishes to run in the same form as what would be passed to the</p>
+<p>system call.</p>
+<p>The user's environment in the form of a</p>
+<p>vector of</p>
+<p>strings.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>Any (non-comment) strings immediately after the plugin path are treated as arguments to the plugin. These arguments are split on a white space boundary and are passed to the plugin in the form of a</p>
+<p>array of strings. If no arguments were specified,</p>
+<p>will be the</p>
+<p>pointer.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.2. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>void (*close)(int exit_status, int error);</p>
+<p>The</p>
+<p>function is called when</p>
+<p>is finished, shortly before it exits.</p>
+<p>The function arguments are as follows:</p>
+<p>The command's exit status, as returned by the</p>
+<p>system call, or zero if no command was run. The value of</p>
+<p>is undefined if</p>
+<p>is non-zero.</p>
+<p>If the command could not be executed, this is set to the value of</p>
+<p>set by the</p>
+<p>system call. If the command was successfully executed, the value of</p>
+<p>is zero.</p>
+<p>int (*show_version)(int verbose);</p>
+<p>The</p>
+<p>function is called by</p>
+<p>when the user specifies the</p>
+<p>option. The plugin may display its version information to the user via the</p>
+<p>or</p>
+<p>function using</p>
+<p>Returns 1 on success, 0 on failure, -1 if a general error occurred, or -2 if there was a usage error, although the return value is currently ignored.</p>
+<p>int (*log_ttyin)(const char *buf, unsigned int len, const char **errstr);</p>
+<p>The</p>
+<p>function is called whenever data can be read from the user but before it is passed to the running command. This allows the plugin to reject data if it chooses to (for instance if the input contains banned content). Returns 1 if the data should be passed to the command, 0 if the data is rejected (which will terminate the running command) or -1 if an error occurred.</p>
+<p>The function arguments are as follows:</p>
+<p>The buffer containing user input.</p>
+<p>The length of</p>
+<p>in bytes.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>int (*log_ttyout)(const char *buf, unsigned int len, const char **errstr);</p>
+<p>The</p>
+<p>function is called whenever data can be read from the command but before it is written to the user's terminal. This allows the plugin to reject data if it chooses to (for instance if the output contains banned content). Returns 1 if the data should be passed to the user, 0 if the data is rejected (which will terminate the running command) or -1 if an error occurred.</p>
+<p>The function arguments are as follows:</p>
+<p>The buffer containing command output.</p>
+<p>The length of</p>
+<p>in bytes.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>int (*log_stdin)(const char *buf, unsigned int len, const char **errstr);</p>
+<p>The</p>
+<p>function is only used if the standard input does not correspond to a tty device. It is called whenever data can be read from the standard input but before it is passed to the running command. This allows the plugin to reject data if it chooses to (for instance if the input contains banned content). Returns 1 if the data should be passed to the command, 0 if the data is rejected (which will terminate the running command) or -1 if an error occurred.</p>
+<p>The function arguments are as follows:</p>
+<p>The buffer containing user input.</p>
+<p>The length of</p>
+<p>in bytes.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>int (*log_stdout)(const char *buf, unsigned int len, const char **errstr);</p>
+<p>The</p>
+<p>function is only used if the standard output does not correspond to a tty device. It is called whenever data can be read from the command but before it is written to the standard output. This allows the plugin to reject data if it chooses to (for instance if the output contains banned content). Returns 1 if the data should be passed to the user, 0 if the data is rejected (which will terminate the running command) or -1 if an error occurred.</p>
+<p>The function arguments are as follows:</p>
+<p>The buffer containing command output.</p>
+<p>The length of</p>
+<p>in bytes.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>int (*log_stderr)(const char *buf, unsigned int len, const char **errstr);</p>
+<p>The</p>
+<p>function is only used if the standard error does not correspond to a tty device. It is called whenever data can be read from the command but before it is written to the standard error. This allows the plugin to reject data if it chooses to (for instance if the output contains banned content). Returns 1 if the data should be passed to the user, 0 if the data is rejected (which will terminate the running command) or -1 if an error occurred.</p>
+<p>The function arguments are as follows:</p>
+<p>The buffer containing command output.</p>
+<p>The length of</p>
+<p>in bytes.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>See the</p>
+<p>section for a description of</p>
+<p>See the</p>
+<p>section for a description of</p>
+<p>int (*change_winsize)(unsigned int lines, unsigned int cols, const char **errstr);</p>
+<p>The</p>
+<p>function is called whenever the window size of the terminal changes from the initial values specified in the</p>
+<p>list. Returns -1 if an error occurred, in which case no further calls to</p>
+<p>will be made,</p>
+<p>The function arguments are as follows:</p>
+<p>The number of lines (rows) in the re-sized terminal.</p>
+<p>The number of columns in the re-sized terminal.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>int (*log_suspend)(int signo, const char **errstr);</p>
+<p>The</p>
+<p>function is called whenever a command is suspended or resumed. Logging this information makes it possible to skip the period of time when the command was suspended during playback of a session. Returns -1 if an error occurred, in which case no further calls to</p>
+<p>will be made,</p>
+<p>The function arguments are as follows:</p>
+<p>The signal that caused the command to be suspended, or</p>
+<p>if the command was resumed.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>NOTE: the</p>
+<p>parameter is only available starting with API version 1.15. A plugin</p>
+<p>check the API version specified by the</p>
+<p>front end before using</p>
+<p>Failure to do so may result in a crash.</p>
+<p>struct sudo_plugin_event * (*event_alloc)(void);</p>
+<p>The</p>
+<p>function is used to allocate a</p>
+<p>which provides access to the main</p>
+<p>event loop. Unlike the other fields, the</p>
+<p>pointer is filled in by the</p>
+<p>front end, not by the plugin.</p>
+<p>See the</p>
+<p>section below for more information about events.</p>
+<p>NOTE: the</p>
+<p>function is only available starting with API version 1.15. If the</p>
+<p>front end doesn't support API version 1.15 or higher,</p>
+<p>will not be set.</p>
+<p>Same as for the</p>
+<p>/* Audit plugin close function status types. */ #define SUDO_PLUGIN_NO_STATUS 0 #define SUDO_PLUGIN_WAIT_STATUS 1 #define SUDO_PLUGIN_EXEC_ERROR 2 #define SUDO_PLUGIN_SUDO_ERROR 3</p>
+<p>#define SUDO_AUDIT_PLUGIN 3 struct audit_plugin { unsigned int type; /* always SUDO_AUDIT_PLUGIN */ unsigned int version; /* always SUDO_API_VERSION */ int (*open)(unsigned int version, sudo_conv_t conversation, sudo_printf_t sudo_printf, char * const settings[], char * const user_info[], int submit_optind, char * const submit_argv[], char * const submit_envp[], char * const plugin_options[], const char **errstr); void (*close)(int status_type, int status); int (*accept)(const char *plugin_name, unsigned int plugin_type, char * const command_info[], char * const run_argv[], char * const run_envp[], const char **errstr); int (*reject)(const char *plugin_name, unsigned int plugin_type, const char *audit_msg, char * const command_info[], const char **errstr); int (*error)(const char *plugin_name, unsigned int plugin_type, const char *audit_msg, char * const command_info[], const char **errstr); int (*show_version)(int verbose); void (*register_hooks)(int version, int (*register_hook)(struct sudo_hook *hook)); void (*deregister_hooks)(int version, int (*deregister_hook)(struct sudo_hook *hook)); struct sudo_plugin_event * (*event_alloc)(void); }</p>
+<p>An audit plugin can be used to log successful and unsuccessful attempts to run</p>
+<p>independent of the policy or any I/O plugins. Multiple audit plugins may be specified in</p>
+<p>The audit_plugin struct has the following fields:</p>
+<p>The</p>
+<p>field should always be set to</p>
+<p>The</p>
+<p>field should be set to</p>
+<p>This allows</p>
+<p>to determine the API version the plugin was built against.</p>
+<p>int (*open)(unsigned int version, sudo_conv_t conversation, sudo_printf_t sudo_printf, char * const settings[], char * const user_info[], int submit_optind, char * const submit_argv[], char * const submit_envp[], char * const plugin_options[], const char **errstr);</p>
+<p>The audit</p>
+<p>function is run before any other</p>
+<p>plugin API functions. This makes it possible to audit failures in the other plugins. It returns 1 on success, 0 on failure, -1 if a general error occurred, or -2 if there was a usage error. In the latter case,</p>
+<p>will print a usage message before it exits. If an error occurs, the plugin may optionally call the</p>
+<p>or</p>
+<p>function with</p>
+<p>to present additional error information to the user.</p>
+<p>The function arguments are as follows:</p>
+<p>The version passed in by</p>
+<p>allows the plugin to determine the major and minor version number of the plugin API supported by</p>
+<p>A pointer to the</p>
+<p>function that may be used by the</p>
+<p>function to display version information (see</p>
+<p>below). The</p>
+<p>function may also be used to display additional error message to the user. The</p>
+<p>function returns 0 on success and -1 on failure.</p>
+<p>A pointer to a</p>
+<p>function that may be used by the</p>
+<p>function to display version information (see show_version below). The</p>
+<p>function may also be used to display additional error message to the user. The</p>
+<p>function returns number of characters printed on success and -1 on failure.</p>
+<p>A vector of user-supplied</p>
+<p>settings in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer. These settings correspond to options the user specified when running</p>
+<p>As such, they will only be present when the corresponding option has been specified on the command line.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible settings.</p>
+<p>A vector of information about the user running the command in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible strings.</p>
+<p>The index into</p>
+<p>that corresponds to the first entry that is not a command line option. If</p>
+<p>only consists of options, which may be the case with the</p>
+<p>or</p>
+<p>options,</p>
+<p>will evaluate to the NULL pointer.</p>
+<p>The argument vector</p>
+<p>was invoked with, including all command line options. The</p>
+<p>argument can be used to determine the end of the command line options.</p>
+<p>The invoking user's environment in the form of a</p>
+<p>vector of</p>
+<p>strings.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>Any (non-comment) strings immediately after the plugin path are treated as arguments to the plugin. These arguments are split on a white space boundary and are passed to the plugin in the form of a</p>
+<p>array of strings. If no arguments were specified,</p>
+<p>will be the</p>
+<p>pointer.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>void (*close)(int status_type, int status);</p>
+<p>The</p>
+<p>function is called when</p>
+<p>is finished, shortly before it exits.</p>
+<p>The function arguments are as follows:</p>
+<p>The type of status being passed. One of</p>
+<p>or</p>
+<p>Depending on the value of</p>
+<p>this value is either ignored, the command's exit status as returned by the</p>
+<p>system call, the value of</p>
+<p>set by the</p>
+<p>system call, or the value of</p>
+<p>resulting from an error in the</p>
+<p>front end.</p>
+<p>int (*accept)(const char *plugin_name, unsigned int plugin_type, char * const command_info[], char * const run_argv[], char * const run_envp[], const char **errstr);</p>
+<p>The</p>
+<p>function is called when a command or action is accepted by a policy or approval plugin. The function arguments are as follows:</p>
+<p>The name of the plugin that accepted the command or</p>
+<p>for the</p>
+<p>front-end.</p>
+<p>The type of plugin that accepted the command, currently either</p>
+<p>or</p>
+<p>The</p>
+<p>function is called multiple times--once for each policy or approval plugin that succeeds and once for the sudo front-end. When called on behalf of the sudo front-end,</p>
+<p>may include information from an I/O logging plugin as well.</p>
+<p>Typically, an audit plugin is interested in either the accept status from the</p>
+<p>front-end or from the various policy and approval plugins, but not both. It is possible for the policy plugin to accept a command that is later rejected by an approval plugin, in which case the audit plugin's</p>
+<p>and</p>
+<p>functions will</p>
+<p>be called.</p>
+<p>An optional vector of information describing the command being run in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible strings.</p>
+<p>A</p>
+<p>argument vector describing a command that will be run in the same form as what would be passed to the</p>
+<p>system call.</p>
+<p>The environment the command will be run with in the form of a</p>
+<p>vector of</p>
+<p>strings.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>int (*reject)(const char *plugin_name, unsigned int plugin_type, const char *audit_msg, char * const command_info[], const char **errstr);</p>
+<p>The</p>
+<p>function is called when a command or action is rejected by a plugin. The function arguments are as follows:</p>
+<p>The name of the plugin that rejected the command.</p>
+<p>The type of plugin that rejected the command, currently either</p>
+<p>or</p>
+<p>Unlike the</p>
+<p>function, the</p>
+<p>function is not called on behalf of the</p>
+<p>front-end.</p>
+<p>An optional string describing the reason the command was rejected by the plugin. If the plugin did not provide a reason,</p>
+<p>will be the</p>
+<p>pointer.</p>
+<p>An optional vector of information describing the command being run in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible strings.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>int (*error)(const char *plugin_name, unsigned int plugin_type, const char *audit_msg, char * const command_info[], const char **errstr);</p>
+<p>The</p>
+<p>function is called when a plugin or the</p>
+<p>front-end returns an error. The function arguments are as follows:</p>
+<p>The name of the plugin that generated the error or</p>
+<p>for the</p>
+<p>front-end.</p>
+<p>The type of plugin that generated the error, or</p>
+<p>for the</p>
+<p>front-end.</p>
+<p>An optional string describing the plugin error. If the plugin did not provide a description,</p>
+<p>will be the</p>
+<p>pointer.</p>
+<p>An optional vector of information describing the command being run in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible strings.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>int (*show_version)(int verbose);</p>
+<p>The</p>
+<p>function is called by</p>
+<p>when the user specifies the</p>
+<p>option. The plugin may display its version information to the user via the</p>
+<p>or</p>
+<p>function using</p>
+<p>If the user requests detailed version information, the verbose flag will be set.</p>
+<p>Returns 1 on success, 0 on failure, -1 if a general error occurred, or -2 if there was a usage error, although the return value is currently ignored.</p>
+<p>See the</p>
+<p>section for a description of</p>
+<p>See the</p>
+<p>section for a description of</p>
+<p>struct sudo_plugin_event * (*event_alloc)(void);</p>
+<p>The</p>
+<p>function is used to allocate a</p>
+<p>which provides access to the main</p>
+<p>event loop. Unlike the other fields, the</p>
+<p>pointer is filled in by the</p>
+<p>front end, not by the plugin.</p>
+<p>See the</p>
+<p>section below for more information about events.</p>
+<p>NOTE: the</p>
+<p>function is only available starting with API version 1.17. If the</p>
+<p>front end doesn't support API version 1.17 or higher,</p>
+<p>will not be set.</p>
+<p>struct approval_plugin { #define SUDO_APPROVAL_PLUGIN 4 unsigned int type; /* always SUDO_APPROVAL_PLUGIN */ unsigned int version; /* always SUDO_API_VERSION */ int (*open)(unsigned int version, sudo_conv_t conversation, sudo_printf_t sudo_printf, char * const settings[], char * const user_info[], int submit_optind, char * const submit_argv[], char * const submit_envp[], char * const plugin_options[], const char **errstr); void (*close)(void); int (*check)(char * const command_info[], char * const run_argv[], char * const run_envp[], const char **errstr); int (*show_version)(int verbose); };</p>
+<p>An approval plugin can be used to apply extra constraints after a command has been accepted by the policy plugin. Unlike the other plugin types, it does not remain open until the command completes. The plugin is opened before a call to</p>
+<p>or</p>
+<p>and closed shortly thereafter (audit plugin functions must be called before the plugin is closed). Multiple approval plugins may be specified in</p>
+<p>The approval_plugin struct has the following fields:</p>
+<p>The</p>
+<p>field should always be set to</p>
+<p>The</p>
+<p>field should be set to</p>
+<p>This allows</p>
+<p>to determine the API version the plugin was built against.</p>
+<p>int (*open)(unsigned int version, sudo_conv_t conversation, sudo_printf_t sudo_printf, char * const settings[], char * const user_info[], int submit_optind, char * const submit_argv[], char * const submit_envp[], char * const plugin_options[], const char **errstr);</p>
+<p>The approval</p>
+<p>function is run immediately before a call to the plugin's</p>
+<p>or</p>
+<p>functions. It is only called if the version is being requested or if the policy plugin's</p>
+<p>function has returned successfully. It returns 1 on success, 0 on failure, -1 if a general error occurred, or -2 if there was a usage error. In the latter case,</p>
+<p>will print a usage message before it exits. If an error occurs, the plugin may optionally call the</p>
+<p>or</p>
+<p>function with</p>
+<p>to present additional error information to the user.</p>
+<p>The function arguments are as follows:</p>
+<p>The version passed in by</p>
+<p>allows the plugin to determine the major and minor version number of the plugin API supported by</p>
+<p>A pointer to the</p>
+<p>function that can be used by the plugin to interact with the user (see</p>
+<p>for details). Returns 0 on success and -1 on failure.</p>
+<p>A pointer to a</p>
+<p>function that may be used to display informational or error messages (see</p>
+<p>for details). Returns the number of characters printed on success and -1 on failure.</p>
+<p>A vector of user-supplied</p>
+<p>settings in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer. These settings correspond to options the user specified when running</p>
+<p>As such, they will only be present when the corresponding option has been specified on the command line.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible settings.</p>
+<p>A vector of information about the user running the command in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible strings.</p>
+<p>The index into</p>
+<p>that corresponds to the first entry that is not a command line option. If</p>
+<p>only consists of options, which may be the case with the</p>
+<p>or</p>
+<p>options,</p>
+<p>will evaluate to the NULL pointer.</p>
+<p>The argument vector</p>
+<p>was invoked with, including all command line options. The</p>
+<p>argument can be used to determine the end of the command line options.</p>
+<p>The invoking user's environment in the form of a</p>
+<p>vector of</p>
+<p>strings.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>Any (non-comment) strings immediately after the plugin path are treated as arguments to the plugin. These arguments are split on a white space boundary and are passed to the plugin in the form of a</p>
+<p>array of strings. If no arguments were specified,</p>
+<p>will be the</p>
+<p>pointer.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>void (*close)(void);</p>
+<p>The</p>
+<p>function is called after the approval plugin's</p>
+<p>or</p>
+<p>functions have been called. It takes no arguments. The</p>
+<p>function is typically used to perform plugin-specific cleanup, such as the freeing of memory objects allocated by the plugin. If the plugin does not need to perform any cleanup,</p>
+<p>may be set to the</p>
+<p>pointer.</p>
+<p>int (*check)(char * const command_info[], char * const run_argv[], char * const run_envp[], const char **errstr);</p>
+<p>The approval</p>
+<p>function is run after the policy plugin</p>
+<p>function and before any I/O logging plugins. If multiple approval plugins are loaded, they must all succeed for the command to be allowed. It returns 1 on success, 0 on failure, -1 if a general error occurred, or -2 if there was a usage error. In the latter case,</p>
+<p>will print a usage message before it exits. If an error occurs, the plugin may optionally call the</p>
+<p>or</p>
+<p>function with</p>
+<p>to present additional error information to the user.</p>
+<p>The function arguments are as follows:</p>
+<p>A vector of information describing the command being run in the form of</p>
+<p>strings. The vector is terminated by a</p>
+<p>pointer.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>See the</p>
+<p>section for a list of all possible strings.</p>
+<p>A</p>
+<p>argument vector describing a command that will be run in the same form as what would be passed to the</p>
+<p>system call.</p>
+<p>The environment the command will be run with in the form of a</p>
+<p>vector of</p>
+<p>strings.</p>
+<p>When parsing</p>
+<p>the plugin should split on the</p>
+<p>equal sign</p>
+<p>since the</p>
+<p>field will never include one itself but the</p>
+<p>might.</p>
+<p>If the</p>
+<p>function returns a value other than 1, the plugin may store a message describing the failure or error in</p>
+<p>The</p>
+<p>front end will then pass this value to any registered audit plugins. The string stored in</p>
+<p>must remain valid until the plugin's</p>
+<p>function is called.</p>
+<p>int (*show_version)(int verbose);</p>
+<p>The</p>
+<p>function is called by</p>
+<p>when the user specifies the</p>
+<p>option. The plugin may display its version information to the user via the</p>
+<p>or</p>
+<p>function using</p>
+<p>If the user requests detailed version information, the verbose flag will be set.</p>
+<p>Returns 1 on success, 0 on failure, -1 if a general error occurred, or -2 if there was a usage error, although the return value is currently ignored.</p>
+<p>The</p>
+<p>front end installs default signal handlers to trap common signals while the plugin functions are run. The following signals are trapped by default before the command is executed:</p>
+<p>If a fatal signal is received before the command is executed,</p>
+<p>will call the plugin's</p>
+<p>function with an exit status of 128 plus the value of the signal that was received. This allows for consistent logging of commands killed by a signal for plugins that log such information in their</p>
+<p>function. An exception to this is</p>
+<p>which is ignored until the command is executed.</p>
+<p>A plugin may temporarily install its own signal handlers but must restore the original handler before the plugin function returns.</p>
+<p>Beginning with plugin API version 1.2, it is possible to install hooks for certain functions called by the</p>
+<p>front end.</p>
+<p>Currently, the only supported hooks relate to the handling of environment variables. Hooks can be used to intercept attempts to get, set, or remove environment variables so that these changes can be reflected in the version of the environment that is used to execute a command. A future version of the API will support hooking internal</p>
+<p>front end functions as well.</p>
+<p>Hooks in</p>
+<p>are described by the following structure:</p>
+<p>typedef int (*sudo_hook_fn_t)();</p>
+<p>struct sudo_hook { unsigned int hook_version; unsigned int hook_type; sudo_hook_fn_t hook_fn; void *closure; };</p>
+<p>The</p>
+<p>structure has the following fields:</p>
+<p>The</p>
+<p>field should be set to</p>
+<p>The</p>
+<p>field may be one of the following supported hook types:</p>
+<p>The C library</p>
+<p>function. Any registered hooks will run before the C library implementation. The</p>
+<p>field should be a function that matches the following typedef:</p>
+<p>typedef int (*sudo_hook_fn_setenv_t)(const char *name, const char *value, int overwrite, void *closure);</p>
+<p>If the registered hook does not match the typedef the results are unspecified.</p>
+<p>The C library</p>
+<p>function. Any registered hooks will run before the C library implementation. The</p>
+<p>field should be a function that matches the following typedef:</p>
+<p>typedef int (*sudo_hook_fn_unsetenv_t)(const char *name, void *closure);</p>
+<p>The C library</p>
+<p>function. Any registered hooks will run before the C library implementation. The</p>
+<p>field should be a function that matches the following typedef:</p>
+<p>typedef int (*sudo_hook_fn_getenv_t)(const char *name, char **value, void *closure);</p>
+<p>If the registered hook does not match the typedef the results are unspecified.</p>
+<p>The C library</p>
+<p>function. Any registered hooks will run before the C library implementation. The</p>
+<p>field should be a function that matches the following typedef:</p>
+<p>typedef int (*sudo_hook_fn_putenv_t)(char *string, void *closure);</p>
+<p>If the registered hook does not match the typedef the results are unspecified.</p>
+<p>sudo_hook_fn_t hook_fn;</p>
+<p>The</p>
+<p>field should be set to the plugin's hook implementation. The actual function arguments will vary depending on the</p>
+<p>(see</p>
+<p>above). In all cases, the</p>
+<p>field of</p>
+<p>is passed as the last function parameter. This can be used to pass arbitrary data to the plugin's hook implementation.</p>
+<p>The function return value may be one of the following:</p>
+<p>The hook function encountered an error.</p>
+<p>The hook completed without error, go on to the next hook (including the system implementation if applicable). For example, a</p>
+<p>hook might return</p>
+<p>if the specified variable was not found in the private copy of the environment.</p>
+<p>The hook completed without error, stop processing hooks for this invocation. This can be used to replace the system implementation. For example, a</p>
+<p>hook that operates on a private copy of the environment but leaves</p>
+<p>unchanged.</p>
+<p>Note that it is very easy to create an infinite loop when hooking C library functions. For example, a</p>
+<p>hook that calls the</p>
+<p>function may create a loop if the</p>
+<p>implementation calls</p>
+<p>to check the locale. To prevent this, you may wish to use a static variable in the hook function to guard against nested calls. For example:</p>
+<p>static int in_progress = 0; /* avoid recursion */ if (in_progress) return SUDO_HOOK_RET_NEXT; in_progress = 1; ... in_progress = 0; return SUDO_HOOK_RET_STOP;</p>
+<p>/* Hook API version major/minor */ #define SUDO_HOOK_VERSION_MAJOR 1 #define SUDO_HOOK_VERSION_MINOR 0 #define SUDO_HOOK_VERSION SUDO_API_MKVERSION(SUDO_HOOK_VERSION_MAJOR,\ SUDO_HOOK_VERSION_MINOR)</p>
+<p>For getters and setters see the</p>
+<p>When</p>
+<p>runs a command, it uses an event loop to service signals and I/O. Events may be triggered based on time, a file or socket descriptor becoming ready, or due to receipt of a signal. Starting with API version 1.15, it is possible for a plugin to participate in this event loop by calling the</p>
+<p>function.</p>
+<p>Events are described by the following structure:</p>
+<p>typedef void (*sudo_plugin_ev_callback_t)(int fd, int what, void *closure);</p>
+<p>struct sudo_plugin_event { int (*set)(struct sudo_plugin_event *pev, int fd, int events, sudo_plugin_ev_callback_t callback, void *closure); int (*add)(struct sudo_plugin_event *pev, struct timespec *timeout); int (*del)(struct sudo_plugin_event *pev); int (*pending)(struct sudo_plugin_event *pev, int events, struct timespec *ts); int (*fd)(struct sudo_plugin_event *pev); void (*setbase)(struct sudo_plugin_event *pev, void *base); void (*loopbreak)(struct sudo_plugin_event *pev); void (*free)(struct sudo_plugin_event *pev); };</p>
+<p>The sudo_plugin_event struct contains the following function pointers:</p>
+<p>int (*set)(struct sudo_plugin_event *pev, int fd, int events, sudo_plugin_ev_callback_t callback, void *closure);</p>
+<p>The</p>
+<p>function takes the following arguments:</p>
+<p>A pointer to the struct sudo_plugin_event itself.</p>
+<p>The file or socket descriptor for I/O-based events or the signal number for signal events. For time-based events,</p>
+<p>must be -1.</p>
+<p>The following values determine what will trigger the event callback:</p>
+<p>callback is run after the specified timeout expires</p>
+<p>callback is run when the file descriptor is readable</p>
+<p>callback is run when the file descriptor is writable</p>
+<p>event is persistent and remains enabled until explicitly deleted</p>
+<p>callback is run when the specified signal is received</p>
+<p>The</p>
+<p>flag may be ORed with any of the event types. It is also possible to OR</p>
+<p>and</p>
+<p>together to run the callback when a descriptor is ready to be either read from or written to. All other event values are mutually exclusive.</p>
+<p>typedef void (*sudo_plugin_ev_callback_t)(int fd, int what, void *closure);</p>
+<p>The function to call when an event is triggered. The</p>
+<p>function is run with the following arguments:</p>
+<p>The file or socket descriptor for I/O-based events or the signal number for signal events.</p>
+<p>The event type that triggered that callback. For events that have multiple event types (for example</p>
+<p>and</p>
+<p>or have an associated timeout,</p>
+<p>can be used to determine why the callback was run.</p>
+<p>The generic pointer that was specified in the</p>
+<p>function.</p>
+<p>A generic pointer that will be passed to the callback function.</p>
+<p>The</p>
+<p>function returns 1 on success, and -1 if a error occurred.</p>
+<p>int (*add)(struct sudo_plugin_event *pev, struct timespec *timeout);</p>
+<p>The</p>
+<p>function adds the event</p>
+<p>to</p>
+<p>event loop. The event must have previously been initialized via the</p>
+<p>function. If the</p>
+<p>argument is not NULL, it should specify a (relative) timeout after which the event will be triggered if the main event criteria has not been met. This is often used to implement an I/O timeout where the event will fire if a descriptor is not ready within a certain time period. If the event is already present in the event loop, its</p>
+<p>will be adjusted to match the new value, if any.</p>
+<p>The</p>
+<p>function returns 1 on success, and -1 if a error occurred.</p>
+<p>int (*del)(struct sudo_plugin_event *pev);</p>
+<p>The</p>
+<p>function deletes the event</p>
+<p>from</p>
+<p>event loop. Deleted events can be added back via the</p>
+<p>function.</p>
+<p>The</p>
+<p>function returns 1 on success, and -1 if a error occurred.</p>
+<p>int (*pending)(struct sudo_plugin_event *pev, int events, struct timespec *ts);</p>
+<p>The</p>
+<p>function can be used to determine whether one or more events is pending. The</p>
+<p>argument specifies which events to check for. See the</p>
+<p>function for a list of valid event types. If</p>
+<p>is specified in</p>
+<p>the event has an associated timeout and the</p>
+<p>pointer is non-NULL, it will be filled in with the remaining time.</p>
+<p>int (*fd)(struct sudo_plugin_event *pev);</p>
+<p>The</p>
+<p>function returns the descriptor or signal number associated with the event</p>
+<p>void (*setbase)(struct sudo_plugin_event *pev, void *base);</p>
+<p>The</p>
+<p>function sets the underlying event</p>
+<p>for</p>
+<p>to the specified value. This can be used to move an event created via</p>
+<p>to a new event loop allocated by sudo's event subsystem. If</p>
+<p>is</p>
+<p>event base is reset to the default value, which corresponds to</p>
+<p>main event loop. Using this function requires linking the plugin with the sudo_util library. It is unlikely to be used outside of the</p>
+<p>plugin.</p>
+<p>void (*loopbreak)(struct sudo_plugin_event *pev);</p>
+<p>The</p>
+<p>function causes</p>
+<p>event loop to exit immediately and the running command to be terminated.</p>
+<p>void (*free)(struct sudo_plugin_event *pev);</p>
+<p>The</p>
+<p>function deletes the event</p>
+<p>from the event loop and frees the memory associated with it.</p>
+<p>The</p>
+<p>front end does not support running remote commands. However, starting with</p>
+<p>1.8.8, the</p>
+<p>option may be used to specify a remote host that is passed to the policy plugin. A plugin may also accept a</p>
+<p>in the form of</p>
+<p>which will work with older versions of</p>
+<p>It is anticipated that remote commands will be supported by executing a</p>
+<p>program. The policy plugin should setup the execution environment such that the</p>
+<p>front end will run the helper which, in turn, will connect to the remote host and run the command.</p>
+<p>For example, the policy plugin could utilize</p>
+<p>to perform remote command execution. The helper program would be responsible for running</p>
+<p>with the proper options to use a private key or certificate that the remote host will accept and run a program on the remote host that would setup the execution environment accordingly.</p>
+<p>Note that remote</p>
+<p>functionality must be handled by the policy plugin, not</p>
+<p>itself as the front end has no knowledge that a remote command is being executed. This may be addressed in a future revision of the plugin API.</p>
+<p>If the plugin needs to interact with the user, it may do so via the</p>
+<p>function. A plugin should not attempt to read directly from the standard input or the user's tty (neither of which are guaranteed to exist). The caller must include a trailing newline in</p>
+<p>if one is to be printed.</p>
+<p>A</p>
+<p>function is also available that can be used to display informational or error messages to the user, which is usually more convenient for simple messages where no use input is required.</p>
+<p>The conversation function takes as arguments pointers to the following structures:</p>
+<p>struct sudo_conv_message { #define SUDO_CONV_PROMPT_ECHO_OFF 0x0001 /* do not echo user input */ #define SUDO_CONV_PROMPT_ECHO_ON 0x0002 /* echo user input */ #define SUDO_CONV_ERROR_MSG 0x0003 /* error message */ #define SUDO_CONV_INFO_MSG 0x0004 /* informational message */ #define SUDO_CONV_PROMPT_MASK 0x0005 /* mask user input */ #define SUDO_CONV_PROMPT_ECHO_OK 0x1000 /* flag: allow echo if no tty */ #define SUDO_CONV_PREFER_TTY 0x2000 /* flag: use tty if possible */ int msg_type; int timeout; const char *msg; };</p>
+<p>#define SUDO_CONV_REPL_MAX 1023</p>
+<p>struct sudo_conv_reply { char *reply; };</p>
+<p>typedef int (*sudo_conv_callback_fn_t)(int signo, void *closure); struct sudo_conv_callback { unsigned int version; void *closure; sudo_conv_callback_fn_t on_suspend; sudo_conv_callback_fn_t on_resume; };</p>
+<p>Pointers to the</p>
+<p>and</p>
+<p>functions are passed in to the plugin's</p>
+<p>function when the plugin is initialized. The following type definitions can be used in the declaration of the</p>
+<p>function:</p>
+<p>typedef int (*sudo_conv_t)(int num_msgs, const struct sudo_conv_message msgs[], struct sudo_conv_reply replies[], struct sudo_conv_callback *callback);</p>
+<p>typedef int (*sudo_printf_t)(int msg_type, const char *fmt, ...);</p>
+<p>To use the</p>
+<p>function, the plugin must pass an array of</p>
+<p>and</p>
+<p>structures. There must be a</p>
+<p>and</p>
+<p>for each message in the conversation, that is, both arrays must have the same number of elements. Each</p>
+<p>must have its</p>
+<p>member initialized to</p>
+<p>The</p>
+<p>pointer, if not</p>
+<p>should contain function pointers to be called when the</p>
+<p>process is suspended and/or resumed during conversation input. The</p>
+<p>and</p>
+<p>functions are called with the signal that caused</p>
+<p>to be suspended and the</p>
+<p>pointer from the</p>
+<p>These functions should return 0 on success and -1 on error. On error, the conversation will end and the conversation function will return a value of -1. The intended use is to allow the plugin to release resources, such as locks, that should not be held indefinitely while suspended and then reacquire them when the process is resumed. Note that the functions are not actually invoked from within a signal handler.</p>
+<p>The</p>
+<p>must be set to one of the following values:</p>
+<p>Prompt the user for input with echo disabled; this is generally used for passwords. The reply will be stored in the</p>
+<p>array, and it will never be</p>
+<p>Prompt the user for input with echo enabled. The reply will be stored in the</p>
+<p>array, and it will never be</p>
+<p>Display an error message. The message is written to the standard error unless the</p>
+<p>flag is set, in which case it is written to the user's terminal if possible.</p>
+<p>Display a message. The message is written to the standard output unless the</p>
+<p>flag is set, in which case it is written to the user's terminal if possible.</p>
+<p>Prompt the user for input but echo an asterisk character for each character read. The reply will be stored in the</p>
+<p>array, and it will never be</p>
+<p>This can be used to provide visual feedback to the user while reading sensitive information that should not be displayed.</p>
+<p>In addition to the above values, the following flag bits may also be set:</p>
+<p>Allow input to be read when echo cannot be disabled when the message type is</p>
+<p>or</p>
+<p>By default,</p>
+<p>will refuse to read input if the echo cannot be disabled for those message types.</p>
+<p>When displaying a message via</p>
+<p>or</p>
+<p>try to write the message to the user's terminal. If the terminal is unavailable, the standard error or standard output will be used, depending upon whether The user's terminal is always used when possible for input, this flag is only used for output.</p>
+<p>or</p>
+<p>was used.</p>
+<p>The</p>
+<p>in seconds until the prompt will wait for no more input. A zero value implies an infinite timeout.</p>
+<p>The plugin is responsible for freeing the reply buffer located in each</p>
+<p>if it is not</p>
+<p>represents the maximum length of the reply buffer (not including the trailing NUL character). In practical terms, this is the longest password</p>
+<p>will support.</p>
+<p>The</p>
+<p>function uses the same underlying mechanism as the</p>
+<p>function but only supports</p>
+<p>and</p>
+<p>for the</p>
+<p>parameter. It can be more convenient than using the</p>
+<p>function if no user reply is needed and supports standard</p>
+<p>escape sequences.</p>
+<p>See the sample plugin for an example of the</p>
+<p>function usage.</p>
+<p>As of</p>
+<p>1.9.0, the plugin</p>
+<p>and</p>
+<p>functions are called in the following order:</p>
+<p>audit open</p>
+<p>policy open</p>
+<p>approval open</p>
+<p>approval close</p>
+<p>I/O log open</p>
+<p>command runs</p>
+<p>command exits</p>
+<p>I/O log close</p>
+<p>policy close</p>
+<p>audit close</p>
+<p>sudo exits</p>
+<p>Prior to</p>
+<p>1.9.0, the I/O log</p>
+<p>function was called</p>
+<p>the policy</p>
+<p>function.</p>
+<p>The</p>
+<p>plugin supports its own plugin interface to allow non-Unix group lookups. This can be used to query a group source other than the standard Unix group database. Two sample group plugins are bundled with</p>
+<p>and</p>
+<p>are detailed in</p>
+<p>Third party group plugins include a QAS AD plugin available from Quest Software.</p>
+<p>A group plugin must declare and populate a</p>
+<p>struct in the global scope. This structure contains pointers to the functions that implement plugin initialization, cleanup and group lookup.</p>
+<p>struct sudoers_group_plugin { unsigned int version; int (*init)(int version, sudo_printf_t sudo_printf, char *const argv[]); void (*cleanup)(void); int (*query)(const char *user, const char *group, const struct passwd *pwd); };</p>
+<p>The</p>
+<p>struct has the following fields:</p>
+<p>The</p>
+<p>field should be set to GROUP_API_VERSION.</p>
+<p>This allows</p>
+<p>to determine the API version the group plugin was built against.</p>
+<p>int (*init)(int version, sudo_printf_t plugin_printf, char *const argv[]);</p>
+<p>The</p>
+<p>function is called after</p>
+<p>has been parsed but before any policy checks. It returns 1 on success, 0 on failure (or if the plugin is not configured), and -1 if a error occurred. If an error occurs, the plugin may call the</p>
+<p>function with</p>
+<p>to present additional error information to the user.</p>
+<p>The function arguments are as follows:</p>
+<p>The version passed in by</p>
+<p>allows the plugin to determine the major and minor version number of the group plugin API supported by</p>
+<p>A pointer to a</p>
+<p>function that may be used to display informational or error message to the user. Returns the number of characters printed on success and -1 on failure.</p>
+<p>A</p>
+<p>array of arguments generated from the</p>
+<p>option in</p>
+<p>If no arguments were given,</p>
+<p>will be</p>
+<p>void (*cleanup)();</p>
+<p>The</p>
+<p>function is called when</p>
+<p>has finished its group checks. The plugin should free any memory it has allocated and close open file handles.</p>
+<p>int (*query)(const char *user, const char *group, const struct passwd *pwd);</p>
+<p>The</p>
+<p>function is used to ask the group plugin whether</p>
+<p>is a member of</p>
+<p>The function arguments are as follows:</p>
+<p>The name of the user being looked up in the external group database.</p>
+<p>The name of the group being queried.</p>
+<p>The password database entry for</p>
+<p>if any. If</p>
+<p>is not present in the password database,</p>
+<p>will be</p>
+<p>/* Sudoers group plugin version major/minor */ #define GROUP_API_VERSION_MAJOR 1 #define GROUP_API_VERSION_MINOR 0 #define GROUP_API_VERSION ((GROUP_API_VERSION_MAJOR &lt;&lt; 16) | \ GROUP_API_VERSION_MINOR)</p>
+<p>For getters and setters see the</p>
+<p>The following revisions have been made to the Sudo Plugin API.</p>
+<p>Initial API version.</p>
+<p>The I/O logging plugin's</p>
+<p>function was modified to take the</p>
+<p>list as an argument.</p>
+<p>The Policy and I/O logging plugins'</p>
+<p>functions are now passed a list of plugin parameters if any are specified in</p>
+<p>A simple hooks API has been introduced to allow plugins to hook in to the system's environment handling functions.</p>
+<p>The</p>
+<p>Policy plugin function is now passed a pointer to the user environment which can be updated as needed. This can be used to merge in environment variables stored in the PAM handle before a command is run.</p>
+<p>Support for the</p>
+<p>entry has been added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>and</p>
+<p>entries were added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>and</p>
+<p>functions are now optional. Previously, a missing</p>
+<p>or</p>
+<p>function would result in a crash. If no policy plugin</p>
+<p>function is defined, a default</p>
+<p>function will be provided by the</p>
+<p>front end that displays a warning if the command could not be executed.</p>
+<p>The</p>
+<p>front end now installs default signal handlers to trap common signals while the plugin functions are run.</p>
+<p>The</p>
+<p>entry was added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>entry was added to the</p>
+<p>list.</p>
+<p>The behavior when an I/O logging plugin returns an error</p>
+<p>has changed. Previously, the</p>
+<p>front end took no action when the</p>
+<p>or</p>
+<p>function returned an error.</p>
+<p>The behavior when an I/O logging plugin returns 0 has changed. Previously, output from the command would be displayed to the terminal even if an output logging function returned 0.</p>
+<p>The</p>
+<p>entry was added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>entry now starts with a debug file path name and may occur multiple times if there are multiple plugin-specific Debug lines in the</p>
+<p>The</p>
+<p>and</p>
+<p>entries were added to the</p>
+<p>list. The default value of</p>
+<p>was changed to true in sudo 1.8.16.</p>
+<p>The sudo</p>
+<p>function now takes a pointer to a</p>
+<p>as its fourth argument. The</p>
+<p>definition has been updated to match. The plugin must specify that it supports plugin API version 1.8 or higher to receive a conversation function pointer that supports this argument.</p>
+<p>The</p>
+<p>entry was added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>entry was added to the</p>
+<p>list. The</p>
+<p>and</p>
+<p>entries were added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>entry was added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>field was added to the io_plugin struct.</p>
+<p>The</p>
+<p>field was added to the io_plugin struct.</p>
+<p>The</p>
+<p>entry was added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>entry was added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>field was added to the policy_plugin and io_plugin structs.</p>
+<p>The</p>
+<p>argument was added to the policy and I/O plugin functions which the plugin function can use to return an error string. This string may be used by the audit plugin to report failure or error conditions set by the other plugins.</p>
+<p>The</p>
+<p>function is now is called regardless of whether or not a command was actually executed. This makes it possible for plugins to perform cleanup even when a command was not run.</p>
+<p>has increased from 255 to 1023 bytes.</p>
+<p>Support for audit and approval plugins was added.</p>
+<p>Initial resource limit values were added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>and</p>
+<p>enties were added to the</p>
+<p>list.</p>
+<p>The</p>
+<p>field was added to the audit_plugin and approval_plugin structs.</p>
+<p>Many people have worked on</p>
+<p>over the years; this version consists of code written primarily by:</p>
+<p>See the CONTRIBUTORS file in the</p>
+<p>distribution (https://www.sudo.ws/contributors.html) for an exhaustive list of people who have contributed to</p>
+<p>If you feel you have found a bug in</p>
+<p>please submit a bug report at https://bugzilla.sudo.ws/</p>
+<p>Limited free support is available via the sudo-users mailing list, see https://www.sudo.ws/mailman/listinfo/sudo-users to subscribe or search the archives.</p>
+<p>is provided</p>
+<p>and any express or implied warranties, including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose are disclaimed. See the LICENSE file distributed with</p>
+<p>or https://www.sudo.ws/license.html for complete details.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

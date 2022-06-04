@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd.target</title><meta name="description" content="Linux command systemd.target Target unit configuration"><meta name="keywords" content="linux, command, systemd.target, bsd, Target unit configuration"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd.target - Target unit configuration</p>
+<h1>SYNOPSIS</h1>
+<p><em>target</em>.target</p>
+<h1>DESCRIPTION</h1>
+<p>A unit configuration file whose name ends in ".target" encodes information about a target unit of systemd, which is used for grouping units and as well-known synchronization points during start-up.</p>
+<p>This unit type has no specific options. See <strong>systemd.unit</strong>(5) for the common options of all unit configuration files. The common configuration items are configured in the generic [Unit] and [Install] sections. A separate [Target] section does not exist, since no target-specific options may be configured.</p>
+<p>Target units do not offer any additional functionality on top of the generic functionality provided by units. They exist merely to group units via dependencies (useful as boot targets), and to establish standardized names for synchronization points used in dependencies between units. Among other things, target units are a more flexible replacement for SysV runlevels in the classic SysV init system. (And for compatibility reasons special target units such as runlevel3.target exist which are used by the SysV runlevel compatibility code in systemd. See <strong>systemd.special</strong>(7) for details).</p>
+<h1>AUTOMATIC DEPENDENCIES</h1>
+<h2>Implicit Dependencies</h2>
+<p>There are no implicit dependencies for target units.</p>
+<h2>Default Dependencies</h2>
+<p>The following dependencies are added unless <em>DefaultDependencies=no</em> is set:</p>
+<blockquote>
+<p>·</p>
+<p>Target units will automatically complement all configured dependencies of type <em>Wants=</em> or <em>Requires=</em> with dependencies of type <em>After=</em> unless <em>DefaultDependencies=no</em> is set in the specified units. Note that <em>Wants=</em> or <em>Requires=</em> must be defined in the target unit itself — if you for example define <em>Wants=</em>some.target in some.service, the automatic ordering will not be added.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Target units automatically gain <em>Conflicts=</em> and <em>Before=</em> dependencies against shutdown.target.</p>
+</blockquote>
+<h1>EXAMPLE</h1>
+<p><strong>Example 1. Simple standalone target</strong></p>
+<blockquote>
+<pre><code># emergency-net.target
+
+[Unit]
+Description=Emergency Mode with Networking
+Requires=emergency.target systemd-networkd.service
+After=emergency.target systemd-networkd.service
+AllowIsolate=yes</code></pre>
+</blockquote>
+<p>When adding dependencies to other units, its important to check if they set <em>DefaultDependencies=</em>. Service units, unless they set <em>DefaultDependencies=no</em>, automatically get a dependency on sysinit.target. In this case, both emergency.target and systemd-networkd.service have <em>DefaultDependencies=no</em>, so they are suitable for use in this target, and do not pull in sysinit.target.</p>
+<p>You can now switch into this emergency mode by running <em>systemctl isolate emergency-net.target</em> or by passing the option <em>systemd.unit=emergency-net.target</em> on the kernel command line.</p>
+<p>Other units can have <em>WantedBy=emergency-net.target</em> in the <em>[Install]</em> section. After they are enabled using <strong>systemctl enable</strong>, they will be started before <em>emergency-net.target</em> is started. It is also possible to add arbitrary units as dependencies of emergency.target without modifying them by using <strong>systemctl add-wants</strong>.</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemctl</strong>(1), <strong>systemd.unit</strong>(5), <strong>systemd.special</strong>(7), <strong>systemd.directives</strong>(7)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

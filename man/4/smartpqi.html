@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command smartpqi</title><meta name="description" content="Linux command smartpqi Microsemi Smart Family SCSI driver"><meta name="keywords" content="linux, command, smartpqi, bsd, Microsemi Smart Family SCSI driver"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>smartpqi - Microsemi Smart Family SCSI driver</p>
+<h1>SYNOPSIS</h1>
+<p><strong>modprobe smartpqi</strong> [<strong>disable_device_id_wildcards=</strong>{<strong>0</strong>|<strong>1</strong>}] [<strong>disable_heartbeat=</strong>{<strong>0</strong>|<strong>1</strong>}] [<strong>disable_ctrl_shutdown=</strong>{<strong>0</strong>|<strong>1</strong>}] [<strong>lockup_action=</strong>{<strong>none</strong>|<strong>reboot</strong>|<strong>panic</strong>}] [<strong>expose_ld_first=</strong>{<strong>0</strong>|<strong>1</strong>}] [<strong>hide_vsep=</strong>{<strong>0</strong>|<strong>1</strong>}]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>smartpqi</strong> is a SCSI driver for Microsemi Smart Family controllers.</p>
+<h2>Supported <em><strong>ioctl</strong></em>() operations</h2>
+<p>For compatibility with applications written for the <strong>cciss</strong>(4) and <strong>hpsa</strong>(4) drivers, many, but not all of the <strong>ioctl</strong>(2) operations supported by the <strong>hpsa</strong> driver are also supported by the <strong>smartpqi</strong> driver. The data structures used by these operations are described in the Linux kernel source file <em>include/linux/cciss_ioctl.h</em>.</p>
+<dl>
+<dt><strong>CCISS_DEREGDISK</strong>, <strong>CCISS_REGNEWDISK</strong>, <strong>CCISS_REGNEWD</strong></dt>
+<dd><p>These operations all do exactly the same thing, which is to cause the driver to re-scan for new devices. This does exactly the same thing as writing to the <strong>smartpqi</strong>-specific host <em>rescan</em> attribute.</p>
+</dd>
+<dt><strong>CCISS_GETPCIINFO</strong></dt>
+<dd><p>This operation Returns the PCI domain, bus, device and function and "board ID" (PCI subsystem ID).</p>
+</dd>
+<dt><strong>CCISS_GETDRIVVER</strong></dt>
+<dd><p>This operation returns the driver version in four bytes, encoded as:</p>
+<pre><code>(major_version &lt;&lt; 28) | (minor_version &lt;&lt; 24) |
+        (release &lt;&lt; 16) | revision</code></pre>
+</dd>
+<dt><strong>CCISS_PASSTHRU</strong></dt>
+<dd><p>Allows BMIC and CISS commands to be passed through to the controller.</p>
+</dd>
+</dl>
+<h2>Boot options</h2>
+<dl>
+<dt><strong>disable_device_id_wildcards=</strong>{<strong>0</strong>|<strong>1</strong>}</dt>
+<dd><p>Disables support for device ID wildcards. The default value is 0.</p>
+</dd>
+<dt><strong>disable_heartbeat=</strong>{<strong>0</strong>|<strong>1</strong>}</dt>
+<dd><p>Disables support for the controller's heartbeat check. This parameter is used for debugging purposes. The default value is 0, leaving the controller's heartbeat check active.</p>
+</dd>
+<dt><strong>disable_ctrl_shutdown=</strong>{<strong>0</strong>|<strong>1</strong>}</dt>
+<dd><p>Disables support for shutting down the controller in the event of a controller lockup. The default value is 0.</p>
+</dd>
+<dt><strong>lockup_action=</strong>{<strong>none</strong>|<strong>reboot</strong>|<strong>panic</strong>}</dt>
+<dd><p>Specifies the action the driver takes when a controller lockup is detected. The default action is <strong>none</strong>.</p>
+</dd>
+</dl>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">parameter</td>
+<td style="text-align: left;">action</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>none</strong></td>
+<td style="text-align: left;">take controller offline only</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>reboot</strong></td>
+<td style="text-align: left;">reboot the system</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>panic</strong></td>
+<td style="text-align: left;">panic the system</td>
+</tr>
+</tbody>
+</table>
+<dl>
+<dt><strong>expose_ld_first=</strong>{<strong>0</strong>|<strong>1</strong>}</dt>
+<dd><p>This option enables support for exposing logical devices to the operating system before physical devices. The default value is 0.</p>
+</dd>
+<dt><strong>hide_vsep=</strong>{<strong>0</strong>|<strong>1</strong>}</dt>
+<dd><p>This option enables disabling exposure of the virtual SEP to the host. This is usually associated with direct attached drives. The default value is 0.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<h2>Device nodes</h2>
+<p>Logical drives are accessed via the SCSI disk driver (<em>sd</em>), tape drives via the SCSI tape driver (<em>st</em>), and the RAID controller via the SCSI generic driver (<em>sg</em>), with device nodes named <em>/dev/sd</em>*, <em>/dev/st</em>*, and <em>/dev/sg</em>*, respectively.</p>
+<h2>SmartPQI-specific host attribute files in <em><strong>/sys</strong></em></h2>
+<dl>
+<dt><em>/sys/class/scsi_host/host</em>*<em>/rescan</em></dt>
+<dd><p>The host <em>rescan</em> attribute is a write-only attribute. Writing to this attribute will cause the driver to scan for new, changed, or removed devices (e.g., hot-plugged tape drives, or newly configured or deleted logical drives) and notify the SCSI mid-layer of any changes detected. Usually this action is triggered automatically by configuration changes, so the user should not normally have to write to this file. Doing so may be useful when hot-plugging devices such as tape drives or entire storage boxes containing pre-configured logical drives.</p>
+</dd>
+<dt><em>/sys/class/scsi_host/host</em>*<em>/version</em></dt>
+<dd><p>The host <em>version</em> attribute is a read-only attribute. This attribute contains the driver version and the controller firmware version.</p>
+<p>For example:</p>
+<pre><code>$ 
+cat /sys/class/scsi_host/host1/version
+driver: 1.1.2-126
+firmware: 1.29-112</code></pre>
+</dd>
+<dt><em>/sys/class/scsi_host/host</em>*<em>/lockup_action</em></dt>
+<dd><p>The host <em>lockup_action</em> attribute is a read/write attribute. This attribute will cause the driver to perform a specific action in the unlikely event that a controller lockup has been detected. See <strong>OPTIONS</strong> above for an explanation of the <em>lockup_action</em> values.</p>
+</dd>
+<dt><em>/sys/class/scsi_host/host*/driver_version</em></dt>
+<dd><p>The <em>driver_version</em> attribute is read-only. This attribute contains the smartpqi driver version.</p>
+<p>For example:</p>
+<pre><code>$ 
+cat /sys/class/scsi_host/host1/driver_version
+1.1.2-126</code></pre>
+</dd>
+<dt><em>/sys/class/scsi_host/host*/firmware_version</em></dt>
+<dd><p>The <em>firmware_version</em> attribute is read-only. This attribute contains the controller firmware version.</p>
+<p>For example:</p>
+<pre><code>$ 
+cat /sys/class/scsi_host/host1/firmware_version
+1.29-112</code></pre>
+</dd>
+<dt><em>/sys/class/scsi_host/host*/model</em></dt>
+<dd><p>The <em>model</em> attribute is read-only. This attribute contains the product identification string of the controller.</p>
+<p>For example:</p>
+<pre><code>$ 
+cat /sys/class/scsi_host/host1/model
+1100-16i</code></pre>
+</dd>
+<dt><em>/sys/class/scsi_host/host*/serial_number</em></dt>
+<dd><p>The <em>serial_number</em> attribute is read-only. This attribute contains the unique identification number of the controller.</p>
+<p>For example:</p>
+<pre><code>$ 
+cat /sys/class/scsi_host/host1/serial_number
+6A316373777</code></pre>
+</dd>
+<dt><em>/sys/class/scsi_host/host*/vendor</em></dt>
+<dd><p>The <em>vendor</em> attribute is read-only. This attribute contains the vendor identification string of the controller.</p>
+<p>For example:</p>
+<pre><code>$ 
+cat /sys/class/scsi_host/host1/vendor
+Adaptec</code></pre>
+</dd>
+</dl>
+<h2>SmartPQI-specific disk attribute files in <em><strong>/sys</strong></em></h2>
+<p>In the file specifications below, <em>c</em> stands for the number of the appropriate SCSI controller, <em>b</em> is the bus number, <em>t</em> the target number, and <em>l</em> is the logical unit number (LUN).</p>
+<dl>
+<dt><em>/sys/class/scsi_disk/</em>c<em>:</em>b<em>:</em>t<em>:</em>l<em>/device/raid_level</em></dt>
+<dd><p>The <em>raid_level</em> attribute is read-only. This attribute contains the RAID level of each logical drive.</p>
+<p>For example:</p>
+<pre><code>$ 
+cat /sys/class/scsi_disk/4:0:0:0/device/raid_level
+RAID 0</code></pre>
+</dd>
+<dt><em>/sys/class/scsi_disk/c</em>:<em>b</em>:<em>t</em>:<em>l/device/sas_address</em></dt>
+<dd><p>The <em>sas_address</em> attribute is read-only. This attribute contains the unique identifier of the disk.</p>
+<p>For example:</p>
+<pre><code>$ 
+cat /sys/class/scsi_disk/1:0:3:0/device/sas_address
+0x5001173d028543a2</code></pre>
+</dd>
+<dt><em>/sys/class/scsi_disk/c</em>:<em>b</em>:<em>t</em>:<em>l/device/ssd_smart_path_enabled</em></dt>
+<dd><p>The <em>ssd_smart_path_enabled</em> attribute is read-only. This attribute is for ioaccel-enabled volumes. (Ioaccel is an alternative driver submission path that allows the driver to send I/O requests directly to backend SCSI devices, bypassing the controller firmware. This results in an increase in performance. This method is used for HBA disks and for logical volumes comprised of SSDs.) Contains 1 if ioaccel is enabled for the volume and 0 otherwise.</p>
+<p>For example:</p>
+<pre><code>$ 
+cat /sys/class/scsi_disk/1:0:3:0/device/ssd_smart_path_enabled
+0</code></pre>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The <strong>smartpqi</strong> driver was added in Linux 4.9.</p>
+<h1>NOTES</h1>
+<h2>Configuration</h2>
+<p>To configure a Microsemi Smart Family controller, refer to the User Guide for the controller, which can be found by searching for the specific controller at <a href="https://storage.microsemi.com/"></a>.</p>
+<h1>SEE ALSO</h1>
+<p><strong>cciss</strong>(4), <strong>hpsa</strong>(4), <strong>sd</strong>(4), <strong>st</strong>(4)</p>
+<p><em>Documentation/ABI/testing/sysfs-bus-pci-devices-cciss</em> in the Linux kernel source tree.</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

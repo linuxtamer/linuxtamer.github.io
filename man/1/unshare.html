@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command unshare</title><meta name="description" content="Linux command unshare run program in new namespaces"><meta name="keywords" content="linux, command, unshare, bsd, run program in new namespaces"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>unshare - run program in new namespaces</p>
+<h1>SYNOPSIS</h1>
+<p><strong>unshare</strong> [options] [<em>program</em> [<em>arguments</em>]]</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>unshare</strong> command creates new namespaces (as specified by the command-line options described below) and then executes the specified <em>program</em>. If <em>program</em> is not given, then ``${SHELL}'' is run (default: /bin/sh).</p>
+<p>By default, a new namespace persists only as long as it has member processes. A new namespace can be made persistent even when it has no member processes by bind mounting /proc/<em>pid</em>/ns/<em>type</em> files to a filesystem path. A namespace that has been made persistent in this way can subsequently be entered with <strong>nsenter</strong>(1) even after the <em>program</em> terminates (except PID namespaces where a permanently running init process is required). Once a persistent namespace is no longer needed, it can be unpersisted by using <strong>umount</strong>(8) to remove the bind mount. See the <strong>EXAMPLES</strong> section for more details.</p>
+<p><strong>unshare</strong> since util-linux version 2.36 uses /<em>proc/[pid]/ns/pid_for_children</em> and <em>/proc/[pid]/ns/time_for_children</em> files for persistent PID and TIME namespaces. This change requires Linux kernel 4.17 or newer.</p>
+<p>The following types of namespaces can be created with <strong>unshare</strong>:</p>
+<dl>
+<dt><strong>mount namespace</strong></dt>
+<dd><p>Mounting and unmounting filesystems will not affect the rest of the system, except for filesystems which are explicitly marked as shared (with <strong>mount --make-shared</strong>; see <em>/proc/self/mountinfo</em> or <strong>findmnt -o+PROPAGATION</strong> for the <strong>shared</strong> flags). For further details, see <strong>mount_namespaces</strong>(7).</p>
+<p><strong>unshare</strong> since util-linux version 2.27 automatically sets propagation to <strong>private</strong> in a new mount namespace to make sure that the new namespace is really unshared. It's possible to disable this feature with option <strong>--propagation unchanged</strong>. Note that <strong>private</strong> is the kernel default.</p>
+</dd>
+<dt><strong>UTS namespace</strong></dt>
+<dd><p>Setting hostname or domainname will not affect the rest of the system. For further details, see <strong>uts_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>IPC namespace</strong></dt>
+<dd><p>The process will have an independent namespace for POSIX message queues as well as System V message queues, semaphore sets and shared memory segments. For further details, see <strong>ipc_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>network namespace</strong></dt>
+<dd><p>The process will have independent IPv4 and IPv6 stacks, IP routing tables, firewall rules, the <em>/proc/net</em> and <em>/sys/class/net</em> directory trees, sockets, etc. For further details, see <strong>network_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>PID namespace</strong></dt>
+<dd><p>Children will have a distinct set of PID-to-process mappings from their parent. For further details, see <strong>pid_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>cgroup namespace</strong></dt>
+<dd><p>The process will have a virtualized view of <em>/proc/self/cgroup</em>, and new cgroup mounts will be rooted at the namespace cgroup root. For further details, see <strong>cgroup_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>user namespace</strong></dt>
+<dd><p>The process will have a distinct set of UIDs, GIDs and capabilities. For further details, see <strong>user_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>time namespace</strong></dt>
+<dd><p>The process can have a distinct view of <strong>CLOCK_MONOTONIC</strong> and/or <strong>CLOCK_BOOTTIME</strong> which can be changed using <em>/proc/self/timens_offsets</em>. For further details, see <strong>time_namespaces</strong>(7).</p>
+</dd>
+</dl>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-i</strong>,<strong> --ipc</strong>[<strong>=<em>file</em></strong>]</dt>
+<dd><p>Unshare the IPC namespace. If <em>file is specified, then a persistent</em> namespace is created by a bind mount.</p>
+</dd>
+<dt><strong>-m</strong>,<strong> --mount</strong>[<strong>=<em>file</em></strong>]</dt>
+<dd><p>Unshare the mount namespace. If <em>file is specified, then a persistent</em> namespace is created by a bind mount. Note that <em>file must be located on a mount whose propagation type</em> is not <strong>shared</strong><em> (or an error results).</em> Use the command <strong>findmnt -o+PROPAGATION</strong> when not sure about the current setting. See also the examples below.</p>
+</dd>
+<dt><strong>-n</strong>,<strong> --net</strong>[<strong>=<em>file</em></strong>]</dt>
+<dd><p>Unshare the network namespace. If <em>file is specified, then a persistent</em> namespace is created by a bind mount.</p>
+</dd>
+<dt><strong>-p</strong>,<strong> --pid</strong>[<strong>=<em>file</em></strong>]</dt>
+<dd><p>Unshare the PID namespace. If <em>file is specified, then a persistent</em> namespace is created by a bind mount. (Creation of a persistent PID namespace will fail if the <strong>--fork</strong> option is not also specified.)</p>
+<p>See also the <strong>--fork</strong><em> and</em> <strong>--mount-proc</strong><em> options.</em></p>
+</dd>
+<dt><strong>-u</strong>,<strong> --uts</strong>[<strong>=<em>file</em></strong>]</dt>
+<dd><p>Unshare the UTS namespace. If <em>file is specified, then a persistent</em> namespace is created by a bind mount.</p>
+</dd>
+<dt><strong>-U</strong>,<strong> --user</strong>[<strong>=<em>file</em></strong>]</dt>
+<dd><p>Unshare the user namespace. If <em>file is specified, then a persistent</em> namespace is created by a bind mount.</p>
+</dd>
+<dt><strong>-C</strong>,<strong> --cgroup</strong>[<strong>=<em>file</em></strong>]</dt>
+<dd><p>Unshare the cgroup namespace. If <em>file is specified then persistent namespace is created</em> by bind mount.</p>
+</dd>
+<dt><strong>-T</strong>,<strong> --time</strong>[<strong>=<em>file</em></strong>]</dt>
+<dd><p>Unshare the time namespace. If <em>file is specified then a persistent</em> namespace is created by a bind mount. The <strong>--monotonic</strong><em> and</em> <strong>--boottime</strong><em> options can be used to specify the corresponding</em> offset in the time namespace.</p>
+</dd>
+<dt><strong>-f</strong>,<strong> --fork</strong></dt>
+<dd><p>Fork the specified <em>program</em> as a child process of <strong>unshare</strong> rather than running it directly. This is useful when creating a new PID namespace. Note that when <strong>unshare</strong> is waiting for the child process, then it ignores SIGINT and SIGTERM and does not forward any signals to the child. It is necessary to send signals to the child process.</p>
+</dd>
+<dt><strong>--keep-caps</strong></dt>
+<dd><p>When the <strong>--user</strong> option is given, ensure that capabilities granted in the user namespace are preserved in the child process.</p>
+</dd>
+<dt><strong>--kill-child</strong>[<strong>=<em>signame</em></strong>]</dt>
+<dd><p>When <strong>unshare</strong> terminates, have <em>signame</em> be sent to the forked child process. Combined with <strong>--pid</strong> this allows for an easy and reliable killing of the entire process tree below <strong>unshare</strong>. If not given, <em>signame</em> defaults to <strong>SIGKILL</strong>. This option implies <strong>--fork</strong>.</p>
+</dd>
+<dt><strong>--mount-proc</strong>[<strong>=<em>mountpoint</em></strong>]</dt>
+<dd><p>Just before running the program, mount the proc filesystem at <em>mountpoint</em> (default is /proc). This is useful when creating a new PID namespace. It also implies creating a new mount namespace since the /proc mount would otherwise mess up existing programs on the system. The new proc filesystem is explicitly mounted as private (with MS_PRIVATE|MS_REC).</p>
+</dd>
+<dt><strong>--map-user=</strong><em>uid|name</em></dt>
+<dd><p>Run the program only after the current effective user ID has been mapped to <em>uid.</em> If this option is specified multiple times, the last occurrence takes precedence. This option implies <strong>--user</strong>.</p>
+</dd>
+<dt><strong>--map-group=</strong><em>gid|name</em></dt>
+<dd><p>Run the program only after the current effective group ID has been mapped to <em>gid</em>. If this option is specified multiple times, the last occurrence takes precedence. This option implies <strong>--setgroups=deny</strong> and <strong>--user</strong>.</p>
+</dd>
+<dt><strong>-r</strong>,<strong> --map-root-user</strong></dt>
+<dd><p>Run the program only after the current effective user and group IDs have been mapped to the superuser UID and GID in the newly created user namespace. This makes it possible to conveniently gain capabilities needed to manage various aspects of the newly created namespaces (such as configuring interfaces in the network namespace or mounting filesystems in the mount namespace) even when run unprivileged. As a mere convenience feature, it does not support more sophisticated use cases, such as mapping multiple ranges of UIDs and GIDs. This option implies <strong>--setgroups=deny</strong> and <strong>--user</strong>. This option is equivalent to <strong>--map-user=0 --map-group=0</strong>.</p>
+</dd>
+<dt><strong>-c</strong>,<strong> --map-current-user</strong></dt>
+<dd><p>Run the program only after the current effective user and group IDs have been mapped to the same UID and GID in the newly created user namespace. This option implies <strong>--setgroups=deny</strong> and <strong>--user</strong>. This option is equivalent to <strong>--map-user=$(id -ru) --map-group=$(id -rg)</strong>.</p>
+</dd>
+<dt><strong>--propagation private</strong>|<strong>shared</strong>|<strong>slave</strong>|<strong>unchanged</strong></dt>
+<dd><p>Recursively set the mount propagation flag in the new mount namespace. The default is to set the propagation to <em>private</em>. It is possible to disable this feature with the argument <strong>unchanged</strong>. The option is silently ignored when the mount namespace (<strong>--mount</strong>) is not requested.</p>
+</dd>
+<dt><strong>--setgroups allow</strong>|<strong>deny</strong></dt>
+<dd><p>Allow or deny the <strong>setgroups</strong>(2) system call in a user namespace.</p>
+</dd>
+</dl>
+<p>To be able to call <strong>setgroups</strong>(2), the calling process must at least have CAP_SETGID. But since Linux 3.19 a further restriction applies: the kernel gives permission to call <strong>setgroups</strong>(2) only after the GID map (<strong>/proc/</strong><em>pid</em><strong>/gid_map</strong>) has been set. The GID map is writable by root when <strong>setgroups</strong>(2) is enabled (i.e., <strong>allow</strong>, the default), and the GID map becomes writable by unprivileged processes when <strong>setgroups</strong>(2) is permanently disabled (with <strong>deny</strong>).</p>
+<dl>
+<dt><strong>-R</strong>,<strong> --root=<em>dir</em></strong></dt>
+<dd><p>run the command with root directory set to <em>dir.</em></p>
+</dd>
+<dt><strong>-w</strong>,<strong> --wd=<em>dir</em></strong></dt>
+<dd><p>change working directory to <em>dir.</em></p>
+</dd>
+<dt><strong>-S</strong>,<strong> --setuid <em>uid</em></strong></dt>
+<dd><p>Set the user ID which will be used in the entered namespace.</p>
+</dd>
+<dt><strong>-G</strong>,<strong> --setgid <em>gid</em></strong></dt>
+<dd><p>Set the group ID which will be used in the entered namespace and drop supplementary groups.</p>
+</dd>
+<dt><strong>--monotonic</strong><em> offset</em></dt>
+<dd><p>Set the offset of <strong>CLOCK_MONOTONIC</strong> which will be used in the entered time namespace. This option requires unsharing a time namespace with <strong>--time</strong><em>.</em></p>
+</dd>
+<dt><strong>--boottime</strong><em> offset</em></dt>
+<dd><p>Set the offset of <strong>CLOCK_BOOTTIME</strong> which will be used in the entered time namespace. This option requires unsharing a time namespace with <strong>--time</strong><em>.</em></p>
+</dd>
+<dt><strong>-V</strong>,<strong> --version</strong></dt>
+<dd><p>Display version information and exit.</p>
+</dd>
+<dt><strong>-h</strong>,<strong> --help</strong></dt>
+<dd><p>Display help text and exit.</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>The proc and sysfs filesystems mounting as root in a user namespace have to be restricted so that a less privileged user can not get more access to sensitive files that a more privileged user made unavailable. In short the rule for proc and sysfs is as close to a bind mount as possible.</p>
+<h1>EXAMPLES</h1>
+<p>The following command creates a PID namespace, using <strong>--fork</strong> to ensure that the executed command is performed in a child process that (being the first process in the namespace) has PID 1. The <strong>--mount-proc</strong> option ensures that a new mount namespace is also simultaneously created and that a new <strong>proc</strong>(5) filesystem is mounted that contains information corresponding to the new PID namespace. When the <strong>readlink</strong> command terminates, the new namespaces are automatically torn down.</p>
+<pre><code># unshare --fork --pid --mount-proc readlink /proc/self
+1</code></pre>
+<p>As an unprivileged user, create a new user namespace where the user's credentials are mapped to the root IDs inside the namespace:</p>
+<pre><code>$ id -u; id -g
+1000
+1000
+$ unshare --user --map-root-user \
+ sh -c &#39;whoami; cat /proc/self/uid_map /proc/self/gid_map&#39;
+root
+         0       1000          1
+         0       1000          1</code></pre>
+<p>The first of the following commands creates a new persistent UTS namespace and modifies the hostname as seen in that namespace. The namespace is then entered with <strong>nsenter</strong>(1) in order to display the modified hostname; this step demonstrates that the UTS namespace continues to exist even though the namespace had no member processes after the <strong>unshare</strong> command terminated. The namespace is then destroyed by removing the bind mount.</p>
+<pre><code># touch /root/uts-ns
+# unshare --uts=/root/uts-ns hostname FOO
+# nsenter --uts=/root/uts-ns hostname
+FOO
+# umount /root/uts-ns</code></pre>
+<p>The following commands establish a persistent mount namespace referenced by the bind mount <em>/root/namespaces/mnt</em>. In order to ensure that the creation of that bind mount succeeds, the parent directory (<em>/root/namespaces</em>) is made a bind mount whose propagation type is not <strong>shared</strong>.</p>
+<pre><code># mount --bind /root/namespaces /root/namespaces
+# mount --make-private /root/namespaces
+# touch /root/namespaces/mnt
+# unshare --mount=/root/namespaces/mnt</code></pre>
+<p>The following commands demonstrate the use of the <strong>--kill-child</strong> option when creating a PID namespace, in order to ensure that when <strong>unshare</strong> is killed, all of the processes within the PID namespace are killed.</p>
+<pre><code># set +m # Don&#39;t print job status messages
+# unshare --pid --fork --mount-proc --kill-child -- \
+ bash --norc -c &#39;(sleep 555 &amp;) &amp;&amp; (ps a &amp;) &amp;&amp; sleep 999&#39; &amp;
+[1] 53456
+#     PID TTY      STAT   TIME COMMAND
+      1 pts/3    S+     0:00 sleep 999
+      3 pts/3    S+     0:00 sleep 555
+      5 pts/3    R+     0:00 ps a
+
+# ps h -o &#39;comm&#39; $! # Show that background job is unshare(1)
+unshare
+# kill $! # Kill unshare(1)
+# pidof sleep</code></pre>
+<p>The <strong>pidof</strong> command prints no output, because the <strong>sleep</strong> processes have been killed. More precisely, when the <strong>sleep</strong> process that has PID 1 in the namespace (i.e., the namespace's init process) was killed, this caused all other processes in the namespace to be killed. By contrast, a similar series of commands where the <strong>--kill-child</strong> option is not used shows that when <strong>unshare</strong> terminates, the processes in the PID namespace are not killed:</p>
+<pre><code># unshare --pid --fork --mount-proc -- \
+ bash --norc -c &#39;(sleep 555 &amp;) &amp;&amp; (ps a &amp;) &amp;&amp; sleep 999&#39; &amp;
+[1] 53479
+#     PID TTY      STAT   TIME COMMAND
+      1 pts/3    S+     0:00 sleep 999
+      3 pts/3    S+     0:00 sleep 555
+      5 pts/3    R+     0:00 ps a
+
+# kill $!
+# pidof sleep
+53482 53480</code></pre>
+<p>The following example demonstrates the creation of a time namespace where the boottime clock is set to a point several years in the past:</p>
+<pre><code># uptime -p # Show uptime in initial time namespace
+up 21 hours, 30 minutes
+# unshare --time --fork --boottime 300000000 uptime -p
+up 9 years, 28 weeks, 1 day, 2 hours, 50 minutes</code></pre>
+<h1>AUTHORS</h1>
+<p><a href="dottedmag@dottedmag.net">Mikhail Gusarov</a><br />
+<a href="kzak@redhat.com">Karel Zak</a></p>
+<h1>SEE ALSO</h1>
+<p><strong>clone</strong>(2), <strong>unshare</strong>(2), <strong>namespaces</strong>(7), <strong>mount</strong>(8)</p>
+<h1>AVAILABILITY</h1>
+<p>The unshare command is part of the util-linux package and is available from https://www.kernel.org/pub/linux/utils/util-linux/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

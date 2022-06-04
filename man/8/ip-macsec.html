@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command ip-macsec</title><meta name="description" content="Linux command ip-macsec MACsec device configuration"><meta name="keywords" content="linux, command, ip-macsec, bsd, MACsec device configuration"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>ip-macsec - MACsec device configuration</p>
+<h1>SYNOPSIS</h1>
+<p><strong>ip link add link </strong><em>DEVICE</em><strong> name </strong><em>NAME</em><strong> type macsec </strong> [ [ <strong>address</strong><em> &lt;lladdr&gt;</em> ] <strong>port</strong><em> PORT</em> | <strong>sci</strong><em> &lt;u64&gt;</em> ] [ <strong>cipher</strong> { <strong>default</strong> | <strong>gcm-aes-128</strong> | <strong>gcm-aes-256"</strong>}<strong>]</strong>[" <strong>icvlen</strong><em> ICVLEN</em> ] [ <strong>encrypt</strong> { <strong>on</strong> | <strong>off</strong> } ] [ <strong>send_sci</strong> { <strong>on</strong> | <strong>off</strong> } ] [ <strong>end_station</strong> { <strong>on</strong> | <strong>off</strong> } ] [ <strong>scb</strong> { <strong>on</strong> | <strong>off</strong> } ] [ <strong>protect</strong> { <strong>on</strong> | <strong>off</strong> } ] [ <strong>replay</strong> { <strong>on</strong> | <strong>off</strong> } ] [ <strong>window</strong><em> WINDOW</em> ] [ <strong>validate</strong> { <strong>strict</strong> | <strong>check</strong> | <strong>disabled</strong> } ] [ <strong>encodingsa</strong><em> SA</em> ] [ <strong>offload</strong> { <strong>off</strong> | <strong>phy</strong> | <strong>mac</strong> } ]</p>
+<p><strong>ip macsec add </strong><em>DEV</em><strong> tx sa</strong> { <em>0..3</em> } [ <em>OPTS</em> ] <strong>key</strong><em> ID KEY</em><br />
+<strong>ip macsec set </strong><em>DEV</em><strong> tx sa</strong> { <em>0..3</em> } [ <em>OPTS</em> ]<br />
+<strong>ip macsec del </strong><em>DEV</em><strong> tx sa</strong> { <em>0..3</em> }</p>
+<p><strong>ip macsec add </strong><em>DEV</em><strong> rx </strong><em>SCI</em> [<strong> on </strong>|<strong> off </strong>]<br />
+<strong>ip macsec set </strong><em>DEV</em><strong> rx </strong><em>SCI</em> [<strong> on </strong>|<strong> off </strong>]<br />
+<strong>ip macsec del </strong><em>DEV</em><strong> rx </strong><em>SCI</em></p>
+<p><strong>ip macsec add </strong><em>DEV</em><strong> rx </strong><em>SCI</em><strong> sa</strong> { <em>0..3</em> } [ <em>OPTS</em> ] <strong>key</strong><em> ID KEY</em><br />
+<strong>ip macsec set </strong><em>DEV</em><strong> rx </strong><em>SCI</em><strong> sa</strong> { <em>0..3</em> } [ <em>OPTS</em> ]<br />
+<strong>ip macsec del </strong><em>DEV</em><strong> rx </strong><em>SCI</em><strong> sa</strong> { <em>0..3</em> }</p>
+<p><strong>ip macsec offload </strong><em>DEV</em> { <strong>off</strong> | <strong>phy</strong> | <strong>mac</strong> }</p>
+<p><strong>ip macsec show</strong> [<em> DEV </em>]</p>
+<p><em>OPTS</em> := [ <strong>pn</strong> { <em>1..2^32-1</em> } ] [ <strong>on</strong> | <strong>off</strong> ]<br />
+<em>SCI</em> := { <strong>sci</strong> <em>&lt;u64&gt;</em> | <strong>port</strong> <em>PORT</em> <strong>address</strong><em> &lt;lladdr&gt; </em> }<br />
+<em>PORT</em> := { <em>1..2^16-1</em> }</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>ip macsec</strong> commands are used to configure transmit secure associations and receive secure channels and their secure associations on a MACsec device created with the <strong>ip link add</strong> command using the <em>macsec</em> type.</p>
+<h1>EXAMPLES</h1>
+<h2>Create a MACsec device on link eth0 (offload is disabled by default)</h2>
+<pre><code># ip link add link eth0 macsec0 type macsec port 11 encrypt on
+</code></pre>
+<h2>Configure a secure association on that device</h2>
+<pre><code># ip macsec add macsec0 tx sa 0 pn 1024 on key 01 81818181818181818181818181818181
+</code></pre>
+<h2>Configure a receive channel</h2>
+<pre><code># ip macsec add macsec0 rx port 1234 address c6:19:52:8f:e6:a0
+</code></pre>
+<h2>Configure a receive association</h2>
+<pre><code># ip macsec add macsec0 rx port 1234 address c6:19:52:8f:e6:a0 sa 0 pn 1 on key 00 82828282828282828282828282828282
+</code></pre>
+<h2>Display MACsec configuration</h2>
+<pre><code># ip macsec show
+</code></pre>
+<h2>Configure offloading on an interface</h2>
+<pre><code># ip macsec offload macsec0 phy
+</code></pre>
+<h2>Configure offloading upon MACsec device creation</h2>
+<pre><code># ip link add link eth0 macsec0 type macsec port 11 encrypt on offload mac
+</code></pre>
+<h1>NOTES</h1>
+<p>This tool can be used to configure the 802.1AE keys of the interface. Note that 802.1AE uses GCM-AES with a initialization vector (IV) derived from the packet number. The same key must not be used with the same IV more than once. Instead, keys must be frequently regenerated and distributed. This tool is thus mostly for debugging and testing, or in combination with a user-space application that reconfigures the keys. It is wrong to just configure the keys statically and assume them to work indefinitely. The suggested and standardized way for key management is 802.1X-2010, which is implemented by wpa_supplicant.</p>
+<h1>SEE ALSO</h1>
+<p><br />
+<strong>ip-link</strong>(8) <strong>wpa_supplicant</strong>(8)</p>
+<h1>AUTHOR</h1>
+<p>Sabrina Dubroca &lt;sd@queasysnail.net&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

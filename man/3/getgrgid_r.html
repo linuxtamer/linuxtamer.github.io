@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command getgrgid_r</title><meta name="description" content="Linux command getgrgid_r get group file entry"><meta name="keywords" content="linux, command, getgrgid_r, bsd, get group file entry"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getgrnam, getgrnam_r, getgrgid, getgrgid_r - get group file entry</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;grp.h&gt;
+
+struct group *getgrnam(const char *name);
+
+struct group *getgrgid(gid_t gid);
+
+int getgrnam_r(const char *name, struct group *grp,
+ char *buf, size_t buflen, struct group **result);
+
+int getgrgid_r(gid_t gid, struct group *grp,
+ char *buf, size_t buflen, struct group **result);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>getgrnam_r</strong>(), <strong>getgrgid_r</strong>():</p>
+<blockquote>
+<p>_POSIX_C_SOURCE || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE || _SVID_SOURCE</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>The <strong>getgrnam</strong>() function returns a pointer to a structure containing the broken-out fields of the record in the group database (e.g., the local group file <em>/etc/group</em>, NIS, and LDAP) that matches the group name <em>name</em>.</p>
+<p>The <strong>getgrgid</strong>() function returns a pointer to a structure containing the broken-out fields of the record in the group database that matches the group ID <em>gid</em>.</p>
+<p>The <em>group</em> structure is defined in <em>&lt;grp.h&gt;</em> as follows:</p>
+<pre><code>struct group {
+    char   *gr_name;        /* group name */
+    char   *gr_passwd;      /* group password */
+    gid_t   gr_gid;         /* group ID */
+    char  **gr_mem;         /* NULL-terminated array of pointers
+                               to names of group members */
+};</code></pre>
+<p>For more information about the fields of this structure, see <strong>group</strong>(5).</p>
+<p>The <strong>getgrnam_r</strong>() and <strong>getgrgid_r</strong>() functions obtain the same information as <strong>getgrnam</strong>() and <strong>getgrgid</strong>(), but store the retrieved <em>group</em> structure in the space pointed to by <em>grp</em>. The string fields pointed to by the members of the <em>group</em> structure are stored in the buffer <em>buf</em> of size <em>buflen</em>. A pointer to the result (in case of success) or NULL (in case no entry was found or an error occurred) is stored in <em>*result</em>.</p>
+<p>The call</p>
+<p>sysconf(_SC_GETGR_R_SIZE_MAX)</p>
+<p>returns either -1, without changing <em>errno</em>, or an initial suggested size for <em>buf</em>. (If this size is too small, the call fails with <strong>ERANGE</strong>, in which case the caller can retry with a larger buffer.)</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>getgrnam</strong>() and <strong>getgrgid</strong>() functions return a pointer to a <em>group</em> structure, or NULL if the matching entry is not found or an error occurs. If an error occurs, <em>errno</em> is set appropriately. If one wants to check <em>errno</em> after the call, it should be set to zero before the call.</p>
+<p>The return value may point to a static area, and may be overwritten by subsequent calls to <strong>getgrent</strong>(3), <strong>getgrgid</strong>(), or <strong>getgrnam</strong>(). (Do not pass the returned pointer to <strong>free</strong>(3).)</p>
+<p>On success, <strong>getgrnam_r</strong>() and <strong>getgrgid_r</strong>() return zero, and set <em>*result</em> to <em>grp</em>. If no matching group record was found, these functions return 0 and store NULL in <em>*result</em>. In case of error, an error number is returned, and NULL is stored in <em>*result</em>.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>0</strong> or <strong>ENOENT</strong> or <strong>ESRCH</strong> or <strong>EBADF</strong> or <strong>EPERM</strong> or ...</dt>
+<dd><p>The given <em>name</em> or <em>gid</em> was not found.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>A signal was caught; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>I/O error.</p>
+</dd>
+<dt><strong>EMFILE</strong></dt>
+<dd><p>The per-process limit on the number of open file descriptors has been reached.</p>
+</dd>
+<dt><strong>ENFILE</strong></dt>
+<dd><p>The system-wide limit on the total number of open files has been reached.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient memory to allocate <em>group</em> structure.</p>
+</dd>
+<dt><strong>ERANGE</strong></dt>
+<dd><p>Insufficient buffer space supplied.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/group</em></dt>
+<dd><p>local group database file</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getgrnam</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:grnam locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getgrgid</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:grgid locale</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getgrnam_r</strong>(),<br />
+<strong>getgrgid_r</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4, 4.3BSD.</p>
+<h1>NOTES</h1>
+<p>The formulation given above under "RETURN VALUE" is from POSIX.1. It does not call "not found" an error, hence does not specify what value <em>errno</em> might have in this situation. But that makes it impossible to recognize errors. One might argue that according to POSIX <em>errno</em> should be left unchanged if an entry is not found. Experiments on various UNIX-like systems show that lots of different values occur in this situation: 0, ENOENT, EBADF, ESRCH, EWOULDBLOCK, EPERM, and probably others.</p>
+<h1>SEE ALSO</h1>
+<p><strong>endgrent</strong>(3), <strong>fgetgrent</strong>(3), <strong>getgrent</strong>(3), <strong>getpwnam</strong>(3), <strong>setgrent</strong>(3), <strong>group</strong>(5)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

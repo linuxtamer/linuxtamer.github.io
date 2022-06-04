@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command strtok</title><meta name="description" content="Linux command strtok extract tokens from strings"><meta name="keywords" content="linux, command, strtok, bsd, extract tokens from strings"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>strtok, strtok_r - extract tokens from strings</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;string.h&gt;
+
+char *strtok(char *str, const char *delim);
+
+char *strtok_r(char *str, const char *delim, char **saveptr);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>strtok_r</strong>(): _POSIX_C_SOURCE || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE || _SVID_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>strtok</strong>() function breaks a string into a sequence of zero or more nonempty tokens. On the first call to <strong>strtok</strong>(), the string to be parsed should be specified in <em>str</em>. In each subsequent call that should parse the same string, <em>str</em> must be NULL.</p>
+<p>The <em>delim</em> argument specifies a set of bytes that delimit the tokens in the parsed string. The caller may specify different strings in <em>delim</em> in successive calls that parse the same string.</p>
+<p>Each call to <strong>strtok</strong>() returns a pointer to a null-terminated string containing the next token. This string does not include the delimiting byte. If no more tokens are found, <strong>strtok</strong>() returns NULL.</p>
+<p>A sequence of calls to <strong>strtok</strong>() that operate on the same string maintains a pointer that determines the point from which to start searching for the next token. The first call to <strong>strtok</strong>() sets this pointer to point to the first byte of the string. The start of the next token is determined by scanning forward for the next nondelimiter byte in <em>str</em>. If such a byte is found, it is taken as the start of the next token. If no such byte is found, then there are no more tokens, and <strong>strtok</strong>() returns NULL. (A string that is empty or that contains only delimiters will thus cause <strong>strtok</strong>() to return NULL on the first call.)</p>
+<p>The end of each token is found by scanning forward until either the next delimiter byte is found or until the terminating null byte ('\0') is encountered. If a delimiter byte is found, it is overwritten with a null byte to terminate the current token, and <strong>strtok</strong>() saves a pointer to the following byte; that pointer will be used as the starting point when searching for the next token. In this case, <strong>strtok</strong>() returns a pointer to the start of the found token.</p>
+<p>From the above description, it follows that a sequence of two or more contiguous delimiter bytes in the parsed string is considered to be a single delimiter, and that delimiter bytes at the start or end of the string are ignored. Put another way: the tokens returned by <strong>strtok</strong>() are always nonempty strings. Thus, for example, given the string "<em>aaa;;bbb,</em>", successive calls to <strong>strtok</strong>() that specify the delimiter string "<em>;,</em>" would return the strings "<em>aaa</em>" and "<em>bbb</em>", and then a null pointer.</p>
+<p>The <strong>strtok_r</strong>() function is a reentrant version of <strong>strtok</strong>(). The <em>saveptr</em> argument is a pointer to a <em>char *</em> variable that is used internally by <strong>strtok_r</strong>() in order to maintain context between successive calls that parse the same string.</p>
+<p>On the first call to <strong>strtok_r</strong>(), <em>str</em> should point to the string to be parsed, and the value of <em>*saveptr</em> is ignored (but see NOTES). In subsequent calls, <em>str</em> should be NULL, and <em>saveptr</em> (and the buffer that it points to) should be unchanged since the previous call.</p>
+<p>Different strings may be parsed concurrently using sequences of calls to <strong>strtok_r</strong>() that specify different <em>saveptr</em> arguments.</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>strtok</strong>() and <strong>strtok_r</strong>() functions return a pointer to the next token, or NULL if there are no more tokens.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>strtok</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:strtok</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>strtok_r</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<dl>
+<dt><strong>strtok</strong>()</dt>
+<dd><p>POSIX.1-2001, POSIX.1-2008, C89, C99, SVr4, 4.3BSD.</p>
+</dd>
+<dt><strong>strtok_r</strong>()</dt>
+<dd><p>POSIX.1-2001, POSIX.1-2008.</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>On some implementations, <em>*saveptr</em> is required to be NULL on the first call to <strong>strtok_r</strong>() that is being used to parse <em>str</em>.</p>
+<h1>BUGS</h1>
+<p>Be cautious when using these functions. If you do use them, note that:</p>
+<ul>
+<li><p>These functions modify their first argument.</p></li>
+<li><p>These functions cannot be used on constant strings.</p></li>
+<li><p>The identity of the delimiting byte is lost.</p></li>
+<li><p>The <strong>strtok</strong>() function uses a static buffer while parsing, so it's not thread safe. Use <strong>strtok_r</strong>() if this matters to you.</p></li>
+</ul>
+<h1>EXAMPLES</h1>
+<p>The program below uses nested loops that employ <strong>strtok_r</strong>() to break a string into a two-level hierarchy of tokens. The first command-line argument specifies the string to be parsed. The second argument specifies the delimiter byte(s) to be used to separate that string into "major" tokens. The third argument specifies the delimiter byte(s) to be used to separate the "major" tokens into subtokens.</p>
+<p>An example of the output produced by this program is the following:</p>
+<pre><code>$ ./a.out &#39;a/bbb///cc;xxx:yyy:&#39; &#39;:;&#39; &#39;/&#39;
+1: a/bbb///cc
+         --&gt; a
+         --&gt; bbb
+         --&gt; cc
+2: xxx
+         --&gt; xxx
+3: yyy
+         --&gt; yyy</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    char *str1, *str2, *token, *subtoken;
+    char *saveptr1, *saveptr2;
+
+    if (argc != 4) {
+        fprintf(stderr, &quot;Usage: %s string delim subdelim\n&quot;,
+                argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    for (int j = 1, str1 = argv[1]; ; j++, str1 = NULL) {
+        token = strtok_r(str1, argv[2], &amp;saveptr1);
+        if (token == NULL)
+            break;
+        printf(&quot;%d: %s\n&quot;, j, token);
+
+        for (str2 = token; ; str2 = NULL) {
+            subtoken = strtok_r(str2, argv[3], &amp;saveptr2);
+            if (subtoken == NULL)
+                break;
+            printf(&quot;	 --&gt; %s\n&quot;, subtoken);
+        }
+    }
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<p>Another example program using <strong>strtok</strong>() can be found in <strong>getaddrinfo_a</strong>(3).</p>
+<h1>SEE ALSO</h1>
+<p><strong>index</strong>(3), <strong>memchr</strong>(3), <strong>rindex</strong>(3), <strong>strchr</strong>(3), <strong>string</strong>(3), <strong>strpbrk</strong>(3), <strong>strsep</strong>(3), <strong>strspn</strong>(3), <strong>strstr</strong>(3), <strong>wcstok</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-fstab-generator</title><meta name="description" content="Linux command systemd-fstab-generator Unit generator for /etc/fstab"><meta name="keywords" content="linux, command, systemd-fstab-generator, bsd, Unit generator for /etc/fstab"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-fstab-generator - Unit generator for /etc/fstab</p>
+<h1>SYNOPSIS</h1>
+<p>/lib/systemd/system-generators/systemd-fstab-generator</p>
+<h1>DESCRIPTION</h1>
+<p>systemd-fstab-generator is a generator that translates /etc/fstab (see <strong>fstab</strong>(5) for details) into native systemd units early at boot and when configuration of the system manager is reloaded. This will instantiate mount and swap units as necessary.</p>
+<p>The <em>passno</em> field is treated like a simple boolean, and the ordering information is discarded. However, if the root file system is checked, it is checked before all the other file systems.</p>
+<p>See <strong>systemd.mount</strong>(5) and <strong>systemd.swap</strong>(5) for more information about special /etc/fstab mount options this generator understands.</p>
+<p>One special topic is handling of symbolic links. Historical init implementations supported symlinks in /etc/fstab. Because mount units will refuse mounts where the target is a symbolic link, this generator will resolve any symlinks as far as possible when processing /etc/fstab in order to enhance backwards compatibility. If a symlink target does not exist at the time that this generator runs, it is assumed that the symlink target is the final target of the mount.</p>
+<p>systemd-fstab-generator implements <strong>systemd.generator</strong>(7).</p>
+<h1>KERNEL COMMAND LINE</h1>
+<p>systemd-fstab-generator understands the following kernel command line parameters:</p>
+<p><em>fstab=</em>, <em>rd.fstab=</em></p>
+<blockquote>
+<p>Takes a boolean argument. Defaults to "yes". If "no", causes the generator to ignore any mounts or swap devices configured in /etc/fstab. <em>rd.fstab=</em> is honored only by the initial RAM disk (initrd) while <em>fstab=</em> is honored by both the main system and the initrd.</p>
+</blockquote>
+<p><em>root=</em></p>
+<blockquote>
+<p>Takes the root filesystem to mount in the initrd. <em>root=</em> is honored by the initrd.</p>
+</blockquote>
+<p><em>rootfstype=</em></p>
+<blockquote>
+<p>Takes the root filesystem type that will be passed to the mount command. <em>rootfstype=</em> is honored by the initrd.</p>
+</blockquote>
+<p><em>rootflags=</em></p>
+<blockquote>
+<p>Takes the root filesystem mount options to use. <em>rootflags=</em> is honored by the initrd.</p>
+<p>Note that unlike most kernel command line options this setting does not override settings made in configuration files (specifically: the mount option string in /etc/fstab). See <strong>systemd-remount-fs.service</strong>(8).</p>
+</blockquote>
+<p><em>mount.usr=</em></p>
+<blockquote>
+<p>Takes the /usr/ filesystem to be mounted by the initrd. If <em>mount.usrfstype=</em> or <em>mount.usrflags=</em> is set, then <em>mount.usr=</em> will default to the value set in <em>root=</em>.</p>
+<p>Otherwise, this parameter defaults to the /usr/ entry found in /etc/fstab on the root filesystem.</p>
+<p><em>mount.usr=</em> is honored by the initrd.</p>
+</blockquote>
+<p><em>mount.usrfstype=</em></p>
+<blockquote>
+<p>Takes the /usr/ filesystem type that will be passed to the mount command. If <em>mount.usr=</em> or <em>mount.usrflags=</em> is set, then <em>mount.usrfstype=</em> will default to the value set in <em>rootfstype=</em>.</p>
+<p>Otherwise, this value will be read from the /usr/ entry in /etc/fstab on the root filesystem.</p>
+<p><em>mount.usrfstype=</em> is honored by the initrd.</p>
+</blockquote>
+<p><em>mount.usrflags=</em></p>
+<blockquote>
+<p>Takes the /usr/ filesystem mount options to use. If <em>mount.usr=</em> or <em>mount.usrfstype=</em> is set, then <em>mount.usrflags=</em> will default to the value set in <em>rootflags=</em>.</p>
+<p>Otherwise, this value will be read from the /usr/ entry in /etc/fstab on the root filesystem.</p>
+<p><em>mount.usrflags=</em> is honored by the initrd.</p>
+</blockquote>
+<p><em>systemd.volatile=</em></p>
+<blockquote>
+<p>Controls whether the system shall boot up in volatile mode. Takes a boolean argument or the special value <strong>state</strong>.</p>
+<p>If false (the default), this generator makes no changes to the mount tree and the system is booted up in normal mode.</p>
+<p>If true the generator ensures <strong>systemd-volatile-root.service</strong>(8) is run as part of the initial RAM disk ("initrd"). This service changes the mount table before transitioning to the host system, so that a volatile memory file system ("tmpfs") is used as root directory, with only /usr/ mounted into it from the configured root file system, in read-only mode. This way the system operates in fully stateless mode, with all configuration and state reset at boot and lost at shutdown, as /etc/ and /var/ will be served from the (initially unpopulated) volatile memory file system.</p>
+<p>If set to <strong>state</strong> the generator will leave the root directory mount point unaltered, however will mount a "tmpfs" file system to /var/. In this mode the normal system configuration (i.e. the contents of "/etc/") is in effect (and may be modified during system runtime), however the system state (i.e. the contents of "/var/") is reset at boot and lost at shutdown.</p>
+<p>If this setting is set to "overlay" the root file system is set up as "overlayfs" mount combining the read-only root directory with a writable "tmpfs", so that no modifications are made to disk, but the file system may be modified nonetheless with all changes being lost at reboot.</p>
+<p>Note that in none of these modes the root directory, /etc/, /var/ or any other resources stored in the root file system are physically removed. Its thus safe to boot a system that is normally operated in non-volatile mode temporarily into volatile mode, without losing data.</p>
+<p>Note that with the exception of "overlay" mode, enabling this setting will only work correctly on operating systems that can boot up with only /usr/ mounted, and are able to automatically populate /etc/, and also /var/ in case of "systemd.volatile=yes".</p>
+</blockquote>
+<p><em>systemd.swap</em></p>
+<blockquote>
+<p>Takes a boolean argument or enables the option if specified without an argument. If disabled, causes the generator to ignore any swap devices configured in /etc/fstab. Defaults to enabled.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>fstab</strong>(5), <strong>systemd.mount</strong>(5), <strong>systemd.swap</strong>(5), <strong>systemd-cryptsetup-generator</strong>(8), <strong>kernel-command-line</strong>(7)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

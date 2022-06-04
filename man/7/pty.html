@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pty</title><meta name="description" content="Linux command pty pseudoterminal interfaces"><meta name="keywords" content="linux, command, pty, bsd, pseudoterminal interfaces"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pty - pseudoterminal interfaces</p>
+<h1>DESCRIPTION</h1>
+<p>A pseudoterminal (sometimes abbreviated "pty") is a pair of virtual character devices that provide a bidirectional communication channel. One end of the channel is called the <em>master</em>; the other end is called the <em>slave</em>.</p>
+<p>The slave end of the pseudoterminal provides an interface that behaves exactly like a classical terminal. A process that expects to be connected to a terminal, can open the slave end of a pseudoterminal and then be driven by a program that has opened the master end. Anything that is written on the master end is provided to the process on the slave end as though it was input typed on a terminal. For example, writing the interrupt character (usually control-C) to the master device would cause an interrupt signal (<strong>SIGINT</strong>) to be generated for the foreground process group that is connected to the slave. Conversely, anything that is written to the slave end of the pseudoterminal can be read by the process that is connected to the master end.</p>
+<p>Data flow between master and slave is handled asynchronously, much like data flow with a physical terminal. Data written to the slave will be available at the master promptly, but may not be available immediately. Similarly, there may be a small processing delay between a write to the master, and the effect being visible at the slave.</p>
+<p>Historically, two pseudoterminal APIs have evolved: BSD and System V. SUSv1 standardized a pseudoterminal API based on the System V API, and this API should be employed in all new programs that use pseudoterminals.</p>
+<p>Linux provides both BSD-style and (standardized) System V-style pseudoterminals. System V-style terminals are commonly called UNIX 98 pseudoterminals on Linux systems.</p>
+<p>Since kernel 2.6.4, BSD-style pseudoterminals are considered deprecated: support can be disabled when building the kernel by disabling the <strong>CONFIG_LEGACY_PTYS</strong> option. (Starting with Linux 2.6.30, that option is disabled by default in the mainline kernel.) UNIX 98 pseudoterminals should be used in new applications.</p>
+<h2>UNIX 98 pseudoterminals</h2>
+<p>An unused UNIX 98 pseudoterminal master is opened by calling <strong>posix_openpt</strong>(3). (This function opens the master clone device, <em>/dev/ptmx</em>; see <strong>pts</strong>(4).) After performing any program-specific initializations, changing the ownership and permissions of the slave device using <strong>grantpt</strong>(3), and unlocking the slave using <strong>unlockpt</strong>(3)), the corresponding slave device can be opened by passing the name returned by <strong>ptsname</strong>(3) in a call to <strong>open</strong>(2).</p>
+<p>The Linux kernel imposes a limit on the number of available UNIX 98 pseudoterminals. In kernels up to and including 2.6.3, this limit is configured at kernel compilation time (<strong>CONFIG_UNIX98_PTYS</strong>), and the permitted number of pseudoterminals can be up to 2048, with a default setting of 256. Since kernel 2.6.4, the limit is dynamically adjustable via <em>/proc/sys/kernel/pty/max</em>, and a corresponding file, <em>/proc/sys/kernel/pty/nr</em>, indicates how many pseudoterminals are currently in use. For further details on these two files, see <strong>proc</strong>(5).</p>
+<h2>BSD pseudoterminals</h2>
+<p>BSD-style pseudoterminals are provided as precreated pairs, with names of the form <em>/dev/ptyXY</em> (master) and <em>/dev/ttyXY</em> (slave), where X is a letter from the 16-character set [p-za-e], and Y is a letter from the 16-character set [0-9a-f]. (The precise range of letters in these two sets varies across UNIX implementations.) For example, <em>/dev/ptyp1</em> and <em>/dev/ttyp1</em> constitute a BSD pseudoterminal pair. A process finds an unused pseudoterminal pair by trying to <strong>open</strong>(2) each pseudoterminal master until an open succeeds. The corresponding pseudoterminal slave (substitute "tty" for "pty" in the name of the master) can then be opened.</p>
+<h1>FILES</h1>
+<dl>
+<dt><em>/dev/ptmx</em></dt>
+<dd><p>UNIX 98 master clone device</p>
+</dd>
+<dt><em>/dev/pts/*</em></dt>
+<dd><p>UNIX 98 slave devices</p>
+</dd>
+<dt><em>/dev/pty[p-za-e][0-9a-f]</em></dt>
+<dd><p>BSD master devices</p>
+</dd>
+<dt><em>/dev/tty[p-za-e][0-9a-f]</em></dt>
+<dd><p>BSD slave devices</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>Pseudoterminals are used by applications such as network login services (<strong>ssh</strong>(1), <strong>rlogin</strong>(1), <strong>telnet</strong>(1)), terminal emulators such as <strong>xterm</strong>(1), <strong>script</strong>(1), <strong>screen</strong>(1), <strong>tmux</strong>(1), <strong>unbuffer</strong>(1), and <strong>expect</strong>(1).</p>
+<p>A description of the <strong>TIOCPKT</strong> <strong>ioctl</strong>(2), which controls packet mode operation, can be found in <strong>ioctl_tty</strong>(2).</p>
+<p>The BSD <strong>ioctl</strong>(2) operations <strong>TIOCSTOP</strong>, <strong>TIOCSTART</strong>, <strong>TIOCUCNTL</strong>, and <strong>TIOCREMOTE</strong> have not been implemented under Linux.</p>
+<h1>SEE ALSO</h1>
+<p><strong>ioctl_tty</strong>(2), <strong>select</strong>(2), <strong>setsid</strong>(2), <strong>forkpty</strong>(3), <strong>openpty</strong>(3), <strong>termios</strong>(3), <strong>pts</strong>(4), <strong>tty</strong>(4)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

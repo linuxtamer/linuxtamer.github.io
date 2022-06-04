@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pam_listfile</title><meta name="description" content="Linux command pam_listfile deny or allow services based on an arbitrary file"><meta name="keywords" content="linux, command, pam_listfile, bsd, deny or allow services based on an arbitrary file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pam_listfile - deny or allow services based on an arbitrary file</p>
+<h1>SYNOPSIS</h1>
+<p><strong>pam_listfile.so</strong> item=[tty|user|rhost|ruser|group|shell] sense=[allow|deny] file=<em>/path/filename</em> onerr=[succeed|fail] [apply=[<em>user</em>|<em>@group</em>]] [quiet]</p>
+<h1>DESCRIPTION</h1>
+<p>pam_listfile is a PAM module which provides a way to deny or allow services based on an arbitrary file.</p>
+<p>The module gets the <strong>item</strong> of the type specified -- <em>user</em> specifies the username, <em>PAM_USER</em>; tty specifies the name of the terminal over which the request has been made, <em>PAM_TTY</em>; rhost specifies the name of the remote host (if any) from which the request was made, <em>PAM_RHOST</em>; and ruser specifies the name of the remote user (if available) who made the request, <em>PAM_RUSER</em> -- and looks for an instance of that item in the <strong>file=</strong><em>filename</em>. filename contains one line per item listed. If the item is found, then if <strong>sense=</strong><em>allow</em>, <em>PAM_SUCCESS</em> is returned, causing the authorization request to succeed; else if <strong>sense=</strong><em>deny</em>, <em>PAM_AUTH_ERR</em> is returned, causing the authorization request to fail.</p>
+<p>If an error is encountered (for instance, if filename does not exist, or a poorly-constructed argument is encountered), then if <em>onerr=succeed</em>, <em>PAM_SUCCESS</em> is returned, otherwise if <em>onerr=fail</em>, <em>PAM_AUTH_ERR</em> or <em>PAM_SERVICE_ERR</em> (as appropriate) will be returned.</p>
+<p>An additional argument, <strong>apply=</strong>, can be used to restrict the application of the above to a specific user (<strong>apply=</strong><em>username</em>) or a given group (<strong>apply=</strong><em>@groupname</em>). This added restriction is only meaningful when used with the <em>tty</em>, <em>rhost</em> and <em>shell</em> items.</p>
+<p>Besides this last one, all arguments should be specified; do not count on any default behavior.</p>
+<p>No credentials are awarded by this module.</p>
+<h1>OPTIONS</h1>
+<p><strong>item=[tty|user|rhost|ruser|group|shell]</strong></p>
+<blockquote>
+<p>What is listed in the file and should be checked for.</p>
+</blockquote>
+<p><strong>sense=[allow|deny]</strong></p>
+<blockquote>
+<p>Action to take if found in file, if the item is NOT found in the file, then the opposite action is requested.</p>
+</blockquote>
+<p><strong>file=</strong><em>/path/filename</em></p>
+<blockquote>
+<p>File containing one item per line. The file needs to be a plain file and not world writable.</p>
+</blockquote>
+<p><strong>onerr=[succeed|fail]</strong></p>
+<blockquote>
+<p>What to do if something weird happens like being unable to open the file.</p>
+</blockquote>
+<p><strong>apply=[</strong><em>user</em><strong>|</strong><em>@group</em><strong>]</strong></p>
+<blockquote>
+<p>Restrict the user class for which the restriction apply. Note that with <strong>item=[user|ruser|group]</strong> this does not make sense, but for <strong>item=[tty|rhost|shell]</strong> it have a meaning.</p>
+</blockquote>
+<p><strong>quiet</strong></p>
+<blockquote>
+<p>Do not treat service refusals or missing list files as errors that need to be logged.</p>
+</blockquote>
+<h1>MODULE TYPES PROVIDED</h1>
+<p>All module types (<strong>auth</strong>, <strong>account</strong>, <strong>password</strong> and <strong>session</strong>) are provided.</p>
+<h1>RETURN VALUES</h1>
+<p>PAM_AUTH_ERR</p>
+<blockquote>
+<p>Authentication failure.</p>
+</blockquote>
+<p>PAM_BUF_ERR</p>
+<blockquote>
+<p>Memory buffer error.</p>
+</blockquote>
+<p>PAM_IGNORE</p>
+<blockquote>
+<p>The rule does not apply to the <strong>apply</strong> option.</p>
+</blockquote>
+<p>PAM_SERVICE_ERR</p>
+<blockquote>
+<p>Error in service module.</p>
+</blockquote>
+<p>PAM_SUCCESS</p>
+<blockquote>
+<p>Success.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>Classic ftpusers authentication can be implemented with this entry in /etc/pam.d/ftpd:</p>
+<blockquote>
+<pre><code>#
+# deny ftp-access to users listed in the /etc/ftpusers file
+#
+auth    required       pam_listfile.so \
+        onerr=succeed item=user sense=deny file=/etc/ftpusers
+      </code></pre>
+</blockquote>
+<p>Note, users listed in /etc/ftpusers file are (counterintuitively) <em>not</em> allowed access to the ftp service.</p>
+<p>To allow login access only for certain users, you can use a /etc/pam.d/login entry like this:</p>
+<blockquote>
+<pre><code>#
+# permit login to users listed in /etc/loginusers
+#
+auth    required       pam_listfile.so \
+        onerr=fail item=user sense=allow file=/etc/loginusers
+      </code></pre>
+</blockquote>
+<p>For this example to work, all users who are allowed to use the login service should be listed in the file /etc/loginusers. Unless you are explicitly trying to lock out root, make sure that when you do this, you leave a way for root to log in, either by listing root in /etc/loginusers, or by listing a user who is able to <em>su</em> to the root account.</p>
+<h1>SEE ALSO</h1>
+<p><strong>pam.conf</strong>(5), <strong>pam.d</strong>(5), <strong>pam</strong>(7)</p>
+<h1>AUTHOR</h1>
+<p>pam_listfile was written by Michael K. Johnson &lt;johnsonm@redhat.com&gt; and Elliot Lee &lt;sopwith@cuc.edu&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command epoll_wait</title><meta name="description" content="Linux command epoll_wait wait for an I/O event on an epoll file descriptor"><meta name="keywords" content="linux, command, epoll_wait, bsd, wait for an I/O event on an epoll file descriptor"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>epoll_wait, epoll_pwait - wait for an I/O event on an epoll file descriptor</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/epoll.h&gt;
+
+int epoll_wait(int epfd, struct epoll_event *events,
+ int maxevents, int timeout);
+int epoll_pwait(int epfd, struct epoll_event *events,
+ int maxevents, int timeout,
+ const sigset_t *sigmask);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>epoll_wait</strong>() system call waits for events on the <strong>epoll</strong>(7) instance referred to by the file descriptor <em>epfd</em>. The buffer pointed to by <em>events</em> is used to return information from the ready list about file descriptors in the interest list that have some events available. Up to <em>maxevents</em> are returned by <strong>epoll_wait</strong>(). The <em>maxevents</em> argument must be greater than zero.</p>
+<p>The <em>timeout</em> argument specifies the number of milliseconds that <strong>epoll_wait</strong>() will block. Time is measured against the <strong>CLOCK_MONOTONIC</strong> clock.</p>
+<p>A call to <strong>epoll_wait</strong>() will block until either:</p>
+<ul>
+<li><p>a file descriptor delivers an event;</p></li>
+<li><p>the call is interrupted by a signal handler; or</p></li>
+<li><p>the timeout expires.</p></li>
+</ul>
+<p>Note that the <em>timeout</em> interval will be rounded up to the system clock granularity, and kernel scheduling delays mean that the blocking interval may overrun by a small amount. Specifying a <em>timeout</em> of -1 causes <strong>epoll_wait</strong>() to block indefinitely, while specifying a <em>timeout</em> equal to zero cause <strong>epoll_wait</strong>() to return immediately, even if no events are available.</p>
+<p>The <em>struct epoll_event</em> is defined as:</p>
+<pre><code>typedef union epoll_data {
+    void    *ptr;
+    int      fd;
+    uint32_t u32;
+    uint64_t u64;
+} epoll_data_t;
+
+struct epoll_event {
+    uint32_t     events;    /* Epoll events */
+    epoll_data_t data;      /* User data variable */
+};</code></pre>
+<p>The <em>data</em> field of each returned <em>epoll_event</em> structure contains the same data as was specified in the most recent call to <strong>epoll_ctl</strong>(2) (<strong>EPOLL_CTL_ADD</strong>, <strong>EPOLL_CTL_MOD</strong>) for the corresponding open file descriptor.</p>
+<p>The <em>events</em> field is a bit mask that indicates the events that have occurred for the corresponding open file description. See <strong>epoll_ctl</strong>(2) for a list of the bits that may appear in this mask.</p>
+<h2>epoll_pwait()</h2>
+<p>The relationship between <strong>epoll_wait</strong>() and <strong>epoll_pwait</strong>() is analogous to the relationship between <strong>select</strong>(2) and <strong>pselect</strong>(2): like <strong>pselect</strong>(2), <strong>epoll_pwait</strong>() allows an application to safely wait until either a file descriptor becomes ready or until a signal is caught.</p>
+<p>The following <strong>epoll_pwait</strong>() call:</p>
+<pre><code>ready = epoll_pwait(epfd, &amp;events, maxevents, timeout, &amp;sigmask);</code></pre>
+<p>is equivalent to <em>atomically</em> executing the following calls:</p>
+<pre><code>sigset_t origmask;
+
+pthread_sigmask(SIG_SETMASK, &amp;sigmask, &amp;origmask);
+ready = epoll_wait(epfd, &amp;events, maxevents, timeout);
+pthread_sigmask(SIG_SETMASK, &amp;origmask, NULL);</code></pre>
+<p>The <em>sigmask</em> argument may be specified as NULL, in which case <strong>epoll_pwait</strong>() is equivalent to <strong>epoll_wait</strong>().</p>
+<h1>RETURN VALUE</h1>
+<p>When successful, <strong>epoll_wait</strong>() returns the number of file descriptors ready for the requested I/O, or zero if no file descriptor became ready during the requested <em>timeout</em> milliseconds. When an error occurs, <strong>epoll_wait</strong>() returns -1 and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>epfd</em> is not a valid file descriptor.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>The memory area pointed to by <em>events</em> is not accessible with write permissions.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>The call was interrupted by a signal handler before either (1) any of the requested events occurred or (2) the <em>timeout</em> expired; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>epfd</em> is not an <strong>epoll</strong> file descriptor, or <em>maxevents</em> is less than or equal to zero.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>epoll_wait</strong>() was added to the kernel in version 2.6. Library support is provided in glibc starting with version 2.3.2.</p>
+<p><strong>epoll_pwait</strong>() was added to Linux in kernel 2.6.19. Library support is provided in glibc starting with version 2.6.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>epoll_wait</strong>() is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>While one thread is blocked in a call to <strong>epoll_wait</strong>(), it is possible for another thread to add a file descriptor to the waited-upon <strong>epoll</strong> instance. If the new file descriptor becomes ready, it will cause the <strong>epoll_wait</strong>() call to unblock.</p>
+<p>If more than <em>maxevents</em> file descriptors are ready when <strong>epoll_wait</strong>() is called, then successive <strong>epoll_wait</strong>() calls will round robin through the set of ready file descriptors. This behavior helps avoid starvation scenarios, where a process fails to notice that additional file descriptors are ready because it focuses on a set of file descriptors that are already known to be ready.</p>
+<p>Note that it is possible to call <strong>epoll_wait</strong>() on an <strong>epoll</strong> instance whose interest list is currently empty (or whose interest list becomes empty because file descriptors are closed or removed from the interest in another thread). The call will block until some file descriptor is later added to the interest list (in another thread) and that file descriptor becomes ready.</p>
+<h1>BUGS</h1>
+<p>In kernels before 2.6.37, a <em>timeout</em> value larger than approximately <em>LONG_MAX / HZ</em> milliseconds is treated as -1 (i.e., infinity). Thus, for example, on a system where <em>sizeof(long)</em> is 4 and the kernel <em>HZ</em> value is 1000, this means that timeouts greater than 35.79 minutes are treated as infinity.</p>
+<h2>C library/kernel differences</h2>
+<p>The raw <strong>epoll_pwait</strong>() system call has a sixth argument, <em>size_t sigsetsize</em>, which specifies the size in bytes of the <em>sigmask</em> argument. The glibc <strong>epoll_pwait</strong>() wrapper function specifies this argument as a fixed value (equal to <em>sizeof(sigset_t)</em>).</p>
+<h1>SEE ALSO</h1>
+<p><strong>epoll_create</strong>(2), <strong>epoll_ctl</strong>(2), <strong>epoll</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

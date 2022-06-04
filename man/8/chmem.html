@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command chmem</title><meta name="description" content="Linux command chmem configure memory"><meta name="keywords" content="linux, command, chmem, bsd, configure memory"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>chmem - configure memory</p>
+<h1>SYNOPSIS</h1>
+<p><strong>chmem</strong> [<strong>-h</strong>] [<strong>-V</strong>] [<strong>-v</strong>] [<strong>-e</strong>|<strong>-d</strong>] [<em>SIZE</em>|<em>RANGE</em>|<strong>-b</strong> <em>BLOCKRANGE</em>] [-z ZONE]</p>
+<h1>DESCRIPTION</h1>
+<p>The chmem command sets a particular size or range of memory online or offline.</p>
+<ul>
+<li><p>Specify <em>SIZE</em> as &lt;size&gt;[m|M|g|G]. With m or M, &lt;size&gt; specifies the memory size in MiB (1024 x 1024 bytes). With g or G, &lt;size&gt; specifies the memory size in GiB (1024 x 1024 x 1024 bytes). The default unit is MiB.</p></li>
+<li><p>Specify <em>RANGE</em> in the form 0x&lt;start&gt;-0x&lt;end&gt; as shown in the output of the <strong>lsmem</strong> command. &lt;start&gt; is the hexadecimal address of the first byte and &lt;end&gt; is the hexadecimal address of the last byte in the memory range.</p></li>
+<li><p>Specify <em>BLOCKRANGE</em> in the form &lt;first&gt;-&lt;last&gt; or &lt;block&gt; as shown in the output of the <strong>lsmem</strong> command. &lt;first&gt; is the number of the first memory block and &lt;last&gt; is the number of the last memory block in the memory range. Alternatively a single block can be specified. <em>BLOCKRANGE</em> requires the <strong>--blocks</strong> option.</p></li>
+<li><p>Specify <em>ZONE</em> as the name of a memory zone, as shown in the output of the <strong>lsmem -o +ZONES</strong> command. The output shows one or more valid memory zones for each memory range. If multiple zones are shown, then the memory range currently belongs to the first zone. By default, chmem will set memory online to the zone Movable, if this is among the valid zones. This default can be changed by specifying the <strong>--zone</strong> option with another valid zone. For memory ballooning, it is recommended to select the zone Movable for memory online and offline, if possible. Memory in this zone is much more likely to be able to be offlined again, but it cannot be used for arbitrary kernel allocations, only for migratable pages (e.g., anonymous and page cache pages). Use the <strong>--help</strong> option to see all available zones.</p></li>
+</ul>
+<p><em>SIZE</em> and <em>RANGE</em> must be aligned to the Linux memory block size, as shown in the output of the <strong>lsmem</strong> command.</p>
+<p>Setting memory online can fail for various reasons. On virtualized systems it can fail if the hypervisor does not have enough memory left, for example because memory was overcommitted. Setting memory offline can fail if Linux cannot free the memory. If only part of the requested memory can be set online or offline, a message tells you how much memory was set online or offline instead of the requested amount.</p>
+<p>When setting memory online <strong>chmem</strong> starts with the lowest memory block numbers. When setting memory offline <strong>chmem</strong> starts with the highest memory block numbers.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-b</strong>, <strong>--blocks</strong></dt>
+<dd><p>Use a <em>BLOCKRANGE</em> parameter instead of <em>RANGE</em> or <em>SIZE</em> for the <strong>--enable</strong> and <strong>--disable</strong> options.</p>
+</dd>
+<dt><strong>-d</strong>, <strong>--disable</strong></dt>
+<dd><p>Set the specified <em>RANGE</em>, <em>SIZE</em>, or <em>BLOCKRANGE</em> of memory offline.</p>
+</dd>
+<dt><strong>-e</strong>, <strong>--enable</strong></dt>
+<dd><p>Set the specified <em>RANGE</em>, <em>SIZE</em>, or <em>BLOCKRANGE</em> of memory online.</p>
+</dd>
+<dt><strong>-z</strong>, <strong>--zone</strong></dt>
+<dd><p>Select the memory <em>ZONE</em> where to set the specified <em>RANGE</em>, <em>SIZE</em>, or <em>BLOCKRANGE</em> of memory online or offline. By default, memory will be set online to the zone Movable, if possible.</p>
+</dd>
+<dt><strong>-h</strong>, <strong>--help</strong></dt>
+<dd><p>Print a short help text, then exit.</p>
+</dd>
+<dt><strong>-v</strong>, <strong>--verbose</strong></dt>
+<dd><p>Verbose mode. Causes <strong>chmem</strong> to print debugging messages about it's progress.</p>
+</dd>
+<dt><strong>-V</strong>, <strong>--version</strong></dt>
+<dd><p>Print the version number, then exit.</p>
+</dd>
+</dl>
+<h1>EXIT STATUS</h1>
+<p><strong>chmem</strong> has the following exit status values:</p>
+<dl>
+<dt><strong>0</strong></dt>
+<dd><p>success</p>
+</dd>
+<dt><strong>1</strong></dt>
+<dd><p>failure</p>
+</dd>
+<dt><strong>64</strong></dt>
+<dd><p>partial success</p>
+</dd>
+</dl>
+<h1>EXAMPLE</h1>
+<dl>
+<dt><strong>chmem --enable 1024</strong></dt>
+<dd><p>This command requests 1024 MiB of memory to be set online.</p>
+</dd>
+<dt><strong>chmem -e 2g</strong></dt>
+<dd><p>This command requests 2 GiB of memory to be set online.</p>
+</dd>
+<dt><strong>chmem --disable 0x00000000e4000000-0x00000000f3ffffff</strong></dt>
+<dd><p>This command requests the memory range starting with 0x00000000e4000000 and ending with 0x00000000f3ffffff to be set offline.</p>
+</dd>
+<dt><strong>chmem -b -d 10</strong></dt>
+<dd><p>This command requests the memory block number 10 to be set offline.</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>lsmem</strong>(1)</p>
+<h1>AVAILABILITY</h1>
+<p>The <strong>chmem</strong> command is part of the util-linux package and is available from <a href="https://www.kernel.org/pub/linux/utils/util-linux/">Linux Kernel Archive</a>.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

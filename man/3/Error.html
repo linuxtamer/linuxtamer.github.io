@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command Error</title><meta name="description" content="Linux command Error Error/exception handling in an OO-ish way"><meta name="keywords" content="linux, command, Error, bsd, Error/exception handling in an OO-ish way"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>Error - Error/exception handling in an OO-ish way</p>
+<h1>VERSION</h1>
+<p>version 0.17029</p>
+<h1>SYNOPSIS</h1>
+<p>use Error qw(:try); throw Error::Simple( "A simple error"); sub xyz { ... record Error::Simple("A simple error") and return; } unlink($file) or throw Error::Simple("$file: $!",$!); try { do_some_stuff(); die "error!" if $condition; throw Error::Simple "Oops!" if $other_condition; } catch Error::IO with { my $E = shift; print STDERR "File ", $E-&gt;{-file}, " had a problem\n"; } except { my $E = shift; my $general_handler=sub {send_message $E-&gt;{-description}}; return { UserException1 =&gt; $general_handler, UserException2 =&gt; $general_handler }; } otherwise { print STDERR "Well I dont know what to say\n"; } finally { close_the_garage_door_already(); # Should be reliable }; # Dont forget the trailing ; or you might be surprised</p>
+<h1>DESCRIPTION</h1>
+<p>The <code>Error</code> package provides two interfaces. Firstly <code>Error</code> provides a procedural interface to exception handling. Secondly <code>Error</code> is a base class for errors/exceptions that can either be thrown, for subsequent catch, or can simply be recorded.</p>
+<p>Errors in the class <code>Error</code> should not be thrown directly, but the user should throw errors from a sub-class of <code>Error</code>.</p>
+<h1>WARNING</h1>
+<p>Using the Error module is <strong>no longer recommended</strong> due to the black-magical nature of its syntactic sugar, which often tends to break. Its maintainers have stopped actively writing code that uses it, and discourage people from doing so. See the SEE ALSO section below for better recommendations.</p>
+<h1>PROCEDURAL INTERFACE</h1>
+<p><code>Error</code> exports subroutines to perform exception handling. These will be exported if the <code>:try</code> tag is used in the <code>use</code> line.</p>
+<ul>
+<li><p><code>try</code> is the main subroutine called by the user. All other subroutines exported are clauses to the try subroutine. The BLOCK will be evaluated and, if no error is throw, try will return the result of the block. <code>CLAUSES</code> are the subroutines below, which describe what to do in the event of an error being thrown within BLOCK.</p></li>
+<li><p>This clauses will cause all errors that satisfy <code>$err-&gt;isa(CLASS)</code> to be caught and handled by evaluating <code>BLOCK</code>. <code>BLOCK</code> will be passed two arguments. The first will be the error being thrown. The second is a reference to a scalar variable. If this variable is set by the catch block then, on return from the catch block, try will continue processing as if the catch block was never found. The error will also be available in <code>$@</code>. To propagate the error the catch block may call <code>$err-&gt;throw</code> If the scalar reference by the second argument is not set, and the error is not thrown. Then the current try block will return with the result from the catch block.</p></li>
+<li><p>When <code>try</code> is looking for a handler, if an except clause is found <code>BLOCK</code> is evaluated. The return value from this block should be a HASHREF or a list of key-value pairs, where the keys are class names and the values are CODE references for the handler of errors of that type.</p></li>
+<li><p>Catch any error by executing the code in <code>BLOCK</code> When evaluated <code>BLOCK</code> will be passed one argument, which will be the error being processed. The error will also be available in <code>$@</code>. Only one otherwise block may be specified per try block</p></li>
+<li><p>Execute the code in <code>BLOCK</code> either after the code in the try block has successfully completed, or if the try block throws an error then <code>BLOCK</code> will be executed after the handler has completed. If the handler throws an error then the error will be caught, the finally block will be executed and the error will be re-thrown. Only one finally block may be specified per try block</p></li>
+</ul>
+<h1>COMPATIBILITY</h1>
+<p>Moose exports a keyword called <code>with</code> which clashes with Error's. This example returns a prototype mismatch error:</p>
+<p>package MyTest; use warnings; use Moose; use Error qw(:try);</p>
+<p>(Thanks to <code>maik.hentsche@amd.com</code> for the report.).</p>
+<h1>CLASS INTERFACE</h1>
+<h2>CONSTRUCTORS</h2>
+<p>The <code>Error</code> object is implemented as a HASH. This HASH is initialized with the arguments that are passed to it's constructor. The elements that are used by, or are retrievable by the <code>Error</code> class are listed below, other classes may add to these.</p>
+<p>-file -line -text -value -object</p>
+<p>If <code>-file</code> or <code>-line</code> are not specified in the constructor arguments then these will be initialized with the file name and line number where the constructor was called from.</p>
+<p>If the error is associated with an object then the object should be passed as the <code>-object</code> argument. This will allow the <code>Error</code> package to associate the error with the object.</p>
+<p>The <code>Error</code> package remembers the last error created, and also the last error associated with a package. This could either be the last error created by a sub in that package, or the last error which passed an object blessed into that package as the <code>-object</code> argument.</p>
+<ul>
+<li><p>See the Error::Simple documentation.</p></li>
+<li><p>Create a new <code>Error</code> object and throw an error, which will be caught by a surrounding <code>try</code> block, if there is one. Otherwise it will cause the program to exit. <code>throw</code> may also be called on an existing error to re-throw it.</p></li>
+<li><p>Create a new <code>Error</code> object and returns it. This is defined for syntactic sugar, eg die with Some::Error ( ... );</p></li>
+<li><p>Create a new <code>Error</code> object and returns it. This is defined for syntactic sugar, eg record Some::Error ( ... ) and return;</p></li>
+</ul>
+<h2>STATIC METHODS</h2>
+<ul>
+<li><p>Return the last error created, or the last error associated with <code>PACKAGE</code></p></li>
+<li><p>Flush the last error created, or the last error associated with <code>PACKAGE</code>.It is necessary to clear the error stack before exiting the package or uncaught errors generated using <code>record</code> will be reported. $Error-&gt;flush;</p></li>
+</ul>
+<h2>OBJECT METHODS</h2>
+<ul>
+<li><p>If the variable <code>$Error::Debug</code> was non-zero when the error was created, then <code>stacktrace</code> returns a string created by calling <code>Carp::longmess</code>. If the variable was zero the <code>stacktrace</code> returns the text of the error appended with the filename and line number of where the error was created, providing the text does not end with a newline.</p></li>
+<li><p>The object this error was associated with</p></li>
+<li><p>The file where the constructor of this error was called from</p></li>
+<li><p>The line where the constructor of this error was called from</p></li>
+<li><p>The text of the error</p></li>
+<li><p>Associates an error with an object to allow error propagation. I.e: $ber-&gt;encode(...) or return Error-&gt;prior($ber)-&gt;associate($ldap);</p></li>
+</ul>
+<h2>OVERLOAD METHODS</h2>
+<ul>
+<li><p>A method that converts the object into a string. This method may simply return the same as the <code>text</code> method, or it may append more information. For example the file name and line number. By default this method returns the <code>-text</code> argument that was passed to the constructor, or the string <code>"Died"</code> if none was given.</p></li>
+<li><p>A method that will return a value that can be associated with the error. For example if an error was created due to the failure of a system call, then this may return the numeric value of <code>$!</code> at the time. By default this method returns the <code>-value</code> argument that was passed to the constructor.</p></li>
+</ul>
+<h1>PRE-DEFINED ERROR CLASSES</h1>
+<h2>Error::Simple</h2>
+<p>This class can be used to hold simple error strings and values. It's constructor takes two arguments. The first is a text value, the second is a numeric value. These values are what will be returned by the overload methods.</p>
+<p>If the text value ends with <code>at file line 1</code> as $@ strings do, then this information will be used to set the <code>-file</code> and <code>-line</code> arguments of the error object.</p>
+<p>This class is used internally if an eval'd block die's with an error that is a plain string. (Unless <code>$Error::ObjectifyCallback</code> is modified)</p>
+<h1>$Error::ObjectifyCallback</h1>
+<p>This variable holds a reference to a subroutine that converts errors that are plain strings to objects. It is used by Error.pm to convert textual errors to objects, and can be overridden by the user.</p>
+<p>It accepts a single argument which is a hash reference to named parameters. Currently the only named parameter passed is <code>text</code> which is the text of the error, but others may be available in the future.</p>
+<p>For example the following code will cause Error.pm to throw objects of the class MyError::Bar by default:</p>
+<p>sub throw_MyError_Bar { my $args = shift; my $err = MyError::Bar-&gt;new(); $err-&gt;{MyBarText} = $args-&gt;{text}; return $err; } { local $Error::ObjectifyCallback = \&amp;throw_MyError_Bar; # Error handling here. }</p>
+<h1>MESSAGE HANDLERS</h1>
+<p><code>Error</code> also provides handlers to extend the output of the <code>warn()</code> perl function, and to handle the printing of a thrown <code>Error</code> that is not caught or otherwise handled. These are not installed by default, but are requested using the <code>:warndie</code> tag in the <code>use</code> line.</p>
+<p>use Error qw( :warndie );</p>
+<p>These new error handlers are installed in <code>$SIG{_ _WARN_ _}</code> and <code>$SIG{_ _DIE_ _}</code>. If these handlers are already defined when the tag is imported, the old values are stored, and used during the new code. Thus, to arrange for custom handling of warnings and errors, you will need to perform something like the following:</p>
+<p>BEGIN { $SIG{_ _WARN_ _} = sub { print STDERR "My special warning handler: $_[0]" }; } use Error qw( :warndie );</p>
+<p>Note that setting <code>$SIG{_ _WARN_ _}</code> after the <code>:warndie</code> tag has been imported will overwrite the handler that <code>Error</code> provides. If this cannot be avoided, then the tag can be explicitly <code>import</code>ed later</p>
+<p>use Error; $SIG{_ _WARN_ _} = ...; import Error qw( :warndie );</p>
+<h2>EXAMPLE</h2>
+<p>The <code>_ _DIE_ _</code> handler turns messages such as</p>
+<p>Cant call method "foo" on an undefined value at examples/warndie.pl line 16.</p>
+<p>into</p>
+<p>Unhandled perl error caught at toplevel: Cant call method "foo" on an undefined value Thrown from: examples/warndie.pl:16 Full stack trace: main::inner(undef) called at examples/warndie.pl line 20 main::outer(undef) called at examples/warndie.pl line 23</p>
+<h1>SEE ALSO</h1>
+<p>See Exception::Class for a different module providing Object-Oriented exception handling, along with a convenient syntax for declaring hierarchies for them. It doesn't provide Error's syntactic sugar of <code>try { ... }</code>, <code>catch { ... }</code>, etc. which may be a good thing or a bad thing based on what you want. (Because Error's syntactic sugar tends to break.)</p>
+<p>Error::Exception aims to combine Error and Exception::Class with correct stringification.</p>
+<p>TryCatch and Try::Tiny are similar in concept to Error.pm only providing a syntax that hopefully breaks less.</p>
+<h1>KNOWN BUGS</h1>
+<p>None, but that does not mean there are not any.</p>
+<h1>AUTHORS</h1>
+<p>Graham Barr &lt;gbarr@pobox.com&gt;</p>
+<p>The code that inspired me to write this was originally written by Peter Seibel &lt;peter@weblogic.com&gt; and adapted by Jesse Glick &lt;jglick@sig.bsh.com&gt;.</p>
+<p><code>:warndie</code> handlers added by Paul Evans &lt;leonerd@leonerd.org.uk&gt;</p>
+<h1>MAINTAINER</h1>
+<p>Shlomi Fish, &lt;http://www.shlomifish.org/&gt; .</p>
+<h1>PAST MAINTAINERS</h1>
+<p>Arun Kumar U &lt;u_arunkumar@yahoo.com&gt;</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright (c) 1997-8 Graham Barr. All rights reserved. This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.</p>
+<h1>SUPPORT</h1>
+<h2>Websites</h2>
+<p>The following websites have more information about this module, and may be of help to you. As always, in addition to those websites please use your favorite search engine to discover more resources.</p>
+<ul>
+<li><p>MetaCPAN A modern, open-source CPAN search engine, useful to view POD in HTML format. &lt;https://metacpan.org/release/Error&gt;</p></li>
+<li><p>Search CPAN The default CPAN search engine, useful to view POD in HTML format. &lt;http://search.cpan.org/dist/Error&gt;</p></li>
+<li><p>RT: CPAN's Bug Tracker The RT ( Request Tracker ) website is the default bug/issue tracking system for CPAN. &lt;https://rt.cpan.org/Public/Dist/Display.html?Name=Error&gt;</p></li>
+<li><p>CPAN Ratings The CPAN Ratings is a website that allows community ratings and reviews of Perl modules. &lt;http://cpanratings.perl.org/d/Error&gt;</p></li>
+<li><p>CPANTS The CPANTS is a website that analyzes the Kwalitee ( code metrics ) of a distribution. &lt;http://cpants.cpanauthors.org/dist/Error&gt;</p></li>
+<li><p>CPAN Testers The CPAN Testers is a network of smoke testers who run automated tests on uploaded CPAN distributions. &lt;http://www.cpantesters.org/distro/E/Error&gt;</p></li>
+<li><p>CPAN Testers Matrix The CPAN Testers Matrix is a website that provides a visual overview of the test results for a distribution on various Perls/platforms. &lt;http://matrix.cpantesters.org/?dist=Error&gt;</p></li>
+<li><p>CPAN Testers Dependencies The CPAN Testers Dependencies is a website that shows a chart of the test results of all dependencies for a distribution. &lt;http://deps.cpantesters.org/?module=Error&gt;</p></li>
+</ul>
+<h2>Bugs / Feature Requests</h2>
+<p>Please report any bugs or feature requests by email to <code>bug-error at rt.cpan.org</code>, or through the web interface at &lt;https://rt.cpan.org/Public/Bug/Report.html?Queue=Error&gt;. You will be automatically notified of any progress on the request by the system.</p>
+<h2>Source Code</h2>
+<p>The code is open to the world, and available for you to hack on. Please feel free to browse it and play with it, or whatever. If you want to contribute patches, please send me a diff or prod me to pull from your repository :)</p>
+<p>&lt;https://github.com/shlomif/perl-error.pm&gt;</p>
+<p>git clone git://github.com/shlomif/perl-error.pm.git</p>
+<h1>AUTHOR</h1>
+<p>Shlomi Fish ( http://www.shlomifish.org/ )</p>
+<h1>BUGS</h1>
+<p>Please report any bugs or feature requests on the bugtracker website &lt;https://github.com/shlomif/perl-error.pm/issues&gt;</p>
+<p>When submitting a bug or request, please include a test-file or a patch to an existing test-file that illustrates the bug or desired feature.</p>
+<h1>COPYRIGHT AND LICENSE</h1>
+<p>This software is copyright (c) 2020 by Shlomi Fish ( http://www.shlomifish.org/ ).</p>
+<p>This is free software; you can redistribute it and/or modify it under the same terms as the Perl 5 programming language system itself.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

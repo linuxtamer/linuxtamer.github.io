@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command backtrace</title><meta name="description" content="Linux command backtrace support for application self-debugging"><meta name="keywords" content="linux, command, backtrace, bsd, support for application self-debugging"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>backtrace, backtrace_symbols, backtrace_symbols_fd - support for application self-debugging</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;execinfo.h&gt;</strong></p>
+<p><strong>int backtrace(void</strong> <strong>**</strong><em>buffer</em><strong>,</strong> <strong>int</strong> <em>size</em><strong>);</strong></p>
+<p><strong>char **backtrace_symbols(void *const</strong> <strong>*</strong><em>buffer</em><strong>,</strong> <strong>int</strong> <em>size</em><strong>);</strong></p>
+<p><strong>void backtrace_symbols_fd(void *const</strong> <strong>*</strong><em>buffer</em><strong>,</strong> <strong>int</strong> <em>size</em><strong>,</strong> <strong>int</strong> <em>fd</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>backtrace</strong>() returns a backtrace for the calling program, in the array pointed to by <em>buffer</em>. A backtrace is the series of currently active function calls for the program. Each item in the array pointed to by <em>buffer</em> is of type <em>void *</em>, and is the return address from the corresponding stack frame. The <em>size</em> argument specifies the maximum number of addresses that can be stored in <em>buffer</em>. If the backtrace is larger than <em>size</em>, then the addresses corresponding to the <em>size</em> most recent function calls are returned; to obtain the complete backtrace, make sure that <em>buffer</em> and <em>size</em> are large enough.</p>
+<p>Given the set of addresses returned by <strong>backtrace</strong>() in <em>buffer</em>, <strong>backtrace_symbols</strong>() translates the addresses into an array of strings that describe the addresses symbolically. The <em>size</em> argument specifies the number of addresses in <em>buffer</em>. The symbolic representation of each address consists of the function name (if this can be determined), a hexadecimal offset into the function, and the actual return address (in hexadecimal). The address of the array of string pointers is returned as the function result of <strong>backtrace_symbols</strong>(). This array is <strong>malloc</strong>(3)ed by <strong>backtrace_symbols</strong>(), and must be freed by the caller. (The strings pointed to by the array of pointers need not and should not be freed.)</p>
+<p><strong>backtrace_symbols_fd</strong>() takes the same <em>buffer</em> and <em>size</em> arguments as <strong>backtrace_symbols</strong>(), but instead of returning an array of strings to the caller, it writes the strings, one per line, to the file descriptor <em>fd</em>. <strong>backtrace_symbols_fd</strong>() does not call <strong>malloc</strong>(3), and so can be employed in situations where the latter function might fail, but see NOTES.</p>
+<h1>RETURN VALUE</h1>
+<p><strong>backtrace</strong>() returns the number of addresses returned in <em>buffer</em>, which is not greater than <em>size</em>. If the return value is less than <em>size</em>, then the full backtrace was stored; if it is equal to <em>size</em>, then it may have been truncated, in which case the addresses of the oldest stack frames are not returned.</p>
+<p>On success, <strong>backtrace_symbols</strong>() returns a pointer to the array <strong>malloc</strong>(3)ed by the call; on error, NULL is returned.</p>
+<h1>VERSIONS</h1>
+<p><strong>backtrace</strong>(), <strong>backtrace_symbols</strong>(), and <strong>backtrace_symbols_fd</strong>() are provided in glibc since version 2.1.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>backtrace</strong>(),<br />
+<strong>backtrace_symbols</strong>(),<br />
+<strong>backtrace_symbols_fd</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>These functions are GNU extensions.</p>
+<h1>NOTES</h1>
+<p>These functions make some assumptions about how a function's return address is stored on the stack. Note the following:</p>
+<ul>
+<li><p>Omission of the frame pointers (as implied by any of <strong>gcc</strong>(1)'s nonzero optimization levels) may cause these assumptions to be violated.</p></li>
+<li><p>Inlined functions do not have stack frames.</p></li>
+<li><p>Tail-call optimization causes one stack frame to replace another.</p></li>
+<li><p><strong>backtrace</strong>() and <strong>backtrace_symbols_fd</strong>() don't call <strong>malloc</strong>() explicitly, but they are part of <em>libgcc</em>, which gets loaded dynamically when first used. Dynamic loading usually triggers a call to <strong>malloc</strong>(3). If you need certain calls to these two functions to not allocate memory (in signal handlers, for example), you need to make sure <em>libgcc</em> is loaded beforehand.</p></li>
+</ul>
+<p>The symbol names may be unavailable without the use of special linker options. For systems using the GNU linker, it is necessary to use the <em>-rdynamic</em> linker option. Note that names of "static" functions are not exposed, and won't be available in the backtrace.</p>
+<h1>EXAMPLES</h1>
+<p>The program below demonstrates the use of <strong>backtrace</strong>() and <strong>backtrace_symbols</strong>(). The following shell session shows what we might see when running the program:</p>
+<pre><code>$ cc -rdynamic prog.c -o prog
+$ ./prog 3
+backtrace() returned 8 addresses
+./prog(myfunc3+0x5c) [0x80487f0]
+./prog [0x8048871]
+./prog(myfunc+0x21) [0x8048894]
+./prog(myfunc+0x1a) [0x804888d]
+./prog(myfunc+0x1a) [0x804888d]
+./prog(main+0x65) [0x80488fb]
+/lib/libc.so.6(__libc_start_main+0xdc) [0xb7e38f9c]
+./prog [0x8048711]</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;execinfo.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+#define BT_BUF_SIZE 100
+
+void
+myfunc3(void)
+{
+    int nptrs;
+    void *buffer[BT_BUF_SIZE];
+    char **strings;
+
+    nptrs = backtrace(buffer, BT_BUF_SIZE);
+    printf(&quot;backtrace() returned %d addresses\n&quot;, nptrs);
+
+    /* The call backtrace_symbols_fd(buffer, nptrs, STDOUT_FILENO)
+       would produce similar output to the following: */
+
+    strings = backtrace_symbols(buffer, nptrs);
+    if (strings == NULL) {
+        perror(&quot;backtrace_symbols&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    for (int j = 0; j &lt; nptrs; j++)
+        printf(&quot;%s\n&quot;, strings[j]);
+
+    free(strings);
+}
+
+static void   /* &quot;static&quot; means don&#39;t export the symbol... */
+myfunc2(void)
+{
+    myfunc3();
+}
+
+void
+myfunc(int ncalls)
+{
+    if (ncalls &gt; 1)
+        myfunc(ncalls - 1);
+    else
+        myfunc2();
+}
+
+int
+main(int argc, char *argv[])
+{
+    if (argc != 2) {
+        fprintf(stderr, &quot;%s num-calls\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    myfunc(atoi(argv[1]));
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>addr2line</strong>(1), <strong>gcc</strong>(1), <strong>gdb</strong>(1), <strong>ld</strong>(1), <strong>dlopen</strong>(3), <strong>malloc</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

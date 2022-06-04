@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command semctl</title><meta name="description" content="Linux command semctl System V semaphore control operations"><meta name="keywords" content="linux, command, semctl, bsd, System V semaphore control operations"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>semctl - System V semaphore control operations</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/ipc.h&gt;
+#include &lt;sys/sem.h&gt;
+
+int semctl(int semid, int semnum, int cmd, ...);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>semctl</strong>() performs the control operation specified by <em>cmd</em> on the System V semaphore set identified by <em>semid</em>, or on the <em>semnum</em>-th semaphore of that set. (The semaphores in a set are numbered starting at 0.)</p>
+<p>This function has three or four arguments, depending on <em>cmd</em>. When there are four, the fourth has the type <em>union semun</em>. The <em>calling program</em> must define this union as follows:</p>
+<pre><code>union semun {
+    int              val;    /* Value for SETVAL */
+    struct semid_ds *buf;    /* Buffer for IPC_STAT, IPC_SET */
+    unsigned short  *array;  /* Array for GETALL, SETALL */
+    struct seminfo  *__buf;  /* Buffer for IPC_INFO
+                                (Linux-specific) */
+};</code></pre>
+<p>The <em>semid_ds</em> data structure is defined in <em>&lt;sys/sem.h&gt;</em> as follows:</p>
+<pre><code>struct semid_ds {
+    struct ipc_perm sem_perm;  /* Ownership and permissions */
+    time_t          sem_otime; /* Last semop time */
+    time_t          sem_ctime; /* Creation time/time of last
+                                  modification via semctl() */
+    unsigned long   sem_nsems; /* No. of semaphores in set */
+};</code></pre>
+<p>The fields of the <em>semid_ds</em> structure are as follows:</p>
+<dl>
+<dt><em>sem_perm</em></dt>
+<dd><p>This is an <em>ipc_perm</em> structure (see below) that specifies the access permissions on the semaphore set.</p>
+</dd>
+<dt><em>sem_otime</em></dt>
+<dd><p>Time of last <strong>semop</strong>(2) system call.</p>
+</dd>
+<dt><em>sem_ctime</em></dt>
+<dd><p>Time of creation of semaphore set or time of last <strong>semctl</strong>() <strong>IPCSET</strong>, <strong>SETVAL</strong>, or <strong>SETALL</strong> operation.</p>
+</dd>
+<dt><em>sem_nsems</em></dt>
+<dd><p>Number of semaphores in the set. Each semaphore of the set is referenced by a nonnegative integer ranging from <strong>0</strong> to <em>sem_nsems-1</em>.</p>
+</dd>
+</dl>
+<p>The <em>ipc_perm</em> structure is defined as follows (the highlighted fields are settable using <strong>IPC_SET</strong>):</p>
+<pre><code>struct ipc_perm {
+    key_t          __key; /* Key supplied to semget(2) */
+    uid_t          uid;   /* Effective UID of owner */
+    gid_t          gid;   /* Effective GID of owner */
+    uid_t          cuid;  /* Effective UID of creator */
+    gid_t          cgid;  /* Effective GID of creator */
+    unsigned short mode;  /* Permissions */
+    unsigned short __seq; /* Sequence number */
+};</code></pre>
+<p>The least significant 9 bits of the <em>mode</em> field of the <em>ipc_perm</em> structure define the access permissions for the shared memory segment. The permission bits are as follows:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">0400</td>
+<td style="text-align: left;">Read by user</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">0200</td>
+<td style="text-align: left;">Write by user</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">0040</td>
+<td style="text-align: left;">Read by group</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">0020</td>
+<td style="text-align: left;">Write by group</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">0004</td>
+<td style="text-align: left;">Read by others</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">0002</td>
+<td style="text-align: left;">Write by others</td>
+</tr>
+</tbody>
+</table>
+<p>In effect, "write" means "alter" for a semaphore set. Bits 0100, 0010, and 0001 (the execute bits) are unused by the system.</p>
+<p>Valid values for <em>cmd</em> are:</p>
+<dl>
+<dt><strong>IPC_STAT</strong></dt>
+<dd><p>Copy information from the kernel data structure associated with <em>semid</em> into the <em>semid_ds</em> structure pointed to by <em>arg.buf</em>. The argument <em>semnum</em> is ignored. The calling process must have read permission on the semaphore set.</p>
+</dd>
+<dt><strong>IPC_SET</strong></dt>
+<dd><p>Write the values of some members of the <em>semid_ds</em> structure pointed to by <em>arg.buf</em> to the kernel data structure associated with this semaphore set, updating also its <em>sem_ctime</em> member.</p>
+<p>The following members of the structure are updated: <em>sem_perm.uid</em>, <em>sem_perm.gid</em>, and (the least significant 9 bits of) <em>sem_perm.mode</em>.</p>
+<p>The effective UID of the calling process must match the owner (<em>sem_perm.uid</em>) or creator (<em>sem_perm.cuid</em>) of the semaphore set, or the caller must be privileged. The argument <em>semnum</em> is ignored.</p>
+</dd>
+<dt><strong>IPC_RMID</strong></dt>
+<dd><p>Immediately remove the semaphore set, awakening all processes blocked in <strong>semop</strong>(2) calls on the set (with an error return and <em>errno</em> set to <strong>EIDRM</strong>). The effective user ID of the calling process must match the creator or owner of the semaphore set, or the caller must be privileged. The argument <em>semnum</em> is ignored.</p>
+</dd>
+<dt><strong>IPC_INFO</strong> (Linux-specific)</dt>
+<dd><p>Return information about system-wide semaphore limits and parameters in the structure pointed to by <em>arg.__buf</em>. This structure is of type <em>seminfo</em>, defined in <em>&lt;sys/sem.h&gt;</em> if the <strong>_GNU_SOURCE</strong> feature test macro is defined:</p>
+<pre><code>struct  seminfo {
+    int semmap;  /* Number of entries in semaphore
+                    map; unused within kernel */
+    int semmni;  /* Maximum number of semaphore sets */
+    int semmns;  /* Maximum number of semaphores in all
+                    semaphore sets */
+    int semmnu;  /* System-wide maximum number of undo
+                    structures; unused within kernel */
+    int semmsl;  /* Maximum number of semaphores in a
+                    set */
+    int semopm;  /* Maximum number of operations for
+                    semop(2) */
+    int semume;  /* Maximum number of undo entries per
+                    process; unused within kernel */
+    int semusz;  /* Size of struct sem_undo */
+    int semvmx;  /* Maximum semaphore value */
+    int semaem;  /* Max. value that can be recorded for
+                    semaphore adjustment (SEM_UNDO) */
+};</code></pre>
+<p>The <em>semmsl</em>, <em>semmns</em>, <em>semopm</em>, and <em>semmni</em> settings can be changed via <em>/proc/sys/kernel/sem</em>; see <strong>proc</strong>(5) for details.</p>
+</dd>
+<dt><strong>SEM_INFO</strong> (Linux-specific)</dt>
+<dd><p>Return a <em>seminfo</em> structure containing the same information as for <strong>IPC_INFO</strong>, except that the following fields are returned with information about system resources consumed by semaphores: the <em>semusz</em> field returns the number of semaphore sets that currently exist on the system; and the <em>semaem</em> field returns the total number of semaphores in all semaphore sets on the system.</p>
+</dd>
+<dt><strong>SEM_STAT</strong> (Linux-specific)</dt>
+<dd><p>Return a <em>semid_ds</em> structure as for <strong>IPC_STAT</strong>. However, the <em>semid</em> argument is not a semaphore identifier, but instead an index into the kernel's internal array that maintains information about all semaphore sets on the system.</p>
+</dd>
+<dt><strong>SEM_STAT_ANY</strong> (Linux-specific, since Linux 4.17)</dt>
+<dd><p>Return a <em>seminfo</em> structure containing the same information as for <strong>SEM_STAT</strong>. However, <em>sem_perm.mode</em> is not checked for read access for <em>semid</em> meaning that any user can employ this operation (just as any user may read <em>/proc/sysvipc/sem</em> to obtain the same information).</p>
+</dd>
+<dt><strong>GETALL</strong></dt>
+<dd><p>Return <strong>semval</strong> (i.e., the current value) for all semaphores of the set into <em>arg.array</em>. The argument <em>semnum</em> is ignored. The calling process must have read permission on the semaphore set.</p>
+</dd>
+<dt><strong>GETNCNT</strong></dt>
+<dd><p>Return the <strong>semncnt</strong> value for the <em>semnum</em>-th semaphore of the set (i.e., the number of processes waiting for the semaphore's value to increase). The calling process must have read permission on the semaphore set.</p>
+</dd>
+<dt><strong>GETPID</strong></dt>
+<dd><p>Return the <strong>sempid</strong> value for the <em>semnum</em>-th semaphore of the set. This is the PID of the process that last performed an operation on that semaphore (but see NOTES). The calling process must have read permission on the semaphore set.</p>
+</dd>
+<dt><strong>GETVAL</strong></dt>
+<dd><p>Return <strong>semval</strong> (i.e., the semaphore value) for the <em>semnum</em>-th semaphore of the set. The calling process must have read permission on the semaphore set.</p>
+</dd>
+<dt><strong>GETZCNT</strong></dt>
+<dd><p>Return the <strong>semzcnt</strong> value for the <em>semnum</em>-th semaphore of the set (i.e., the number of processes waiting for the semaphore value to become 0). The calling process must have read permission on the semaphore set.</p>
+</dd>
+<dt><strong>SETALL</strong></dt>
+<dd><p>Set the <strong>semval</strong> values for all semaphores of the set using <em>arg.array</em>, updating also the <em>sem_ctime</em> member of the <em>semid_ds</em> structure associated with the set. Undo entries (see <strong>semop</strong>(2)) are cleared for altered semaphores in all processes. If the changes to semaphore values would permit blocked <strong>semop</strong>(2) calls in other processes to proceed, then those processes are woken up. The argument <em>semnum</em> is ignored. The calling process must have alter (write) permission on the semaphore set.</p>
+</dd>
+<dt><strong>SETVAL</strong></dt>
+<dd><p>Set the semaphore value <strong>(</strong>semval<strong>)</strong> to <em>arg.val</em> for the <em>semnum</em>-th semaphore of the set, updating also the <em>sem_ctime</em> member of the <em>semid_ds</em> structure associated with the set. Undo entries are cleared for altered semaphores in all processes. If the changes to semaphore values would permit blocked <strong>semop</strong>(2) calls in other processes to proceed, then those processes are woken up. The calling process must have alter permission on the semaphore set.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On failure, <strong>semctl</strong>() returns -1 with <em>errno</em> indicating the error.</p>
+<p>Otherwise, the system call returns a nonnegative value depending on <em>cmd</em> as follows:</p>
+<dl>
+<dt><strong>GETNCNT</strong></dt>
+<dd><p>the value of <strong>semncnt</strong>.</p>
+</dd>
+<dt><strong>GETPID</strong></dt>
+<dd><p>the value of <strong>sempid</strong>.</p>
+</dd>
+<dt><strong>GETVAL</strong></dt>
+<dd><p>the value of <strong>semval</strong>.</p>
+</dd>
+<dt><strong>GETZCNT</strong></dt>
+<dd><p>the value of <strong>semzcnt</strong>.</p>
+</dd>
+<dt><strong>IPC_INFO</strong></dt>
+<dd><p>the index of the highest used entry in the kernel's internal array recording information about all semaphore sets. (This information can be used with repeated <strong>SEM_STAT</strong> or <strong>SEM_STAT_ANY</strong> operations to obtain information about all semaphore sets on the system.)</p>
+</dd>
+<dt><strong>SEM_INFO</strong></dt>
+<dd><p>as for <strong>IPC_INFO</strong>.</p>
+</dd>
+<dt><strong>SEM_STAT</strong></dt>
+<dd><p>the identifier of the semaphore set whose index was given in <em>semid</em>.</p>
+</dd>
+<dt><strong>SEM_STAT_ANY</strong></dt>
+<dd><p>as for <strong>SEM_STAT</strong>.</p>
+</dd>
+</dl>
+<p>All other <em>cmd</em> values return 0 on success.</p>
+<h1>ERRORS</h1>
+<p>On failure, <em>errno</em> will be set to one of the following:</p>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>The argument <em>cmd</em> has one of the values <strong>GETALL</strong>, <strong>GETPID</strong>, <strong>GETVAL</strong>, <strong>GETNCNT</strong>, <strong>GETZCNT</strong>, <strong>IPC_STAT</strong>, <strong>SEM_STAT</strong>, <strong>SEM_STAT_ANY</strong>, <strong>SETALL</strong>, or <strong>SETVAL</strong> and the calling process does not have the required permissions on the semaphore set and does not have the <strong>CAP_IPC_OWNER</strong> capability in the user namespace that governs its IPC namespace.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>The address pointed to by <em>arg.buf</em> or <em>arg.array</em> isn't accessible.</p>
+</dd>
+<dt><strong>EIDRM</strong></dt>
+<dd><p>The semaphore set was removed.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Invalid value for <em>cmd</em> or <em>semid</em>. Or: for a <strong>SEM_STAT</strong> operation, the index value specified in <em>semid</em> referred to an array slot that is currently unused.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The argument <em>cmd</em> has the value <strong>IPC_SET</strong> or <strong>IPC_RMID</strong> but the effective user ID of the calling process is not the creator (as found in <em>sem_perm.cuid</em>) or the owner (as found in <em>sem_perm.uid</em>) of the semaphore set, and the process does not have the <strong>CAP_SYS_ADMIN</strong> capability.</p>
+</dd>
+<dt><strong>ERANGE</strong></dt>
+<dd><p>The argument <em>cmd</em> has the value <strong>SETALL</strong> or <strong>SETVAL</strong> and the value to which <strong>semval</strong> is to be set (for some semaphore of the set) is less than 0 or greater than the implementation limit <strong>SEMVMX</strong>.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4.</p>
+<p>POSIX.1 specifies the <em>sem_nsems</em> field of the <em>semid_ds</em> structure as having the type <em>unsigned short</em>, and the field is so defined on most other systems. It was also so defined on Linux 2.2 and earlier, but, since Linux 2.4, the field has the type <em>unsigned long</em>.</p>
+<h1>NOTES</h1>
+<p>The inclusion of <em>&lt;sys/types.h&gt;</em> and <em>&lt;sys/ipc.h&gt;</em> isn't required on Linux or by any version of POSIX. However, some old implementations required the inclusion of these header files, and the SVID also documented their inclusion. Applications intended to be portable to such old systems may need to include these header files.</p>
+<p>The <strong>IPC_INFO</strong>, <strong>SEM_STAT</strong>, and <strong>SEM_INFO</strong> operations are used by the <strong>ipcs</strong>(1) program to provide information on allocated resources. In the future these may modified or moved to a <em>/proc</em> filesystem interface.</p>
+<p>Various fields in a <em>struct semid_ds</em> were typed as <em>short</em> under Linux 2.2 and have become <em>long</em> under Linux 2.4. To take advantage of this, a recompilation under glibc-2.1.91 or later should suffice. (The kernel distinguishes old and new calls by an <strong>IPC_64</strong> flag in <em>cmd</em>.)</p>
+<p>In some earlier versions of glibc, the <em>semun</em> union was defined in <em>&lt;sys/sem.h&gt;</em>, but POSIX.1 requires that the caller define this union. On versions of glibc where this union is <em>not</em> defined, the macro <strong>_SEM_SEMUN_UNDEFINED</strong> is defined in <em>&lt;sys/sem.h&gt;</em>.</p>
+<p>The following system limit on semaphore sets affects a <strong>semctl</strong>() call:</p>
+<dl>
+<dt><strong>SEMVMX</strong></dt>
+<dd><p>Maximum value for <strong>semval</strong>: implementation dependent (32767).</p>
+</dd>
+</dl>
+<p>For greater portability, it is best to always call <strong>semctl</strong>() with four arguments.</p>
+<h2>The sempid value</h2>
+<p>POSIX.1 defines <em>sempid</em> as the "process ID of [the] last operation" on a semaphore, and explicitly notes that this value is set by a successful <strong>semop</strong>(2) call, with the implication that no other interface affects the <em>sempid</em> value.</p>
+<p>While some implementations conform to the behavior specified in POSIX.1, others do not. (The fault here probably lies with POSIX.1 inasmuch as it likely failed to capture the full range of existing implementation behaviors.) Various other implementations also update <em>sempid</em> for the other operations that update the value of a semaphore: the <strong>SETVAL</strong> and <strong>SETALL</strong> operations, as well as the semaphore adjustments performed on process termination as a consequence of the use of the <strong>SEM_UNDO</strong> flag (see <strong>semop</strong>(2)).</p>
+<p>Linux also updates <em>sempid</em> for <strong>SETVAL</strong> operations and semaphore adjustments. However, somewhat inconsistently, up to and including Linux 4.5, the kernel did not update <em>sempid</em> for <strong>SETALL</strong> operations. This was rectified in Linux 4.6.</p>
+<h1>EXAMPLES</h1>
+<p>See <strong>shmop</strong>(2).</p>
+<h1>SEE ALSO</h1>
+<p><strong>ipc</strong>(2), <strong>semget</strong>(2), <strong>semop</strong>(2), <strong>capabilities</strong>(7), <strong>sem_overview</strong>(7), <strong>sysvipc</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

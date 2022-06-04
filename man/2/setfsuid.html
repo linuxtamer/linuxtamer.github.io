@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command setfsuid</title><meta name="description" content="Linux command setfsuid set user identity used for filesystem checks"><meta name="keywords" content="linux, command, setfsuid, bsd, set user identity used for filesystem checks"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>setfsuid - set user identity used for filesystem checks</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/fsuid.h&gt;</strong></p>
+<p><strong>int setfsuid(uid_t </strong><em>fsuid</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>On Linux, a process has both a filesystem user ID and an effective user ID. The (Linux-specific) filesystem user ID is used for permissions checking when accessing filesystem objects, while the effective user ID is used for various other kinds of permissions checks (see <strong>credentials</strong>(7)).</p>
+<p>Normally, the value of the process's filesystem user ID is the same as the value of its effective user ID. This is so, because whenever a process's effective user ID is changed, the kernel also changes the filesystem user ID to be the same as the new value of the effective user ID. A process can cause the value of its filesystem user ID to diverge from its effective user ID by using <strong>setfsuid</strong>() to change its filesystem user ID to the value given in <em>fsuid</em>.</p>
+<p>Explicit calls to <strong>setfsuid</strong>() and <strong>setfsgid</strong>(2) are (were) usually used only by programs such as the Linux NFS server that need to change what user and group ID is used for file access without a corresponding change in the real and effective user and group IDs. A change in the normal user IDs for a program such as the NFS server is (was) a security hole that can expose it to unwanted signals. (However, this issue is historical; see below.)</p>
+<p><strong>setfsuid</strong>() will succeed only if the caller is the superuser or if <em>fsuid</em> matches either the caller's real user ID, effective user ID, saved set-user-ID, or current filesystem user ID.</p>
+<h1>RETURN VALUE</h1>
+<p>On both success and failure, this call returns the previous filesystem user ID of the caller.</p>
+<h1>VERSIONS</h1>
+<p>This system call is present in Linux since version 1.2.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>setfsuid</strong>() is Linux-specific and should not be used in programs intended to be portable.</p>
+<h1>NOTES</h1>
+<p>At the time when this system call was introduced, one process could send a signal to another process with the same effective user ID. This meant that if a privileged process changed its effective user ID for the purpose of file permission checking, then it could become vulnerable to receiving signals sent by another (unprivileged) process with the same user ID. The filesystem user ID attribute was thus added to allow a process to change its user ID for the purposes of file permission checking without at the same time becoming vulnerable to receiving unwanted signals. Since Linux 2.0, signal permission handling is different (see <strong>kill</strong>(2)), with the result that a process can change its effective user ID without being vulnerable to receiving signals from unwanted processes. Thus, <strong>setfsuid</strong>() is nowadays unneeded and should be avoided in new applications (likewise for <strong>setfsgid</strong>(2)).</p>
+<p>The original Linux <strong>setfsuid</strong>() system call supported only 16-bit user IDs. Subsequently, Linux 2.4 added <strong>setfsuid32</strong>() supporting 32-bit IDs. The glibc <strong>setfsuid</strong>() wrapper function transparently deals with the variation across kernel versions.</p>
+<h2>C library/kernel differences</h2>
+<p>In glibc 2.15 and earlier, when the wrapper for this system call determines that the argument can't be passed to the kernel without integer truncation (because the kernel is old and does not support 32-bit user IDs), it will return -1 and set <em>errno</em> to <strong>EINVAL</strong> without attempting the system call.</p>
+<h1>BUGS</h1>
+<p>No error indications of any kind are returned to the caller, and the fact that both successful and unsuccessful calls return the same value makes it impossible to directly determine whether the call succeeded or failed. Instead, the caller must resort to looking at the return value from a further call such as <em>setfsuid(-1)</em> (which will always fail), in order to determine if a preceding call to <strong>setfsuid</strong>() changed the filesystem user ID. At the very least, <strong>EPERM</strong> should be returned when the call fails (because the caller lacks the <strong>CAP_SETUID</strong> capability).</p>
+<h1>SEE ALSO</h1>
+<p><strong>kill</strong>(2), <strong>setfsgid</strong>(2), <strong>capabilities</strong>(7), <strong>credentials</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

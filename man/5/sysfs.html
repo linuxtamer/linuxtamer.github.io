@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sysfs</title><meta name="description" content="Linux command sysfs a filesystem for exporting kernel objects"><meta name="keywords" content="linux, command, sysfs, bsd, a filesystem for exporting kernel objects"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sysfs - a filesystem for exporting kernel objects</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sysfs</strong> filesystem is a pseudo-filesystem which provides an interface to kernel data structures. (More precisely, the files and directories in <strong>sysfs</strong> provide a view of the <em>kobject</em> structures defined internally within the kernel.) The files under <strong>sysfs</strong> provide information about devices, kernel modules, filesystems, and other kernel components.</p>
+<p>The <strong>sysfs</strong> filesystem is commonly mounted at <em>/sys</em>. Typically, it is mounted automatically by the system, but it can also be mounted manually using a command such as:</p>
+<pre><code>mount -t sysfs sysfs /sys</code></pre>
+<p>Many of the files in the <strong>sysfs</strong> filesystem are read-only, but some files are writable, allowing kernel variables to be changed. To avoid redundancy, symbolic links are heavily used to connect entries across the filesystem tree.</p>
+<h2>Files and directories</h2>
+<p>The following list describes some of the files and directories under the <em>/sys</em> hierarchy.</p>
+<dl>
+<dt><em>/sys/block</em></dt>
+<dd><p>This subdirectory contains one symbolic link for each block device that has been discovered on the system. The symbolic links point to corresponding directories under <em>/sys/devices</em>.</p>
+</dd>
+<dt><em>/sys/bus</em></dt>
+<dd><p>This directory contains one subdirectory for each of the bus types in the kernel. Inside each of these directories are two subdirectories:</p>
+<dl>
+<dt><em>devices</em></dt>
+<dd><p>This subdirectory contains symbolic links to entries in <em>/sys/devices</em> that correspond to the devices discovered on this bus.</p>
+</dd>
+<dt><em>drivers</em></dt>
+<dd><p>This subdirectory contains one subdirectory for each device driver that is loaded on this bus.</p>
+</dd>
+</dl>
+</dd>
+<dt><em>/sys/class</em></dt>
+<dd><p>This subdirectory contains a single layer of further subdirectories for each of the device classes that have been registered on the system (e.g., terminals, network devices, block devices, graphics devices, sound devices, and so on). Inside each of these subdirectories are symbolic links for each of the devices in this class. These symbolic links refer to entries in the <em>/sys/devices</em> directory.</p>
+</dd>
+<dt><em>/sys/class/net</em></dt>
+<dd><p>Each of the entries in this directory is a symbolic link representing one of the real or virtual networking devices that are visible in the network namespace of the process that is accessing the directory. Each of these symbolic links refers to entries in the <em>/sys/devices</em> directory.</p>
+</dd>
+<dt><em>/sys/dev</em></dt>
+<dd><p>This directory contains two subdirectories <em>block</em>/ and <em>char/</em>, corresponding, respectively, to the block and character devices on the system. Inside each of these subdirectories are symbolic links with names of the form <em>major-ID</em>:<em>minor-ID</em>, where the ID values correspond to the major and minor ID of a specific device. Each symbolic link points to the <strong>sysfs</strong> directory for a device. The symbolic links inside <em>/sys/dev</em> thus provide an easy way to look up the <strong>sysfs</strong> interface using the device IDs returned by a call to <strong>stat</strong>(2) (or similar).</p>
+<p>The following shell session shows an example from <em>/sys/dev</em>:</p>
+<pre><code>$ stat -c &quot;%t %T&quot; /dev/null
+1 3
+$ readlink /sys/dev/char/1\:3
+../../devices/virtual/mem/null
+$ ls -Fd /sys/devices/virtual/mem/null
+/sys/devices/virtual/mem/null/
+$ ls -d1 /sys/devices/virtual/mem/null/*
+/sys/devices/virtual/mem/null/dev
+/sys/devices/virtual/mem/null/power/
+/sys/devices/virtual/mem/null/subsystem@
+/sys/devices/virtual/mem/null/uevent</code></pre>
+</dd>
+<dt><em>/sys/devices</em></dt>
+<dd><p>This is a directory that contains a filesystem representation of the kernel device tree, which is a hierarchy of <em>device</em> structures within the kernel.</p>
+</dd>
+<dt><em>/sys/firmware</em></dt>
+<dd><p>This subdirectory contains interfaces for viewing and manipulating firmware-specific objects and attributes.</p>
+</dd>
+<dt><em>/sys/fs</em></dt>
+<dd><p>This directory contains subdirectories for some filesystems. A filesystem will have a subdirectory here only if it chose to explicitly create the subdirectory.</p>
+</dd>
+<dt><em>/sys/fs/cgroup</em></dt>
+<dd><p>This directory conventionally is used as a mount point for a <strong>tmpfs</strong>(5) filesystem containing mount points for <strong>cgroups</strong>(7) filesystems.</p>
+</dd>
+<dt><em>/sys/fs/smackfs</em></dt>
+<dd><p>The directory contains configuration files for the SMACK LSM. See the kernel source file <em>Documentation/admin-guide/LSM/Smack.rst</em>.</p>
+</dd>
+<dt><em>/sys/hypervisor</em></dt>
+<dd><p>[To be documented]</p>
+</dd>
+<dt><em>/sys/kernel</em></dt>
+<dd><p>This subdirectory contains various files and subdirectories that provide information about the running kernel.</p>
+</dd>
+<dt><em>/sys/kernel/cgroup/</em></dt>
+<dd><p>For information about the files in this directory, see <strong>cgroups</strong>(7).</p>
+</dd>
+<dt><em>/sys/kernel/debug/tracing</em></dt>
+<dd><p>Mount point for the <em>tracefs</em> filesystem used by the kernel's <em>ftrace</em> facility. (For information on <em>ftrace</em>, see the kernel source file <em>Documentation/trace/ftrace.txt</em>.)</p>
+</dd>
+<dt><em>/sys/kernel/mm</em></dt>
+<dd><p>This subdirectory contains various files and subdirectories that provide information about the kernel's memory management subsystem.</p>
+</dd>
+<dt><em>/sys/kernel/mm/hugepages</em></dt>
+<dd><p>This subdirectory contains one subdirectory for each of the huge page sizes that the system supports. The subdirectory name indicates the huge page size (e.g., <em>hugepages-2048kB</em>). Within each of these subdirectories is a set of files that can be used to view and (in some cases) change settings associated with that huge page size. For further information, see the kernel source file <em>Documentation/admin-guide/mm/hugetlbpage.rst</em>.</p>
+</dd>
+<dt><em>/sys/module</em></dt>
+<dd><p>This subdirectory contains one subdirectory for each module that is loaded into the kernel. The name of each directory is the name of the module. In each of the subdirectories, there may be following files:</p>
+<dl>
+<dt><em>coresize</em></dt>
+<dd><p>[to be documented]</p>
+</dd>
+<dt><em>initsize</em></dt>
+<dd><p>[to be documented]</p>
+</dd>
+<dt><em>initstate</em></dt>
+<dd><p>[to be documented]</p>
+</dd>
+<dt><em>refcnt</em></dt>
+<dd><p>[to be documented]</p>
+</dd>
+<dt><em>srcversion</em></dt>
+<dd><p>[to be documented]</p>
+</dd>
+<dt><em>taint</em></dt>
+<dd><p>[to be documented]</p>
+</dd>
+<dt><em>uevent</em></dt>
+<dd><p>[to be documented]</p>
+</dd>
+<dt><em>version</em></dt>
+<dd><p>[to be documented]</p>
+</dd>
+</dl>
+<p>In each of the subdirectories, there may be following subdirectories:</p>
+<dl>
+<dt><em>drivers</em></dt>
+<dd><p>[To be documented]</p>
+</dd>
+<dt><em>holders</em></dt>
+<dd><p>[To be documented]</p>
+</dd>
+<dt><em>notes</em></dt>
+<dd><p>[To be documented]</p>
+</dd>
+<dt><em>parameters</em></dt>
+<dd><p>This directory contains one file for each module parameter, with each file containing the value of the corresponding parameter. Some of these files are writable, allowing the</p>
+</dd>
+<dt><em>sections</em></dt>
+<dd><p>This subdirectories contains files with information about module sections. This information is mainly used for debugging.</p>
+</dd>
+<dt><em>[To be documented]</em></dt>
+<dd>
+</dd>
+</dl>
+</dd>
+<dt><em>/sys/power</em></dt>
+<dd><p>[To be documented]</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The <strong>sysfs</strong> filesystem first appeared in Linux 2.6.0.</p>
+<h1>CONFORMING TO</h1>
+<p>The <strong>sysfs</strong> filesystem is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>This manual page is incomplete, possibly inaccurate, and is the kind of thing that needs to be updated very often.</p>
+<h1>SEE ALSO</h1>
+<p><strong>proc</strong>(5), <strong>udev</strong>(7)</p>
+<p>P. Mochel. (2005). <em>The sysfs filesystem</em>. Proceedings of the 2005 Ottawa Linux Symposium.</p>
+<p>The kernel source file <em>Documentation/filesystems/sysfs.txt</em> and various other files in <em>Documentation/ABI</em> and <em>Documentation/*/sysfs.txt</em></p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

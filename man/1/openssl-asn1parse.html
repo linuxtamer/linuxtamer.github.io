@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command openssl-asn1parse</title><meta name="description" content="Linux command openssl-asn1parse ASN.1 parsing tool"><meta name="keywords" content="linux, command, openssl-asn1parse, bsd, ASN.1 parsing tool"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>openssl-asn1parse, asn1parse - ASN.1 parsing tool</p>
+<h1>SYNOPSIS</h1>
+<p><strong>openssl</strong> <strong>asn1parse</strong> [<strong>-help</strong>] [<strong>-inform PEM|DER</strong>] [<strong>-in filename</strong>] [<strong>-out filename</strong>] [<strong>-noout</strong>] [<strong>-offset number</strong>] [<strong>-length number</strong>] [<strong>-i</strong>] [<strong>-oid filename</strong>] [<strong>-dump</strong>] [<strong>-dlimit num</strong>] [<strong>-strparse offset</strong>] [<strong>-genstr string</strong>] [<strong>-genconf file</strong>] [<strong>-strictpem</strong>] [<strong>-item name</strong>]</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>asn1parse</strong> command is a diagnostic utility that can parse ASN.1 structures. It can also be used to extract data from ASN.1 formatted data.</p>
+<h1>OPTIONS</h1>
+<ul>
+<li><p>Print out a usage message.</p></li>
+<li><p>The input format. <strong>DER</strong> is binary format and <strong>PEM</strong> (the default) is base64 encoded.</p></li>
+<li><p>The input file, default is standard input.</p></li>
+<li><p>Output file to place the DER encoded data into. If this option is not present then no data will be output. This is most useful when combined with the <strong>-strparse</strong> option.</p></li>
+<li><p>Don't output the parsed version of the input file.</p></li>
+<li><p>Starting offset to begin parsing, default is start of file.</p></li>
+<li><p>Number of bytes to parse, default is until end of file.</p></li>
+<li><p>Indents the output according to the depth of the structures.</p></li>
+<li><p>A file containing additional OBJECT IDENTIFIERs (OIDs). The format of this file is described in the NOTES section below.</p></li>
+<li><p>Dump unknown data in hex format.</p></li>
+<li><p>Like <strong>-dump</strong>, but only the first <strong>num</strong> bytes are output.</p></li>
+<li><p>Parse the contents octets of the ASN.1 object starting at <strong>offset</strong>. This option can be used multiple times to drill down into a nested structure.</p></li>
+<li><p>Generate encoded data based on <strong>string</strong>, <strong>file</strong> or both using <strong>ASN1_generate_nconf</strong> (3) format. If <strong>file</strong> only is present then the string is obtained from the default section using the name <strong>asn1</strong>. The encoded data is passed through the ASN1 parser and printed out as though it came from a file, the contents can thus be examined and written to a file using the <strong>out</strong> option.</p></li>
+<li><p>If this option is used then <strong>-inform</strong> will be ignored. Without this option any data in a PEM format input file will be treated as being base64 encoded and processed whether it has the normal PEM BEGIN and END markers or not. This option will ignore any data prior to the start of the BEGIN marker, or after an END marker in a PEM file.</p></li>
+<li><p>Attempt to decode and print the data as <strong>ASN1_ITEM name</strong>. This can be used to print out the fields of any supported ASN.1 structure if the type is known.</p></li>
+</ul>
+<h2>Output</h2>
+<p>The output will typically contain lines like this:</p>
+<p>0:d=0 hl=4 l= 681 cons: SEQUENCE</p>
+<p>.....</p>
+<p>229:d=3 hl=3 l= 141 prim: BIT STRING 373:d=2 hl=3 l= 162 cons: cont [ 3 ] 376:d=3 hl=3 l= 159 cons: SEQUENCE 379:d=4 hl=2 l= 29 cons: SEQUENCE 381:d=5 hl=2 l= 3 prim: OBJECT :X509v3 Subject Key Identifier 386:d=5 hl=2 l= 22 prim: OCTET STRING 410:d=4 hl=2 l= 112 cons: SEQUENCE 412:d=5 hl=2 l= 3 prim: OBJECT :X509v3 Authority Key Identifier 417:d=5 hl=2 l= 105 prim: OCTET STRING 524:d=4 hl=2 l= 12 cons: SEQUENCE</p>
+<p>.....</p>
+<p>This example is part of a self-signed certificate. Each line starts with the offset in decimal. <strong>d=XX</strong> specifies the current depth. The depth is increased within the scope of any SET or SEQUENCE. <strong>hl=XX</strong> gives the header length (tag and length octets) of the current type. <strong>l=XX</strong> gives the length of the contents octets.</p>
+<p>The <strong>-i</strong> option can be used to make the output more readable.</p>
+<p>Some knowledge of the ASN.1 structure is needed to interpret the output.</p>
+<p>In this example the BIT STRING at offset 229 is the certificate public key. The contents octets of this will contain the public key information. This can be examined using the option <strong>-strparse 229</strong> to yield:</p>
+<p>0:d=0 hl=3 l= 137 cons: SEQUENCE 3:d=1 hl=3 l= 129 prim: INTEGER :E5D21E1F5C8D208EA7A2166C7FAF9F6BDF2059669C60876DDB70840F1A5AAFA59699FE471F379F1DD6A487E7D5409AB6A88D4A9746E24B91D8CF55DB3521015460C8EDE44EE8A4189F7A7BE77D6CD3A9AF2696F486855CF58BF0EDF2B4068058C7A947F52548DDF7E15E96B385F86422BEA9064A3EE9E1158A56E4A6F47E5897 135:d=1 hl=2 l= 3 prim: INTEGER :010001</p>
+<h1>NOTES</h1>
+<p>If an OID is not part of OpenSSL's internal table it will be represented in numerical form (for example 1.2.3.4). The file passed to the <strong>-oid</strong> option allows additional OIDs to be included. Each line consists of three columns, the first column is the OID in numerical format and should be followed by white space. The second column is the short name which is a single word followed by white space. The final column is the rest of the line and is the long name. <strong>asn1parse</strong> displays the long name. Example:</p>
+<p><code>1.2.3.4       shortName       A long name</code></p>
+<h1>EXAMPLES</h1>
+<p>Parse a file:</p>
+<p>openssl asn1parse -in file.pem</p>
+<p>Parse a DER file:</p>
+<p>openssl asn1parse -inform DER -in file.der</p>
+<p>Generate a simple UTF8String:</p>
+<p>openssl asn1parse -genstr UTF8:Hello World</p>
+<p>Generate and write out a UTF8String, don't print parsed output:</p>
+<p>openssl asn1parse -genstr UTF8:Hello World -noout -out utf8.der</p>
+<p>Generate using a config file:</p>
+<p>openssl asn1parse -genconf asn1.cnf -noout -out asn1.der</p>
+<p>Example config file:</p>
+<p>asn1=SEQUENCE:seq_sect [seq_sect] field1=BOOL:TRUE field2=EXP:0, UTF8:some random string</p>
+<h1>BUGS</h1>
+<p>There should be options to change the format of output lines. The output of some ASN.1 types is not well handled (if at all).</p>
+<h1>SEE ALSO</h1>
+<p><strong>ASN1_generate_nconf</strong> (3)</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright 2000-2017 The OpenSSL Project Authors. All Rights Reserved.</p>
+<p>Licensed under the OpenSSL license (the License). You may not use this file except in compliance with the License. You can obtain a copy in the file LICENSE in the source distribution or at &lt;https://www.openssl.org/source/license.html&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

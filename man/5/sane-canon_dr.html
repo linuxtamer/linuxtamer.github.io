@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sane-canon_dr</title><meta name="description" content="Linux command sane-canon_dr SANE backend for Canon DR-series scanners"><meta name="keywords" content="linux, command, sane-canon_dr, bsd, SANE backend for Canon DR-series scanners"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sane-canon_dr - SANE backend for Canon DR-series scanners</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sane-canon_dr</strong> library implements a SANE (Scanner Access Now Easy) backend which provides access to some Canon DR-series scanners.</p>
+<p>This document describes backend version 57, which shipped with SANE 1.0.28.</p>
+<h1>SUPPORTED HARDWARE</h1>
+<p>This version has only been tested with a few scanner models. Please see http://www.sane-project.org/sane-supported-devices.html for the most recent list.</p>
+<p>This backend may support other Canon scanners. The best way to determine level of support is to test the scanner directly, or to collect a trace of the windows driver in action. Please contact the author for help or with test results.</p>
+<p>In general, the larger machines (DR-4000 and up) which have been tested use a fairly complete protocol, with hardware support for many modes, resolutions and features. The smaller machines have many limitations, like missing horizontal resolutions, missing binary mode, always scanning full-width, etc. There is code in the backend to address these problems, but there seems to be no way to detect if they are required, so they must be hard-coded.</p>
+<h1>OPTIONS</h1>
+<p>Effort has been made to expose most hardware options, including:</p>
+<p>source s</p>
+<blockquote>
+<p>Selects the source for the scan. Options may include "Flatbed", "ADF Front", "ADF Back", "ADF Duplex".</p>
+</blockquote>
+<p>mode m</p>
+<blockquote>
+<p>Selects the mode for the scan. Options may include "Lineart", "Halftone", "Gray", and "Color".</p>
+</blockquote>
+<p>resolution</p>
+<blockquote>
+<p>Controls scan resolution.</p>
+</blockquote>
+<p>tl-x, tl-y, br-x, br-y</p>
+<blockquote>
+<p>Sets scan area upper left and lower right coordinates. These are renamed t, l, x, y by some frontends.</p>
+</blockquote>
+<p>page-width, page-height</p>
+<blockquote>
+<p>Sets paper size. Used by scanner to determine centering of scan coordinates when using ADF and to detect double feed errors.</p>
+</blockquote>
+<p>Other options will be available based on the capabilities of the scanner: enhancement, compression, buttons and sensors, etc.</p>
+<p>Additionally, several 'software' options are exposed by the backend. These are reimplementations of features provided natively by larger scanners, but running on the host computer. This enables smaller machines to have similar capabilities. Please note that these features are somewhat simplistic, and may not perform as well as the native implementations. Note also that these features all require that the driver cache the entire image in memory. This will almost certainly result in a reduction of scanning speed.</p>
+<p>swcrop</p>
+<blockquote>
+<p>Requests the driver to detect the extremities of the paper within the larger image, and crop the empty edges.</p>
+</blockquote>
+<p>swdeskew</p>
+<blockquote>
+<p>Requests the driver to detect the rotation of the paper within the larger image, and counter the rotation.</p>
+</blockquote>
+<p>swdespeck X</p>
+<blockquote>
+<p>Requests the driver to find and remove dots of X diameter or smaller from the image, and fill the space with the average surrounding color.</p>
+</blockquote>
+<p>Use 'scanimage --help' to get a list, but be aware that some options may be settable only when another option has been set, and that advanced options may be hidden by some frontend programs.</p>
+<h1>CONFIGURATION FILE</h1>
+<p>The configuration file "canon_dr.conf" is used to tell the backend how to look for scanners, and provide options controlling the operation of the backend. This file is read each time the frontend asks the backend for a list of scanners, generally only when the frontend starts. If the configuration file is missing, the backend will fail to run.</p>
+<p>Scanners can be specified in the configuration file in 4 ways:</p>
+<p>"scsi CANON DR"</p>
+<blockquote>
+<p>Requests backend to search all scsi busses in the system for a device which reports itself to be a scanner made by 'CANON', with a model name starting with 'DR'.</p>
+</blockquote>
+<p>"scsi /dev/sg0" (or other scsi device file)</p>
+<blockquote>
+<p>Requests backend to open the named scsi device. Only useful if you have multiple compatible scanners connected to your system, and need to specify one. Probably should not be used with the other "scsi" line above.</p>
+</blockquote>
+<p>"usb 0x04a9 0x1603" (or other vendor/product ids)</p>
+<blockquote>
+<p>Requests backend to search all usb busses in the system for a device which uses that vendor and product id. The device will then be queried to determine if it is a Canon scanner.</p>
+</blockquote>
+<p>"usb /dev/usb/scanner0" (or other device file)</p>
+<blockquote>
+<p>Some systems use a kernel driver to access usb scanners. This method is untested.</p>
+</blockquote>
+<p>Besides the 'scsi' and 'usb' lines, the configuration file supports the following 'option' lines:</p>
+<p>"option buffer-size [number of bytes]"</p>
+<blockquote>
+<p>Set the number of bytes in the data buffer to something other than the compiled-in default of 4MB. Large values may cause timeouts or hangs, small values may cause slow scans.</p>
+<p>Note: The backend does not place an upper bound on this value, as some users required it to be quite large. Values above the default are not recommended, and may crash your OS or lockup your scsi card driver. You have been warned.</p>
+</blockquote>
+<p>"option vendor-name [string of text]"<br />
+"option model-name [string of text]"<br />
+"option version-name [string of text]"</p>
+<blockquote>
+<p>These options can be used collectively to override the values provided by the scanner, or to provide the values when the scanner cannot.</p>
+</blockquote>
+<p>"option padded-read [0|1]"</p>
+<blockquote>
+<p>Some scanners prepend all data transmitted to host with 12 bytes. Enable this option if the scanner fails to respond to commands.</p>
+</blockquote>
+<p>"option duplex-offset [integer]"</p>
+<blockquote>
+<p>Some scanners pad the upper edge of one side of a duplex scan. There is some variation in the amount of padding. Modify this option if your unit shows an unwanted band of image data on only one side.</p>
+</blockquote>
+<p>Note: 'option' lines may appear multiple times in the configuration file. They only apply to scanners discovered by the next 'scsi/usb' line.</p>
+<h1>ENVIRONMENT</h1>
+<p>The backend uses a single environment variable, SANE_DEBUG_CANON_DR, which enables debugging output to stderr. Valid values are:</p>
+<blockquote>
+<p>5 Errors<br />
+10 Function trace<br />
+15 Function detail<br />
+20 Option commands<br />
+25 SCSI/USB trace<br />
+30 SCSI/USB detail<br />
+35 Useless noise</p>
+</blockquote>
+<h1>KNOWN ISSUES</h1>
+<p>This backend was entirely reverse engineered from usb traces of the proprietary driver. Various advanced features of the machines may not be enabled. Many machines have not been tested. Their protocol is unknown.</p>
+<h1>CREDITS</h1>
+<p>The various authors of the sane-fujitsu backend provided useful code<br />
+Yabarana Corp. www.yabarana.com provided significant funding<br />
+EvriChart, Inc. www.evrichart.com provided funding and loaned equipment<br />
+Canon, USA. www.usa.canon.com loaned equipment<br />
+HPrint hprint.com.br provided funding and testing for DR-2510 support<br />
+Stone-IT www.stone-it.com provided funding for DR-2010 and DR-2050 support<br />
+Gerhard Pfeffer provided access and testing for P-208 and P-215<br />
+Special thanks to: Alejandro Imass, Andre Shimakawa, Martijn van Brummelen, Thanos Diacakis and Junren Shi for testing and feedback.</p>
+<h1>SEE ALSO</h1>
+<p>sane(7), sane-scsi(5), sane-usb(5)</p>
+<h1>AUTHOR</h1>
+<p>m. allan noah: &lt;kitno455 a t gmail d o t com&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

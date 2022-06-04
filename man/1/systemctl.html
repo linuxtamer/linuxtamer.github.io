@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemctl</title><meta name="description" content="Linux command systemctl Control the systemd system and service manager"><meta name="keywords" content="linux, command, systemctl, bsd, Control the systemd system and service manager"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemctl - Control the systemd system and service manager</p>
+<h1>SYNOPSIS</h1>
+<p><strong>systemctl</strong> [OPTIONS...] COMMAND [UNIT...]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>systemctl</strong> may be used to introspect and control the state of the "systemd" system and service manager. Please refer to <strong>systemd</strong>(1) for an introduction into the basic concepts and functionality this tool manages.</p>
+<h1>COMMANDS</h1>
+<p>The following commands are understood:</p>
+<h2>Unit Commands (Introspection and Modification)</h2>
+<p><strong>list-units</strong> [<em>PATTERN</em>...]</p>
+<blockquote>
+<p>List units that <strong>systemd</strong> currently has in memory. This includes units that are either referenced directly or through a dependency, units that are pinned by applications programmatically, or units that were active in the past and have failed. By default only units which are active, have pending jobs, or have failed are shown; this can be changed with option <strong>--all</strong>. If one or more <em>PATTERN</em>s are specified, only units matching one of them are shown. The units that are shown are additionally filtered by <strong>--type=</strong> and <strong>--state=</strong> if those options are specified.</p>
+<p>Produces output similar to</p>
+<blockquote>
+<pre><code>  UNIT                         LOAD   ACTIVE SUB     DESCRIPTION
+  sys-module-fuse.device       loaded active plugged /sys/module/fuse
+  -.mount                      loaded active mounted Root Mount
+  boot-efi.mount               loaded active mounted /boot/efi
+  systemd-journald.service     loaded active running Journal Service
+  systemd-logind.service       loaded active running Login Service
+● user@1000.service            loaded failed failed  User Manager for UID 1000
+  ...
+  systemd-tmpfiles-clean.timer loaded active waiting Daily Cleanup of Temporary Directories
+
+LOAD   = Reflects whether the unit definition was properly loaded.
+ACTIVE = The high-level unit activation state, i.e. generalization of SUB.
+SUB    = The low-level unit activation state, values depend on unit type.
+
+123 loaded units listed. Pass --all to see loaded but inactive units, too.
+To show all installed unit files use systemctl list-unit-files.
+            </code></pre>
+</blockquote>
+<p>The header and the last unit of a given type are underlined if the terminal supports that. A colored dot is shown next to services which were masked, not found, or otherwise failed.</p>
+<p>The LOAD column shows the load state, one of <strong>loaded</strong>, <strong>not-found</strong>, <strong>bad-setting</strong>, <strong>error</strong>, <strong>masked</strong>. The ACTIVE columns shows the general unit state, one of <strong>active</strong>, <strong>reloading</strong>, <strong>inactive</strong>, <strong>failed</strong>, <strong>activating</strong>, <strong>deactivating</strong>. The SUB column shows the unit-type-specific detailed state of the unit, possible values vary by unit type. The list of possible LOAD, ACTIVE, and SUB states is not constant and new systemd releases may both add and remove values.</p>
+<blockquote>
+<pre><code>systemctl --state=help</code></pre>
+</blockquote>
+<p>command maybe be used to display the current set of possible values.</p>
+<p>This is the default command.</p>
+</blockquote>
+<p><strong>list-sockets</strong> [<em>PATTERN</em>...]</p>
+<blockquote>
+<p>List socket units currently in memory, ordered by listening address. If one or more <em>PATTERN</em>s are specified, only socket units matching one of them are shown. Produces output similar to</p>
+<blockquote>
+<pre><code>LISTEN           UNIT                        ACTIVATES
+/dev/initctl     systemd-initctl.socket      systemd-initctl.service
+...
+[::]:22          sshd.socket                 sshd.service
+kobject-uevent 1 systemd-udevd-kernel.socket systemd-udevd.service
+
+5 sockets listed.</code></pre>
+</blockquote>
+<p>Note: because the addresses might contains spaces, this output is not suitable for programmatic consumption.</p>
+<p>Also see <strong>--show-types</strong>, <strong>--all</strong>, and <strong>--state=</strong>.</p>
+</blockquote>
+<p><strong>list-timers</strong> [<em>PATTERN</em>...]</p>
+<blockquote>
+<p>List timer units currently in memory, ordered by the time they elapse next. If one or more <em>PATTERN</em>s are specified, only units matching one of them are shown. Produces output similar to</p>
+<blockquote>
+<pre><code>NEXT                         LEFT          LAST                         PASSED     UNIT                         ACTIVATES
+n/a                          n/a           Thu 2017-02-23 13:40:29 EST  3 days ago ureadahead-stop.timer        ureadahead-stop.service
+Sun 2017-02-26 18:55:42 EST  1min 14s left Thu 2017-02-23 13:54:44 EST  3 days ago systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
+Sun 2017-02-26 20:37:16 EST  1h 42min left Sun 2017-02-26 11:56:36 EST  6h ago     apt-daily.timer              apt-daily.service
+Sun 2017-02-26 20:57:49 EST  2h 3min left  Sun 2017-02-26 11:56:36 EST  6h ago     snapd.refresh.timer          snapd.refresh.service
+            </code></pre>
+</blockquote>
+<p><em>NEXT</em> shows the next time the timer will run.</p>
+<p><em>LEFT</em> shows how long till the next time the timer runs.</p>
+<p><em>LAST</em> shows the last time the timer ran.</p>
+<p><em>PASSED</em> shows how long has passed since the timer last ran.</p>
+<p><em>UNIT</em> shows the name of the timer</p>
+<p><em>ACTIVATES</em> shows the name the service the timer activates when it runs.</p>
+<p>Also see <strong>--all</strong> and <strong>--state=</strong>.</p>
+</blockquote>
+<p><strong>is-active </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Check whether any of the specified units are active (i.e. running). Returns an exit code <strong>0</strong> if at least one is active, or non-zero otherwise. Unless <strong>--quiet</strong> is specified, this will also print the current unit state to standard output.</p>
+</blockquote>
+<p><strong>is-failed </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Check whether any of the specified units are in a "failed" state. Returns an exit code <strong>0</strong> if at least one has failed, non-zero otherwise. Unless <strong>--quiet</strong> is specified, this will also print the current unit state to standard output.</p>
+</blockquote>
+<p><strong>status</strong> [<em>PATTERN</em>...|<em>PID</em>...]]</p>
+<blockquote>
+<p>Show terse runtime status information about one or more units, followed by most recent log data from the journal. If no units are specified, show system status. If combined with <strong>--all</strong>, also show the status of all units (subject to limitations specified with <strong>-t</strong>). If a PID is passed, show information about the unit the process belongs to.</p>
+<p>This function is intended to generate human-readable output. If you are looking for computer-parsable output, use <strong>show</strong> instead. By default, this function only shows 10 lines of output and ellipsizes lines to fit in the terminal window. This can be changed with <strong>--lines</strong> and <strong>--full</strong>, see above. In addition, <strong>journalctl --unit=</strong><em>NAME</em> or <strong>journalctl --user-unit=</strong><em>NAME</em> use a similar filter for messages and might be more convenient.</p>
+<p>systemd implicitly loads units as necessary, so just running the <strong>status</strong> will attempt to load a file. The command is thus not useful for determining if something was already loaded or not. The units may possibly also be quickly unloaded after the operation is completed if theres no reason to keep it in memory thereafter.</p>
+<p><strong>Example 1. Example output from systemctl status</strong></p>
+<blockquote>
+<pre><code>$ systemctl status bluetooth
+● bluetooth.service - Bluetooth service
+   Loaded: loaded (/lib/systemd/system/bluetooth.service; enabled; vendor preset: enabled)
+   Active: active (running) since Wed 2017-01-04 13:54:04 EST; 1 weeks 0 days ago
+     Docs: man:bluetoothd(8)
+ Main PID: 930 (bluetoothd)
+   Status: &quot;Running&quot;
+    Tasks: 1
+   Memory: 648.0K
+      CPU: 435ms
+   CGroup: /system.slice/bluetooth.service
+           └─930 /usr/lib/bluetooth/bluetoothd
+
+Jan 12 10:46:45 example.com bluetoothd[8900]: Not enough free handles to register service
+Jan 12 10:46:45 example.com bluetoothd[8900]: Current Time Service could not be registered
+Jan 12 10:46:45 example.com bluetoothd[8900]: gatt-time-server: Input/output error (5)</code></pre>
+</blockquote>
+<p>The dot ("●") uses color on supported terminals to summarize the unit state at a glance. White indicates an "inactive" or "deactivating" state. Red indicates a "failed" or "error" state and green indicates an "active", "reloading" or "activating" state.</p>
+<p>The "Loaded:" line in the output will show "loaded" if the unit has been loaded into memory. Other possible values for "Loaded:" include: "error" if there was a problem loading it, "not-found" if no unit file was found for this unit, "bad-setting" if an essential unit file setting could not be parsed and "masked" if the unit file has been masked. Along with showing the path to the unit file, this line will also show the enablement state. Enabled commands start at boot. See the full table of possible enablement states — including the definition of "masked" — in the documentation for the <strong>is-enabled</strong> command.</p>
+<p>The "Active:" line shows active state. The value is usually "active" or "inactive". Active could mean started, bound, plugged in, etc depending on the unit type. The unit could also be in process of changing states, reporting a state of "activating" or "deactivating". A special "failed" state is entered when the service failed in some way, such as a crash, exiting with an error code or timing out. If the failed state is entered the cause will be logged for later reference.</p>
+</blockquote>
+<p><strong>show</strong> [<em>PATTERN</em>...|<em>JOB</em>...]</p>
+<blockquote>
+<p>Show properties of one or more units, jobs, or the manager itself. If no argument is specified, properties of the manager will be shown. If a unit name is specified, properties of the unit are shown, and if a job ID is specified, properties of the job are shown. By default, empty properties are suppressed. Use <strong>--all</strong> to show those too. To select specific properties to show, use <strong>--property=</strong>. This command is intended to be used whenever computer-parsable output is required. Use <strong>status</strong> if you are looking for formatted human-readable output.</p>
+<p>Many properties shown by <strong>systemctl show</strong> map directly to configuration settings of the system and service manager and its unit files. Note that the properties shown by the command are generally more low-level, normalized versions of the original configuration settings and expose runtime state in addition to configuration. For example, properties shown for service units include the services current main process identifier as "MainPID" (which is runtime state), and time settings are always exposed as properties ending in the "...USec" suffix even if a matching configuration options end in "...Sec", because microseconds is the normalized time unit used internally by the system and service manager.</p>
+<p>For details about many of these properties, see the documentation of the D-Bus interface backing these properties, see <strong>org.freedesktop.systemd1</strong>(5).</p>
+</blockquote>
+<p><strong>cat </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Show backing files of one or more units. Prints the "fragment" and "drop-ins" (source files) of units. Each file is preceded by a comment which includes the file name. Note that this shows the contents of the backing files on disk, which may not match the system managers understanding of these units if any unit files were updated on disk and the <strong>daemon-reload</strong> command wasnt issued since.</p>
+</blockquote>
+<p><strong>help </strong><em>PATTERN</em><strong>...|</strong><em>PID</em><strong>...</strong></p>
+<blockquote>
+<p>Show manual pages for one or more units, if available. If a PID is given, the manual pages for the unit the process belongs to are shown.</p>
+</blockquote>
+<p><strong>list-dependencies</strong> [<em>UNIT</em>...]</p>
+<blockquote>
+<p>Shows units required and wanted by the specified units. This recursively lists units following the <em>Requires=</em>, <em>Requisite=</em>, <em>ConsistsOf=</em>, <em>Wants=</em>, <em>BindsTo=</em> dependencies. If no units are specified, default.target is implied.</p>
+<p>By default, only target units are recursively expanded. When <strong>--all</strong> is passed, all other units are recursively expanded as well.</p>
+<p>Options <strong>--reverse</strong>, <strong>--after</strong>, <strong>--before</strong> may be used to change what types of dependencies are shown.</p>
+<p>Note that this command only lists units currently loaded into memory by the service manager. In particular, this command is not suitable to get a comprehensive list at all reverse dependencies on a specific unit, as it wont list the dependencies declared by units currently not loaded.</p>
+</blockquote>
+<p><strong>start </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Start (activate) one or more units specified on the command line.</p>
+<p>Note that unit glob patterns expand to names of units currently in memory. Units which are not active and are not in a failed state usually are not in memory, and will not be matched by any pattern. In addition, in case of instantiated units, systemd is often unaware of the instance name until the instance has been started. Therefore, using glob patterns with <strong>start</strong> has limited usefulness. Also, secondary alias names of units are not considered.</p>
+<p>Option <strong>--all</strong> may be used to also operate on inactive units which are referenced by other loaded units. Note that this is not the same as operating on "all" possible units, because as the previous paragraph describes, such a list is ill-defined. Nevertheless, <strong>systemctl start --all </strong><em>GLOB</em> may be useful if all the units that should match the pattern are pulled in by some target which is known to be loaded.</p>
+</blockquote>
+<p><strong>stop </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Stop (deactivate) one or more units specified on the command line.</p>
+<p>This command will fail if the unit does not exist or if stopping of the unit is prohibited (see <em>RefuseManualStop=</em> in <strong>systemd.unit</strong>(5)). It will <em>not</em> fail if any of the commands configured to stop the unit (<em>ExecStop=</em>, etc.) fail, because the manager will still forcibly terminate the unit.</p>
+</blockquote>
+<p><strong>reload </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Asks all units listed on the command line to reload their configuration. Note that this will reload the service-specific configuration, not the unit configuration file of systemd. If you want systemd to reload the configuration file of a unit, use the <strong>daemon-reload</strong> command. In other words: for the example case of Apache, this will reload Apaches httpd.conf in the web server, not the apache.service systemd unit file.</p>
+<p>This command should not be confused with the <strong>daemon-reload</strong> command.</p>
+</blockquote>
+<p><strong>restart </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Stop and then start one or more units specified on the command line. If the units are not running yet, they will be started.</p>
+<p>Note that restarting a unit with this command does not necessarily flush out all of the units resources before it is started again. For example, the per-service file descriptor storage facility (see <em>FileDescriptorStoreMax=</em> in <strong>systemd.service</strong>(5)) will remain intact as long as the unit has a job pending, and is only cleared when the unit is fully stopped and no jobs are pending anymore. If it is intended that the file descriptor store is flushed out, too, during a restart operation an explicit <strong>systemctl stop</strong> command followed by <strong>systemctl start</strong> should be issued.</p>
+</blockquote>
+<p><strong>try-restart </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Stop and then start one or more units specified on the command line if the units are running. This does nothing if units are not running.</p>
+</blockquote>
+<p><strong>reload-or-restart </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Reload one or more units if they support it. If not, stop and then start them instead. If the units are not running yet, they will be started.</p>
+</blockquote>
+<p><strong>try-reload-or-restart </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Reload one or more units if they support it. If not, stop and then start them instead. This does nothing if the units are not running.</p>
+</blockquote>
+<p><strong>isolate </strong><em>UNIT</em></p>
+<blockquote>
+<p>Start the unit specified on the command line and its dependencies and stop all others, unless they have <strong>IgnoreOnIsolate=yes</strong> (see <strong>systemd.unit</strong>(5)). If a unit name with no extension is given, an extension of ".target" will be assumed.</p>
+<p>This command is dangerous, since it will immediately stop processes that are not enabled in the new target, possibly including the graphical environment or terminal you are currently using.</p>
+<p>Note that this is allowed only on units where <strong>AllowIsolate=</strong> is enabled. See <strong>systemd.unit</strong>(5) for details.</p>
+</blockquote>
+<p><strong>kill </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Send a signal to one or more processes of the unit. Use <strong>--kill-who=</strong> to select which process to kill. Use <strong>--signal=</strong> to select the signal to send.</p>
+</blockquote>
+<p><strong>clean </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Remove the configuration, state, cache, logs or runtime data of the specified units. Use <strong>--what=</strong> to select which kind of resource to remove. For service units this may be used to remove the directories configured with <em>ConfigurationDirectory=</em>, <em>StateDirectory=</em>, <em>CacheDirectory=</em>, <em>LogsDirectory=</em> and <em>RuntimeDirectory=</em>, see <strong>systemd.exec</strong>(5) for details. For timer units this may be used to clear out the persistent timestamp data if <em>Persistent=</em> is used and <strong>--what=state</strong> is selected, see <strong>systemd.timer</strong>(5). This command only applies to units that use either of these settings. If <strong>--what=</strong> is not specified, both the cache and runtime data are removed (as these two types of data are generally redundant and reproducible on the next invocation of the unit).</p>
+</blockquote>
+<p><strong>freeze </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Freeze one or more units specified on the command line using cgroup freezer</p>
+<p>Freezing the unit will cause all processes contained within the cgroup corresponding to the unit to be suspended. Being suspended means that units processes wont be scheduled to run on CPU until thawed. Note that this command is supported only on systems that use unified cgroup hierarchy. Unit is automatically thawed just before we execute a job against the unit, e.g. before the unit is stopped.</p>
+</blockquote>
+<p><strong>thaw </strong><em>PATTERN</em><strong>...</strong></p>
+<blockquote>
+<p>Thaw (unfreeze) one or more units specified on the command line.</p>
+<p>This is the inverse operation to the <strong>freeze</strong> command and resumes the execution of processes in the units cgroup.</p>
+</blockquote>
+<p><strong>set-property </strong><em>UNIT</em><strong> </strong><em>PROPERTY</em><strong>=</strong><em>VALUE</em><strong>...</strong></p>
+<blockquote>
+<p>Set the specified unit properties at runtime where this is supported. This allows changing configuration parameter properties such as resource control settings at runtime. Not all properties may be changed at runtime, but many resource control settings (primarily those in <strong>systemd.resource-control</strong>(5)) may. The changes are applied immediately, and stored on disk for future boots, unless <strong>--runtime</strong> is passed, in which case the settings only apply until the next reboot. The syntax of the property assignment follows closely the syntax of assignments in unit files.</p>
+<p>Example: <strong>systemctl set-property foobar.service CPUWeight=200</strong></p>
+<p>If the specified unit appears to be inactive, the changes will be only stored on disk as described previously hence they will be effective when the unit will be started.</p>
+<p>Note that this command allows changing multiple properties at the same time, which is preferable over setting them individually.</p>
+<p>Example: <strong>systemctl set-property foobar.service CPUWeight=200 MemoryMax=2G IPAccounting=yes</strong></p>
+<p>Like with unit file configuration settings, assigning an empty setting usually resets a property to its defaults.</p>
+<p>Example: <strong>systemctl set-property avahi-daemon.service IPAddressDeny=</strong></p>
+</blockquote>
+<p><strong>service-log-level</strong> <em>SERVICE</em> [<em>LEVEL</em>]</p>
+<blockquote>
+<p>If the <em>LEVEL</em> argument is not given, print the current log level as reported by service <em>SERVICE</em>.</p>
+<p>If the optional argument <em>LEVEL</em> is provided, then change the current log level of the service to <em>LEVEL</em>. The log level should be a typical syslog log level, i.e. a value in the range 0...7 or one of the strings <strong>emerg</strong>, <strong>alert</strong>, <strong>crit</strong>, <strong>err</strong>, <strong>warning</strong>, <strong>notice</strong>, <strong>info</strong>, <strong>debug</strong>; see <strong>syslog</strong>(3) for details.</p>
+<p>The service must have the appropriate <em>BusName=destination</em> property and also implement the generic <strong>org.freedesktop.LogControl1</strong>(5) interface. (systemctl will use the generic D-Bus protocol to access the org.freedesktop.LogControl1.LogLevel interface for the D-Bus name <em>destination</em>.)</p>
+</blockquote>
+<p><strong>service-log-target</strong> <em>SERVICE</em> [<em>TARGET</em>]</p>
+<blockquote>
+<p>If the <em>TARGET</em> argument is not given, print the current log target as reported by service <em>SERVICE</em>.</p>
+<p>If the optional argument <em>TARGET</em> is provided, then change the current log target of the service to <em>TARGET</em>. The log target should be one of the strings <strong>console</strong> (for log output to the services standard error stream), <strong>kmsg</strong> (for log output to the kernel log buffer), <strong>journal</strong> (for log output to <strong>systemd-journald.service</strong>(8) using the native journal protocol), <strong>syslog</strong> (for log output to the classic syslog socket /dev/log), <strong>null</strong> (for no log output whatsoever) or <strong>auto</strong> (for an automatically determined choice, typically equivalent to <strong>console</strong> if the service is invoked interactively, and <strong>journal</strong> or <strong>syslog</strong> otherwise).</p>
+<p>For most services, only a small subset of log targets make sense. In particular, most "normal" services should only implement <strong>console</strong>, <strong>journal</strong>, and <strong>null</strong>. Anything else is only appropriate for low-level services that are active in very early boot before proper logging is established.</p>
+<p>The service must have the appropriate <em>BusName=destination</em> property and also implement the generic <strong>org.freedesktop.LogControl1</strong>(5) interface. (systemctl will use the generic D-Bus protocol to access the org.freedesktop.LogControl1.LogLevel interface for the D-Bus name <em>destination</em>.)</p>
+</blockquote>
+<p><strong>reset-failed [</strong><em>PATTERN</em><strong>...]</strong></p>
+<blockquote>
+<p>Reset the "failed" state of the specified units, or if no unit name is passed, reset the state of all units. When a unit fails in some way (i.e. process exiting with non-zero error code, terminating abnormally or timing out), it will automatically enter the "failed" state and its exit code and status is recorded for introspection by the administrator until the service is stopped/re-started or reset with this command.</p>
+<p>In addition to resetting the "failed" state of a unit it also resets various other per-unit properties: the start rate limit counter of all unit types is reset to zero, as is the restart counter of service units. Thus, if a units start limit (as configured with <em>StartLimitIntervalSec=</em>/<em>StartLimitBurst=</em>) is hit and the unit refuses to be started again, use this command to make it startable again.</p>
+</blockquote>
+<h2>Unit File Commands</h2>
+<p><strong>list-unit-files</strong> [<em>PATTERN...</em>]</p>
+<blockquote>
+<p>List unit files installed on the system, in combination with their enablement state (as reported by <strong>is-enabled</strong>). If one or more <em>PATTERN</em>s are specified, only unit files whose name matches one of them are shown (patterns matching unit file system paths are not supported).</p>
+</blockquote>
+<p><strong>enable </strong><em>UNIT</em><strong>...</strong>, <strong>enable </strong><em>PATH</em><strong>...</strong></p>
+<blockquote>
+<p>Enable one or more units or unit instances. This will create a set of symlinks, as encoded in the [Install] sections of the indicated unit files. After the symlinks have been created, the system manager configuration is reloaded (in a way equivalent to <strong>daemon-reload</strong>), in order to ensure the changes are taken into account immediately. Note that this does <em>not</em> have the effect of also starting any of the units being enabled. If this is desired, combine this command with the <strong>--now</strong> switch, or invoke <strong>start</strong> with appropriate arguments later. Note that in case of unit instance enablement (i.e. enablement of units of the form foo@bar.service), symlinks named the same as instances are created in the unit configuration directory, however they point to the single template unit file they are instantiated from.</p>
+<p>This command expects either valid unit names (in which case various unit file directories are automatically searched for unit files with appropriate names), or absolute paths to unit files (in which case these files are read directly). If a specified unit file is located outside of the usual unit file directories, an additional symlink is created, linking it into the unit configuration path, thus ensuring it is found when requested by commands such as <strong>start</strong>. The file system where the linked unit files are located must be accessible when systemd is started (e.g. anything underneath /home/ or /var/ is not allowed, unless those directories are located on the root file system).</p>
+<p>This command will print the file system operations executed. This output may be suppressed by passing <strong>--quiet</strong>.</p>
+<p>Note that this operation creates only the symlinks suggested in the [Install] section of the unit files. While this command is the recommended way to manipulate the unit configuration directory, the administrator is free to make additional changes manually by placing or removing symlinks below this directory. This is particularly useful to create configurations that deviate from the suggested default installation. In this case, the administrator must make sure to invoke <strong>daemon-reload</strong> manually as necessary, in order to ensure the changes are taken into account.</p>
+<p>Enabling units should not be confused with starting (activating) units, as done by the <strong>start</strong> command. Enabling and starting units is orthogonal: units may be enabled without being started and started without being enabled. Enabling simply hooks the unit into various suggested places (for example, so that the unit is automatically started on boot or when a particular kind of hardware is plugged in). Starting actually spawns the daemon process (in case of service units), or binds the socket (in case of socket units), and so on.</p>
+<p>Depending on whether <strong>--system</strong>, <strong>--user</strong>, <strong>--runtime</strong>, or <strong>--global</strong> is specified, this enables the unit for the system, for the calling user only, for only this boot of the system, or for all future logins of all users. Note that in the last case, no systemd daemon configuration is reloaded.</p>
+<p>Using <strong>enable</strong> on masked units is not supported and results in an error.</p>
+</blockquote>
+<p><strong>disable </strong><em>UNIT</em><strong>...</strong></p>
+<blockquote>
+<p>Disables one or more units. This removes all symlinks to the unit files backing the specified units from the unit configuration directory, and hence undoes any changes made by <strong>enable</strong> or <strong>link</strong>. Note that this removes <em>all</em> symlinks to matching unit files, including manually created symlinks, and not just those actually created by <strong>enable</strong> or <strong>link</strong>. Note that while <strong>disable</strong> undoes the effect of <strong>enable</strong>, the two commands are otherwise not symmetric, as <strong>disable</strong> may remove more symlinks than a prior <strong>enable</strong> invocation of the same unit created.</p>
+<p>This command expects valid unit names only, it does not accept paths to unit files.</p>
+<p>In addition to the units specified as arguments, all units are disabled that are listed in the <em>Also=</em> setting contained in the [Install] section of any of the unit files being operated on.</p>
+<p>This command implicitly reloads the system manager configuration after completing the operation. Note that this command does not implicitly stop the units that are being disabled. If this is desired, either combine this command with the <strong>--now</strong> switch, or invoke the <strong>stop</strong> command with appropriate arguments later.</p>
+<p>This command will print information about the file system operations (symlink removals) executed. This output may be suppressed by passing <strong>--quiet</strong>.</p>
+<p>This command honors <strong>--system</strong>, <strong>--user</strong>, <strong>--runtime</strong> and <strong>--global</strong> in a similar way as <strong>enable</strong>.</p>
+</blockquote>
+<p><strong>reenable </strong><em>UNIT</em><strong>...</strong></p>
+<blockquote>
+<p>Reenable one or more units, as specified on the command line. This is a combination of <strong>disable</strong> and <strong>enable</strong> and is useful to reset the symlinks a unit file is enabled with to the defaults configured in its [Install] section. This command expects a unit name only, it does not accept paths to unit files.</p>
+</blockquote>
+<p><strong>preset </strong><em>UNIT</em><strong>...</strong></p>
+<blockquote>
+<p>Reset the enable/disable status one or more unit files, as specified on the command line, to the defaults configured in the preset policy files. This has the same effect as <strong>disable</strong> or <strong>enable</strong>, depending how the unit is listed in the preset files.</p>
+<p>Use <strong>--preset-mode=</strong> to control whether units shall be enabled and disabled, or only enabled, or only disabled.</p>
+<p>If the unit carries no install information, it will be silently ignored by this command. <em>UNIT</em> must be the real unit name, any alias names are ignored silently.</p>
+<p>For more information on the preset policy format, see <strong>systemd.preset</strong>(5). For more information on the concept of presets, please consult the <strong>Preset</strong>[1] document.</p>
+</blockquote>
+<p><strong>preset-all</strong></p>
+<blockquote>
+<p>Resets all installed unit files to the defaults configured in the preset policy file (see above).</p>
+<p>Use <strong>--preset-mode=</strong> to control whether units shall be enabled and disabled, or only enabled, or only disabled.</p>
+</blockquote>
+<p><strong>is-enabled </strong><em>UNIT</em><strong>...</strong></p>
+<blockquote>
+<p>Checks whether any of the specified unit files are enabled (as with <strong>enable</strong>). Returns an exit code of 0 if at least one is enabled, non-zero otherwise. Prints the current enable status (see table). To suppress this output, use <strong>--quiet</strong>. To show installation targets, use <strong>--full</strong>.</p>
+<p><br />
+<strong>Table 1. is-enabled output</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Exit Code</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"enabled"</td>
+<td style="text-align: left;">Enabled via .wants/, .requires/ or <em>Alias=</em> symlinks (permanently in /etc/systemd/system/, or transiently in /run/systemd/system/).</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"enabled-runtime"</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"linked"</td>
+<td style="text-align: left;">Made available through one or more symlinks to the unit file (permanently in /etc/systemd/system/ or transiently in /run/systemd/system/), even though the unit file might reside outside of the unit file search path.</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"linked-runtime"</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"alias"</td>
+<td style="text-align: left;">The name is an alias (symlink to another unit file).</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"masked"</td>
+<td style="text-align: left;">Completely disabled, so that any start operation on it fails (permanently in /etc/systemd/system/ or transiently in /run/systemd/systemd/).</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"masked-runtime"</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"static"</td>
+<td style="text-align: left;">The unit file is not enabled, and has no provisions for enabling in the [Install] unit file section.</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"indirect"</td>
+<td style="text-align: left;">The unit file itself is not enabled, but it has a non-empty <em>Also=</em> setting in the [Install] unit file section, listing other unit files that might be enabled, or it has an alias under a different name through a symlink that is not specified in <em>Also=</em>. For template unit files, an instance different than the one specified in <em>DefaultInstance=</em> is enabled.</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"disabled"</td>
+<td style="text-align: left;">The unit file is not enabled, but contains an [Install] section with installation instructions.</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"generated"</td>
+<td style="text-align: left;">The unit file was generated dynamically via a generator tool. See <strong>systemd.generator</strong>(7). Generated unit files may not be enabled, they are enabled implicitly by their generator.</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"transient"</td>
+<td style="text-align: left;">The unit file has been created dynamically with the runtime API. Transient units may not be enabled.</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"bad"</td>
+<td style="text-align: left;">The unit file is invalid or another error occurred. Note that <strong>is-enabled</strong> will not actually return this state, but print an error message instead. However the unit file listing printed by <strong>list-unit-files</strong> might show it.</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<p><strong>mask </strong><em>UNIT</em><strong>...</strong></p>
+<blockquote>
+<p>Mask one or more units, as specified on the command line. This will link these unit files to /dev/null, making it impossible to start them. This is a stronger version of <strong>disable</strong>, since it prohibits all kinds of activation of the unit, including enablement and manual activation. Use this option with care. This honors the <strong>--runtime</strong> option to only mask temporarily until the next reboot of the system. The <strong>--now</strong> option may be used to ensure that the units are also stopped. This command expects valid unit names only, it does not accept unit file paths.</p>
+</blockquote>
+<p><strong>unmask </strong><em>UNIT</em><strong>...</strong></p>
+<blockquote>
+<p>Unmask one or more unit files, as specified on the command line. This will undo the effect of <strong>mask</strong>. This command expects valid unit names only, it does not accept unit file paths.</p>
+</blockquote>
+<p><strong>link </strong><em>PATH</em><strong>...</strong></p>
+<blockquote>
+<p>Link a unit file that is not in the unit file search paths into the unit file search path. This command expects an absolute path to a unit file. The effect of this may be undone with <strong>disable</strong>. The effect of this command is that a unit file is made available for commands such as <strong>start</strong>, even though it is not installed directly in the unit search path. The file system where the linked unit files are located must be accessible when systemd is started (e.g. anything underneath /home/ or /var/ is not allowed, unless those directories are located on the root file system).</p>
+</blockquote>
+<p><strong>revert </strong><em>UNIT</em><strong>...</strong></p>
+<blockquote>
+<p>Revert one or more unit files to their vendor versions. This command removes drop-in configuration files that modify the specified units, as well as any user-configured unit file that overrides a matching vendor supplied unit file. Specifically, for a unit "foo.service" the matching directories "foo.service.d/" with all their contained files are removed, both below the persistent and runtime configuration directories (i.e. below /etc/systemd/system and /run/systemd/system); if the unit file has a vendor-supplied version (i.e. a unit file located below /usr/) any matching persistent or runtime unit file that overrides it is removed, too. Note that if a unit file has no vendor-supplied version (i.e. is only defined below /etc/systemd/system or /run/systemd/system, but not in a unit file stored below /usr/), then it is not removed. Also, if a unit is masked, it is unmasked.</p>
+<p>Effectively, this command may be used to undo all changes made with <strong>systemctl edit</strong>, <strong>systemctl set-property</strong> and <strong>systemctl mask</strong> and puts the original unit file with its settings back in effect.</p>
+</blockquote>
+<p><strong>add-wants </strong><em>TARGET</em><strong> </strong><em>UNIT</em><strong>...</strong>, <strong>add-requires </strong><em>TARGET</em><strong> </strong><em>UNIT</em><strong>...</strong></p>
+<blockquote>
+<p>Adds "Wants=" or "Requires=" dependencies, respectively, to the specified <em>TARGET</em> for one or more units.</p>
+<p>This command honors <strong>--system</strong>, <strong>--user</strong>, <strong>--runtime</strong> and <strong>--global</strong> in a way similar to <strong>enable</strong>.</p>
+</blockquote>
+<p><strong>edit </strong><em>UNIT</em><strong>...</strong></p>
+<blockquote>
+<p>Edit a drop-in snippet or a whole replacement file if <strong>--full</strong> is specified, to extend or override the specified unit.</p>
+<p>Depending on whether <strong>--system</strong> (the default), <strong>--user</strong>, or <strong>--global</strong> is specified, this command creates a drop-in file for each unit either for the system, for the calling user, or for all futures logins of all users. Then, the editor (see the "Environment" section below) is invoked on temporary files which will be written to the real location if the editor exits successfully.</p>
+<p>If <strong>--full</strong> is specified, this will copy the original units instead of creating drop-in files.</p>
+<p>If <strong>--force</strong> is specified and any units do not already exist, new unit files will be opened for editing.</p>
+<p>If <strong>--runtime</strong> is specified, the changes will be made temporarily in /run/ and they will be lost on the next reboot.</p>
+<p>If the temporary file is empty upon exit, the modification of the related unit is canceled.</p>
+<p>After the units have been edited, systemd configuration is reloaded (in a way that is equivalent to <strong>daemon-reload</strong>).</p>
+<p>Note that this command cannot be used to remotely edit units and that you cannot temporarily edit units which are in /etc/, since they take precedence over /run/.</p>
+</blockquote>
+<p><strong>get-default</strong></p>
+<blockquote>
+<p>Return the default target to boot into. This returns the target unit name default.target is aliased (symlinked) to.</p>
+</blockquote>
+<p><strong>set-default </strong><em>TARGET</em></p>
+<blockquote>
+<p>Set the default target to boot into. This sets (symlinks) the default.target alias to the given target unit.</p>
+</blockquote>
+<h2>Machine Commands</h2>
+<p><strong>list-machines</strong> [<em>PATTERN</em>...]</p>
+<blockquote>
+<p>List the host and all running local containers with their state. If one or more <em>PATTERN</em>s are specified, only containers matching one of them are shown.</p>
+</blockquote>
+<h2>Job Commands</h2>
+<p><strong>list-jobs [</strong><em>PATTERN...</em>]</p>
+<blockquote>
+<p>List jobs that are in progress. If one or more <em>PATTERN</em>s are specified, only jobs for units matching one of them are shown.</p>
+<p>When combined with <strong>--after</strong> or <strong>--before</strong> the list is augmented with information on which other job each job is waiting for, and which other jobs are waiting for it, see above.</p>
+</blockquote>
+<p><strong>cancel </strong><em>JOB</em><strong>...</strong></p>
+<blockquote>
+<p>Cancel one or more jobs specified on the command line by their numeric job IDs. If no job ID is specified, cancel all pending jobs.</p>
+</blockquote>
+<h2>Environment Commands</h2>
+<p><strong>systemd</strong> supports an environment block that is passed to processes the manager spawns. The names of the variables can contain ASCII letters, digits, and the underscore character. Variable names cannot be empty or start with a digit. In variable values, most characters are allowed, but the whole sequence must be valid UTF-8. (Note that control characters like newline (<strong>NL</strong>), tab (<strong>TAB</strong>), or the escape character (<strong>ESC</strong>), <em>are</em> valid ASCII and thus valid UTF-8). The total length of the environment block is limited to <strong>_SC_ARG_MAX</strong> value defined by <strong>sysconf</strong>(3).</p>
+<p><strong>show-environment</strong></p>
+<blockquote>
+<p>Dump the systemd manager environment block. This is the environment block that is passed to all processes the manager spawns. The environment block will be dumped in straight-forward form suitable for sourcing into most shells. If no special characters or whitespace is present in the variable values, no escaping is performed, and the assignments have the form "VARIABLE=value". If whitespace or characters which have special meaning to the shell are present, dollar-single-quote escaping is used, and assignments have the form "VARIABLE=$value". This syntax is known to be supported by <strong>bash</strong>(1), <strong>zsh</strong>(1), <strong>ksh</strong>(1), and <strong>busybox</strong>(1)s <strong>ash</strong>(1), but not <strong>dash</strong>(1) or <strong>fish</strong>(1).</p>
+</blockquote>
+<p><strong>set-environment </strong><em>VARIABLE=VALUE</em><strong>...</strong></p>
+<blockquote>
+<p>Set one or more systemd manager environment variables, as specified on the command line. This command will fail if variable names and values do not conform to the rules listed above.</p>
+</blockquote>
+<p><strong>unset-environment </strong><em>VARIABLE</em><strong>...</strong></p>
+<blockquote>
+<p>Unset one or more systemd manager environment variables. If only a variable name is specified, it will be removed regardless of its value. If a variable and a value are specified, the variable is only removed if it has the specified value.</p>
+</blockquote>
+<p><strong>import-environment</strong> [<em>VARIABLE...</em>]</p>
+<blockquote>
+<p>Import all, one or more environment variables set on the client into the systemd manager environment block. If a list of environment variable names is passed, client-side values are then imported into the managers environment block. If any names are not valid environment variable names or have invalid values according to the rules described above, an error is raised. If no arguments are passed, the entire environment block inherited by the <strong>systemctl</strong> process is imported. In this mode, any inherited invalid environment variables are quietly ignored.</p>
+</blockquote>
+<h2>Manager State Commands</h2>
+<p><strong>daemon-reload</strong></p>
+<blockquote>
+<p>Reload the systemd manager configuration. This will rerun all generators (see <strong>systemd.generator</strong>(7)), reload all unit files, and recreate the entire dependency tree. While the daemon is being reloaded, all sockets systemd listens on behalf of user configuration will stay accessible.</p>
+<p>This command should not be confused with the <strong>reload</strong> command.</p>
+</blockquote>
+<p><strong>daemon-reexec</strong></p>
+<blockquote>
+<p>Reexecute the systemd manager. This will serialize the manager state, reexecute the process and deserialize the state again. This command is of little use except for debugging and package upgrades. Sometimes, it might be helpful as a heavy-weight <strong>daemon-reload</strong>. While the daemon is being reexecuted, all sockets systemd listening on behalf of user configuration will stay accessible.</p>
+</blockquote>
+<p><strong>log-level</strong> [<em>LEVEL</em>]</p>
+<blockquote>
+<p>If no argument is given, print the current log level of the manager. If an optional argument <em>LEVEL</em> is provided, then the command changes the current log level of the manager to <em>LEVEL</em> (accepts the same values as <strong>--log-level=</strong> described in <strong>systemd</strong>(1)).</p>
+</blockquote>
+<p><strong>log-target</strong> [<em>TARGET</em>]</p>
+<blockquote>
+<p>If no argument is given, print the current log target of the manager. If an optional argument <em>TARGET</em> is provided, then the command changes the current log target of the manager to <em>TARGET</em> (accepts the same values as <strong>--log-target=</strong>, described in <strong>systemd</strong>(1)).</p>
+</blockquote>
+<p><strong>service-watchdogs</strong> [yes|no]</p>
+<blockquote>
+<p>If no argument is given, print the current state of service runtime watchdogs of the manager. If an optional boolean argument is provided, then globally enables or disables the service runtime watchdogs (<strong>WatchdogSec=</strong>) and emergency actions (e.g. <strong>OnFailure=</strong> or <strong>StartLimitAction=</strong>); see <strong>systemd.service</strong>(5). The hardware watchdog is not affected by this setting.</p>
+</blockquote>
+<h2>System Commands</h2>
+<p><strong>is-system-running</strong></p>
+<blockquote>
+<p>Checks whether the system is operational. This returns success (exit code 0) when the system is fully up and running, specifically not in startup, shutdown or maintenance mode, and with no failed services. Failure is returned otherwise (exit code non-zero). In addition, the current state is printed in a short string to standard output, see the table below. Use <strong>--quiet</strong> to suppress this output.</p>
+<p>Use <strong>--wait</strong> to wait until the boot process is completed before printing the current state and returning the appropriate error status. If <strong>--wait</strong> is in use, states <em>initializing</em> or <em>starting</em> will not be reported, instead the command will block until a later state (such as <em>running</em> or <em>degraded</em>) is reached.</p>
+<p><br />
+<strong>Table 2. is-system-running output</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Exit Code</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><em>initializing</em></td>
+<td style="text-align: left;">Early bootup, before basic.target is reached or the <em>maintenance</em> state entered.</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><em>starting</em></td>
+<td style="text-align: left;">Late bootup, before the job queue becomes idle for the first time, or one of the rescue targets are reached.</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><em>running</em></td>
+<td style="text-align: left;">The system is fully operational.</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><em>degraded</em></td>
+<td style="text-align: left;">The system is operational but one or more units failed.</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><em>maintenance</em></td>
+<td style="text-align: left;">The rescue or emergency target is active.</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><em>stopping</em></td>
+<td style="text-align: left;">The manager is shutting down.</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><em>offline</em></td>
+<td style="text-align: left;">The manager is not running. Specifically, this is the operational state if an incompatible program is running as system manager (PID 1).</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><em>unknown</em></td>
+<td style="text-align: left;">The operational state could not be determined, due to lack of resources or another error cause.</td>
+<td style="text-align: left;">&gt; 0</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<p><strong>default</strong></p>
+<blockquote>
+<p>Enter default mode. This is equivalent to <strong>systemctl isolate default.target</strong>. This operation is blocking by default, use <strong>--no-block</strong> to request asynchronous behavior.</p>
+</blockquote>
+<p><strong>rescue</strong></p>
+<blockquote>
+<p>Enter rescue mode. This is equivalent to <strong>systemctl isolate rescue.target</strong>. This operation is blocking by default, use <strong>--no-block</strong> to request asynchronous behavior.</p>
+</blockquote>
+<p><strong>emergency</strong></p>
+<blockquote>
+<p>Enter emergency mode. This is equivalent to <strong>systemctl isolate emergency.target</strong>. This operation is blocking by default, use <strong>--no-block</strong> to request asynchronous behavior.</p>
+</blockquote>
+<p><strong>halt</strong></p>
+<blockquote>
+<p>Shut down and halt the system. This is mostly equivalent to <strong>systemctl start halt.target --job-mode=replace-irreversibly --no-block</strong>, but also prints a wall message to all users. This command is asynchronous; it will return after the halt operation is enqueued, without waiting for it to complete. Note that this operation will simply halt the OS kernel after shutting down, leaving the hardware powered on. Use <strong>systemctl poweroff</strong> for powering off the system (see below).</p>
+<p>If combined with <strong>--force</strong>, shutdown of all running services is skipped, however all processes are killed and all file systems are unmounted or mounted read-only, immediately followed by the system halt. If <strong>--force</strong> is specified twice, the operation is immediately executed without terminating any processes or unmounting any file systems. This may result in data loss. Note that when <strong>--force</strong> is specified twice the halt operation is executed by <strong>systemctl</strong> itself, and the system manager is not contacted. This means the command should succeed even when the system manager has crashed.</p>
+</blockquote>
+<p><strong>poweroff</strong></p>
+<blockquote>
+<p>Shut down and power-off the system. This is mostly equivalent to <strong>systemctl start poweroff.target --job-mode=replace-irreversibly --no-block</strong>, but also prints a wall message to all users. This command is asynchronous; it will return after the power-off operation is enqueued, without waiting for it to complete.</p>
+<p>If combined with <strong>--force</strong>, shutdown of all running services is skipped, however all processes are killed and all file systems are unmounted or mounted read-only, immediately followed by the powering off. If <strong>--force</strong> is specified twice, the operation is immediately executed without terminating any processes or unmounting any file systems. This may result in data loss. Note that when <strong>--force</strong> is specified twice the power-off operation is executed by <strong>systemctl</strong> itself, and the system manager is not contacted. This means the command should succeed even when the system manager has crashed.</p>
+</blockquote>
+<p><strong>reboot</strong></p>
+<blockquote>
+<p>Shut down and reboot the system. This is mostly equivalent to <strong>systemctl start reboot.target --job-mode=replace-irreversibly --no-block</strong>, but also prints a wall message to all users. This command is asynchronous; it will return after the reboot operation is enqueued, without waiting for it to complete.</p>
+<p>If combined with <strong>--force</strong>, shutdown of all running services is skipped, however all processes are killed and all file systems are unmounted or mounted read-only, immediately followed by the reboot. If <strong>--force</strong> is specified twice, the operation is immediately executed without terminating any processes or unmounting any file systems. This may result in data loss. Note that when <strong>--force</strong> is specified twice the reboot operation is executed by <strong>systemctl</strong> itself, and the system manager is not contacted. This means the command should succeed even when the system manager has crashed.</p>
+<p>If the switch <strong>--reboot-argument=</strong> is given, it will be passed as the optional argument to the <strong>reboot</strong>(2) system call.</p>
+</blockquote>
+<p><strong>kexec</strong></p>
+<blockquote>
+<p>Shut down and reboot the system via <strong>kexec</strong>. This is equivalent to <strong>systemctl start kexec.target --job-mode=replace-irreversibly --no-block</strong>. This command is asynchronous; it will return after the reboot operation is enqueued, without waiting for it to complete.</p>
+<p>If combined with <strong>--force</strong>, shutdown of all running services is skipped, however all processes are killed and all file systems are unmounted or mounted read-only, immediately followed by the reboot.</p>
+</blockquote>
+<p><strong>exit</strong> [<em>EXIT_CODE</em>]</p>
+<blockquote>
+<p>Ask the service manager to quit. This is only supported for user service managers (i.e. in conjunction with the <strong>--user</strong> option) or in containers and is equivalent to <strong>poweroff</strong> otherwise. This command is asynchronous; it will return after the exit operation is enqueued, without waiting for it to complete.</p>
+<p>The service manager will exit with the specified exit code, if <em>EXIT_CODE</em> is passed.</p>
+</blockquote>
+<p><strong>switch-root</strong> <em>ROOT</em> [<em>INIT</em>]</p>
+<blockquote>
+<p>Switches to a different root directory and executes a new system manager process below it. This is intended for usage in initial RAM disks ("initrd"), and will transition from the initrds system manager process (a.k.a. "init" process) to the main system manager process which is loaded from the actual host volume. This call takes two arguments: the directory that is to become the new root directory, and the path to the new system manager binary below it to execute as PID 1. If the latter is omitted or the empty string, a systemd binary will automatically be searched for and used as init. If the system manager path is omitted, equal to the empty string or identical to the path to the systemd binary, the state of the initrds system manager process is passed to the main system manager, which allows later introspection of the state of the services involved in the initrd boot phase.</p>
+</blockquote>
+<p><strong>suspend</strong></p>
+<blockquote>
+<p>Suspend the system. This will trigger activation of the special target unit suspend.target. This command is asynchronous, and will return after the suspend operation is successfully enqueued. It will not wait for the suspend/resume cycle to complete.</p>
+</blockquote>
+<p><strong>hibernate</strong></p>
+<blockquote>
+<p>Hibernate the system. This will trigger activation of the special target unit hibernate.target. This command is asynchronous, and will return after the hibernation operation is successfully enqueued. It will not wait for the hibernate/thaw cycle to complete.</p>
+</blockquote>
+<p><strong>hybrid-sleep</strong></p>
+<blockquote>
+<p>Hibernate and suspend the system. This will trigger activation of the special target unit hybrid-sleep.target. This command is asynchronous, and will return after the hybrid sleep operation is successfully enqueued. It will not wait for the sleep/wake-up cycle to complete.</p>
+</blockquote>
+<p><strong>suspend-then-hibernate</strong></p>
+<blockquote>
+<p>Suspend the system and hibernate it after the delay specified in systemd-sleep.conf. This will trigger activation of the special target unit suspend-then-hibernate.target. This command is asynchronous, and will return after the hybrid sleep operation is successfully enqueued. It will not wait for the sleep/wake-up or hibernate/thaw cycle to complete.</p>
+</blockquote>
+<h2>Parameter Syntax</h2>
+<p>Unit commands listed above take either a single unit name (designated as <em>UNIT</em>), or multiple unit specifications (designated as <em>PATTERN</em>...). In the first case, the unit name with or without a suffix must be given. If the suffix is not specified (unit name is "abbreviated"), systemctl will append a suitable suffix, ".service" by default, and a type-specific suffix in case of commands which operate only on specific unit types. For example,</p>
+<blockquote>
+<pre><code># systemctl start sshd</code></pre>
+</blockquote>
+<p>and</p>
+<blockquote>
+<pre><code># systemctl start sshd.service</code></pre>
+</blockquote>
+<p>are equivalent, as are</p>
+<blockquote>
+<pre><code># systemctl isolate default</code></pre>
+</blockquote>
+<p>and</p>
+<blockquote>
+<pre><code># systemctl isolate default.target</code></pre>
+</blockquote>
+<p>Note that (absolute) paths to device nodes are automatically converted to device unit names, and other (absolute) paths to mount unit names.</p>
+<blockquote>
+<pre><code># systemctl status /dev/sda
+# systemctl status /home</code></pre>
+</blockquote>
+<p>are equivalent to:</p>
+<blockquote>
+<pre><code># systemctl status dev-sda.device
+# systemctl status home.mount</code></pre>
+</blockquote>
+<p>In the second case, shell-style globs will be matched against the primary names of all units currently in memory; literal unit names, with or without a suffix, will be treated as in the first case. This means that literal unit names always refer to exactly one unit, but globs may match zero units and this is not considered an error.</p>
+<p>Glob patterns use <strong>fnmatch</strong>(3), so normal shell-style globbing rules are used, and "*", "?", "[]" may be used. See <strong>glob</strong>(7) for more details. The patterns are matched against the primary names of units currently in memory, and patterns which do not match anything are silently skipped. For example:</p>
+<blockquote>
+<pre><code># systemctl stop sshd@*.service</code></pre>
+</blockquote>
+<p>will stop all sshd@.service instances. Note that alias names of units, and units that arent in memory are not considered for glob expansion.</p>
+<p>For unit file commands, the specified <em>UNIT</em> should be the name of the unit file (possibly abbreviated, see above), or the absolute path to the unit file:</p>
+<blockquote>
+<pre><code># systemctl enable foo.service</code></pre>
+</blockquote>
+<p>or</p>
+<blockquote>
+<pre><code># systemctl link /path/to/foo.service</code></pre>
+</blockquote>
+<h1>OPTIONS</h1>
+<p>The following options are understood:</p>
+<p><strong>-t</strong>, <strong>--type=</strong></p>
+<blockquote>
+<p>The argument should be a comma-separated list of unit types such as <strong>service</strong> and <strong>socket</strong>.</p>
+<p>If one of the arguments is a unit type, when listing units, limit display to certain unit types. Otherwise, units of all types will be shown.</p>
+<p>As a special case, if one of the arguments is <strong>help</strong>, a list of allowed values will be printed and the program will exit.</p>
+</blockquote>
+<p><strong>--state=</strong></p>
+<blockquote>
+<p>The argument should be a comma-separated list of unit LOAD, SUB, or ACTIVE states. When listing units, show only those in the specified states. Use <strong>--state=failed</strong> to show only failed units.</p>
+<p>As a special case, if one of the arguments is <strong>help</strong>, a list of allowed values will be printed and the program will exit.</p>
+</blockquote>
+<p><strong>-p</strong>, <strong>--property=</strong></p>
+<blockquote>
+<p>When showing unit/job/manager properties with the <strong>show</strong> command, limit display to properties specified in the argument. The argument should be a comma-separated list of property names, such as "MainPID". Unless specified, all known properties are shown. If specified more than once, all properties with the specified names are shown. Shell completion is implemented for property names.</p>
+<p>For the manager itself, <strong>systemctl show</strong> will show all available properties. Those properties are documented in <strong>systemd-system.conf</strong>(5).</p>
+<p>Properties for units vary by unit type, so showing any unit (even a non-existent one) is a way to list properties pertaining to this type. Similarly, showing any job will list properties pertaining to all jobs. Properties for units are documented in <strong>systemd.unit</strong>(5), and the pages for individual unit types <strong>systemd.service</strong>(5), <strong>systemd.socket</strong>(5), etc.</p>
+</blockquote>
+<p><strong>-P</strong></p>
+<blockquote>
+<p>Equivalent to <strong>--value</strong> <strong>--property=</strong>, i.e. shows the value of the property without the property name or "=". Note that using <strong>-P</strong> once will also affect all properties listed with <strong>-p</strong>/<strong>--property=</strong>.</p>
+</blockquote>
+<p><strong>-a</strong>, <strong>--all</strong></p>
+<blockquote>
+<p>When listing units with <strong>list-units</strong>, also show inactive units and units which are following other units. When showing unit/job/manager properties, show all properties regardless whether they are set or not.</p>
+<p>To list all units installed in the file system, use the <strong>list-unit-files</strong> command instead.</p>
+<p>When listing units with <strong>list-dependencies</strong>, recursively show dependencies of all dependent units (by default only dependencies of target units are shown).</p>
+<p>When used with <strong>status</strong>, show journal messages in full, even if they include unprintable characters or are very long. By default, fields with unprintable characters are abbreviated as "blob data". (Note that the pager may escape unprintable characters again.)</p>
+</blockquote>
+<p><strong>-r</strong>, <strong>--recursive</strong></p>
+<blockquote>
+<p>When listing units, also show units of local containers. Units of local containers will be prefixed with the container name, separated by a single colon character (":").</p>
+</blockquote>
+<p><strong>--reverse</strong></p>
+<blockquote>
+<p>Show reverse dependencies between units with <strong>list-dependencies</strong>, i.e. follow dependencies of type <em>WantedBy=</em>, <em>RequiredBy=</em>, <em>PartOf=</em>, <em>BoundBy=</em>, instead of <em>Wants=</em> and similar.</p>
+</blockquote>
+<p><strong>--after</strong></p>
+<blockquote>
+<p>With <strong>list-dependencies</strong>, show the units that are ordered before the specified unit. In other words, recursively list units following the <em>After=</em> dependency.</p>
+<p>Note that any <em>After=</em> dependency is automatically mirrored to create a <em>Before=</em> dependency. Temporal dependencies may be specified explicitly, but are also created implicitly for units which are <em>WantedBy=</em> targets (see <strong>systemd.target</strong>(5)), and as a result of other directives (for example <em>RequiresMountsFor=</em>). Both explicitly and implicitly introduced dependencies are shown with <strong>list-dependencies</strong>.</p>
+<p>When passed to the <strong>list-jobs</strong> command, for each printed job show which other jobs are waiting for it. May be combined with <strong>--before</strong> to show both the jobs waiting for each job as well as all jobs each job is waiting for.</p>
+</blockquote>
+<p><strong>--before</strong></p>
+<blockquote>
+<p>With <strong>list-dependencies</strong>, show the units that are ordered after the specified unit. In other words, recursively list units following the <em>Before=</em> dependency.</p>
+<p>When passed to the <strong>list-jobs</strong> command, for each printed job show which other jobs it is waiting for. May be combined with <strong>--after</strong> to show both the jobs waiting for each job as well as all jobs each job is waiting for.</p>
+</blockquote>
+<p><strong>--with-dependencies</strong></p>
+<blockquote>
+<p>When used with <strong>status</strong>, <strong>cat</strong>, <strong>list-units</strong>, and <strong>list-unit-files</strong>, those commands print all specified units and the dependencies of those units.</p>
+<p>Options <strong>--reverse</strong>, <strong>--after</strong>, <strong>--before</strong> may be used to change what types of dependencies are shown.</p>
+</blockquote>
+<p><strong>-l</strong>, <strong>--full</strong></p>
+<blockquote>
+<p>Do not ellipsize unit names, process tree entries, journal output, or truncate unit descriptions in the output of <strong>status</strong>, <strong>list-units</strong>, <strong>list-jobs</strong>, and <strong>list-timers</strong>.</p>
+<p>Also, show installation targets in the output of <strong>is-enabled</strong>.</p>
+</blockquote>
+<p><strong>--value</strong></p>
+<blockquote>
+<p>When printing properties with <strong>show</strong>, only print the value, and skip the property name and "=". Also see option <strong>-P</strong> above.</p>
+</blockquote>
+<p><strong>--show-types</strong></p>
+<blockquote>
+<p>When showing sockets, show the type of the socket.</p>
+</blockquote>
+<p><strong>--job-mode=</strong></p>
+<blockquote>
+<p>When queuing a new job, this option controls how to deal with already queued jobs. It takes one of "fail", "replace", "replace-irreversibly", "isolate", "ignore-dependencies", "ignore-requirements", "flush", or "triggering". Defaults to "replace", except when the <strong>isolate</strong> command is used which implies the "isolate" job mode.</p>
+<p>If "fail" is specified and a requested operation conflicts with a pending job (more specifically: causes an already pending start job to be reversed into a stop job or vice versa), cause the operation to fail.</p>
+<p>If "replace" (the default) is specified, any conflicting pending job will be replaced, as necessary.</p>
+<p>If "replace-irreversibly" is specified, operate like "replace", but also mark the new jobs as irreversible. This prevents future conflicting transactions from replacing these jobs (or even being enqueued while the irreversible jobs are still pending). Irreversible jobs can still be cancelled using the <strong>cancel</strong> command. This job mode should be used on any transaction which pulls in shutdown.target.</p>
+<p>"isolate" is only valid for start operations and causes all other units to be stopped when the specified unit is started. This mode is always used when the <strong>isolate</strong> command is used.</p>
+<p>"flush" will cause all queued jobs to be canceled when the new job is enqueued.</p>
+<p>If "ignore-dependencies" is specified, then all unit dependencies are ignored for this new job and the operation is executed immediately. If passed, no required units of the unit passed will be pulled in, and no ordering dependencies will be honored. This is mostly a debugging and rescue tool for the administrator and should not be used by applications.</p>
+<p>"ignore-requirements" is similar to "ignore-dependencies", but only causes the requirement dependencies to be ignored, the ordering dependencies will still be honored.</p>
+<p>"triggering" may only be used with <strong>systemctl stop</strong>. In this mode, the specified unit and any active units that trigger it are stopped. See the discussion of <em>Triggers=</em> in <strong>systemd.unit</strong>(5) for more information about triggering units.</p>
+</blockquote>
+<p><strong>-T</strong>, <strong>--show-transaction</strong></p>
+<blockquote>
+<p>When enqueuing a unit job (for example as effect of a <strong>systemctl start</strong> invocation or similar), show brief information about all jobs enqueued, covering both the requested job and any added because of unit dependencies. Note that the output will only include jobs immediately part of the transaction requested. It is possible that service start-up program code run as effect of the enqueued jobs might request further jobs to be pulled in. This means that completion of the listed jobs might ultimately entail more jobs than the listed ones.</p>
+</blockquote>
+<p><strong>--fail</strong></p>
+<blockquote>
+<p>Shorthand for <strong>--job-mode=</strong>fail.</p>
+<p>When used with the <strong>kill</strong> command, if no units were killed, the operation results in an error.</p>
+</blockquote>
+<p><strong>-i</strong>, <strong>--ignore-inhibitors</strong></p>
+<blockquote>
+<p>When system shutdown or a sleep state is requested, ignore inhibitor locks. Applications can establish inhibitor locks to avoid that certain important operations (such as CD burning or suchlike) are interrupted by system shutdown or a sleep state. Any user may take these locks and privileged users may override these locks. If any locks are taken, shutdown and sleep state requests will normally fail (unless privileged) and a list of active locks is printed. However, if <strong>--ignore-inhibitors</strong> is specified, the established locks are ignored and not shown, and the operation attempted anyway, possibly requiring additional privileges.</p>
+</blockquote>
+<p><strong>--dry-run</strong></p>
+<blockquote>
+<p>Just print what would be done. Currently supported by verbs <strong>halt</strong>, <strong>poweroff</strong>, <strong>reboot</strong>, <strong>kexec</strong>, <strong>suspend</strong>, <strong>hibernate</strong>, <strong>hybrid-sleep</strong>, <strong>suspend-then-hibernate</strong>, <strong>default</strong>, <strong>rescue</strong>, <strong>emergency</strong>, and <strong>exit</strong>.</p>
+</blockquote>
+<p><strong>-q</strong>, <strong>--quiet</strong></p>
+<blockquote>
+<p>Suppress printing of the results of various commands and also the hints about truncated log lines. This does not suppress output of commands for which the printed output is the only result (like <strong>show</strong>). Errors are always printed.</p>
+</blockquote>
+<p><strong>--no-block</strong></p>
+<blockquote>
+<p>Do not synchronously wait for the requested operation to finish. If this is not specified, the job will be verified, enqueued and <strong>systemctl</strong> will wait until the units start-up is completed. By passing this argument, it is only verified and enqueued. This option may not be combined with <strong>--wait</strong>.</p>
+</blockquote>
+<p><strong>--wait</strong></p>
+<blockquote>
+<p>Synchronously wait for started units to terminate again. This option may not be combined with <strong>--no-block</strong>. Note that this will wait forever if any given unit never terminates (by itself or by getting stopped explicitly); particularly services which use "RemainAfterExit=yes".</p>
+<p>When used with <strong>is-system-running</strong>, wait until the boot process is completed before returning.</p>
+</blockquote>
+<p><strong>--user</strong></p>
+<blockquote>
+<p>Talk to the service manager of the calling user, rather than the service manager of the system.</p>
+</blockquote>
+<p><strong>--system</strong></p>
+<blockquote>
+<p>Talk to the service manager of the system. This is the implied default.</p>
+</blockquote>
+<p><strong>--failed</strong></p>
+<blockquote>
+<p>List units in failed state. This is equivalent to <strong>--state=failed</strong>.</p>
+</blockquote>
+<p><strong>--no-wall</strong></p>
+<blockquote>
+<p>Do not send wall message before halt, power-off and reboot.</p>
+</blockquote>
+<p><strong>--global</strong></p>
+<blockquote>
+<p>When used with <strong>enable</strong> and <strong>disable</strong>, operate on the global user configuration directory, thus enabling or disabling a unit file globally for all future logins of all users.</p>
+</blockquote>
+<p><strong>--no-reload</strong></p>
+<blockquote>
+<p>When used with <strong>enable</strong> and <strong>disable</strong>, do not implicitly reload daemon configuration after executing the changes.</p>
+</blockquote>
+<p><strong>--no-ask-password</strong></p>
+<blockquote>
+<p>When used with <strong>start</strong> and related commands, disables asking for passwords. Background services may require input of a password or passphrase string, for example to unlock system hard disks or cryptographic certificates. Unless this option is specified and the command is invoked from a terminal, <strong>systemctl</strong> will query the user on the terminal for the necessary secrets. Use this option to switch this behavior off. In this case, the password must be supplied by some other means (for example graphical password agents) or the service might fail. This also disables querying the user for authentication for privileged operations.</p>
+</blockquote>
+<p><strong>--kill-who=</strong></p>
+<blockquote>
+<p>When used with <strong>kill</strong>, choose which processes to send a signal to. Must be one of <strong>main</strong>, <strong>control</strong> or <strong>all</strong> to select whether to kill only the main process, the control process or all processes of the unit. The main process of the unit is the one that defines the life-time of it. A control process of a unit is one that is invoked by the manager to induce state changes of it. For example, all processes started due to the <em>ExecStartPre=</em>, <em>ExecStop=</em> or <em>ExecReload=</em> settings of service units are control processes. Note that there is only one control process per unit at a time, as only one state change is executed at a time. For services of type <em>Type=forking</em>, the initial process started by the manager for <em>ExecStart=</em> is a control process, while the process ultimately forked off by that one is then considered the main process of the unit (if it can be determined). This is different for service units of other types, where the process forked off by the manager for <em>ExecStart=</em> is always the main process itself. A service unit consists of zero or one main process, zero or one control process plus any number of additional processes. Not all unit types manage processes of these types however. For example, for mount units, control processes are defined (which are the invocations of /bin/mount and /bin/umount), but no main process is defined. If omitted, defaults to <strong>all</strong>.</p>
+</blockquote>
+<p><strong>-s</strong>, <strong>--signal=</strong></p>
+<blockquote>
+<p>When used with <strong>kill</strong>, choose which signal to send to selected processes. Must be one of the well-known signal specifiers such as <strong>SIGTERM</strong>, <strong>SIGINT</strong> or <strong>SIGSTOP</strong>. If omitted, defaults to <strong>SIGTERM</strong>.</p>
+</blockquote>
+<p><strong>--what=</strong></p>
+<blockquote>
+<p>Select what type of per-unit resources to remove when the <strong>clean</strong> command is invoked, see below. Takes one of <strong>configuration</strong>, <strong>state</strong>, <strong>cache</strong>, <strong>logs</strong>, <strong>runtime</strong> to select the type of resource. This option may be specified more than once, in which case all specified resource types are removed. Also accepts the special value <strong>all</strong> as a shortcut for specifying all five resource types. If this option is not specified defaults to the combination of <strong>cache</strong> and <strong>runtime</strong>, i.e. the two kinds of resources that are generally considered to be redundant and can be reconstructed on next invocation.</p>
+</blockquote>
+<p><strong>-f</strong>, <strong>--force</strong></p>
+<blockquote>
+<p>When used with <strong>enable</strong>, overwrite any existing conflicting symlinks.</p>
+<p>When used with <strong>edit</strong>, create all of the specified units which do not already exist.</p>
+<p>When used with <strong>halt</strong>, <strong>poweroff</strong>, <strong>reboot</strong> or <strong>kexec</strong>, execute the selected operation without shutting down all units. However, all processes will be killed forcibly and all file systems are unmounted or remounted read-only. This is hence a drastic but relatively safe option to request an immediate reboot. If <strong>--force</strong> is specified twice for these operations (with the exception of <strong>kexec</strong>), they will be executed immediately, without terminating any processes or unmounting any file systems. Warning: specifying <strong>--force</strong> twice with any of these operations might result in data loss. Note that when <strong>--force</strong> is specified twice the selected operation is executed by <strong>systemctl</strong> itself, and the system manager is not contacted. This means the command should succeed even when the system manager has crashed.</p>
+</blockquote>
+<p><strong>--message=</strong></p>
+<blockquote>
+<p>When used with <strong>halt</strong>, <strong>poweroff</strong> or <strong>reboot</strong>, set a short message explaining the reason for the operation. The message will be logged together with the default shutdown message.</p>
+</blockquote>
+<p><strong>--now</strong></p>
+<blockquote>
+<p>When used with <strong>enable</strong>, the units will also be started. When used with <strong>disable</strong> or <strong>mask</strong>, the units will also be stopped. The start or stop operation is only carried out when the respective enable or disable operation has been successful.</p>
+</blockquote>
+<p><strong>--root=</strong></p>
+<blockquote>
+<p>When used with <strong>enable</strong>/<strong>disable</strong>/<strong>is-enabled</strong> (and related commands), use the specified root path when looking for unit files. If this option is present, <strong>systemctl</strong> will operate on the file system directly, instead of communicating with the <strong>systemd</strong> daemon to carry out changes.</p>
+</blockquote>
+<p><strong>--runtime</strong></p>
+<blockquote>
+<p>When used with <strong>enable</strong>, <strong>disable</strong>, <strong>edit</strong>, (and related commands), make changes only temporarily, so that they are lost on the next reboot. This will have the effect that changes are not made in subdirectories of /etc/ but in /run/, with identical immediate effects, however, since the latter is lost on reboot, the changes are lost too.</p>
+<p>Similarly, when used with <strong>set-property</strong>, make changes only temporarily, so that they are lost on the next reboot.</p>
+</blockquote>
+<p><strong>--preset-mode=</strong></p>
+<blockquote>
+<p>Takes one of "full" (the default), "enable-only", "disable-only". When used with the <strong>preset</strong> or <strong>preset-all</strong> commands, controls whether units shall be disabled and enabled according to the preset rules, or only enabled, or only disabled.</p>
+</blockquote>
+<p><strong>-n</strong>, <strong>--lines=</strong></p>
+<blockquote>
+<p>When used with <strong>status</strong>, controls the number of journal lines to show, counting from the most recent ones. Takes a positive integer argument, or 0 to disable journal output. Defaults to 10.</p>
+</blockquote>
+<p><strong>-o</strong>, <strong>--output=</strong></p>
+<blockquote>
+<p>When used with <strong>status</strong>, controls the formatting of the journal entries that are shown. For the available choices, see <strong>journalctl</strong>(1). Defaults to "short".</p>
+</blockquote>
+<p><strong>--firmware-setup</strong></p>
+<blockquote>
+<p>When used with the <strong>reboot</strong> command, indicate to the systems firmware to reboot into the firmware setup interface. Note that this functionality is not available on all systems.</p>
+</blockquote>
+<p><strong>--boot-loader-menu=</strong></p>
+<blockquote>
+<p>When used with the <strong>reboot</strong> command, indicate to the systems boot loader to show the boot loader menu on the following boot. Takes a time value as parameter — indicating the menu timeout. Pass zero in order to disable the menu timeout. Note that not all boot loaders support this functionality.</p>
+</blockquote>
+<p><strong>--boot-loader-entry=</strong></p>
+<blockquote>
+<p>When used with the <strong>reboot</strong> command, indicate to the systems boot loader to boot into a specific boot loader entry on the following boot. Takes a boot loader entry identifier as argument, or "help" in order to list available entries. Note that not all boot loaders support this functionality.</p>
+</blockquote>
+<p><strong>--reboot-argument=</strong></p>
+<blockquote>
+<p>This switch is used with <strong>reboot</strong>. The value is architecture and firmware specific. As an example, "recovery" might be used to trigger system recovery, and "fota" might be used to trigger a “firmware over the air” update.</p>
+</blockquote>
+<p><strong>--plain</strong></p>
+<blockquote>
+<p>When used with <strong>list-dependencies</strong>, <strong>list-units</strong> or <strong>list-machines</strong>, the output is printed as a list instead of a tree, and the bullet circles are omitted.</p>
+</blockquote>
+<p><strong>--timestamp=</strong></p>
+<blockquote>
+<p>Takes one of "pretty" (the default), "us", "µs", "utc". Changes the format of printed timestamps. "pretty": "Day YYYY-MM-DD HH:MM:SS TZ" "us" or "µs": "Day YYYY-MM-DD HH:MM:SS.UUUUUU TZ" "utc": "Day YYYY-MM-DD HH:MM:SS UTC" "us+utc" or "µs+utc": "Day YYYY-MM-DD HH:MM:SS.UUUUUU UTC".RE</p>
+<p><strong>-H</strong>, <strong>--host=</strong></p>
+<blockquote>
+<p>Execute the operation remotely. Specify a hostname, or a username and hostname separated by "@", to connect to. The hostname may optionally be suffixed by a port ssh is listening on, separated by ":", and then a container name, separated by "/", which connects directly to a specific container on the specified host. This will use SSH to talk to the remote machine manager instance. Container names may be enumerated with <strong>machinectl -H </strong><em>HOST</em>. Put IPv6 addresses in brackets.</p>
+</blockquote>
+<p><strong>-M</strong>, <strong>--machine=</strong></p>
+<blockquote>
+<p>Execute operation on a local container. Specify a container name to connect to.</p>
+</blockquote>
+<p><strong>--no-pager</strong></p>
+<blockquote>
+<p>Do not pipe output into a pager.</p>
+</blockquote>
+<p><strong>--no-legend</strong></p>
+<blockquote>
+<p>Do not print the legend, i.e. column headers and the footer with hints.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+</blockquote>
+<h1>EXIT STATUS</h1>
+<p>On success, 0 is returned, a non-zero failure code otherwise.</p>
+<p><strong>systemctl</strong> uses the return codes defined by LSB, as defined in <strong>LSB 3.0.0</strong>[2].</p>
+<p><br />
+<strong>Table 3. LSB return codes</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Value</td>
+<td style="text-align: left;">Description in LSB</td>
+<td style="text-align: left;">Use in systemd</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>0</strong></td>
+<td style="text-align: left;">"program is running or service is OK"</td>
+<td style="text-align: left;">unit is active</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>1</strong></td>
+<td style="text-align: left;">"program is dead and /var/run pid file exists"</td>
+<td style="text-align: left;">unit <em>not</em> failed (used by <strong>is-failed</strong>)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>2</strong></td>
+<td style="text-align: left;">"program is dead and /var/lock lock file exists"</td>
+<td style="text-align: left;">unused</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>3</strong></td>
+<td style="text-align: left;">"program is not running"</td>
+<td style="text-align: left;">unit is not active</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>4</strong></td>
+<td style="text-align: left;">"program or service status is unknown"</td>
+<td style="text-align: left;">no such unit</td>
+</tr>
+</tbody>
+</table>
+<p>The mapping of LSB service states to systemd unit states is imperfect, so it is better to not rely on those return values but to look for specific unit states and substates instead.</p>
+<h1>ENVIRONMENT</h1>
+<p><em>$SYSTEMD_EDITOR</em></p>
+<blockquote>
+<p>Editor to use when editing units; overrides <em>$EDITOR</em> and <em>$VISUAL</em>. If neither <em>$SYSTEMD_EDITOR</em> nor <em>$EDITOR</em> nor <em>$VISUAL</em> are present or if it is set to an empty string or if their execution failed, systemctl will try to execute well known editors in this order: <strong>editor</strong>(1), <strong>nano</strong>(1), <strong>vim</strong>(1), <strong>vi</strong>(1).</p>
+</blockquote>
+<p><em>$SYSTEMD_PAGER</em></p>
+<blockquote>
+<p>Pager to use when <strong>--no-pager</strong> is not given; overrides <em>$PAGER</em>. If neither <em>$SYSTEMD_PAGER</em> nor <em>$PAGER</em> are set, a set of well-known pager implementations are tried in turn, including <strong>less</strong>(1) and <strong>more</strong>(1), until one is found. If no pager implementation is discovered no pager is invoked. Setting this environment variable to an empty string or the value "cat" is equivalent to passing <strong>--no-pager</strong>.</p>
+</blockquote>
+<p><em>$SYSTEMD_LESS</em></p>
+<blockquote>
+<p>Override the options passed to <strong>less</strong> (by default "FRSXMK").</p>
+<p>Users might want to change two options in particular:</p>
+<p><strong>K</strong></p>
+<blockquote>
+<p>This option instructs the pager to exit immediately when Ctrl+C is pressed. To allow <strong>less</strong> to handle Ctrl+C itself to switch back to the pager command prompt, unset this option.</p>
+<p>If the value of <em>$SYSTEMD_LESS</em> does not include "K", and the pager that is invoked is <strong>less</strong>, Ctrl+C will be ignored by the executable, and needs to be handled by the pager.</p>
+</blockquote>
+<p><strong>X</strong></p>
+<blockquote>
+<p>This option instructs the pager to not send termcap initialization and deinitialization strings to the terminal. It is set by default to allow command output to remain visible in the terminal even after the pager exits. Nevertheless, this prevents some pager functionality from working, in particular paged output cannot be scrolled with the mouse.</p>
+</blockquote>
+<p>See <strong>less</strong>(1) for more discussion.</p>
+</blockquote>
+<p><em>$SYSTEMD_LESSCHARSET</em></p>
+<blockquote>
+<p>Override the charset passed to <strong>less</strong> (by default "utf-8", if the invoking terminal is determined to be UTF-8 compatible).</p>
+</blockquote>
+<p><em>$SYSTEMD_PAGERSECURE</em></p>
+<blockquote>
+<p>Takes a boolean argument. When true, the "secure" mode of the pager is enabled; if false, disabled. If <em>$SYSTEMD_PAGERSECURE</em> is not set at all, secure mode is enabled if the effective UID is not the same as the owner of the login session, see <strong>geteuid</strong>(2) and <strong>sd_pid_get_owner_uid</strong>(3). In secure mode, <strong>LESSSECURE=1</strong> will be set when invoking the pager, and the pager shall disable commands that open or create new files or start new subprocesses. When <em>$SYSTEMD_PAGERSECURE</em> is not set at all, pagers which are not known to implement secure mode will not be used. (Currently only <strong>less</strong>(1) implements secure mode.)</p>
+<p>Note: when commands are invoked with elevated privileges, for example under <strong>sudo</strong>(8) or <strong>pkexec</strong>(1), care must be taken to ensure that unintended interactive features are not enabled. "Secure" mode for the pager may be enabled automatically as describe above. Setting <em>SYSTEMD_PAGERSECURE=0</em> or not removing it from the inherited environment allows the user to invoke arbitrary commands. Note that if the <em>$SYSTEMD_PAGER</em> or <em>$PAGER</em> variables are to be honoured, <em>$SYSTEMD_PAGERSECURE</em> must be set too. It might be reasonable to completely disable the pager using <strong>--no-pager</strong> instead.</p>
+</blockquote>
+<p><em>$SYSTEMD_COLORS</em></p>
+<blockquote>
+<p>The value must be a boolean. Controls whether colorized output should be generated. This can be specified to override the decision that <strong>systemd</strong> makes based on <em>$TERM</em> and what the console is connected to.</p>
+</blockquote>
+<p><em>$SYSTEMD_URLIFY</em></p>
+<blockquote>
+<p>The value must be a boolean. Controls whether clickable links should be generated in the output for terminal emulators supporting this. This can be specified to override the decision that <strong>systemd</strong> makes based on <em>$TERM</em> and other conditions.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>journalctl</strong>(1), <strong>loginctl</strong>(1), <strong>machinectl</strong>(1), <strong>systemd.unit</strong>(5), <strong>systemd.resource-control</strong>(5), <strong>systemd.special</strong>(7), <strong>wall</strong>(1), <strong>systemd.preset</strong>(5), <strong>systemd.generator</strong>(7), <strong>glob</strong>(7)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>Preset</p>
+<p>https://www.freedesktop.org/wiki/Software/systemd/Preset</p></li>
+<li><p>LSB 3.0.0</p>
+<p>http://refspecs.linuxbase.org/LSB_3.0.0/LSB-PDA/LSB-PDA/iniscrptact.html</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

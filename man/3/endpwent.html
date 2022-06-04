@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command endpwent</title><meta name="description" content="Linux command endpwent get password file entry"><meta name="keywords" content="linux, command, endpwent, bsd, get password file entry"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getpwent, setpwent, endpwent - get password file entry</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;pwd.h&gt;
+
+struct passwd *getpwent(void);
+
+void setpwent(void);
+
+void endpwent(void);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>getpwent</strong>(), <strong>setpwent</strong>(), <strong>endpwent</strong>():</p>
+<blockquote>
+<p>_XOPEN_SOURCE &gt;= 500 || /* Glibc since 2.19: */ _DEFAULT_SOURCE || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE || _SVID_SOURCE</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>The <strong>getpwent</strong>() function returns a pointer to a structure containing the broken-out fields of a record from the password database (e.g., the local password file <em>/etc/passwd</em>, NIS, and LDAP). The first time <strong>getpwent</strong>() is called, it returns the first entry; thereafter, it returns successive entries.</p>
+<p>The <strong>setpwent</strong>() function rewinds to the beginning of the password database.</p>
+<p>The <strong>endpwent</strong>() function is used to close the password database after all processing has been performed.</p>
+<p>The <em>passwd</em> structure is defined in <em>&lt;pwd.h&gt;</em> as follows:</p>
+<pre><code>struct passwd {
+    char   *pw_name;       /* username */
+    char   *pw_passwd;     /* user password */
+    uid_t   pw_uid;        /* user ID */
+    gid_t   pw_gid;        /* group ID */
+    char   *pw_gecos;      /* user information */
+    char   *pw_dir;        /* home directory */
+    char   *pw_shell;      /* shell program */
+};</code></pre>
+<p>When <strong>shadow</strong>(5) passwords are enabled (which is default on many GNU/Linux installations) the content of <em>pw_passwd</em> is usually not very useful. In such a case most passwords are stored in a separate file.</p>
+<p>The variable <em>pw_shell</em> may be empty, in which case the system will execute the default shell (<strong>/bin/sh</strong>) for the user.</p>
+<p>For more information about the fields of this structure, see <strong>passwd</strong>(5).</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>getpwent</strong>() function returns a pointer to a <em>passwd</em> structure, or NULL if there are no more entries or an error occurred. If an error occurs, <em>errno</em> is set appropriately. If one wants to check <em>errno</em> after the call, it should be set to zero before the call.</p>
+<p>The return value may point to a static area, and may be overwritten by subsequent calls to <strong>getpwent</strong>(), <strong>getpwnam</strong>(3), or <strong>getpwuid</strong>(3). (Do not pass the returned pointer to <strong>free</strong>(3).)</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINTR</strong></dt>
+<dd><p>A signal was caught; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>I/O error.</p>
+</dd>
+<dt><strong>EMFILE</strong></dt>
+<dd><p>The per-process limit on the number of open file descriptors has been reached.</p>
+</dd>
+<dt><strong>ENFILE</strong></dt>
+<dd><p>The system-wide limit on the total number of open files has been reached.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient memory to allocate <em>passwd</em> structure.</p>
+</dd>
+<dt><strong>ERANGE</strong></dt>
+<dd><p>Insufficient buffer space supplied.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/passwd</em></dt>
+<dd><p>local password database file</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getpwent</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:pwent<br />
+race:pwentbuf locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>setpwent</strong>(),<br />
+<strong>endpwent</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:pwent locale</td>
+</tr>
+</tbody>
+</table>
+<p>In the above table, <em>pwent</em> in <em>race:pwent</em> signifies that if any of the functions <strong>setpwent</strong>(), <strong>getpwent</strong>(), or <strong>endpwent</strong>() are used in parallel in different threads of a program, then data races could occur.</p>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4, 4.3BSD. The <em>pw_gecos</em> field is not specified in POSIX, but is present on most implementations.</p>
+<h1>SEE ALSO</h1>
+<p><strong>fgetpwent</strong>(3), <strong>getpw</strong>(3), <strong>getpwent_r</strong>(3), <strong>getpwnam</strong>(3), <strong>getpwuid</strong>(3), <strong>putpwent</strong>(3), <strong>shadow</strong>(5), <strong>passwd</strong>(5)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

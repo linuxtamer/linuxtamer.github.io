@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd.service</title><meta name="description" content="Linux command systemd.service Service unit configuration"><meta name="keywords" content="linux, command, systemd.service, bsd, Service unit configuration"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd.service - Service unit configuration</p>
+<h1>SYNOPSIS</h1>
+<p><em>service</em>.service</p>
+<h1>DESCRIPTION</h1>
+<p>A unit configuration file whose name ends in ".service" encodes information about a process controlled and supervised by systemd.</p>
+<p>This man page lists the configuration options specific to this unit type. See <strong>systemd.unit</strong>(5) for the common options of all unit configuration files. The common configuration items are configured in the generic [Unit] and [Install] sections. The service specific configuration options are configured in the [Service] section.</p>
+<p>Additional options are listed in <strong>systemd.exec</strong>(5), which define the execution environment the commands are executed in, and in <strong>systemd.kill</strong>(5), which define the way the processes of the service are terminated, and in <strong>systemd.resource-control</strong>(5), which configure resource control settings for the processes of the service.</p>
+<p>If a service is requested under a certain name but no unit configuration file is found, systemd looks for a SysV init script by the same name (with the .service suffix removed) and dynamically creates a service unit from that script. This is useful for compatibility with SysV. Note that this compatibility is quite comprehensive but not 100%. For details about the incompatibilities, see the <strong>Incompatibilities with SysV</strong>[1] document.</p>
+<p>The <strong>systemd-run</strong>(1) command allows creating .service and .scope units dynamically and transiently from the command line.</p>
+<h1>SERVICE TEMPLATES</h1>
+<p>It is possible for <strong>systemd</strong> services to take a single argument via the "<em>service</em>@<em>argument</em>.service" syntax. Such services are called "instantiated" services, while the unit definition without the <em>argument</em> parameter is called a "template". An example could be a dhcpcd@.service service template which takes a network interface as a parameter to form an instantiated service. Within the service file, this parameter or "instance name" can be accessed with %-specifiers. See <strong>systemd.unit</strong>(5) for details.</p>
+<h1>AUTOMATIC DEPENDENCIES</h1>
+<h2>Implicit Dependencies</h2>
+<p>The following dependencies are implicitly added:</p>
+<blockquote>
+<p>·</p>
+<p>Services with <em>Type=dbus</em> set automatically acquire dependencies of type <em>Requires=</em> and <em>After=</em> on dbus.socket.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Socket activated services are automatically ordered after their activating .socket units via an automatic <em>After=</em> dependency. Services also pull in all .socket units listed in <em>Sockets=</em> via automatic <em>Wants=</em> and <em>After=</em> dependencies.</p>
+</blockquote>
+<p>Additional implicit dependencies may be added as result of execution and resource control parameters as documented in <strong>systemd.exec</strong>(5) and <strong>systemd.resource-control</strong>(5).</p>
+<h2>Default Dependencies</h2>
+<p>The following dependencies are added unless <em>DefaultDependencies=no</em> is set:</p>
+<blockquote>
+<p>·</p>
+<p>Service units will have dependencies of type <em>Requires=</em> and <em>After=</em> on sysinit.target, a dependency of type <em>After=</em> on basic.target as well as dependencies of type <em>Conflicts=</em> and <em>Before=</em> on shutdown.target. These ensure that normal service units pull in basic system initialization, and are terminated cleanly prior to system shutdown. Only services involved with early boot or late system shutdown should disable this option.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Instanced service units (i.e. service units with an "@" in their name) are assigned by default a per-template slice unit (see <strong>systemd.slice</strong>(5)), named after the template unit, containing all instances of the specific template. This slice is normally stopped at shutdown, together with all template instances. If that is not desired, set <em>DefaultDependencies=no</em> in the template unit, and either define your own per-template slice unit file that also sets <em>DefaultDependencies=no</em>, or set <em>Slice=system.slice</em> (or another suitable slice) in the template unit. Also see <strong>systemd.resource-control</strong>(5).</p>
+</blockquote>
+<h1>OPTIONS</h1>
+<p>Service files must include a [Service] section, which carries information about the service and the process it supervises. A number of options that may be used in this section are shared with other unit types. These options are documented in <strong>systemd.exec</strong>(5), <strong>systemd.kill</strong>(5) and <strong>systemd.resource-control</strong>(5). The options specific to the [Service] section of service units are the following:</p>
+<p><em>Type=</em></p>
+<blockquote>
+<p>Configures the process start-up type for this service unit. One of <strong>simple</strong>, <strong>exec</strong>, <strong>forking</strong>, <strong>oneshot</strong>, <strong>dbus</strong>, <strong>notify</strong> or <strong>idle</strong>:</p>
+<blockquote>
+<p>·</p>
+<p>If set to <strong>simple</strong> (the default if <em>ExecStart=</em> is specified but neither <em>Type=</em> nor <em>BusName=</em> are), the service manager will consider the unit started immediately after the main service process has been forked off. It is expected that the process configured with <em>ExecStart=</em> is the main process of the service. In this mode, if the process offers functionality to other processes on the system, its communication channels should be installed before the service is started up (e.g. sockets set up by systemd, via socket activation), as the service manager will immediately proceed starting follow-up units, right after creating the main service process, and before executing the services binary. Note that this means <strong>systemctl start</strong> command lines for <strong>simple</strong> services will report success even if the services binary cannot be invoked successfully (for example because the selected <em>User=</em> doesnt exist, or the service binary is missing).</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The <strong>exec</strong> type is similar to <strong>simple</strong>, but the service manager will consider the unit started immediately after the main service binary has been executed. The service manager will delay starting of follow-up units until that point. (Or in other words: <strong>simple</strong> proceeds with further jobs right after <strong>fork()</strong> returns, while <strong>exec</strong> will not proceed before both <strong>fork()</strong> and <strong>execve()</strong> in the service process succeeded.) Note that this means <strong>systemctl start</strong> command lines for <strong>exec</strong> services will report failure when the services binary cannot be invoked successfully (for example because the selected <em>User=</em> doesnt exist, or the service binary is missing).</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>If set to <strong>forking</strong>, it is expected that the process configured with <em>ExecStart=</em> will call <strong>fork()</strong> as part of its start-up. The parent process is expected to exit when start-up is complete and all communication channels are set up. The child continues to run as the main service process, and the service manager will consider the unit started when the parent process exits. This is the behavior of traditional UNIX services. If this setting is used, it is recommended to also use the <em>PIDFile=</em> option, so that systemd can reliably identify the main process of the service. systemd will proceed with starting follow-up units as soon as the parent process exits.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Behavior of <strong>oneshot</strong> is similar to <strong>simple</strong>; however, the service manager will consider the unit up after the main process exits. It will then start follow-up units. <em>RemainAfterExit=</em> is particularly useful for this type of service. <em>Type=</em><strong>oneshot</strong> is the implied default if neither <em>Type=</em> nor <em>ExecStart=</em> are specified. Note that if this option is used without <em>RemainAfterExit=</em> the service will never enter "active" unit state, but directly transition from "activating" to "deactivating" or "dead" since no process is configured that shall run continuously. In particular this means that after a service of this type ran (and which has <em>RemainAfterExit=</em> not set) it will not show up as started afterwards, but as dead.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Behavior of <strong>dbus</strong> is similar to <strong>simple</strong>; however, it is expected that the service acquires a name on the D-Bus bus, as configured by <em>BusName=</em>. systemd will proceed with starting follow-up units after the D-Bus bus name has been acquired. Service units with this option configured implicitly gain dependencies on the dbus.socket unit. This type is the default if <em>BusName=</em> is specified. A service unit of this type is considered to be in the activating state until the specified bus name is acquired. It is considered activated while the bus name is taken. Once the bus name is released the service is considered being no longer functional which has the effect that the service manager attempts to terminate any remaining processes belonging to the service. Services that drop their bus name as part of their shutdown logic thus should be prepared to receive a <strong>SIGTERM</strong> (or whichever signal is configured in <em>KillSignal=</em>) as result.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Behavior of <strong>notify</strong> is similar to <strong>exec</strong>; however, it is expected that the service sends a notification message via <strong>sd_notify</strong>(3) or an equivalent call when it has finished starting up. systemd will proceed with starting follow-up units after this notification message has been sent. If this option is used, <em>NotifyAccess=</em> (see below) should be set to open access to the notification socket provided by systemd. If <em>NotifyAccess=</em> is missing or set to <strong>none</strong>, it will be forcibly set to <strong>main</strong>.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Behavior of <strong>idle</strong> is very similar to <strong>simple</strong>; however, actual execution of the service program is delayed until all active jobs are dispatched. This may be used to avoid interleaving of output of shell services with the status output on the console. Note that this type is useful only to improve console output, it is not useful as a general unit ordering tool, and the effect of this service type is subject to a 5s timeout, after which the service program is invoked anyway.</p>
+</blockquote>
+<p>It is generally recommended to use <em>Type=</em><strong>simple</strong> for long-running services whenever possible, as it is the simplest and fastest option. However, as this service type wont propagate service start-up failures and doesnt allow ordering of other units against completion of initialization of the service (which for example is useful if clients need to connect to the service through some form of IPC, and the IPC channel is only established by the service itself — in contrast to doing this ahead of time through socket or bus activation or similar), it might not be sufficient for many cases. If so, <strong>notify</strong> or <strong>dbus</strong> (the latter only in case the service provides a D-Bus interface) are the preferred options as they allow service program code to precisely schedule when to consider the service started up successfully and when to proceed with follow-up units. The <strong>notify</strong> service type requires explicit support in the service codebase (as <strong>sd_notify()</strong> or an equivalent API needs to be invoked by the service at the appropriate time) — if its not supported, then <strong>forking</strong> is an alternative: it supports the traditional UNIX service start-up protocol. Finally, <strong>exec</strong> might be an option for cases where it is enough to ensure the service binary is invoked, and where the service binary itself executes no or little initialization on its own (and its initialization is unlikely to fail). Note that using any type other than <strong>simple</strong> possibly delays the boot process, as the service manager needs to wait for service initialization to complete. It is hence recommended not to needlessly use any types other than <strong>simple</strong>. (Also note it is generally not recommended to use <strong>idle</strong> or <strong>oneshot</strong> for long-running services.)</p>
+</blockquote>
+<p><em>RemainAfterExit=</em></p>
+<blockquote>
+<p>Takes a boolean value that specifies whether the service shall be considered active even when all its processes exited. Defaults to <strong>no</strong>.</p>
+</blockquote>
+<p><em>GuessMainPID=</em></p>
+<blockquote>
+<p>Takes a boolean value that specifies whether systemd should try to guess the main PID of a service if it cannot be determined reliably. This option is ignored unless <strong>Type=forking</strong> is set and <strong>PIDFile=</strong> is unset because for the other types or with an explicitly configured PID file, the main PID is always known. The guessing algorithm might come to incorrect conclusions if a daemon consists of more than one process. If the main PID cannot be determined, failure detection and automatic restarting of a service will not work reliably. Defaults to <strong>yes</strong>.</p>
+</blockquote>
+<p><em>PIDFile=</em></p>
+<blockquote>
+<p>Takes a path referring to the PID file of the service. Usage of this option is recommended for services where <em>Type=</em> is set to <strong>forking</strong>. The path specified typically points to a file below /run/. If a relative path is specified it is hence prefixed with /run/. The service manager will read the PID of the main process of the service from this file after start-up of the service. The service manager will not write to the file configured here, although it will remove the file after the service has shut down if it still exists. The PID file does not need to be owned by a privileged user, but if it is owned by an unprivileged user additional safety restrictions are enforced: the file may not be a symlink to a file owned by a different user (neither directly nor indirectly), and the PID file must refer to a process already belonging to the service.</p>
+</blockquote>
+<p><em>BusName=</em></p>
+<blockquote>
+<p>Takes a D-Bus destination name that this service shall use. This option is mandatory for services where <em>Type=</em> is set to <strong>dbus</strong>. It is recommended to always set this property if known to make it easy to map the service name to the D-Bus destination. In particular, <strong>systemctl service-log-level/service-log-target</strong> verbs make use of this.</p>
+</blockquote>
+<p><em>ExecStart=</em></p>
+<blockquote>
+<p>Commands with their arguments that are executed when this service is started. The value is split into zero or more command lines according to the rules described below (see section "Command Lines" below).</p>
+<p>Unless <em>Type=</em> is <strong>oneshot</strong>, exactly one command must be given. When <em>Type=oneshot</em> is used, zero or more commands may be specified. Commands may be specified by providing multiple command lines in the same directive, or alternatively, this directive may be specified more than once with the same effect. If the empty string is assigned to this option, the list of commands to start is reset, prior assignments of this option will have no effect. If no <em>ExecStart=</em> is specified, then the service must have <em>RemainAfterExit=yes</em> and at least one <em>ExecStop=</em> line set. (Services lacking both <em>ExecStart=</em> and <em>ExecStop=</em> are not valid.)</p>
+<p>For each of the specified commands, the first argument must be either an absolute path to an executable or a simple file name without any slashes. Optionally, this filename may be prefixed with a number of special characters:</p>
+<p><br />
+<strong>Table 1. Special executable prefixes</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Prefix</td>
+<td style="text-align: left;">Effect</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"@"</td>
+<td style="text-align: left;">If the executable path is prefixed with "@", the second specified token will be passed as "argv[0]" to the executed process (instead of the actual filename), followed by the further arguments specified.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"-"</td>
+<td style="text-align: left;">If the executable path is prefixed with "-", an exit code of the command normally considered a failure (i.e. non-zero exit status or abnormal exit due to signal) is recorded, but has no further effect and is considered equivalent to success.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">":"</td>
+<td style="text-align: left;">If the executable path is prefixed with ":", environment variable substitution (as described by the "Command Lines" section below) is not applied.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"+"</td>
+<td style="text-align: left;">If the executable path is prefixed with "+" then the process is executed with full privileges. In this mode privilege restrictions configured with <em>User=</em>, <em>Group=</em>, <em>CapabilityBoundingSet=</em> or the various file system namespacing options (such as <em>PrivateDevices=</em>, <em>PrivateTmp=</em>) are not applied to the invoked command line (but still affect any other <em>ExecStart=</em>, <em>ExecStop=</em>, ... lines).</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"!"</td>
+<td style="text-align: left;">Similar to the "+" character discussed above this permits invoking command lines with elevated privileges. However, unlike "+" the "!" character exclusively alters the effect of <em>User=</em>, <em>Group=</em> and <em>SupplementaryGroups=</em>, i.e. only the stanzas that affect user and group credentials. Note that this setting may be combined with <em>DynamicUser=</em>, in which case a dynamic user/group pair is allocated before the command is invoked, but credential changing is left to the executed process itself.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"!!"</td>
+<td style="text-align: left;">This prefix is very similar to "!", however it only has an effect on systems lacking support for ambient process capabilities, i.e. without support for <em>AmbientCapabilities=</em>. Its intended to be used for unit files that take benefit of ambient capabilities to run processes with minimal privileges wherever possible while remaining compatible with systems that lack ambient capabilities support. Note that when "!!" is used, and a system lacking ambient capability support is detected any configured <em>SystemCallFilter=</em> and <em>CapabilityBoundingSet=</em> stanzas are implicitly modified, in order to permit spawned processes to drop credentials and capabilities themselves, even if this is configured to not be allowed. Moreover, if this prefix is used and a system lacking ambient capability support is detected <em>AmbientCapabilities=</em> will be skipped and not be applied. On systems supporting ambient capabilities, "!!" has no effect and is redundant.</td>
+</tr>
+</tbody>
+</table>
+<p>"@", "-", ":", and one of "+"/"!"/"!!" may be used together and they can appear in any order. However, only one of "+", "!", "!!" may be used at a time. Note that these prefixes are also supported for the other command line settings, i.e. <em>ExecStartPre=</em>, <em>ExecStartPost=</em>, <em>ExecReload=</em>, <em>ExecStop=</em> and <em>ExecStopPost=</em>.</p>
+<p>If more than one command is specified, the commands are invoked sequentially in the order they appear in the unit file. If one of the commands fails (and is not prefixed with "-"), other lines are not executed, and the unit is considered failed.</p>
+<p>Unless <em>Type=forking</em> is set, the process started via this command line will be considered the main process of the daemon.</p>
+</blockquote>
+<p><em>ExecStartPre=</em>, <em>ExecStartPost=</em></p>
+<blockquote>
+<p>Additional commands that are executed before or after the command in <em>ExecStart=</em>, respectively. Syntax is the same as for <em>ExecStart=</em>, except that multiple command lines are allowed and the commands are executed one after the other, serially.</p>
+<p>If any of those commands (not prefixed with "-") fail, the rest are not executed and the unit is considered failed.</p>
+<p><em>ExecStart=</em> commands are only run after all <em>ExecStartPre=</em> commands that were not prefixed with a "-" exit successfully.</p>
+<p><em>ExecStartPost=</em> commands are only run after the commands specified in <em>ExecStart=</em> have been invoked successfully, as determined by <em>Type=</em> (i.e. the process has been started for <em>Type=simple</em> or <em>Type=idle</em>, the last <em>ExecStart=</em> process exited successfully for <em>Type=oneshot</em>, the initial process exited successfully for <em>Type=forking</em>, "READY=1" is sent for <em>Type=notify</em>, or the <em>BusName=</em> has been taken for <em>Type=dbus</em>).</p>
+<p>Note that <em>ExecStartPre=</em> may not be used to start long-running processes. All processes forked off by processes invoked via <em>ExecStartPre=</em> will be killed before the next service process is run.</p>
+<p>Note that if any of the commands specified in <em>ExecStartPre=</em>, <em>ExecStart=</em>, or <em>ExecStartPost=</em> fail (and are not prefixed with "-", see above) or time out before the service is fully up, execution continues with commands specified in <em>ExecStopPost=</em>, the commands in <em>ExecStop=</em> are skipped.</p>
+<p>Note that the execution of <em>ExecStartPost=</em> is taken into account for the purpose of <em>Before=</em>/<em>After=</em> ordering constraints.</p>
+</blockquote>
+<p><em>ExecCondition=</em></p>
+<blockquote>
+<p>Optional commands that are executed before the command(s) in <em>ExecStartPre=</em>. Syntax is the same as for <em>ExecStart=</em>, except that multiple command lines are allowed and the commands are executed one after the other, serially.</p>
+<p>The behavior is like an <em>ExecStartPre=</em> and condition check hybrid: when an <em>ExecCondition=</em> command exits with exit code 1 through 254 (inclusive), the remaining commands are skipped and the unit is <em>not</em> marked as failed. However, if an <em>ExecCondition=</em> command exits with 255 or abnormally (e.g. timeout, killed by a signal, etc.), the unit will be considered failed (and remaining commands will be skipped). Exit code of 0 or those matching <em>SuccessExitStatus=</em> will continue execution to the next command(s).</p>
+<p>The same recommendations about not running long-running processes in <em>ExecStartPre=</em> also applies to <em>ExecCondition=</em>. <em>ExecCondition=</em> will also run the commands in <em>ExecStopPost=</em>, as part of stopping the service, in the case of any non-zero or abnormal exits, like the ones described above.</p>
+</blockquote>
+<p><em>ExecReload=</em></p>
+<blockquote>
+<p>Commands to execute to trigger a configuration reload in the service. This argument takes multiple command lines, following the same scheme as described for <em>ExecStart=</em> above. Use of this setting is optional. Specifier and environment variable substitution is supported here following the same scheme as for <em>ExecStart=</em>.</p>
+<p>One additional, special environment variable is set: if known, <em>$MAINPID</em> is set to the main process of the daemon, and may be used for command lines like the following:</p>
+<blockquote>
+<pre><code>ExecReload=kill -HUP $MAINPID</code></pre>
+</blockquote>
+<p>Note however that reloading a daemon by sending a signal (as with the example line above) is usually not a good choice, because this is an asynchronous operation and hence not suitable to order reloads of multiple services against each other. It is strongly recommended to set <em>ExecReload=</em> to a command that not only triggers a configuration reload of the daemon, but also synchronously waits for it to complete. For example, <strong>dbus-broker</strong>(1) uses the following:</p>
+<blockquote>
+<pre><code>ExecReload=busctl call org.freedesktop.DBus \
+        /org/freedesktop/DBus org.freedesktop.DBus \
+        ReloadConfig</code></pre>
+</blockquote>
+</blockquote>
+<p><em>ExecStop=</em></p>
+<blockquote>
+<p>Commands to execute to stop the service started via <em>ExecStart=</em>. This argument takes multiple command lines, following the same scheme as described for <em>ExecStart=</em> above. Use of this setting is optional. After the commands configured in this option are run, it is implied that the service is stopped, and any processes remaining for it are terminated according to the <em>KillMode=</em> setting (see <strong>systemd.kill</strong>(5)). If this option is not specified, the process is terminated by sending the signal specified in <em>KillSignal=</em> or <em>RestartKillSignal=</em> when service stop is requested. Specifier and environment variable substitution is supported (including <em>$MAINPID</em>, see above).</p>
+<p>Note that it is usually not sufficient to specify a command for this setting that only asks the service to terminate (for example, by sending some form of termination signal to it), but does not wait for it to do so. Since the remaining processes of the services are killed according to <em>KillMode=</em> and <em>KillSignal=</em> or <em>RestartKillSignal=</em> as described above immediately after the command exited, this may not result in a clean stop. The specified command should hence be a synchronous operation, not an asynchronous one.</p>
+<p>Note that the commands specified in <em>ExecStop=</em> are only executed when the service started successfully first. They are not invoked if the service was never started at all, or in case its start-up failed, for example because any of the commands specified in <em>ExecStart=</em>, <em>ExecStartPre=</em> or <em>ExecStartPost=</em> failed (and werent prefixed with "-", see above) or timed out. Use <em>ExecStopPost=</em> to invoke commands when a service failed to start up correctly and is shut down again. Also note that the stop operation is always performed if the service started successfully, even if the processes in the service terminated on their own or were killed. The stop commands must be prepared to deal with that case. <em>$MAINPID</em> will be unset if systemd knows that the main process exited by the time the stop commands are called.</p>
+<p>Service restart requests are implemented as stop operations followed by start operations. This means that <em>ExecStop=</em> and <em>ExecStopPost=</em> are executed during a service restart operation.</p>
+<p>It is recommended to use this setting for commands that communicate with the service requesting clean termination. For post-mortem clean-up steps use <em>ExecStopPost=</em> instead.</p>
+</blockquote>
+<p><em>ExecStopPost=</em></p>
+<blockquote>
+<p>Additional commands that are executed after the service is stopped. This includes cases where the commands configured in <em>ExecStop=</em> were used, where the service does not have any <em>ExecStop=</em> defined, or where the service exited unexpectedly. This argument takes multiple command lines, following the same scheme as described for <em>ExecStart=</em>. Use of these settings is optional. Specifier and environment variable substitution is supported. Note that – unlike <em>ExecStop=</em> – commands specified with this setting are invoked when a service failed to start up correctly and is shut down again.</p>
+<p>It is recommended to use this setting for clean-up operations that shall be executed even when the service failed to start up correctly. Commands configured with this setting need to be able to operate even if the service failed starting up half-way and left incompletely initialized data around. As the services processes have been terminated already when the commands specified with this setting are executed they should not attempt to communicate with them.</p>
+<p>Note that all commands that are configured with this setting are invoked with the result code of the service, as well as the main process exit code and status, set in the <em>$SERVICE_RESULT</em>, <em>$EXIT_CODE</em> and <em>$EXIT_STATUS</em> environment variables, see <strong>systemd.exec</strong>(5) for details.</p>
+<p>Note that the execution of <em>ExecStopPost=</em> is taken into account for the purpose of <em>Before=</em>/<em>After=</em> ordering constraints.</p>
+</blockquote>
+<p><em>RestartSec=</em></p>
+<blockquote>
+<p>Configures the time to sleep before restarting a service (as configured with <em>Restart=</em>). Takes a unit-less value in seconds, or a time span value such as "5min 20s". Defaults to 100ms.</p>
+</blockquote>
+<p><em>TimeoutStartSec=</em></p>
+<blockquote>
+<p>Configures the time to wait for start-up. If a daemon service does not signal start-up completion within the configured time, the service will be considered failed and will be shut down again. The precise action depends on the <em>TimeoutStartFailureMode=</em> option. Takes a unit-less value in seconds, or a time span value such as "5min 20s". Pass "infinity" to disable the timeout logic. Defaults to <em>DefaultTimeoutStartSec=</em> from the manager configuration file, except when <em>Type=oneshot</em> is used, in which case the timeout is disabled by default (see <strong>systemd-system.conf</strong>(5)).</p>
+<p>If a service of <em>Type=notify</em> sends "EXTEND_TIMEOUT_USEC=...", this may cause the start time to be extended beyond <em>TimeoutStartSec=</em>. The first receipt of this message must occur before <em>TimeoutStartSec=</em> is exceeded, and once the start time has extended beyond <em>TimeoutStartSec=</em>, the service manager will allow the service to continue to start, provided the service repeats "EXTEND_TIMEOUT_USEC=..." within the interval specified until the service startup status is finished by "READY=1". (see <strong>sd_notify</strong>(3)).</p>
+</blockquote>
+<p><em>TimeoutStopSec=</em></p>
+<blockquote>
+<p>This option serves two purposes. First, it configures the time to wait for each <em>ExecStop=</em> command. If any of them times out, subsequent <em>ExecStop=</em> commands are skipped and the service will be terminated by <strong>SIGTERM</strong>. If no <em>ExecStop=</em> commands are specified, the service gets the <strong>SIGTERM</strong> immediately. This default behavior can be changed by the <em>TimeoutStopFailureMode=</em> option. Second, it configures the time to wait for the service itself to stop. If it doesnt terminate in the specified time, it will be forcibly terminated by <strong>SIGKILL</strong> (see <em>KillMode=</em> in <strong>systemd.kill</strong>(5)). Takes a unit-less value in seconds, or a time span value such as "5min 20s". Pass "infinity" to disable the timeout logic. Defaults to <em>DefaultTimeoutStopSec=</em> from the manager configuration file (see <strong>systemd-system.conf</strong>(5)).</p>
+<p>If a service of <em>Type=notify</em> sends "EXTEND_TIMEOUT_USEC=...", this may cause the stop time to be extended beyond <em>TimeoutStopSec=</em>. The first receipt of this message must occur before <em>TimeoutStopSec=</em> is exceeded, and once the stop time has extended beyond <em>TimeoutStopSec=</em>, the service manager will allow the service to continue to stop, provided the service repeats "EXTEND_TIMEOUT_USEC=..." within the interval specified, or terminates itself (see <strong>sd_notify</strong>(3)).</p>
+</blockquote>
+<p><em>TimeoutAbortSec=</em></p>
+<blockquote>
+<p>This option configures the time to wait for the service to terminate when it was aborted due to a watchdog timeout (see <em>WatchdogSec=</em>). If the service has a short <em>TimeoutStopSec=</em> this option can be used to give the system more time to write a core dump of the service. Upon expiration the service will be forcibly terminated by <strong>SIGKILL</strong> (see <em>KillMode=</em> in <strong>systemd.kill</strong>(5)). The core file will be truncated in this case. Use <em>TimeoutAbortSec=</em> to set a sensible timeout for the core dumping per service that is large enough to write all expected data while also being short enough to handle the service failure in due time.</p>
+<p>Takes a unit-less value in seconds, or a time span value such as "5min 20s". Pass an empty value to skip the dedicated watchdog abort timeout handling and fall back <em>TimeoutStopSec=</em>. Pass "infinity" to disable the timeout logic. Defaults to <em>DefaultTimeoutAbortSec=</em> from the manager configuration file (see <strong>systemd-system.conf</strong>(5)).</p>
+<p>If a service of <em>Type=notify</em> handles <strong>SIGABRT</strong> itself (instead of relying on the kernel to write a core dump) it can send "EXTEND_TIMEOUT_USEC=..." to extended the abort time beyond <em>TimeoutAbortSec=</em>. The first receipt of this message must occur before <em>TimeoutAbortSec=</em> is exceeded, and once the abort time has extended beyond <em>TimeoutAbortSec=</em>, the service manager will allow the service to continue to abort, provided the service repeats "EXTEND_TIMEOUT_USEC=..." within the interval specified, or terminates itself (see <strong>sd_notify</strong>(3)).</p>
+</blockquote>
+<p><em>TimeoutSec=</em></p>
+<blockquote>
+<p>A shorthand for configuring both <em>TimeoutStartSec=</em> and <em>TimeoutStopSec=</em> to the specified value.</p>
+</blockquote>
+<p><em>TimeoutStartFailureMode=</em>, <em>TimeoutStopFailureMode=</em></p>
+<blockquote>
+<p>These options configure the action that is taken in case a daemon service does not signal start-up within its configured <em>TimeoutStartSec=</em>, respectively if it does not stop within <em>TimeoutStopSec=</em>. Takes one of <strong>terminate</strong>, <strong>abort</strong> and <strong>kill</strong>. Both options default to <strong>terminate</strong>.</p>
+<p>If <strong>terminate</strong> is set the service will be gracefully terminated by sending the signal specified in <em>KillSignal=</em> (defaults to <strong>SIGTERM</strong>, see <strong>systemd.kill</strong>(5)). If the service does not terminate the <em>FinalKillSignal=</em> is sent after <em>TimeoutStopSec=</em>. If <strong>abort</strong> is set, <em>WatchdogSignal=</em> is sent instead and <em>TimeoutAbortSec=</em> applies before sending <em>FinalKillSignal=</em>. This setting may be used to analyze services that fail to start-up or shut-down intermittently. By using <strong>kill</strong> the service is immediately terminated by sending <em>FinalKillSignal=</em> without any further timeout. This setting can be used to expedite the shutdown of failing services.</p>
+</blockquote>
+<p><em>RuntimeMaxSec=</em></p>
+<blockquote>
+<p>Configures a maximum time for the service to run. If this is used and the service has been active for longer than the specified time it is terminated and put into a failure state. Note that this setting does not have any effect on <em>Type=oneshot</em> services, as they terminate immediately after activation completed. Pass "infinity" (the default) to configure no runtime limit.</p>
+<p>If a service of <em>Type=notify</em> sends "EXTEND_TIMEOUT_USEC=...", this may cause the runtime to be extended beyond <em>RuntimeMaxSec=</em>. The first receipt of this message must occur before <em>RuntimeMaxSec=</em> is exceeded, and once the runtime has extended beyond <em>RuntimeMaxSec=</em>, the service manager will allow the service to continue to run, provided the service repeats "EXTEND_TIMEOUT_USEC=..." within the interval specified until the service shutdown is achieved by "STOPPING=1" (or termination). (see <strong>sd_notify</strong>(3)).</p>
+</blockquote>
+<p><em>WatchdogSec=</em></p>
+<blockquote>
+<p>Configures the watchdog timeout for a service. The watchdog is activated when the start-up is completed. The service must call <strong>sd_notify</strong>(3) regularly with "WATCHDOG=1" (i.e. the "keep-alive ping"). If the time between two such calls is larger than the configured time, then the service is placed in a failed state and it will be terminated with <strong>SIGABRT</strong> (or the signal specified by <em>WatchdogSignal=</em>). By setting <em>Restart=</em> to <strong>on-failure</strong>, <strong>on-watchdog</strong>, <strong>on-abnormal</strong> or <strong>always</strong>, the service will be automatically restarted. The time configured here will be passed to the executed service process in the <em>WATCHDOG_USEC=</em> environment variable. This allows daemons to automatically enable the keep-alive pinging logic if watchdog support is enabled for the service. If this option is used, <em>NotifyAccess=</em> (see below) should be set to open access to the notification socket provided by systemd. If <em>NotifyAccess=</em> is not set, it will be implicitly set to <strong>main</strong>. Defaults to 0, which disables this feature. The service can check whether the service manager expects watchdog keep-alive notifications. See <strong>sd_watchdog_enabled</strong>(3) for details. <strong>sd_event_set_watchdog</strong>(3) may be used to enable automatic watchdog notification support.</p>
+</blockquote>
+<p><em>Restart=</em></p>
+<blockquote>
+<p>Configures whether the service shall be restarted when the service process exits, is killed, or a timeout is reached. The service process may be the main service process, but it may also be one of the processes specified with <em>ExecStartPre=</em>, <em>ExecStartPost=</em>, <em>ExecStop=</em>, <em>ExecStopPost=</em>, or <em>ExecReload=</em>. When the death of the process is a result of systemd operation (e.g. service stop or restart), the service will not be restarted. Timeouts include missing the watchdog "keep-alive ping" deadline and a service start, reload, and stop operation timeouts.</p>
+<p>Takes one of <strong>no</strong>, <strong>on-success</strong>, <strong>on-failure</strong>, <strong>on-abnormal</strong>, <strong>on-watchdog</strong>, <strong>on-abort</strong>, or <strong>always</strong>. If set to <strong>no</strong> (the default), the service will not be restarted. If set to <strong>on-success</strong>, it will be restarted only when the service process exits cleanly. In this context, a clean exit means an exit code of 0, or one of the signals <strong>SIGHUP</strong>, <strong>SIGINT</strong>, <strong>SIGTERM</strong> or <strong>SIGPIPE</strong>, and additionally, exit statuses and signals specified in <em>SuccessExitStatus=</em>. If set to <strong>on-failure</strong>, the service will be restarted when the process exits with a non-zero exit code, is terminated by a signal (including on core dump, but excluding the aforementioned four signals), when an operation (such as service reload) times out, and when the configured watchdog timeout is triggered. If set to <strong>on-abnormal</strong>, the service will be restarted when the process is terminated by a signal (including on core dump, excluding the aforementioned four signals), when an operation times out, or when the watchdog timeout is triggered. If set to <strong>on-abort</strong>, the service will be restarted only if the service process exits due to an uncaught signal not specified as a clean exit status. If set to <strong>on-watchdog</strong>, the service will be restarted only if the watchdog timeout for the service expires. If set to <strong>always</strong>, the service will be restarted regardless of whether it exited cleanly or not, got terminated abnormally by a signal, or hit a timeout.</p>
+<p><br />
+<strong>Table 2. Exit causes and the effect of the <em>Restart=</em> settings on them</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Restart settings/Exit causes</td>
+<td style="text-align: left;"><strong>no</strong></td>
+<td style="text-align: left;"><strong>always</strong></td>
+<td style="text-align: left;"><strong>on-success</strong></td>
+<td style="text-align: left;"><strong>on-failure</strong></td>
+<td style="text-align: left;"><strong>on-abnormal</strong></td>
+<td style="text-align: left;"><strong>on-abort</strong></td>
+<td style="text-align: left;"><strong>on-watchdog</strong></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Clean exit code or signal</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Unclean exit code</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Unclean signal</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Timeout</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Watchdog</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;">X</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">X</td>
+</tr>
+</tbody>
+</table>
+<p>As exceptions to the setting above, the service will not be restarted if the exit code or signal is specified in <em>RestartPreventExitStatus=</em> (see below) or the service is stopped with <strong>systemctl stop</strong> or an equivalent operation. Also, the services will always be restarted if the exit code or signal is specified in <em>RestartForceExitStatus=</em> (see below).</p>
+<p>Note that service restart is subject to unit start rate limiting configured with <em>StartLimitIntervalSec=</em> and <em>StartLimitBurst=</em>, see <strong>systemd.unit</strong>(5) for details. A restarted service enters the failed state only after the start limits are reached.</p>
+<p>Setting this to <strong>on-failure</strong> is the recommended choice for long-running services, in order to increase reliability by attempting automatic recovery from errors. For services that shall be able to terminate on their own choice (and avoid immediate restarting), <strong>on-abnormal</strong> is an alternative choice.</p>
+</blockquote>
+<p><em>SuccessExitStatus=</em></p>
+<blockquote>
+<p>Takes a list of exit status definitions that, when returned by the main service process, will be considered successful termination, in addition to the normal successful exit status 0 and the signals <strong>SIGHUP</strong>, <strong>SIGINT</strong>, <strong>SIGTERM</strong>, and <strong>SIGPIPE</strong>. Exit status definitions can be numeric termination statuses, termination status names, or termination signal names, separated by spaces. See the Process Exit Codes section in <strong>systemd.exec</strong>(5) for a list of termination status names (for this setting only the part without the "EXIT_" or "EX_" prefix should be used). See <strong>signal</strong>(7) for a list of signal names.</p>
+<p>Note that this setting does not change the mapping between numeric exit statuses and their names, i.e. regardless how this setting is used 0 will still be mapped to "SUCCESS" (and thus typically shown as "0/SUCCESS" in tool outputs) and 1 to "FAILURE" (and thus typically shown as "1/FAILURE"), and so on. It only controls what happens as effect of these exit statuses, and how it propagates to the state of the service as a whole.</p>
+<p>This option may appear more than once, in which case the list of successful exit statuses is merged. If the empty string is assigned to this option, the list is reset, all prior assignments of this option will have no effect.</p>
+<p><strong>Example 1. A service with the </strong><em>SuccessExitStatus=</em> setting</p>
+<blockquote>
+<pre><code>SuccessExitStatus=TEMPFAIL 250 SIGKILL</code></pre>
+</blockquote>
+<p>Exit status 75 (<strong>TEMPFAIL</strong>), 250, and the termination signal <strong>SIGKILL</strong> are considered clean service terminations.</p>
+<p>Note: <strong>systemd-analyze exit-status</strong> may be used to list exit statuses and translate between numerical status values and names.</p>
+</blockquote>
+<p><em>RestartPreventExitStatus=</em></p>
+<blockquote>
+<p>Takes a list of exit status definitions that, when returned by the main service process, will prevent automatic service restarts, regardless of the restart setting configured with <em>Restart=</em>. Exit status definitions can either be numeric exit codes or termination signal names, and are separated by spaces. Defaults to the empty list, so that, by default, no exit status is excluded from the configured restart logic. For example:</p>
+<blockquote>
+<pre><code>RestartPreventExitStatus=1 6 SIGABRT</code></pre>
+</blockquote>
+<p>ensures that exit codes 1 and 6 and the termination signal <strong>SIGABRT</strong> will not result in automatic service restarting. This option may appear more than once, in which case the list of restart-preventing statuses is merged. If the empty string is assigned to this option, the list is reset and all prior assignments of this option will have no effect.</p>
+<p>Note that this setting has no effect on processes configured via <em>ExecStartPre=</em>, <em>ExecStartPost=</em>, <em>ExecStop=</em>, <em>ExecStopPost=</em> or <em>ExecReload=</em>, but only on the main service process, i.e. either the one invoked by <em>ExecStart=</em> or (depending on <em>Type=</em>, <em>PIDFile=</em>, ...) the otherwise configured main process.</p>
+</blockquote>
+<p><em>RestartForceExitStatus=</em></p>
+<blockquote>
+<p>Takes a list of exit status definitions that, when returned by the main service process, will force automatic service restarts, regardless of the restart setting configured with <em>Restart=</em>. The argument format is similar to <em>RestartPreventExitStatus=</em>.</p>
+</blockquote>
+<p><em>RootDirectoryStartOnly=</em></p>
+<blockquote>
+<p>Takes a boolean argument. If true, the root directory, as configured with the <em>RootDirectory=</em> option (see <strong>systemd.exec</strong>(5) for more information), is only applied to the process started with <em>ExecStart=</em>, and not to the various other <em>ExecStartPre=</em>, <em>ExecStartPost=</em>, <em>ExecReload=</em>, <em>ExecStop=</em>, and <em>ExecStopPost=</em> commands. If false, the setting is applied to all configured commands the same way. Defaults to false.</p>
+</blockquote>
+<p><em>NonBlocking=</em></p>
+<blockquote>
+<p>Set the <strong>O_NONBLOCK</strong> flag for all file descriptors passed via socket-based activation. If true, all file descriptors &gt;= 3 (i.e. all except stdin, stdout, stderr), excluding those passed in via the file descriptor storage logic (see <em>FileDescriptorStoreMax=</em> for details), will have the <strong>O_NONBLOCK</strong> flag set and hence are in non-blocking mode. This option is only useful in conjunction with a socket unit, as described in <strong>systemd.socket</strong>(5) and has no effect on file descriptors which were previously saved in the file-descriptor store for example. Defaults to false.</p>
+</blockquote>
+<p><em>NotifyAccess=</em></p>
+<blockquote>
+<p>Controls access to the service status notification socket, as accessible via the <strong>sd_notify</strong>(3) call. Takes one of <strong>none</strong> (the default), <strong>main</strong>, <strong>exec</strong> or <strong>all</strong>. If <strong>none</strong>, no daemon status updates are accepted from the service processes, all status update messages are ignored. If <strong>main</strong>, only service updates sent from the main process of the service are accepted. If <strong>exec</strong>, only service updates sent from any of the main or control processes originating from one of the <em>Exec*=</em> commands are accepted. If <strong>all</strong>, all services updates from all members of the services control group are accepted. This option should be set to open access to the notification socket when using <em>Type=notify</em> or <em>WatchdogSec=</em> (see above). If those options are used but <em>NotifyAccess=</em> is not configured, it will be implicitly set to <strong>main</strong>.</p>
+<p>Note that <strong>sd_notify()</strong> notifications may be attributed to units correctly only if either the sending process is still around at the time PID 1 processes the message, or if the sending process is explicitly runtime-tracked by the service manager. The latter is the case if the service manager originally forked off the process, i.e. on all processes that match <strong>main</strong> or <strong>exec</strong>. Conversely, if an auxiliary process of the unit sends an <strong>sd_notify()</strong> message and immediately exits, the service manager might not be able to properly attribute the message to the unit, and thus will ignore it, even if <em>NotifyAccess=</em><strong>all</strong> is set for it.</p>
+<p>Hence, to eliminate all race conditions involving lookup of the clients unit and attribution of notifications to units correctly, <strong>sd_notify_barrier()</strong> may be used. This call acts as a synchronization point and ensures all notifications sent before this call have been picked up by the service manager when it returns successfully. Use of <strong>sd_notify_barrier()</strong> is needed for clients which are not invoked by the service manager, otherwise this synchronization mechanism is unnecessary for attribution of notifications to the unit.</p>
+</blockquote>
+<p><em>Sockets=</em></p>
+<blockquote>
+<p>Specifies the name of the socket units this service shall inherit socket file descriptors from when the service is started. Normally, it should not be necessary to use this setting, as all socket file descriptors whose unit shares the same name as the service (subject to the different unit name suffix of course) are passed to the spawned process.</p>
+<p>Note that the same socket file descriptors may be passed to multiple processes simultaneously. Also note that a different service may be activated on incoming socket traffic than the one which is ultimately configured to inherit the socket file descriptors. Or, in other words: the <em>Service=</em> setting of .socket units does not have to match the inverse of the <em>Sockets=</em> setting of the .service it refers to.</p>
+<p>This option may appear more than once, in which case the list of socket units is merged. Note that once set, clearing the list of sockets again (for example, by assigning the empty string to this option) is not supported.</p>
+</blockquote>
+<p><em>FileDescriptorStoreMax=</em></p>
+<blockquote>
+<p>Configure how many file descriptors may be stored in the service manager for the service using <strong>sd_pid_notify_with_fds</strong>(3)s "FDSTORE=1" messages. This is useful for implementing services that can restart after an explicit request or a crash without losing state. Any open sockets and other file descriptors which should not be closed during the restart may be stored this way. Application state can either be serialized to a file in /run/, or better, stored in a <strong>memfd_create</strong>(2) memory file descriptor. Defaults to 0, i.e. no file descriptors may be stored in the service manager. All file descriptors passed to the service manager from a specific service are passed back to the services main process on the next service restart (see <strong>sd_listen_fds</strong>(3) for details about the precise protocol used and the order in which the file descriptors are passed). Any file descriptors passed to the service manager are automatically closed when <strong>POLLHUP</strong> or <strong>POLLERR</strong> is seen on them, or when the service is fully stopped and no job is queued or being executed for it. If this option is used, <em>NotifyAccess=</em> (see above) should be set to open access to the notification socket provided by systemd. If <em>NotifyAccess=</em> is not set, it will be implicitly set to <strong>main</strong>.</p>
+</blockquote>
+<p><em>USBFunctionDescriptors=</em></p>
+<blockquote>
+<p>Configure the location of a file containing <strong>USB FunctionFS</strong>[2] descriptors, for implementation of USB gadget functions. This is used only in conjunction with a socket unit with <em>ListenUSBFunction=</em> configured. The contents of this file are written to the ep0 file after it is opened.</p>
+</blockquote>
+<p><em>USBFunctionStrings=</em></p>
+<blockquote>
+<p>Configure the location of a file containing USB FunctionFS strings. Behavior is similar to <em>USBFunctionDescriptors=</em> above.</p>
+</blockquote>
+<p><em>OOMPolicy=</em></p>
+<blockquote>
+<p>Configure the Out-Of-Memory (OOM) killer policy. On Linux, when memory becomes scarce the kernel might decide to kill a running process in order to free up memory and reduce memory pressure. This setting takes one of <strong>continue</strong>, <strong>stop</strong> or <strong>kill</strong>. If set to <strong>continue</strong> and a process of the service is killed by the kernels OOM killer this is logged but the service continues running. If set to <strong>stop</strong> the event is logged but the service is terminated cleanly by the service manager. If set to <strong>kill</strong> and one of the services processes is killed by the OOM killer the kernel is instructed to kill all remaining processes of the service, too. Defaults to the setting <em>DefaultOOMPolicy=</em> in <strong>systemd-system.conf</strong>(5) is set to, except for services where <em>Delegate=</em> is turned on, where it defaults to <strong>continue</strong>.</p>
+<p>Use the <em>OOMScoreAdjust=</em> setting to configure whether processes of the unit shall be considered preferred or less preferred candidates for process termination by the Linux OOM killer logic. See <strong>systemd.exec</strong>(5) for details.</p>
+</blockquote>
+<p>Check <strong>systemd.exec</strong>(5) and <strong>systemd.kill</strong>(5) for more settings.</p>
+<h1>COMMAND LINES</h1>
+<p>This section describes command line parsing and variable and specifier substitutions for <em>ExecStart=</em>, <em>ExecStartPre=</em>, <em>ExecStartPost=</em>, <em>ExecReload=</em>, <em>ExecStop=</em>, and <em>ExecStopPost=</em> options.</p>
+<p>Multiple command lines may be concatenated in a single directive by separating them with semicolons (these semicolons must be passed as separate words). Lone semicolons may be escaped as "\;".</p>
+<p>Each command line is split on whitespace, with the first item being the command to execute, and the subsequent items being the arguments. Double quotes ("...") and single quotes (...) may be used to wrap a whole item (the opening quote may appear only at the beginning or after whitespace that is not quoted, and the closing quote must be followed by whitespace or the end of line), in which case everything until the next matching quote becomes part of the same argument. Quotes themselves are removed. C-style escapes are also supported. The table below contains the list of known escape patterns. Only escape patterns which match the syntax in the table are allowed; other patterns may be added in the future and unknown patterns will result in a warning. In particular, any backslashes should be doubled. Finally, a trailing backslash ("\") may be used to merge lines.</p>
+<p>This syntax is inspired by shell syntax, but only the meta-characters and expansions described in the following paragraphs are understood, and the expansion of variables is different. Specifically, redirection using "&lt;", "&lt;&lt;", "&gt;", and "&gt;&gt;", pipes using "|", running programs in the background using "&amp;", and <em>other elements of shell syntax are not supported</em>.</p>
+<p>The command to execute may contain spaces, but control characters are not allowed.</p>
+<p>The command line accepts "%" specifiers as described in <strong>systemd.unit</strong>(5).</p>
+<p>Basic environment variable substitution is supported. Use "${FOO}" as part of a word, or as a word of its own, on the command line, in which case it will be erased and replaced by the exact value of the environment variable (if any) including all whitespace it contains, always resulting in exactly a single argument. Use "$FOO" as a separate word on the command line, in which case it will be replaced by the value of the environment variable split at whitespace, resulting in zero or more arguments. For this type of expansion, quotes are respected when splitting into words, and afterwards removed.</p>
+<p>If the command is not a full (absolute) path, it will be resolved to a full path using a fixed search path determined at compilation time. Searched directories include /usr/local/bin/, /usr/bin/, /bin/ on systems using split /usr/bin/ and /bin/ directories, and their sbin/ counterparts on systems using split bin/ and sbin/. It is thus safe to use just the executable name in case of executables located in any of the "standard" directories, and an absolute path must be used in other cases. Using an absolute path is recommended to avoid ambiguity. Hint: this search path may be queried using <strong>systemd-path search-binaries-default</strong>.</p>
+<p>Example:</p>
+<blockquote>
+<pre><code>Environment=&quot;ONE=one&quot; TWO=two two
+ExecStart=echo $ONE $TWO ${TWO}</code></pre>
+</blockquote>
+<p>This will execute <strong>/bin/echo</strong> with four arguments: "one", "two", "two", and "two two".</p>
+<p>Example:</p>
+<blockquote>
+<pre><code>Environment=ONE=one &quot;TWO=two two too&quot; THREE=
+ExecStart=/bin/echo ${ONE} ${TWO} ${THREE}
+ExecStart=/bin/echo $ONE $TWO $THREE</code></pre>
+</blockquote>
+<p>This results in /bin/echo being called twice, the first time with arguments "one", "two two too", "", and the second time with arguments "one", "two two", "too".</p>
+<p>To pass a literal dollar sign, use "$$". Variables whose value is not known at expansion time are treated as empty strings. Note that the first argument (i.e. the program to execute) may not be a variable.</p>
+<p>Variables to be used in this fashion may be defined through <em>Environment=</em> and <em>EnvironmentFile=</em>. In addition, variables listed in the section "Environment variables in spawned processes" in <strong>systemd.exec</strong>(5), which are considered "static configuration", may be used (this includes e.g. <em>$USER</em>, but not <em>$TERM</em>).</p>
+<p>Note that shell command lines are not directly supported. If shell command lines are to be used, they need to be passed explicitly to a shell implementation of some kind. Example:</p>
+<blockquote>
+<pre><code>ExecStart=sh -c dmesg | tac</code></pre>
+</blockquote>
+<p>Example:</p>
+<blockquote>
+<pre><code>ExecStart=echo one ; echo &quot;two two&quot;</code></pre>
+</blockquote>
+<p>This will execute <strong>echo</strong> two times, each time with one argument: "one" and "two two", respectively. Because two commands are specified, <em>Type=oneshot</em> must be used.</p>
+<p>Example:</p>
+<blockquote>
+<pre><code>ExecStart=echo / &gt;/dev/null &amp; \; \
+ls</code></pre>
+</blockquote>
+<p>This will execute <strong>echo</strong> with five arguments: "/", "&gt;/dev/null", "&amp;", ";", and "ls".</p>
+<p><br />
+<strong>Table 3. C escapes supported in command lines and environment variables</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Literal</td>
+<td style="text-align: left;">Actual value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"\a"</td>
+<td style="text-align: left;">bell</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"\b"</td>
+<td style="text-align: left;">backspace</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"\f"</td>
+<td style="text-align: left;">form feed</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"\n"</td>
+<td style="text-align: left;">newline</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"\r"</td>
+<td style="text-align: left;">carriage return</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"\t"</td>
+<td style="text-align: left;">tab</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"\v"</td>
+<td style="text-align: left;">vertical tab</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"\\"</td>
+<td style="text-align: left;">backslash</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"\""</td>
+<td style="text-align: left;">double quotation mark</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"\"</td>
+<td style="text-align: left;">single quotation mark</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"\s"</td>
+<td style="text-align: left;">space</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">"\x<em>xx</em>"</td>
+<td style="text-align: left;">character number <em>xx</em> in hexadecimal encoding</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">"\<em>nnn</em>"</td>
+<td style="text-align: left;">character number <em>nnn</em> in octal encoding</td>
+</tr>
+</tbody>
+</table>
+<h1>EXAMPLES</h1>
+<p><strong>Example 2. Simple service</strong></p>
+<p>The following unit file creates a service that will execute /usr/sbin/foo-daemon. Since no <em>Type=</em> is specified, the default <em>Type=</em><strong>simple</strong> will be assumed. systemd will assume the unit to be started immediately after the program has begun executing.</p>
+<blockquote>
+<pre><code>[Unit]
+Description=Foo
+
+[Service]
+ExecStart=/usr/sbin/foo-daemon
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+</blockquote>
+<p>Note that systemd assumes here that the process started by systemd will continue running until the service terminates. If the program daemonizes itself (i.e. forks), please use <em>Type=</em><strong>forking</strong> instead.</p>
+<p>Since no <em>ExecStop=</em> was specified, systemd will send SIGTERM to all processes started from this service, and after a timeout also SIGKILL. This behavior can be modified, see <strong>systemd.kill</strong>(5) for details.</p>
+<p>Note that this unit type does not include any type of notification when a service has completed initialization. For this, you should use other unit types, such as <em>Type=</em><strong>notify</strong> if the service understands systemds notification protocol, <em>Type=</em><strong>forking</strong> if the service can background itself or <em>Type=</em><strong>dbus</strong> if the unit acquires a DBus name once initialization is complete. See below.</p>
+<p><strong>Example 3. Oneshot service</strong></p>
+<p>Sometimes, units should just execute an action without keeping active processes, such as a filesystem check or a cleanup action on boot. For this, <em>Type=</em><strong>oneshot</strong> exists. Units of this type will wait until the process specified terminates and then fall back to being inactive. The following unit will perform a cleanup action:</p>
+<blockquote>
+<pre><code>[Unit]
+Description=Cleanup old Foo data
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/foo-cleanup
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+</blockquote>
+<p>Note that systemd will consider the unit to be in the state "starting" until the program has terminated, so ordered dependencies will wait for the program to finish before starting themselves. The unit will revert to the "inactive" state after the execution is done, never reaching the "active" state. That means another request to start the unit will perform the action again.</p>
+<p><em>Type=</em><strong>oneshot</strong> are the only service units that may have more than one <em>ExecStart=</em> specified. For units with multiple commands (<em>Type=oneshot</em>), all commands will be run again.</p>
+<p>For <em>Type=oneshot</em>, <em>Restart=</em><strong>always</strong> and <em>Restart=</em><strong>on-success</strong> are <em>not</em> allowed.</p>
+<p><strong>Example 4. Stoppable oneshot service</strong></p>
+<p>Similarly to the oneshot services, there are sometimes units that need to execute a program to set up something and then execute another to shut it down, but no process remains active while they are considered "started". Network configuration can sometimes fall into this category. Another use case is if a oneshot service shall not be executed each time when they are pulled in as a dependency, but only the first time.</p>
+<p>For this, systemd knows the setting <em>RemainAfterExit=</em><strong>yes</strong>, which causes systemd to consider the unit to be active if the start action exited successfully. This directive can be used with all types, but is most useful with <em>Type=</em><strong>oneshot</strong> and <em>Type=</em><strong>simple</strong>. With <em>Type=</em><strong>oneshot</strong>, systemd waits until the start action has completed before it considers the unit to be active, so dependencies start only after the start action has succeeded. With <em>Type=</em><strong>simple</strong>, dependencies will start immediately after the start action has been dispatched. The following unit provides an example for a simple static firewall.</p>
+<blockquote>
+<pre><code>[Unit]
+Description=Simple firewall
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/simple-firewall-start
+ExecStop=/usr/local/sbin/simple-firewall-stop
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+</blockquote>
+<p>Since the unit is considered to be running after the start action has exited, invoking <strong>systemctl start</strong> on that unit again will cause no action to be taken.</p>
+<p><strong>Example 5. Traditional forking services</strong></p>
+<p>Many traditional daemons/services background (i.e. fork, daemonize) themselves when starting. Set <em>Type=</em><strong>forking</strong> in the services unit file to support this mode of operation. systemd will consider the service to be in the process of initialization while the original program is still running. Once it exits successfully and at least a process remains (and <em>RemainAfterExit=</em><strong>no</strong>), the service is considered started.</p>
+<p>Often, a traditional daemon only consists of one process. Therefore, if only one process is left after the original process terminates, systemd will consider that process the main process of the service. In that case, the <em>$MAINPID</em> variable will be available in <em>ExecReload=</em>, <em>ExecStop=</em>, etc.</p>
+<p>In case more than one process remains, systemd will be unable to determine the main process, so it will not assume there is one. In that case, <em>$MAINPID</em> will not expand to anything. However, if the process decides to write a traditional PID file, systemd will be able to read the main PID from there. Please set <em>PIDFile=</em> accordingly. Note that the daemon should write that file before finishing with its initialization. Otherwise, systemd might try to read the file before it exists.</p>
+<p>The following example shows a simple daemon that forks and just starts one process in the background:</p>
+<blockquote>
+<pre><code>[Unit]
+Description=Some simple daemon
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/my-simple-daemon -d
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+</blockquote>
+<p>Please see <strong>systemd.kill</strong>(5) for details on how you can influence the way systemd terminates the service.</p>
+<p><strong>Example 6. DBus services</strong></p>
+<p>For services that acquire a name on the DBus system bus, use <em>Type=</em><strong>dbus</strong> and set <em>BusName=</em> accordingly. The service should not fork (daemonize). systemd will consider the service to be initialized once the name has been acquired on the system bus. The following example shows a typical DBus service:</p>
+<blockquote>
+<pre><code>[Unit]
+Description=Simple DBus service
+
+[Service]
+Type=dbus
+BusName=org.example.simple-dbus-service
+ExecStart=/usr/sbin/simple-dbus-service
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+</blockquote>
+<p>For <em>bus-activatable</em> services, do not include a [Install] section in the systemd service file, but use the <em>SystemdService=</em> option in the corresponding DBus service file, for example (/usr/share/dbus-1/system-services/org.example.simple-dbus-service.service):</p>
+<blockquote>
+<pre><code>[D-BUS Service]
+Name=org.example.simple-dbus-service
+Exec=/usr/sbin/simple-dbus-service
+User=root
+SystemdService=simple-dbus-service.service</code></pre>
+</blockquote>
+<p>Please see <strong>systemd.kill</strong>(5) for details on how you can influence the way systemd terminates the service.</p>
+<p><strong>Example 7. Services that notify systemd about their initialization</strong></p>
+<p><em>Type=</em><strong>simple</strong> services are really easy to write, but have the major disadvantage of systemd not being able to tell when initialization of the given service is complete. For this reason, systemd supports a simple notification protocol that allows daemons to make systemd aware that they are done initializing. Use <em>Type=</em><strong>notify</strong> for this. A typical service file for such a daemon would look like this:</p>
+<blockquote>
+<pre><code>[Unit]
+Description=Simple notifying service
+
+[Service]
+Type=notify
+ExecStart=/usr/sbin/simple-notifying-service
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+</blockquote>
+<p>Note that the daemon has to support systemds notification protocol, else systemd will think the service has not started yet and kill it after a timeout. For an example of how to update daemons to support this protocol transparently, take a look at <strong>sd_notify</strong>(3). systemd will consider the unit to be in the starting state until a readiness notification has arrived.</p>
+<p>Please see <strong>systemd.kill</strong>(5) for details on how you can influence the way systemd terminates the service.</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemctl</strong>(1), <strong>systemd-system.conf</strong>(5), <strong>systemd.unit</strong>(5), <strong>systemd.exec</strong>(5), <strong>systemd.resource-control</strong>(5), <strong>systemd.kill</strong>(5), <strong>systemd.directives</strong>(7), <strong>systemd-run</strong>(1)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>Incompatibilities with SysV</p>
+<p>https://www.freedesktop.org/wiki/Software/systemd/Incompatibilities</p></li>
+<li><p>USB FunctionFS</p>
+<p>https://www.kernel.org/doc/Documentation/usb/functionfs.txt</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

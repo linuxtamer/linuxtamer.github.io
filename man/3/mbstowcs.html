@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mbstowcs</title><meta name="description" content="Linux command mbstowcs convert a multibyte string to a wide-character string"><meta name="keywords" content="linux, command, mbstowcs, bsd, convert a multibyte string to a wide-character string"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mbstowcs - convert a multibyte string to a wide-character string</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdlib.h&gt;
+
+size_t mbstowcs(wchar_t *dest, const char *src, size_t n);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>If <em>dest</em> is not NULL, the <strong>mbstowcs</strong>() function converts the multibyte string <em>src</em> to a wide-character string starting at <em>dest</em>. At most <em>n</em> wide characters are written to <em>dest</em>. The sequence of characters in the string <em>src</em> shall begin in the initial shift state. The conversion can stop for three reasons:</p>
+<ol type="1">
+<li><p>An invalid multibyte sequence has been encountered. In this case, <em>(size_t) -1</em> is returned.</p></li>
+<li><p><em>n</em> non-L'\0' wide characters have been stored at <em>dest</em>. In this case, the number of wide characters written to <em>dest</em> is returned, but the shift state at this point is lost.</p></li>
+<li><p>The multibyte string has been completely converted, including the terminating null character ('\0'). In this case, the number of wide characters written to <em>dest</em>, excluding the terminating null wide character, is returned.</p></li>
+</ol>
+<p>The programmer must ensure that there is room for at least <em>n</em> wide characters at <em>dest</em>.</p>
+<p>If <em>dest</em> is NULL, <em>n</em> is ignored, and the conversion proceeds as above, except that the converted wide characters are not written out to memory, and that no length limit exists.</p>
+<p>In order to avoid the case 2 above, the programmer should make sure <em>n</em> is greater than or equal to <em>mbstowcs(NULL,src,0)+1</em>.</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>mbstowcs</strong>() function returns the number of wide characters that make up the converted part of the wide-character string, not including the terminating null wide character. If an invalid multibyte sequence was encountered, <em>(size_t) -1</em> is returned.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>mbstowcs</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, C99.</p>
+<h1>NOTES</h1>
+<p>The behavior of <strong>mbstowcs</strong>() depends on the <strong>LC_CTYPE</strong> category of the current locale.</p>
+<p>The function <strong>mbsrtowcs</strong>(3) provides a better interface to the same functionality.</p>
+<h1>EXAMPLES</h1>
+<p>The program below illustrates the use of <strong>mbstowcs</strong>(), as well as some of the wide character classification functions. An example run is the following:</p>
+<pre><code>$ ./t_mbstowcs de_DE.UTF-8 Grüße!
+Length of source string (excluding terminator):
+    8 bytes
+    6 multibyte characters
+
+Wide character string is: Grüße! (6 characters)
+    G alpha upper
+    r alpha lower
+    ü alpha lower
+    ß alpha lower
+    e alpha lower
+    ! !alpha</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;wctype.h&gt;
+#include &lt;locale.h&gt;
+#include &lt;wchar.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    size_t mbslen;      /* Number of multibyte characters in source */
+    wchar_t *wcs;       /* Pointer to converted wide character string */
+
+    if (argc &lt; 3) {
+        fprintf(stderr, &quot;Usage: %s &lt;locale&gt; &lt;string&gt;\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Apply the specified locale */
+
+    if (setlocale(LC_ALL, argv[1]) == NULL) {
+        perror(&quot;setlocale&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Calculate the length required to hold argv[2] converted to
+       a wide character string */
+
+    mbslen = mbstowcs(NULL, argv[2], 0);
+    if (mbslen == (size_t) -1) {
+        perror(&quot;mbstowcs&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Describe the source string to the user */
+
+    printf(&quot;Length of source string (excluding terminator):\n&quot;);
+    printf(&quot;    %zu bytes\n&quot;, strlen(argv[2]));
+    printf(&quot;    %zu multibyte characters\n\n&quot;, mbslen);
+
+    /* Allocate wide character string of the desired size.  Add 1
+       to allow for terminating null wide character (L&#39;\0&#39;). */
+
+    wcs = calloc(mbslen + 1, sizeof(*wcs));
+    if (wcs == NULL) {
+        perror(&quot;calloc&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Convert the multibyte character string in argv[2] to a
+       wide character string */
+
+    if (mbstowcs(wcs, argv[2], mbslen + 1) == (size_t) -1) {
+        perror(&quot;mbstowcs&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    printf(&quot;Wide character string is: %ls (%zu characters)\n&quot;,
+            wcs, mbslen);
+
+    /* Now do some inspection of the classes of the characters in
+       the wide character string */
+
+    for (wchar_t *wp = wcs; *wp != 0; wp++) {
+        printf(&quot;    %lc &quot;, (wint_t) *wp);
+
+        if (!iswalpha(*wp))
+            printf(&quot;!&quot;);
+        printf(&quot;alpha &quot;);
+
+        if (iswalpha(*wp)) {
+            if (iswupper(*wp))
+                printf(&quot;upper &quot;);
+
+            if (iswlower(*wp))
+                printf(&quot;lower &quot;);
+        }
+
+        putchar(&#39;\n&#39;);
+    }
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>mblen</strong>(3), <strong>mbsrtowcs</strong>(3), <strong>mbtowc</strong>(3), <strong>wcstombs</strong>(3), <strong>wctomb</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command inet_pton</title><meta name="description" content="Linux command inet_pton convert IPv4 and IPv6 addresses from text to binary form"><meta name="keywords" content="linux, command, inet_pton, bsd, convert IPv4 and IPv6 addresses from text to binary form"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>inet_pton - convert IPv4 and IPv6 addresses from text to binary form</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;arpa/inet.h&gt;
+
+int inet_pton(int af, const char *src, void *dst);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>This function converts the character string <em>src</em> into a network address structure in the <em>af</em> address family, then copies the network address structure to <em>dst</em>. The <em>af</em> argument must be either <strong>AF_INET</strong> or <strong>AF_INET6</strong>. <em>dst</em> is written in network byte order.</p>
+<p>The following address families are currently supported:</p>
+<dl>
+<dt><strong>AF_INET</strong></dt>
+<dd><p><em>src</em> points to a character string containing an IPv4 network address in dotted-decimal format, "<em>ddd.ddd.ddd.ddd</em>", where <em>ddd</em> is a decimal number of up to three digits in the range 0 to 255. The address is converted to a <em>struct in_addr</em> and copied to <em>dst</em>, which must be <em>sizeof(struct in_addr)</em> (4) bytes (32 bits) long.</p>
+</dd>
+<dt><strong>AF_INET6</strong></dt>
+<dd><p><em>src</em> points to a character string containing an IPv6 network address. The address is converted to a <em>struct in6_addr</em> and copied to <em>dst</em>, which must be <em>sizeof(struct in6_addr)</em> (16) bytes (128 bits) long. The allowed formats for IPv6 addresses follow these rules:</p>
+<ol type="1">
+<li><p>The preferred format is <em>x:x:x:x:x:x:x:x</em>. This form consists of eight hexadecimal numbers, each of which expresses a 16-bit value (i.e., each <em>x</em> can be up to 4 hex digits).</p></li>
+<li><p>A series of contiguous zero values in the preferred format can be abbreviated to <em>::</em>. Only one instance of <em>::</em> can occur in an address. For example, the loopback address <em>0:0:0:0:0:0:0:1</em> can be abbreviated as <em>::1</em>. The wildcard address, consisting of all zeros, can be written as <em>::</em>.</p></li>
+<li><p>An alternate format is useful for expressing IPv4-mapped IPv6 addresses. This form is written as <em>x:x:x:x:x:x:d.d.d.d</em>, where the six leading <em>x</em>s are hexadecimal values that define the six most-significant 16-bit pieces of the address (i.e., 96 bits), and the <em>d</em>s express a value in dotted-decimal notation that defines the least significant 32 bits of the address. An example of such an address is <em>::FFFF:204.152.189.116</em>.</p></li>
+</ol>
+<p>See RFC 2373 for further details on the representation of IPv6 addresses.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p><strong>inet_pton</strong>() returns 1 on success (network address was successfully converted). 0 is returned if <em>src</em> does not contain a character string representing a valid network address in the specified address family. If <em>af</em> does not contain a valid address family, -1 is returned and <em>errno</em> is set to <strong>EAFNOSUPPORT</strong>.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>inet_pton</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>Unlike <strong>inet_aton</strong>(3) and <strong>inet_addr</strong>(3), <strong>inet_pton</strong>() supports IPv6 addresses. On the other hand, <strong>inet_pton</strong>() accepts only IPv4 addresses in dotted-decimal notation, whereas <strong>inet_aton</strong>(3) and <strong>inet_addr</strong>(3) allow the more general numbers-and-dots notation (hexadecimal and octal number formats, and formats that don't require all four bytes to be explicitly written). For an interface that handles both IPv6 addresses, and IPv4 addresses in numbers-and-dots notation, see <strong>getaddrinfo</strong>(3).</p>
+<h1>BUGS</h1>
+<p><strong>AF_INET6</strong> does not recognize IPv4 addresses. An explicit IPv4-mapped IPv6 address must be supplied in <em>src</em> instead.</p>
+<h1>EXAMPLES</h1>
+<p>The program below demonstrates the use of <strong>inet_pton</strong>() and <strong>inet_ntop</strong>(3). Here are some example runs:</p>
+<pre><code>$ ./a.out i6 0:0:0:0:0:0:0:0
+::
+$ ./a.out i6 1:0:0:0:0:0:0:8
+1::8
+$ ./a.out i6 0:0:0:0:0:FFFF:204.152.189.116
+::ffff:204.152.189.116</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;arpa/inet.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    unsigned char buf[sizeof(struct in6_addr)];
+    int domain, s;
+    char str[INET6_ADDRSTRLEN];
+
+    if (argc != 3) {
+        fprintf(stderr, &quot;Usage: %s {i4|i6|&lt;num&gt;} string\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    domain = (strcmp(argv[1], &quot;i4&quot;) == 0) ? AF_INET :
+             (strcmp(argv[1], &quot;i6&quot;) == 0) ? AF_INET6 : atoi(argv[1]);
+
+    s = inet_pton(domain, argv[2], buf);
+    if (s &lt;= 0) {
+        if (s == 0)
+            fprintf(stderr, &quot;Not in presentation format&quot;);
+        else
+            perror(&quot;inet_pton&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    if (inet_ntop(domain, buf, str, INET6_ADDRSTRLEN) == NULL) {
+        perror(&quot;inet_ntop&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    printf(&quot;%s\n&quot;, str);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>getaddrinfo</strong>(3), <strong>inet</strong>(3), <strong>inet_ntop</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

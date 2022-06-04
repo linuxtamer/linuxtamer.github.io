@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command lseek</title><meta name="description" content="Linux command lseek reposition read/write file offset"><meta name="keywords" content="linux, command, lseek, bsd, reposition read/write file offset"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>lseek - reposition read/write file offset</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/types.h&gt;</strong><br />
+<strong>#include &lt;unistd.h&gt;</strong></p>
+<p><strong>off_t lseek(int </strong><em>fd</em><strong>, off_t </strong><em>offset</em><strong>, int </strong><em>whence</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>lseek</strong>() repositions the file offset of the open file description associated with the file descriptor <em>fd</em> to the argument <em>offset</em> according to the directive <em>whence</em> as follows:</p>
+<dl>
+<dt><strong>SEEK_SET</strong></dt>
+<dd><p>The file offset is set to <em>offset</em> bytes.</p>
+</dd>
+<dt><strong>SEEK_CUR</strong></dt>
+<dd><p>The file offset is set to its current location plus <em>offset</em> bytes.</p>
+</dd>
+<dt><strong>SEEK_END</strong></dt>
+<dd><p>The file offset is set to the size of the file plus <em>offset</em> bytes.</p>
+</dd>
+</dl>
+<p><strong>lseek</strong>() allows the file offset to be set beyond the end of the file (but this does not change the size of the file). If data is later written at this point, subsequent reads of the data in the gap (a "hole") return null bytes ('\0') until data is actually written into the gap.</p>
+<h2>Seeking file data and holes</h2>
+<p>Since version 3.1, Linux supports the following additional values for <em>whence</em>:</p>
+<dl>
+<dt><strong>SEEK_DATA</strong></dt>
+<dd><p>Adjust the file offset to the next location in the file greater than or equal to <em>offset</em> containing data. If <em>offset</em> points to data, then the file offset is set to <em>offset</em>.</p>
+</dd>
+<dt><strong>SEEK_HOLE</strong></dt>
+<dd><p>Adjust the file offset to the next hole in the file greater than or equal to <em>offset</em>. If <em>offset</em> points into the middle of a hole, then the file offset is set to <em>offset</em>. If there is no hole past <em>offset</em>, then the file offset is adjusted to the end of the file (i.e., there is an implicit hole at the end of any file).</p>
+</dd>
+</dl>
+<p>In both of the above cases, <strong>lseek</strong>() fails if <em>offset</em> points past the end of the file.</p>
+<p>These operations allow applications to map holes in a sparsely allocated file. This can be useful for applications such as file backup tools, which can save space when creating backups and preserve holes, if they have a mechanism for discovering holes.</p>
+<p>For the purposes of these operations, a hole is a sequence of zeros that (normally) has not been allocated in the underlying file storage. However, a filesystem is not obliged to report holes, so these operations are not a guaranteed mechanism for mapping the storage space actually allocated to a file. (Furthermore, a sequence of zeros that actually has been written to the underlying storage may not be reported as a hole.) In the simplest implementation, a filesystem can support the operations by making <strong>SEEK_HOLE</strong> always return the offset of the end of the file, and making <strong>SEEK_DATA</strong> always return <em>offset</em> (i.e., even if the location referred to by <em>offset</em> is a hole, it can be considered to consist of data that is a sequence of zeros).</p>
+<p>The <strong>_GNU_SOURCE</strong> feature test macro must be defined in order to obtain the definitions of <strong>SEEK_DATA</strong> and <strong>SEEK_HOLE</strong> from <em>&lt;unistd.h&gt;</em>.</p>
+<p>The <strong>SEEK_HOLE</strong> and <strong>SEEK_DATA</strong> operations are supported for the following filesystems:</p>
+<ul>
+<li><p>Btrfs (since Linux 3.1)</p></li>
+<li><p>OCFS (since Linux 3.2)</p></li>
+<li><p>XFS (since Linux 3.5)</p></li>
+<li><p>ext4 (since Linux 3.8)</p></li>
+<li><p><strong>tmpfs</strong>(5) (since Linux 3.8)</p></li>
+<li><p>NFS (since Linux 3.18)</p></li>
+<li><p>FUSE (since Linux 4.5)</p></li>
+<li><p>GFS2 (since Linux 4.15)</p></li>
+</ul>
+<h1>RETURN VALUE</h1>
+<p>Upon successful completion, <strong>lseek</strong>() returns the resulting offset location as measured in bytes from the beginning of the file. On error, the value <em>(off_t) -1</em> is returned and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not an open file descriptor.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>whence</em> is not valid. Or: the resulting file offset would be negative, or beyond the end of a seekable device.</p>
+</dd>
+<dt><strong>ENXIO</strong></dt>
+<dd><p><em>whence</em> is <strong>SEEK_DATA</strong> or <strong>SEEK_HOLE</strong>, and <em>offset</em> is beyond the end of the file, or <em>whence</em> is <strong>SEEK_DATA</strong> and <em>offset</em> is within a hole at the end of the file.</p>
+</dd>
+<dt><strong>EOVERFLOW</strong></dt>
+<dd><p>The resulting file offset cannot be represented in an <em>off_t</em>.</p>
+</dd>
+<dt><strong>ESPIPE</strong></dt>
+<dd><p><em>fd</em> is associated with a pipe, socket, or FIFO.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4, 4.3BSD.</p>
+<p><strong>SEEK_DATA</strong> and <strong>SEEK_HOLE</strong> are nonstandard extensions also present in Solaris, FreeBSD, and DragonFly BSD; they are proposed for inclusion in the next POSIX revision (Issue 8).</p>
+<h1>NOTES</h1>
+<p>See <strong>open</strong>(2) for a discussion of the relationship between file descriptors, open file descriptions, and files.</p>
+<p>If the <strong>O_APPEND</strong> file status flag is set on the open file description, then a <strong>write</strong>(2) <em>always</em> moves the file offset to the end of the file, regardless of the use of <strong>lseek</strong>().</p>
+<p>The <em>off_t</em> data type is a signed integer data type specified by POSIX.1.</p>
+<p>Some devices are incapable of seeking and POSIX does not specify which devices must support <strong>lseek</strong>().</p>
+<p>On Linux, using <strong>lseek</strong>() on a terminal device fails with the error <strong>ESPIPE</strong>.</p>
+<h1>SEE ALSO</h1>
+<p><strong>dup</strong>(2), <strong>fallocate</strong>(2), <strong>fork</strong>(2), <strong>open</strong>(2), <strong>fseek</strong>(3), <strong>lseek64</strong>(3), <strong>posix_fallocate</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

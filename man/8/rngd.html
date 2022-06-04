@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command rngd</title><meta name="description" content="Linux command rngd Check and feed random data from an entropy source (e.g. hardware RNG device) to an entropy sink (e.g. kernel entropy pool)"><meta name="keywords" content="linux, command, rngd, bsd, Check and feed random data from an entropy source (e.g. hardware RNG device) to an entropy sink (e.g. kernel entropy pool)"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>rngd - Check and feed random data from an entropy source (e.g. hardware RNG device) to an entropy sink (e.g. kernel entropy pool)</p>
+<h1>SYNOPSIS</h1>
+<p><strong>rngd</strong> [<strong>-b</strong> | <strong>--background</strong> | <strong>-f</strong> | <strong>--foreground</strong>] [<strong>-p</strong> <em>file</em> | <strong>--pidfile=</strong><em>file</em>] [<strong>-S</strong> <em>seconds</em> | <strong>--stats-interval=</strong><em>seconds</em>] [<strong>-B</strong> <em>n</em> | <strong>--rng-buffers=</strong><em>n</em>] [<strong>--hrng=</strong><em>name</em>] [<strong>-R</strong> <em>name</em> | <strong>--rng-driver=</strong><em>name</em>] [<strong>-r</strong> <em>file</em> | <strong>--rng-device=</strong><em>file</em>] [<strong>-H</strong> <em>n.nnn</em> | <strong>--rng-entropy=</strong><em>n.nnn</em>] [<strong>-Q</strong> <em>quality</em> | <strong>--rng-quality=</strong><em>quality</em>] [<strong>-T</strong> <em>n</em> | <strong>--rng-timeout=</strong><em>n</em>] [<strong>-o</strong> <em>file</em> | <strong>--random-device=</strong><em>file</em>] [<strong>-s</strong> <em>n</em> | <strong>--random-step=</strong><em>n</em>] [<strong>-W</strong> <em>n</em> | <strong>--fill-watermark=</strong><em>n[%]</em>] [<strong>-t</strong> <em>n</em> | <strong>--feed-interval=</strong><em>n</em>] [<strong>-?</strong>] [<strong>--help</strong>] [<strong>-V</strong>] [<strong>--version</strong>]</p>
+<h1>DESCRIPTION</h1>
+<p>This daemon feeds entropy from a trusted source of true randomness (called an <em>entropy source</em>) such as a hardware true random number generator (TRNG), to an <em>entropy sink</em> such as the kernel's entropy pool. It does so only after checking the data to ensure that it is suitably random.</p>
+<p>Entropy measures the uncertainty (randomness) contained in an unit of information. For the Linux kernel, this unit is a binary bit. The kernel keeps all the entropy it gathers from different sources in an entropy pool, from which it drawns uncertainty to generate random numbers. The primary purpose of <em>rngd</em> is to keep this pool as full of randomness as possible.</p>
+<p><em>rngd</em> works on blocks of 20000 bits at a time, using the FIPS 140-2 tests to verify the randomness of the block of data. If that data is deemed random, the block is fed back <em>random-step</em>*8 bits at a time to the entropy sink, (in the case of the kernel, this is done until the kernel's entropy pool is at least <em>fill-watermark</em> full).</p>
+<p>If working with the kernel as an entropy sink, and the entropy pool is full, the daemon will force-feed the kernel <em>random-step</em>*8 bits of data every <em>feed-interval</em> seconds, to stir the entropy pool. If the entropy source used by <em>rngd</em> is of very high quality, this will improve the entropy of the pool.</p>
+<p>The <strong>-f</strong> or <strong>--foreground</strong> options can be used to tell <strong>rngd</strong> to avoid forking on startup. This is typically used for debugging. The <strong>-b</strong> or <strong>--background</strong> options, which fork and put <strong>rngd</strong> into the background automatically, are the default.</p>
+<p>The <strong>-R</strong> or <strong>--rng-driver</strong> options can be used to select the type of entropy source. The <strong>-r</strong> or <strong>--rng-device</strong> options can be used to select an alternate source of entropy, instead of the default <em>/dev/hwrng</em>. The <strong>-o</strong> or <strong>--random-device</strong> options can be used to select an alternate entropy output device, instead of the default <em>/dev/random</em>. Note that this device must support the Linux kernel's <em>/dev/random</em> ioctl API.</p>
+<p>The <strong>-H</strong> or <strong>--rng-entropy</strong> options should be used to inform <em>rngd</em> about the entropy per bit of data received from the input source.</p>
+<p>The <strong>-B</strong> or <strong>--rng-buffers</strong> options can be used to change the number of buffers used by <em>rngd</em>. Each buffer holds a block of 20000 bits of data, which will be either approved or discarded by the FIPS tests. Decreasing the number of buffers below 3 can degrade rngd's performance. Increasing it above 3 will only help if you have very big bursts of entropy usage that a larger number of buffers can accommodate.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-b</strong>, <strong>--background</strong></dt>
+<dd><p>Become a daemon (default).</p>
+</dd>
+<dt><strong>-f</strong>, <strong>--foreground</strong></dt>
+<dd><p>Do not fork, nor detach from the controlling terminal.</p>
+</dd>
+<dt><strong>-S</strong> <em>seconds</em>, <strong>--stats-interval=</strong><em>seconds</em> (default: 3600)</dt>
+<dd><p>Controls the interval in which statistics are output to syslog. Normally every hour, the maximum being one week (604800 seconds). Set to 0 to disable automatic statistics logging, e.g. to avoid hard disc spin-up in embedded systems (sending a <strong>SIGUSR1</strong> signal will still cause statistics to be logged).</p>
+</dd>
+<dt><strong>-R</strong><em> name</em>, <strong>--rng-driver=</strong><em>name</em> (default: stream)</dt>
+<dd><p>Entropy source driver. <em>stream</em> is a general purpose Unix stream input driver, capable of receiving data from a file, named pipe, or Unix character device. <em>viapadlock</em> is an user-space driver for the TRNG embedded on some VIA CPUs that have the VIA PadLock security engine.</p>
+</dd>
+<dt><strong>-o</strong><em> file</em>, <strong>--random-device=</strong><em>file</em> (default: /dev/random)</dt>
+<dd><p>Kernel device used for entropy output.</p>
+</dd>
+<dt><strong>-r</strong><em> file</em>, <strong>--rng-device=</strong><em>file</em> (default: /dev/hwrng)</dt>
+<dd><p>Kernel device, fifo or file used for entropy input by the <em>stream</em> entropy source driver.</p>
+</dd>
+<dt><strong>--hrng=</strong><em>name</em></dt>
+<dd><p>Selects known-good defaults for some HRNGs. <em>help</em> lists all known HRNGs. You can override these defaults selectively with the other options.</p>
+</dd>
+<dt><strong>-H </strong><em>n.n</em>, <strong>--rng-entropy=</strong><em>n.n</em> (default: 1.0)</dt>
+<dd><p>Entropy per bit of input data. This is a floating point number between 0 and 1 (inclusive).</p>
+</dd>
+<dt><strong>-Q</strong> <em>quality</em>, <strong>--rng-quality=</strong><em>quality</em></dt>
+<dd><p>Selects the quality of the random data an entropy source will generate. Quality is: <em>default</em>, <em>low</em>, <em>medium</em> or <em>high</em>. Do not use anything but <em>high</em> if the entropy sink will use the random data directly, instead of using it to seed a PRNG/entropy pool. Ignored by the <em>stream</em> entropy source driver.</p>
+</dd>
+<dt><strong>-B </strong><em>n</em>, <strong>--rng-buffers=</strong><em>n</em> (default: 3)</dt>
+<dd><p>Number of 20000 bit buffers to use.</p>
+</dd>
+<dt><strong>-s</strong><em> n</em>, <strong>--random-step=</strong><em>n</em> (default: 64)</dt>
+<dd><p>Number of bytes written to <em>random-device</em> at a time. This number should be even, and between 8 and 2500. Setting it too high will cause <em>rngd</em> to dominate the contents of the entropy pool. Values above 256 are unlikely to increase performance.</p>
+</dd>
+<dt><strong>-W</strong><em> n</em>, <strong>--fill-watermark=</strong><em>n[%]</em> (default: 50%)</dt>
+<dd><p>Once we start doing it, feed entropy to <em>random-device</em> until at least <em>fill-watermark</em> bits of entropy are available in its entropy pool. Setting this too high will cause <em>rngd</em> to dominate the contents of the entropy pool. Low values will hurt system performance during entropy starves. <em>fill-watermark</em> can be specified either as an absolute number of bits, or as a percentage of the total size of the entropy pool.</p>
+</dd>
+<dt><strong>-t</strong><em> n</em>, <strong>--feed-interval=</strong><em>n</em> (default: 60)</dt>
+<dd><p>If <em>feed-interval</em> is not zero, <em>rngd</em> will force-feed entropy to the random device even when the entropy pool is full every <em>feed-interval</em> seconds. Setting this too low may cause <em>rngd</em> to dominate the contents of the entropy pool.</p>
+</dd>
+<dt><strong>--timeout=</strong><em>n</em></dt>
+<dd><p>Deprecated, use <em>--feed-interval</em> instead.</p>
+</dd>
+<dt><strong>-T</strong><em> n</em>, <strong>--rng-timeout=</strong><em>n</em> (default: 10)</dt>
+<dd><p>Time to wait for data to <em>start</em> coming from the entropy source, before giving up and aborting. Zero disables this functionality, and will cause <em>rngd</em> to wait forever for the entropy source.</p>
+</dd>
+<dt><strong>-p</strong><em> file</em>, <strong>--pidfile=</strong><em>file</em> (default: /var/run/rngd.pid)</dt>
+<dd><p>File to write PID to when running in background mode.</p>
+</dd>
+<dt><strong>-?</strong>, <strong>--help</strong></dt>
+<dd><p>Give a short summary of all program options.</p>
+</dd>
+<dt><strong>-V</strong>, <strong>--version</strong></dt>
+<dd><p>Print program version.</p>
+</dd>
+</dl>
+<h1>WARNING</h1>
+<p>Depending on its settings, <em>rngd</em> can dominate the kernel's entropy pool, by feeding it so much data, so often, that other sources of entropy are mostly ignored or lost. Do not to that unless you trust <em>rngd</em>'s source of random data ultimately.</p>
+<p>Also, there is only so much bandwidth available from a HRNG, and it is often not much. Don't drain too much with too low a <em>feed-interval</em>, or <em>rngd</em> may not have enough data on its buffers when the kernel gets low on entropy.</p>
+<h1>STATISTICS</h1>
+<p><em>rngd</em> will dump some statistics to its output channel hourly (but see the <strong>-S</strong> (<strong>--stats-interval</strong>) option) or when sent a <strong>SIGUSR1</strong> signal. The output channel is either <em>stderr</em> when in foreground mode, or <em>syslog</em> when in background mode.</p>
+<p><strong>Bits received from HRNG source</strong> is the number of bits received by <em>rngd</em> from the entropy source. <strong>Bits sent to kernel pool</strong> is the number of bits sent by <em>rngd</em> to the kernel, and <strong>Entropy added to kernel</strong> pool is the number of bits of entropy in that mass of data that was informed to the kernel.</p>
+<p><strong>FIPS 140-2 successes</strong> and <strong>FIPS 140-2 failures</strong> counts the number of 20000-bit blocks either accepted or rejected by the FIPS 140-2 tests. The other statistics show a breakdown of the FIPS 140-2 failures by FIPS 140-2 test. See the FIPS 140-2 document for more information.</p>
+<p><strong>HRNG source speed</strong> measures the speed of the entropy source, for reading a 20000-bit block of data. <strong>FIPS tests speed</strong> measures the speed of the FIPS 140-2 tests for a 20000-bit block of data.</p>
+<p><strong>Lowest ready-buffers level</strong> records the lowest number of ready buffers (i.e. that can be fed to the kernel) hit so far. If it gets to zero, you may want to increase <em>rng-buffers</em>. If it is always above 1, you may want to decrease <em>rng-buffers</em>.</p>
+<p><strong>Entropy starvations</strong> counts the number of times the kernel asked <em>rngd</em> for entropy, and <em>rngd</em> had none to give. <strong>Time spent starving</strong> for entropy records the time spent by <em>rngd</em> waiting for a buffer with good entropy to become available, during such an episode.</p>
+<h1>SIGNALS</h1>
+<p><em>rngd</em> is multithreaded. If the threading implementation shows up as multiple <em>rngd</em> processes, signals should be sent to the process listed in the <em>pidfile</em>.</p>
+<p><strong>SIGTERM</strong> terminates <em>rngd</em> cleanly.</p>
+<p><strong>SIGUSR1</strong> causes <em>rngd</em> to dump some statistics to its output channel immediately.</p>
+<h1>EXIT STATUS</h1>
+<dl>
+<dt><strong>0</strong> if no errors happen.</dt>
+<dd>
+</dd>
+<dt><strong>1</strong> if <em>rng-source</em> is misbehaving.</dt>
+<dd>
+</dd>
+<dt><strong>10</strong> if there are problems with the parameters, or if <em>rngd</em> fails to lock the <em>pidfile</em>, or if <em>rng-device</em> cannot be opened.</dt>
+<dd>
+</dd>
+<dt><strong>11</strong> if an input/output error happens.</dt>
+<dd>
+</dd>
+<dt><strong>12</strong> if an operating system or resource starvation error happens.</dt>
+<dd>
+</dd>
+</dl>
+<h1>BUGS</h1>
+<p>The /dev/random driver in Linux kernels up to 2.4.28 inclusive (and probably later ones too) has broken entropy accounting, and fails to do catrastrophic reseeds correctly. This has been fixed in Linux 2.6.</p>
+<p>It is a very bad idea to shrink the capacity of the kernel entropy pool with rngd running, as it may misbehave the next time the pool drains. Please restart rngd every time the kernel entropy pool size is changed.</p>
+<h1>FILES</h1>
+<p>/dev/random, /dev/hwrng, /var/run/rngd.pid, /proc/sys/kernel/random/poolsize /proc/sys/kernel/random/write_wakeup_threshold</p>
+<h1>SEE ALSO</h1>
+<p>random(4), rngtest(1)</p>
+<dl>
+<dt>FIPS PUB 140-2 Security Requirements for Cryptographic Modules; NIST;</dt>
+<dd><p>http://csrc.nist.gov/cryptval/140-2.htm</p>
+</dd>
+<dt>NIST Special Publication 800-22; NIST;</dt>
+<dd><p>http://csrc.nist.gov/rng/rng2.html</p>
+</dd>
+<dt>The Intel(R) Random Number Generator; Cryptography Research, Inc.; 1999;</dt>
+<dd><p>http://developer.intel.com/design/chipsets/rng/CRIwp.htm</p>
+</dd>
+<dt>Evaluation of VIA C3 Nehemiah Random Number Generator;</dt>
+<dd><p>Cryptography Research, Inc.; 2003; http://www.cryptography.com/</p>
+</dd>
+</dl>
+<h1>AUTHORS</h1>
+<p>Philipp Rumpf<br />
+Jeff Garzik &lt;jgarzik@pobox.com&gt;<br />
+Matt Sottek<br />
+Henrique de Moraes Holschuh &lt;hmh@debian.org&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

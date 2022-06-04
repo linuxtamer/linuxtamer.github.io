@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command deb-buildinfo</title><meta name="description" content="Linux command deb-buildinfo Debian build information file format"><meta name="keywords" content="linux, command, deb-buildinfo, bsd, Debian build information file format"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>deb-buildinfo - Debian build information file format</p>
+<h1>SYNOPSIS</h1>
+<p><em>filename</em><strong>.buildinfo</strong></p>
+<h1>DESCRIPTION</h1>
+<p>Each Debian source package build can record the build information in a <strong>.buildinfo</strong> control file, which contains a number of fields in <strong>deb822</strong> (5) format.</p>
+<p>Each field begins with a tag, such as <strong>Source</strong> or <strong>Binary</strong> (case insensitive), followed by a colon, and the body of the field (case sensitive unless stated otherwise). Fields are delimited only by field tags. In other words, field text may be multiple lines in length, but the installation tools will generally join lines when processing the body of the field (except in case of the multiline fields <strong>Binary-Only-Changes</strong>, <strong>Installed-Build-Depends</strong>, <strong>Environment</strong>, <strong>Checksums-Md5</strong>, <strong>Checksums-Sha1</strong> and <strong>Checksums-Sha256</strong>, see below).</p>
+<p>The control data might be enclosed in an OpenPGP ASCII Armored signature, as specified in RFC4880.</p>
+<p>The name of the <strong>.buildinfo</strong> file will depend on the type of build and will be as specific as necessary but not more; for a build that includes <strong>any</strong> the name will be <em>source-name</em><strong>_</strong><em>binary-version</em><strong>_</strong><em>arch</em><strong>.buildinfo</strong>, or otherwise for a build that includes <strong>all</strong> the name will be <em>source-name</em><strong>_</strong><em>binary-version</em><strong>_all.buildinfo</strong>, or otherwise for a build that includes <strong>source</strong> the name will be <em>source-name</em><strong>_</strong><em>source-version</em><strong>_source.buildinfo</strong>.</p>
+<h1>FIELDS</h1>
+<ul>
+<li><p>The value of this field declares the format version of the file. The syntax of the field value is a version number with a major and minor component. Backward incompatible changes to the format will bump the major version, and backward compatible changes (such as field additions) will bump the minor version. The current format version is <strong>1.0</strong>.</p></li>
+<li><p>The name of the source package. If the source version differs from the binary version, then the <em>source-name</em> will be followed by a <em>source-version</em> in parenthesis. This can happen when the build is for a binary-only non-maintainer upload.</p></li>
+<li><p>This folded field is a space-separated list of binary packages built. If the build is source-only, then the field is omitted (since dpkg 1.20.0).</p></li>
+<li><p>This space-separated field lists the architectures of the files currently being built. Common architectures are <strong>amd64</strong>, <strong>armel</strong>, <strong>i386</strong>, etc. Note that the <strong>all</strong> value is meant for packages that are architecture independent. If the source for the package is also being built, the special entry <strong>source</strong> is also present. Architecture wildcards must never be present in the list.</p></li>
+<li><p>Typically, this is the original package's version number in whatever form the program's author uses. It may also include a Debian revision number (for non-native packages). The exact format and sorting algorithm are described in <strong>deb-version</strong>(7).</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>This multiline field contains the concatenated text of the changelog entry for a binary-only non-maintainer upload (binNMU) if that is the case. To make this a valid multiline field empty lines are replaced with a single full stop (‘.’) and all lines are indented by one space character. The exact content depends on the changelog format.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+<p>These multiline fields contain a list of files with a checksum and size for each one. These fields have the same syntax and differ only in the checksum algorithm used: MD5 for <strong>Checksums-Md5</strong>, SHA-1 for <strong>Checksums-Sha1</strong> and SHA-256 for <strong>Checksums-Sha256</strong>. The first line of the field value (the part on the same line as the field name followed by a colon) is always empty. The content of the field is expressed as continuation lines, one line per file. Each line consists of space-separated entries describing the file: the checksum, the file size, and the file name. These fields list all files that make up the build.</p>
+<ul>
+<li><p>The name of the distribution this package is originating from.</p></li>
+<li><p>The Debian architecture for the installation the packages is being built in. Common architectures are <strong>amd64</strong>, <strong>armel</strong>, <strong>i386</strong>, etc.</p></li>
+<li><p>The date the package was built. It must be in the same format as the date in a <strong>deb-changelog</strong>(5) entry.</p></li>
+<li><p>The release and version (in an unspecified format) of the kernel running on the build system. This field is only going to be present if the builder has explicitly requested it, to avoid leaking possibly sensitive information.</p></li>
+<li><p>The absolute build path, which correspond to the unpacked source tree. This field is only going to be present if the vendor has allowed it via some pattern match to avoid leaking possibly sensitive information. On Debian and derivatives only build paths starting with <em>/build/</em> will emit this field.</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>This folded field contains a space-separated list of non-exhaustive reason tags (formed by alphanumeric and dash characters) which identify why the current build has been tainted (since dpkg 1.19.5). On Debian and derivatives the following reason tags can be emitted:</p>
+<blockquote>
+<ul>
+<li><p>The system has a merged <em>/usr</em> via aliased directories (previously known as <strong>merged-usr-via-symlinks</strong>). This will confuse <strong>dpkg-query</strong>, <strong>dpkg-statoverride</strong>, <strong>dpkg-trigger</strong>, <strong>update-alternatives</strong> and any other tool using pathnames as keys into their databases, as it creates filesystem aliasing problems, and messes with the understanding of the filesystem that <strong>dpkg</strong> has recorded in its database. For build systems that hardcode pathnames to specific binaries or libraries on the resulting artifacts, it can also produce packages that will be incompatible with non-/usr-merged filesystems.</p></li>
+<li><p>The system has configuration files under <em>/usr/local/etc</em>.</p></li>
+<li><p>The system has header files under <em>/usr/local/include</em>.</p></li>
+<li><p>The system has programs under <em>/usr/local/bin</em> or <em>/usr/local/sbin</em>.</p></li>
+<li><p>The system has libraries, either static or shared under <em>/usr/local/lib</em>.</p></li>
+</ul>
+</blockquote>
+<blockquote>
+
+</blockquote>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>The list of installed and configured packages that might affect the package build process. The list consists of each package name, optionally arch-qualified for foreign architectures, with an exact version restriction, separated by commas. The list includes all essential packages, packages listed in <strong>Build-Depends</strong>, <strong>Build-Depends-Arch</strong>, <strong>Build-Depends-Indep</strong> source control fields, any vendor specific builtin dependencies, and all their recursive dependencies. On Debian and derivatives the dependency builtin is <strong>build-essential</strong>. For dependencies coming from the source control fields, all dependency alternatives and all providers of virtual packages depended on will be included.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>The list of environment variables that are known to affect the package build process, with each environment variable followed by an equal sign (‘=’) and the variable's quoted value, using double quotes (‘"’), and backslashes escaped (‘\\’).</p>
+<h1>SEE ALSO</h1>
+<p><strong>deb822</strong> (5), <strong>deb-changes</strong>(5), <strong>deb-version</strong>(7), <strong>dpkg-genbuildinfo</strong>(1).</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

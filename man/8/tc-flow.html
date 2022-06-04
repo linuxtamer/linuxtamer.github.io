@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-flow</title><meta name="description" content="Linux command tc-flow flow based traffic control filter"><meta name="keywords" content="linux, command, tc-flow, bsd, flow based traffic control filter"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>flow - flow based traffic control filter</p>
+<h1>SYNOPSIS</h1>
+<dl>
+<dt>Mapping mode:</dt>
+<dd>
+</dd>
+</dl>
+<blockquote>
+<p><strong>tc</strong> <strong>filter</strong> ... <strong>flow map key </strong> <em>KEY</em> [ <em>OPS</em> ] [ <em>OPTIONS</em> ]</p>
+</blockquote>
+<dl>
+<dt>Hashing mode:</dt>
+<dd>
+</dd>
+</dl>
+<blockquote>
+<p><strong>tc</strong> <strong>filter</strong> ... <strong>flow hash keys </strong> <em>KEY_LIST</em> [ <strong>perturb</strong> <em>secs</em> ] [ <em>OPTIONS</em> ]</p>
+</blockquote>
+<p><em>OPS</em> := [ <em>OPS</em> ] <em>OP</em></p>
+<p><em>OPTIONS</em> := [ <strong>divisor</strong> <em>NUM</em> ] [ <strong>baseclass</strong> <em>ID</em> ] [ <strong>match</strong> <em>EMATCH_TREE</em> ] [ <strong>action</strong> <em>ACTION_SPEC</em> ]</p>
+<p><em>KEY_LIST</em> := [ <em>KEY_LIST</em> ] <em>KEY</em></p>
+<p><em>OP</em> := { <strong>or</strong> | <strong>and</strong> | <strong>xor</strong> | <strong>rshift</strong> | <strong>addend</strong> } <em>NUM</em></p>
+<p><em>ID</em> := <em>X</em>:<em>Y</em></p>
+<p><em>KEY</em> := { <strong>src</strong> | <strong>dst</strong> | <strong>proto</strong> | <strong>proto-src</strong> | <strong>proto-dst</strong> | <strong>iif</strong> | <strong>priority</strong> | <strong>mark</strong> | <strong>nfct</strong> | <strong>nfct-src</strong> | <strong>nfct-dst</strong> | <strong>nfct-proto-src</strong> | <strong>nfct-proto-dst</strong> | <strong>rt-classid</strong> | <strong>sk-uid</strong> | <strong>sk-gid</strong> | <strong>vlan-tag</strong> | <strong>rxhash</strong> }</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>flow</strong> classifier is meant to extend the <strong>SFQ</strong> hashing capabilities without hard-coding new hash functions. It also allows deterministic mappings of keys to classes.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>action</strong><em> ACTION_SPEC</em></dt>
+<dd><p>Apply an action from the generic actions framework on matching packets.</p>
+</dd>
+<dt><strong>baseclass</strong><em> ID</em></dt>
+<dd><p>An offset for the resulting class ID. <em>ID</em> may be <strong>root</strong>, <strong>none</strong> or a hexadecimal class ID in the form [<em>X</em><strong>:</strong>]<em>Y</em>. <em>X</em> must match qdisc's/class's major handle (if omitted, the correct value is chosen automatically). If the whole <strong>baseclass</strong> is omitted, <em>Y</em> defaults to 1.</p>
+</dd>
+<dt><strong>divisor</strong><em> NUM</em></dt>
+<dd><p>Number of buckets to use for sorting into. Keys are calculated modulo <em>NUM</em>.</p>
+</dd>
+<dt><strong>hash keys </strong><em>KEY-LIST</em></dt>
+<dd><p>Perform a <strong>jhash2</strong> operation over the keys in <em>KEY-LIST</em>, the result (modulo the <strong>divisor</strong> if given) is taken as class ID, optionally offset by the value of <strong>baseclass</strong>. It is possible to specify an interval (in seconds) after which <strong>jhash2</strong>'s entropy source is recreated using the <strong>perturb</strong> parameter.</p>
+</dd>
+<dt><strong>map key </strong><em>KEY</em></dt>
+<dd><p>Packet data identified by <em>KEY</em> is translated into class IDs to push the packet into. The value may be mangled by <em>OPS</em> before using it for the mapping. They are applied in the order listed here:</p>
+<dl>
+<dt><strong>and</strong><em> NUM</em></dt>
+<dd><p>Perform bitwise <strong>AND</strong> operation with numeric value <em>NUM</em>.</p>
+</dd>
+<dt><strong>or</strong><em> NUM</em></dt>
+<dd><p>Perform bitwise <strong>OR</strong> operation with numeric value <em>NUM</em>.</p>
+</dd>
+<dt><strong>xor</strong><em> NUM</em></dt>
+<dd><p>Perform bitwise <strong>XOR</strong> operation with numeric value <em>NUM</em>.</p>
+</dd>
+<dt><strong>rshift</strong><em> NUM</em></dt>
+<dd><p>Shift the value of <em>KEY</em> to the right by <em>NUM</em> bits.</p>
+</dd>
+<dt><strong>addend</strong><em> NUM</em></dt>
+<dd><p>Add <em>NUM</em> to the value of <em>KEY</em>.</p>
+</dd>
+</dl>
+<p>For the <strong>or</strong>, <strong>and</strong>, <strong>xor</strong> and <strong>rshift</strong> operations, <em>NUM</em> is assumed to be an unsigned, 32bit integer value. For the <strong>addend</strong> operation, <em>NUM</em> may be much more complex: It may be prefixed by a minus ('-') sign to cause subtraction instead of addition and for keys of <strong>src</strong>, <strong>dst</strong>, <strong>nfct-src</strong> and <strong>nfct-dst</strong> it may be given in IP address notation. See below for an illustrating example.</p>
+</dd>
+<dt><strong>match</strong><em> EMATCH_TREE</em></dt>
+<dd><p>Match packets using the extended match infrastructure. See <strong>tc-ematch</strong>(8) for a detailed description of the allowed syntax in <em>EMATCH_TREE</em>.</p>
+</dd>
+</dl>
+<h1>KEYS</h1>
+<p>In mapping mode, a single key is used (after optional permutation) to build a class ID. The resulting ID is deducible in most cases. In hashing more, a number of keys may be specified which are then hashed and the output used as class ID. This ID is not deducible in beforehand, and may even change over time for a given flow if a <strong>perturb</strong> interval has been given.</p>
+<p>The range of class IDs can be limited by the <strong>divisor</strong> option, which is used for a modulus.</p>
+<dl>
+<dt><strong>src</strong>, <strong>dst</strong></dt>
+<dd><p>Use source or destination address as key. In case of IPv4 and TIPC, this is the actual address value. For IPv6, the 128bit address is folded into a 32bit value by XOR'ing the four 32bit words. In all other cases, the kernel-internal socket address is used (after folding into 32bits on 64bit systems).</p>
+</dd>
+<dt><strong>proto</strong></dt>
+<dd><p>Use the layer four protocol number as key.</p>
+</dd>
+<dt><strong>proto-src</strong></dt>
+<dd><p>Use the layer four source port as key. If not available, the kernel-internal socket address is used instead.</p>
+</dd>
+<dt><strong>proto-dst</strong></dt>
+<dd><p>Use the layer four destination port as key. If not available, the associated kernel-internal dst_entry address is used after XOR'ing with the packet's layer three protocol number.</p>
+</dd>
+<dt><strong>iif</strong></dt>
+<dd><p>Use the incoming interface index as key.</p>
+</dd>
+<dt><strong>priority</strong></dt>
+<dd><p>Use the packet's priority as key. Usually this is the IP header's DSCP/ECN value.</p>
+</dd>
+<dt><strong>mark</strong></dt>
+<dd><p>Use the netfilter <strong>fwmark</strong> as key.</p>
+</dd>
+<dt><strong>nfct</strong></dt>
+<dd><p>Use the associated conntrack entry address as key.</p>
+</dd>
+<dt><strong>nfct-src</strong>, <strong>nfct-dst</strong>, <strong>nfct-proto-src</strong>, <strong>nfct-proto-dst</strong></dt>
+<dd><p>These are conntrack-aware variants of <strong>src</strong>, <strong>dst</strong>, <strong>proto-src</strong> and <strong>proto-dst</strong>. In case of NAT, these are basically the packet header's values before NAT was applied.</p>
+</dd>
+<dt><strong>rt-classid</strong></dt>
+<dd><p>Use the packet's destination routing table entry's realm as key.</p>
+</dd>
+<dt><strong>sk-uid</strong><br />
+<strong>sk-gid</strong></dt>
+<dd><p>For locally generated packets, use the user or group ID the originating socket belongs to as key.</p>
+</dd>
+<dt><strong>vlan-tag</strong></dt>
+<dd><p>Use the packet's vlan ID as key.</p>
+</dd>
+<dt><strong>rxhash</strong></dt>
+<dd><p>Use the flow hash as key.</p>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<dl>
+<dt>Classic SFQ hash:</dt>
+<dd>
+</dd>
+</dl>
+<pre><code>tc filter add ... flow hash \
+	keys src,dst,proto,proto-src,proto-dst divisor 1024</code></pre>
+<dl>
+<dt>Classic SFQ hash, but using information from conntrack to work properly in combination with NAT:</dt>
+<dd>
+</dd>
+</dl>
+<pre><code>tc filter add ... flow hash \
+	keys nfct-src,nfct-dst,proto,nfct-proto-src,nfct-proto-dst \
+	divisor 1024</code></pre>
+<dl>
+<dt>Map destination IPs of 192.168.0.0/24 to classids 1-256:</dt>
+<dd>
+</dd>
+</dl>
+<pre><code>tc filter add ... flow map \
+	key dst addend -192.168.0.0 divisor 256</code></pre>
+<dl>
+<dt>Alternative to the above:</dt>
+<dd>
+</dd>
+</dl>
+<pre><code>tc filter add ... flow map \
+	key dst and 0xff</code></pre>
+<dl>
+<dt>The same, but in reverse order:</dt>
+<dd>
+</dd>
+</dl>
+<pre><code>tc filter add ... flow map \
+	key dst and 0xff xor 0xff</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8), <strong>tc-ematch</strong>(8), <strong>tc-sfq</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

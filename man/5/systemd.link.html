@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd.link</title><meta name="description" content="Linux command systemd.link Network device configuration"><meta name="keywords" content="linux, command, systemd.link, bsd, Network device configuration"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd.link - Network device configuration</p>
+<h1>SYNOPSIS</h1>
+<p><em>link</em>.link</p>
+<h1>DESCRIPTION</h1>
+<p>A plain ini-style text file that encodes configuration for matching network devices, used by <strong>systemd-udevd</strong>(8) and in particular its <strong>net_setup_link</strong> builtin. See <strong>systemd.syntax</strong>(7) for a general description of the syntax.</p>
+<p>The link files are read from the files located in the system network directory /lib/systemd/network, the volatile runtime network directory /run/systemd/network, and the local administration network directory /etc/systemd/network. Link files must have the extension .link; other extensions are ignored. All link files are collectively sorted and processed in lexical order, regardless of the directories in which they live. However, files with identical filenames replace each other. Files in /etc/ have the highest priority, files in /run/ take precedence over files with the same name in /lib/. This can be used to override a system-supplied link file with a local file if needed. As a special case, an empty file (file size 0) or symlink with the same name pointing to /dev/null disables the configuration file entirely (it is "masked").</p>
+<p>The link file contains a [Match] section, which determines if a given link file may be applied to a given device, as well as a [Link] section specifying how the device should be configured. The first (in lexical order) of the link files that matches a given device is applied. Note that a default file 99-default.link is shipped by the system. Any user-supplied .link should hence have a lexically earlier name to be considered at all.</p>
+<p>See <strong>udevadm</strong>(8) for diagnosing problems with .link files.</p>
+<h1>[MATCH] SECTION OPTIONS</h1>
+<p>A link file is said to match a device if all matches specified by the [Match] section are satisfied. When a link file does not contain valid settings in [Match] section, then the file will match all devices and <strong>systemd-udevd</strong> warns about that. Hint: to avoid the warning and to make it clear that all interfaces shall be matched, add the following:</p>
+<blockquote>
+<pre><code>OriginalName=*</code></pre>
+</blockquote>
+<p>The following keys are accepted:</p>
+<p><em>MACAddress=</em></p>
+<blockquote>
+<p>A whitespace-separated list of hardware addresses. Use full colon-, hyphen- or dot-delimited hexadecimal. See the example below. This option may appear more than once, in which case the lists are merged. If the empty string is assigned to this option, the list of hardware addresses defined prior to this is reset.</p>
+<p>Example:</p>
+<blockquote>
+<pre><code>MACAddress=01:23:45:67:89:ab 00-11-22-33-44-55 AABB.CCDD.EEFF</code></pre>
+</blockquote>
+</blockquote>
+<p><em>PermanentMACAddress=</em></p>
+<blockquote>
+<p>A whitespace-separated list of hardwares permanent addresses. While <em>MACAddress=</em> matches the devices current MAC address, this matches the devices permanent MAC address, which may be different from the current one. Use full colon-, hyphen- or dot-delimited hexadecimal. This option may appear more than once, in which case the lists are merged. If the empty string is assigned to this option, the list of hardware addresses defined prior to this is reset.</p>
+</blockquote>
+<p><em>Path=</em></p>
+<blockquote>
+<p>A whitespace-separated list of shell-style globs matching the persistent path, as exposed by the udev property <em>ID_PATH</em>.</p>
+</blockquote>
+<p><em>Driver=</em></p>
+<blockquote>
+<p>A whitespace-separated list of shell-style globs matching the driver currently bound to the device, as exposed by the udev property <em>ID_NET_DRIVER</em> of its parent device, or if that is not set, the driver as exposed by <strong>ethtool -i</strong> of the device itself. If the list is prefixed with a "!", the test is inverted.</p>
+</blockquote>
+<p><em>Type=</em></p>
+<blockquote>
+<p>A whitespace-separated list of shell-style globs matching the device type, as exposed by <strong>networkctl status</strong>. If the list is prefixed with a "!", the test is inverted.</p>
+</blockquote>
+<p><em>Property=</em></p>
+<blockquote>
+<p>A whitespace-separated list of udev property name with its value after a equal ("="). If multiple properties are specified, the test results are ANDed. If the list is prefixed with a "!", the test is inverted. If a value contains white spaces, then please quote whole key and value pair. If a value contains quotation, then please escape the quotation with "\".</p>
+<p>Example: if a .link file has the following:</p>
+<blockquote>
+<pre><code>Property=ID_MODEL_ID=9999 &quot;ID_VENDOR_FROM_DATABASE=vendor name&quot; &quot;KEY=with \&quot;quotation\&quot;&quot;</code></pre>
+</blockquote>
+<p>then, the .link file matches only when an interface has all the above three properties.</p>
+</blockquote>
+<p><em>OriginalName=</em></p>
+<blockquote>
+<p>A whitespace-separated list of shell-style globs matching the device name, as exposed by the udev property "INTERFACE". This cannot be used to match on names that have already been changed from userspace. Caution is advised when matching on kernel-assigned names, as they are known to be unstable between reboots.</p>
+</blockquote>
+<p><em>Host=</em></p>
+<blockquote>
+<p>Matches against the hostname or machine ID of the host. See <em>ConditionHost=</em> in <strong>systemd.unit</strong>(5) for details. When prefixed with an exclamation mark ("!"), the result is negated. If an empty string is assigned, then previously assigned value is cleared.</p>
+</blockquote>
+<p><em>Virtualization=</em></p>
+<blockquote>
+<p>Checks whether the system is executed in a virtualized environment and optionally test whether it is a specific implementation. See <em>ConditionVirtualization=</em> in <strong>systemd.unit</strong>(5) for details. When prefixed with an exclamation mark ("!"), the result is negated. If an empty string is assigned, then previously assigned value is cleared.</p>
+</blockquote>
+<p><em>KernelCommandLine=</em></p>
+<blockquote>
+<p>Checks whether a specific kernel command line option is set. See <em>ConditionKernelCommandLine=</em> in <strong>systemd.unit</strong>(5) for details. When prefixed with an exclamation mark ("!"), the result is negated. If an empty string is assigned, then previously assigned value is cleared.</p>
+</blockquote>
+<p><em>KernelVersion=</em></p>
+<blockquote>
+<p>Checks whether the kernel version (as reported by <strong>uname -r</strong>) matches a certain expression. See <em>ConditionKernelVersion=</em> in <strong>systemd.unit</strong>(5) for details. When prefixed with an exclamation mark ("!"), the result is negated. If an empty string is assigned, then previously assigned value is cleared.</p>
+</blockquote>
+<p><em>Architecture=</em></p>
+<blockquote>
+<p>Checks whether the system is running on a specific architecture. See <em>ConditionArchitecture=</em> in <strong>systemd.unit</strong>(5) for details. When prefixed with an exclamation mark ("!"), the result is negated. If an empty string is assigned, then previously assigned value is cleared.</p>
+</blockquote>
+<h1>[LINK] SECTION OPTIONS</h1>
+<p>The [Link] section accepts the following keys:</p>
+<p><em>Description=</em></p>
+<blockquote>
+<p>A description of the device.</p>
+</blockquote>
+<p><em>Alias=</em></p>
+<blockquote>
+<p>The <em>ifalias</em> interface property is set to this value.</p>
+</blockquote>
+<p><em>MACAddressPolicy=</em></p>
+<blockquote>
+<p>The policy by which the MAC address should be set. The available policies are:</p>
+<p><strong>persistent</strong></p>
+<blockquote>
+<p>If the hardware has a persistent MAC address, as most hardware should, and if it is used by the kernel, nothing is done. Otherwise, a new MAC address is generated which is guaranteed to be the same on every boot for the given machine and the given device, but which is otherwise random. This feature depends on ID_NET_NAME_* properties to exist for the link. On hardware where these properties are not set, the generation of a persistent MAC address will fail.</p>
+</blockquote>
+<p><strong>random</strong></p>
+<blockquote>
+<p>If the kernel is using a random MAC address, nothing is done. Otherwise, a new address is randomly generated each time the device appears, typically at boot. Either way, the random address will have the "unicast" and "locally administered" bits set.</p>
+</blockquote>
+<p><strong>none</strong></p>
+<blockquote>
+<p>Keeps the MAC address assigned by the kernel. Or use the MAC address specified in <em>MACAddress=</em>.</p>
+</blockquote>
+<p>An empty string assignment is equivalent to setting "none".</p>
+</blockquote>
+<p><em>MACAddress=</em></p>
+<blockquote>
+<p>The interface MAC address to use. For this setting to take effect, <em>MACAddressPolicy=</em> must either be unset, empty, or "none".</p>
+</blockquote>
+<p><em>NamePolicy=</em></p>
+<blockquote>
+<p>An ordered, space-separated list of policies by which the interface name should be set. <em>NamePolicy=</em> may be disabled by specifying <strong>net.ifnames=0</strong> on the kernel command line. Each of the policies may fail, and the first successful one is used. The name is not set directly, but is exported to udev as the property <strong>ID_NET_NAME</strong>, which is, by default, used by a <strong>udev</strong>(7), rule to set <em>NAME</em>. The available policies are:</p>
+<p><strong>kernel</strong></p>
+<blockquote>
+<p>If the kernel claims that the name it has set for a device is predictable, then no renaming is performed.</p>
+</blockquote>
+<p><strong>database</strong></p>
+<blockquote>
+<p>The name is set based on entries in the udevs Hardware Database with the key <em>ID_NET_NAME_FROM_DATABASE</em>.</p>
+</blockquote>
+<p><strong>onboard</strong></p>
+<blockquote>
+<p>The name is set based on information given by the firmware for on-board devices, as exported by the udev property <em>ID_NET_NAME_ONBOARD</em>. See <strong>systemd.net-naming-scheme</strong>(7).</p>
+</blockquote>
+<p><strong>slot</strong></p>
+<blockquote>
+<p>The name is set based on information given by the firmware for hot-plug devices, as exported by the udev property <em>ID_NET_NAME_SLOT</em>. See <strong>systemd.net-naming-scheme</strong>(7).</p>
+</blockquote>
+<p><strong>path</strong></p>
+<blockquote>
+<p>The name is set based on the devices physical location, as exported by the udev property <em>ID_NET_NAME_PATH</em>. See <strong>systemd.net-naming-scheme</strong>(7).</p>
+</blockquote>
+<p><strong>mac</strong></p>
+<blockquote>
+<p>The name is set based on the devices persistent MAC address, as exported by the udev property <em>ID_NET_NAME_MAC</em>. See <strong>systemd.net-naming-scheme</strong>(7).</p>
+</blockquote>
+<p><strong>keep</strong></p>
+<blockquote>
+<p>If the device already had a name given by userspace (as part of creation of the device or a rename), keep it.</p>
+</blockquote>
+</blockquote>
+<p><em>Name=</em></p>
+<blockquote>
+<p>The interface name to use. This option has lower precedence than <em>NamePolicy=</em>, so for this setting to take effect, <em>NamePolicy=</em> must either be unset, empty, disabled, or all policies configured there must fail. Also see the example below with "Name=dmz0".</p>
+<p>Note that specifying a name that the kernel might use for another interface (for example "eth0") is dangerous because the name assignment done by udev will race with the assignment done by the kernel, and only one interface may use the name. Depending on the order of operations, either udev or the kernel will win, making the naming unpredictable. It is best to use some different prefix, for example "internal0"/"external0" or "lan0"/"lan1"/"lan3".</p>
+</blockquote>
+<p><em>AlternativeNamesPolicy=</em></p>
+<blockquote>
+<p>A space-separated list of policies by which the interfaces alternative names should be set. Each of the policies may fail, and all successful policies are used. The available policies are "database", "onboard", "slot", "path", and "mac". If the kernel does not support the alternative names, then this setting will be ignored.</p>
+</blockquote>
+<p><em>AlternativeName=</em></p>
+<blockquote>
+<p>The alternative interface name to use. This option can be specified multiple times. If the empty string is assigned to this option, the list is reset, and all prior assignments have no effect. If the kernel does not support the alternative names, then this setting will be ignored.</p>
+</blockquote>
+<p><em>MTUBytes=</em></p>
+<blockquote>
+<p>The maximum transmission unit in bytes to set for the device. The usual suffixes K, M, G, are supported and are understood to the base of 1024.</p>
+</blockquote>
+<p><em>BitsPerSecond=</em></p>
+<blockquote>
+<p>The speed to set for the device, the value is rounded down to the nearest Mbps. The usual suffixes K, M, G, are supported and are understood to the base of 1000.</p>
+</blockquote>
+<p><em>Duplex=</em></p>
+<blockquote>
+<p>The duplex mode to set for the device. The accepted values are <strong>half</strong> and <strong>full</strong>.</p>
+</blockquote>
+<p><em>AutoNegotiation=</em></p>
+<blockquote>
+<p>Takes a boolean. If set to yes, automatic negotiation of transmission parameters is enabled. Autonegotiation is a procedure by which two connected ethernet devices choose common transmission parameters, such as speed, duplex mode, and flow control. When unset, the kernels default will be used.</p>
+<p>Note that if autonegotiation is enabled, speed and duplex settings are read-only. If autonegotiation is disabled, speed and duplex settings are writable if the driver supports multiple link modes.</p>
+</blockquote>
+<p><em>WakeOnLan=</em></p>
+<blockquote>
+<p>The Wake-on-LAN policy to set for the device. The supported values are:</p>
+<p><strong>phy</strong></p>
+<blockquote>
+<p>Wake on PHY activity.</p>
+</blockquote>
+<p><strong>unicast</strong></p>
+<blockquote>
+<p>Wake on unicast messages.</p>
+</blockquote>
+<p><strong>multicast</strong></p>
+<blockquote>
+<p>Wake on multicast messages.</p>
+</blockquote>
+<p><strong>broadcast</strong></p>
+<blockquote>
+<p>Wake on broadcast messages.</p>
+</blockquote>
+<p><strong>arp</strong></p>
+<blockquote>
+<p>Wake on ARP.</p>
+</blockquote>
+<p><strong>magic</strong></p>
+<blockquote>
+<p>Wake on receipt of a magic packet.</p>
+</blockquote>
+<p><strong>secureon</strong></p>
+<blockquote>
+<p>Enable secureon(tm) password for MagicPacket(tm).</p>
+</blockquote>
+<p><strong>off</strong></p>
+<blockquote>
+<p>Never wake.</p>
+</blockquote>
+<p>Defaults to <strong>off</strong>.</p>
+</blockquote>
+<p><em>Port=</em></p>
+<blockquote>
+<p>The port option is used to select the device port. The supported values are:</p>
+<p><strong>tp</strong></p>
+<blockquote>
+<p>An Ethernet interface using Twisted-Pair cable as the medium.</p>
+</blockquote>
+<p><strong>aui</strong></p>
+<blockquote>
+<p>Attachment Unit Interface (AUI). Normally used with hubs.</p>
+</blockquote>
+<p><strong>bnc</strong></p>
+<blockquote>
+<p>An Ethernet interface using BNC connectors and co-axial cable.</p>
+</blockquote>
+<p><strong>mii</strong></p>
+<blockquote>
+<p>An Ethernet interface using a Media Independent Interface (MII).</p>
+</blockquote>
+<p><strong>fibre</strong></p>
+<blockquote>
+<p>An Ethernet interface using Optical Fibre as the medium.</p>
+</blockquote>
+</blockquote>
+<p><em>Advertise=</em></p>
+<blockquote>
+<p>This sets what speeds and duplex modes of operation are advertised for auto-negotiation. This implies "AutoNegotiation=yes". The supported values are:</p>
+<p><br />
+<strong>Table 1. Supported advertise values</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Advertise</td>
+<td style="text-align: left;">Speed (Mbps)</td>
+<td style="text-align: left;">Duplex Mode</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>10baset-half</strong></td>
+<td style="text-align: left;">10</td>
+<td style="text-align: left;">half</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>10baset-full</strong></td>
+<td style="text-align: left;">10</td>
+<td style="text-align: left;">full</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>100baset-half</strong></td>
+<td style="text-align: left;">100</td>
+<td style="text-align: left;">half</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>100baset-full</strong></td>
+<td style="text-align: left;">100</td>
+<td style="text-align: left;">full</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>1000baset-half</strong></td>
+<td style="text-align: left;">1000</td>
+<td style="text-align: left;">half</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>1000baset-full</strong></td>
+<td style="text-align: left;">1000</td>
+<td style="text-align: left;">full</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>10000baset-full</strong></td>
+<td style="text-align: left;">10000</td>
+<td style="text-align: left;">full</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>2500basex-full</strong></td>
+<td style="text-align: left;">2500</td>
+<td style="text-align: left;">full</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>1000basekx-full</strong></td>
+<td style="text-align: left;">1000</td>
+<td style="text-align: left;">full</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>10000basekx4-full</strong></td>
+<td style="text-align: left;">10000</td>
+<td style="text-align: left;">full</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>10000basekr-full</strong></td>
+<td style="text-align: left;">10000</td>
+<td style="text-align: left;">full</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>10000baser-fec</strong></td>
+<td style="text-align: left;">10000</td>
+<td style="text-align: left;">full</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>20000basemld2-full</strong></td>
+<td style="text-align: left;">20000</td>
+<td style="text-align: left;">full</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>20000basekr2-full</strong></td>
+<td style="text-align: left;">20000</td>
+<td style="text-align: left;">full</td>
+</tr>
+</tbody>
+</table>
+<p>By default this is unset, i.e. all possible modes will be advertised. This option may be specified more than once, in which case all specified speeds and modes are advertised. If the empty string is assigned to this option, the list is reset, and all prior assignments have no effect.</p>
+</blockquote>
+<p><em>ReceiveChecksumOffload=</em></p>
+<blockquote>
+<p>Takes a boolean. If set to true, the hardware offload for checksumming of ingress network packets is enabled. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>TransmitChecksumOffload=</em></p>
+<blockquote>
+<p>Takes a boolean. If set to true, the hardware offload for checksumming of egress network packets is enabled. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>TCPSegmentationOffload=</em></p>
+<blockquote>
+<p>Takes a boolean. If set to true, the TCP Segmentation Offload (TSO) is enabled. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>TCP6SegmentationOffload=</em></p>
+<blockquote>
+<p>Takes a boolean. If set to true, the TCP6 Segmentation Offload (tx-tcp6-segmentation) is enabled. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>GenericSegmentationOffload=</em></p>
+<blockquote>
+<p>Takes a boolean. If set to true, the Generic Segmentation Offload (GSO) is enabled. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>GenericReceiveOffload=</em></p>
+<blockquote>
+<p>Takes a boolean. If set to true, the Generic Receive Offload (GRO) is enabled. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>LargeReceiveOffload=</em></p>
+<blockquote>
+<p>Takes a boolean. If set to true, the Large Receive Offload (LRO) is enabled. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>RxChannels=</em></p>
+<blockquote>
+<p>Sets the number of receive channels (a number between 1 and 4294967295) .</p>
+</blockquote>
+<p><em>TxChannels=</em></p>
+<blockquote>
+<p>Sets the number of transmit channels (a number between 1 and 4294967295).</p>
+</blockquote>
+<p><em>OtherChannels=</em></p>
+<blockquote>
+<p>Sets the number of other channels (a number between 1 and 4294967295).</p>
+</blockquote>
+<p><em>CombinedChannels=</em></p>
+<blockquote>
+<p>Sets the number of combined set channels (a number between 1 and 4294967295).</p>
+</blockquote>
+<p><em>RxBufferSize=</em></p>
+<blockquote>
+<p>Takes an integer. Specifies the maximum number of pending packets in the NIC receive buffer. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>RxMiniBufferSize=</em></p>
+<blockquote>
+<p>Takes an integer. Specifies the maximum number of pending packets in the NIC mini receive buffer. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>RxJumboBufferSize=</em></p>
+<blockquote>
+<p>Takes an integer. Specifies the maximum number of pending packets in the NIC jumbo receive buffer. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>TxBufferSize=</em></p>
+<blockquote>
+<p>Takes an integer. Specifies the maximum number of pending packets in the NIC transmit buffer. When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>RxFlowControl=</em></p>
+<blockquote>
+<p>Takes a boolean. When set, enables the receive flow control, also known as the ethernet receive PAUSE message (generate and send ethernet PAUSE frames). When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>TxFlowControl=</em></p>
+<blockquote>
+<p>Takes a boolean. When set, enables the transmit flow control, also known as the ethernet transmit PAUSE message (respond to received ethernet PAUSE frames). When unset, the kernels default will be used.</p>
+</blockquote>
+<p><em>AutoNegotiationFlowControl=</em></p>
+<blockquote>
+<p>Takes a boolean. When set, the auto negotiation enables the interface to exchange state advertisements with the connected peer so that the two devices can agree on the ethernet PAUSE configuration. When unset, the kernels default will be used.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p><strong>Example 1. /lib/systemd/network/99-default.link</strong></p>
+<p>The link file 99-default.link that is shipped with systemd defines the default naming policy for links.</p>
+<blockquote>
+<pre><code>[Link]
+NamePolicy=kernel database onboard slot path
+MACAddressPolicy=persistent</code></pre>
+</blockquote>
+<p><strong>Example 2. /etc/systemd/network/10-dmz.link</strong></p>
+<p>This example assigns the fixed name "dmz0" to the interface with the MAC address 00:a0:de:63:7a:e6:</p>
+<blockquote>
+<pre><code>[Match]
+MACAddress=00:a0:de:63:7a:e6
+
+[Link]
+Name=dmz0</code></pre>
+</blockquote>
+<p><em>NamePolicy=</em> is not set, so <em>Name=</em> takes effect. We use the "10-" prefix to order this file early in the list. Note that it needs to be before "99-link", i.e. it needs a numerical prefix, to have any effect at all.</p>
+<p><strong>Example 3. Debugging </strong><em>NamePolicy=</em> assignments</p>
+<blockquote>
+<pre><code>$ sudo SYSTEMD_LOG_LEVEL=debug udevadm test-builtin net_setup_link /sys/class/net/hub0
+...
+Parsed configuration file /lib/systemd/network/99-default.link
+Parsed configuration file /etc/systemd/network/10-eth0.link
+ID_NET_DRIVER=cdc_ether
+Config file /etc/systemd/network/10-eth0.link applies to device hub0
+link_config: autonegotiation is unset or enabled, the speed and duplex are not writable.
+hub0: Device has name_assign_type=4
+Using default interface naming scheme v240.
+hub0: Policies didnt yield a name, using specified Name=hub0.
+ID_NET_LINK_FILE=/etc/systemd/network/10-eth0.link
+ID_NET_NAME=hub0
+...</code></pre>
+</blockquote>
+<p>Explicit <em>Name=</em> configuration wins in this case.</p>
+<blockquote>
+<pre><code>sudo SYSTEMD_LOG_LEVEL=debug udevadm test-builtin net_setup_link /sys/class/net/enp0s31f6
+...
+Parsed configuration file /lib/systemd/network/99-default.link
+Parsed configuration file /etc/systemd/network/10-eth0.link
+Created link configuration context.
+ID_NET_DRIVER=e1000e
+Config file /lib/systemd/network/99-default.link applies to device enp0s31f6
+link_config: autonegotiation is unset or enabled, the speed and duplex are not writable.
+enp0s31f6: Device has name_assign_type=4
+Using default interface naming scheme v240.
+enp0s31f6: Policy *keep*: keeping existing userspace name
+enp0s31f6: Device has addr_assign_type=0
+enp0s31f6: MAC on the device already matches policy *persistent*
+ID_NET_LINK_FILE=/lib/systemd/network/99-default.link
+...</code></pre>
+</blockquote>
+<p>In this case, the interface was already renamed, so the <strong>keep</strong> policy specified as the first option in 99-default.link means that the existing name is preserved. If <strong>keep</strong> was removed, or if were in boot before the renaming has happened, we might get the following instead:</p>
+<blockquote>
+<pre><code>enp0s31f6: Policy *path* yields &quot;enp0s31f6&quot;.
+enp0s31f6: Device has addr_assign_type=0
+enp0s31f6: MAC on the device already matches policy *persistent*
+ID_NET_LINK_FILE=/lib/systemd/network/99-default.link
+ID_NET_NAME=enp0s31f6
+...</code></pre>
+</blockquote>
+<p>Please note that the details of output are subject to change.</p>
+<p><strong>Example 4. /etc/systemd/network/10-internet.link</strong></p>
+<p>This example assigns the fixed name "internet0" to the interface with the device path "pci-0000:00:1a.0-*":</p>
+<blockquote>
+<pre><code>[Match]
+Path=pci-0000:00:1a.0-*
+
+[Link]
+Name=internet0</code></pre>
+</blockquote>
+<p><strong>Example 5. /etc/systemd/network/25-wireless.link</strong></p>
+<p>Heres an overly complex example that shows the use of a large number of [Match] and [Link] settings.</p>
+<blockquote>
+<pre><code>[Match]
+MACAddress=12:34:56:78:9a:bc
+Driver=brcmsmac
+Path=pci-0000:02:00.0-*
+Type=wlan
+Virtualization=no
+Host=my-laptop
+Architecture=x86-64
+
+[Link]
+Name=wireless0
+MTUBytes=1450
+BitsPerSecond=10M
+WakeOnLan=magic
+MACAddress=cb:a9:87:65:43:21</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd-udevd.service</strong>(8), <strong>udevadm</strong>(8), <strong>systemd.netdev</strong>(5), <strong>systemd.network</strong>(5)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

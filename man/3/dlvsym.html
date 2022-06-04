@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command dlvsym</title><meta name="description" content="Linux command dlvsym obtain address of a symbol in a shared object or executable"><meta name="keywords" content="linux, command, dlvsym, bsd, obtain address of a symbol in a shared object or executable"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>dlsym, dlvsym - obtain address of a symbol in a shared object or executable</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;dlfcn.h&gt;</strong></p>
+<p><strong>void *dlsym(void *</strong><em>handle</em><strong>, const char *</strong><em>symbol</em><strong>);</strong></p>
+<p><strong>#define _GNU_SOURCE</strong><br />
+<strong>#include &lt;dlfcn.h&gt;</strong></p>
+<p><strong>void *dlvsym(void *</strong><em>handle</em><strong>, char *</strong><em>symbol</em><strong>, char *</strong><em>version</em><strong>);</strong></p>
+<p>Link with <em>-ldl</em>.</p>
+<h1>DESCRIPTION</h1>
+<p>The function <strong>dlsym</strong>() takes a "handle" of a dynamic loaded shared object returned by <strong>dlopen</strong>(3) along with a null-terminated symbol name, and returns the address where that symbol is loaded into memory. If the symbol is not found, in the specified object or any of the shared objects that were automatically loaded by <strong>dlopen</strong>(3) when that object was loaded, <strong>dlsym</strong>() returns NULL. (The search performed by <strong>dlsym</strong>() is breadth first through the dependency tree of these shared objects.)</p>
+<p>In unusual cases (see NOTES) the value of the symbol could actually be NULL. Therefore, a NULL return from <strong>dlsym</strong>() need not indicate an error. The correct way to distinguish an error from a symbol whose value is NULL is to call <strong>dlerror</strong>(3) to clear any old error conditions, then call <strong>dlsym</strong>(), and then call <strong>dlerror</strong>(3) again, saving its return value into a variable, and check whether this saved value is not NULL.</p>
+<p>There are two special pseudo-handles that may be specified in <em>handle</em>:</p>
+<dl>
+<dt><strong>RTLD_DEFAULT</strong></dt>
+<dd><p>Find the first occurrence of the desired symbol using the default shared object search order. The search will include global symbols in the executable and its dependencies, as well as symbols in shared objects that were dynamically loaded with the <strong>RTLD_GLOBAL</strong> flag.</p>
+</dd>
+<dt><strong>RTLD_NEXT</strong></dt>
+<dd><p>Find the next occurrence of the desired symbol in the search order after the current object. This allows one to provide a wrapper around a function in another shared object, so that, for example, the definition of a function in a preloaded shared object (see <strong>LD_PRELOAD</strong> in <strong>ld.so</strong>(8)) can find and invoke the "real" function provided in another shared object (or for that matter, the "next" definition of the function in cases where there are multiple layers of preloading).</p>
+</dd>
+</dl>
+<p>The <strong>_GNU_SOURCE</strong> feature test macro must be defined in order to obtain the definitions of <strong>RTLD_DEFAULT</strong> and <strong>RTLD_NEXT</strong> from <em>&lt;dlfcn.h&gt;</em>.</p>
+<p>The function <strong>dlvsym</strong>() does the same as <strong>dlsym</strong>() but takes a version string as an additional argument.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, these functions return the address associated with <em>symbol</em>. On failure, they return NULL; the cause of the error can be diagnosed using <strong>dlerror</strong>(3).</p>
+<h1>VERSIONS</h1>
+<p><strong>dlsym</strong>() is present in glibc 2.0 and later. <strong>dlvsym</strong>() first appeared in glibc 2.1.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>dlsym</strong>(), <strong>dlvsym</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001 describes <strong>dlsym</strong>(). The <strong>dlvsym</strong>() function is a GNU extension.</p>
+<h1>NOTES</h1>
+<p>There are several scenarios when the address of a global symbol is NULL. For example, a symbol can be placed at zero address by the linker, via a linker script or with <em>--defsym</em> command-line option. Undefined weak symbols also have NULL value. Finally, the symbol value may be the result of a GNU indirect function (IFUNC) resolver function that returns NULL as the resolved value. In the latter case, <strong>dlsym</strong>() also returns NULL without error. However, in the former two cases, the behavior of GNU dynamic linker is inconsistent: relocation processing succeeds and the symbol can be observed to have NULL value, but <strong>dlsym</strong>() fails and <strong>dlerror</strong>() indicates a lookup error.</p>
+<h2>History</h2>
+<p>The <strong>dlsym</strong>() function is part of the dlopen API, derived from SunOS. That system does not have <strong>dlvsym</strong>().</p>
+<h1>EXAMPLES</h1>
+<p>See <strong>dlopen</strong>(3).</p>
+<h1>SEE ALSO</h1>
+<p><strong>dl_iterate_phdr</strong>(3), <strong>dladdr</strong>(3), <strong>dlerror</strong>(3), <strong>dlinfo</strong>(3), <strong>dlopen</strong>(3), <strong>ld.so</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

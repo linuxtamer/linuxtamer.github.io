@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fmtmsg</title><meta name="description" content="Linux command fmtmsg print formatted error messages"><meta name="keywords" content="linux, command, fmtmsg, bsd, print formatted error messages"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>fmtmsg - print formatted error messages</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;fmtmsg.h&gt;
+
+int fmtmsg(long classification, const char *label,
+ int severity, const char *text,
+ const char *action, const char *tag);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>This function displays a message described by its arguments on the device(s) specified in the <em>classification</em> argument. For messages written to <em>stderr</em>, the format depends on the <strong>MSGVERB</strong> environment variable.</p>
+<p>The <em>label</em> argument identifies the source of the message. The string must consist of two colon separated parts where the first part has not more than 10 and the second part not more than 14 characters.</p>
+<p>The <em>text</em> argument describes the condition of the error.</p>
+<p>The <em>action</em> argument describes possible steps to recover from the error. If it is printed, it is prefixed by "TO FIX: ".</p>
+<p>The <em>tag</em> argument is a reference to the online documentation where more information can be found. It should contain the <em>label</em> value and a unique identification number.</p>
+<h2>Dummy arguments</h2>
+<p>Each of the arguments can have a dummy value. The dummy classification value <strong>MM_NULLMC</strong> (0L) does not specify any output, so nothing is printed. The dummy severity value <strong>NO_SEV</strong> (0) says that no severity is supplied. The values <strong>MM_NULLLBL</strong>, <strong>MM_NULLTXT</strong>, <strong>MM_NULLACT</strong>, <strong>MM_NULLTAG</strong> are synonyms for <em>((char *) 0)</em>, the empty string, and <strong>MM_NULLSEV</strong> is a synonym for <strong>NO_SEV</strong>.</p>
+<h2>The classification argument</h2>
+<p>The <em>classification</em> argument is the sum of values describing 4 types of information.</p>
+<p>The first value defines the output channel.</p>
+<dl>
+<dt><strong>MM_PRINT</strong></dt>
+<dd><p>Output to <em>stderr</em>.</p>
+</dd>
+<dt><strong>MM_CONSOLE</strong></dt>
+<dd><p>Output to the system console.</p>
+</dd>
+<dt><strong>MM_PRINT | MM_CONSOLE</strong></dt>
+<dd><p>Output to both.</p>
+</dd>
+</dl>
+<p>The second value is the source of the error:</p>
+<dl>
+<dt><strong>MM_HARD</strong></dt>
+<dd><p>A hardware error occurred.</p>
+</dd>
+<dt><strong>MM_FIRM</strong></dt>
+<dd><p>A firmware error occurred.</p>
+</dd>
+<dt><strong>MM_SOFT</strong></dt>
+<dd><p>A software error occurred.</p>
+</dd>
+</dl>
+<p>The third value encodes the detector of the problem:</p>
+<dl>
+<dt><strong>MM_APPL</strong></dt>
+<dd><p>It is detected by an application.</p>
+</dd>
+<dt><strong>MM_UTIL</strong></dt>
+<dd><p>It is detected by a utility.</p>
+</dd>
+<dt><strong>MM_OPSYS</strong></dt>
+<dd><p>It is detected by the operating system.</p>
+</dd>
+</dl>
+<p>The fourth value shows the severity of the incident:</p>
+<dl>
+<dt><strong>MM_RECOVER</strong></dt>
+<dd><p>It is a recoverable error.</p>
+</dd>
+<dt><strong>MM_NRECOV</strong></dt>
+<dd><p>It is a nonrecoverable error.</p>
+</dd>
+</dl>
+<h2>The severity argument</h2>
+<p>The <em>severity</em> argument can take one of the following values:</p>
+<dl>
+<dt><strong>MM_NOSEV</strong></dt>
+<dd><p>No severity is printed.</p>
+</dd>
+<dt><strong>MM_HALT</strong></dt>
+<dd><p>This value is printed as HALT.</p>
+</dd>
+<dt><strong>MM_ERROR</strong></dt>
+<dd><p>This value is printed as ERROR.</p>
+</dd>
+<dt><strong>MM_WARNING</strong></dt>
+<dd><p>This value is printed as WARNING.</p>
+</dd>
+<dt><strong>MM_INFO</strong></dt>
+<dd><p>This value is printed as INFO.</p>
+</dd>
+</dl>
+<p>The numeric values are between 0 and 4. Using <strong>addseverity</strong>(3) or the environment variable <strong>SEV_LEVEL</strong> you can add more levels and strings to print.</p>
+<h1>RETURN VALUE</h1>
+<p>The function can return 4 values:</p>
+<dl>
+<dt><strong>MM_OK</strong></dt>
+<dd><p>Everything went smooth.</p>
+</dd>
+<dt><strong>MM_NOTOK</strong></dt>
+<dd><p>Complete failure.</p>
+</dd>
+<dt><strong>MM_NOMSG</strong></dt>
+<dd><p>Error writing to <em>stderr</em>.</p>
+</dd>
+<dt><strong>MM_NOCON</strong></dt>
+<dd><p>Error writing to the console.</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<p>The environment variable <strong>MSGVERB</strong> ("message verbosity") can be used to suppress parts of the output to <em>stderr</em>. (It does not influence output to the console.) When this variable is defined, is non-NULL, and is a colon-separated list of valid keywords, then only the parts of the message corresponding to these keywords is printed. Valid keywords are "label", "severity", "text", "action" and "tag".</p>
+<p>The environment variable <strong>SEV_LEVEL</strong> can be used to introduce new severity levels. By default, only the five severity levels described above are available. Any other numeric value would make <strong>fmtmsg</strong>() print nothing. If the user puts <strong>SEV_LEVEL</strong> with a format like</p>
+<blockquote>
+<p>SEV_LEVEL=[description[:description[:...]]]</p>
+</blockquote>
+<p>in the environment of the process before the first call to <strong>fmtmsg</strong>(), where each description is of the form</p>
+<blockquote>
+<p>severity-keyword,level,printstring</p>
+</blockquote>
+<p>then <strong>fmtmsg</strong>() will also accept the indicated values for the level (in addition to the standard levels 0–4), and use the indicated printstring when such a level occurs.</p>
+<p>The severity-keyword part is not used by <strong>fmtmsg</strong>() but it has to be present. The level part is a string representation of a number. The numeric value must be a number greater than 4. This value must be used in the severity argument of <strong>fmtmsg</strong>() to select this class. It is not possible to overwrite any of the predefined classes. The printstring is the string printed when a message of this class is processed by <strong>fmtmsg</strong>().</p>
+<h1>VERSIONS</h1>
+<p><strong>fmtmsg</strong>() is provided in glibc since version 2.1.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fmtmsg</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">glibc &gt;= 2.16: MT-Safe<br />
+glibc &lt; 2.16: MT-Unsafe</td>
+</tr>
+</tbody>
+</table>
+<p>Before glibc 2.16, the <strong>fmtmsg</strong>() function uses a static variable that is not protected, so it is not thread-safe.</p>
+<p>Since glibc 2.16, the <strong>fmtmsg</strong>() function uses a lock to protect the static variable, so it is thread-safe.</p>
+<h1>CONFORMING TO</h1>
+<p>The functions <strong>fmtmsg</strong>() and <strong>addseverity</strong>(3), and environment variables <strong>MSGVERB</strong> and <strong>SEV_LEVEL</strong> come from System V.</p>
+<p>The function <strong>fmtmsg</strong>() and the environment variable <strong>MSGVERB</strong> are described in POSIX.1-2001 and POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>System V and UnixWare man pages tell us that these functions have been replaced by "pfmt() and addsev()" or by "pfmt(), vpfmt(), lfmt(), and vlfmt()", and will be removed later.</p>
+<h1>EXAMPLES</h1>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;fmtmsg.h&gt;
+
+int
+main(void)
+{
+    long class = MM_PRINT | MM_SOFT | MM_OPSYS | MM_RECOVER;
+    int err;
+
+    err = fmtmsg(class, &quot;util-linux:mount&quot;, MM_ERROR,
+                &quot;unknown mount option&quot;, &quot;See mount(8).&quot;,
+                &quot;util-linux:mount:017&quot;);
+    switch (err) {
+    case MM_OK:
+        break;
+    case MM_NOTOK:
+        printf(&quot;Nothing printed\n&quot;);
+        break;
+    case MM_NOMSG:
+        printf(&quot;Nothing printed to stderr\n&quot;);
+        break;
+    case MM_NOCON:
+        printf(&quot;No console output\n&quot;);
+        break;
+    default:
+        printf(&quot;Unknown error from fmtmsg()\n&quot;);
+    }
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<p>The output should be:</p>
+<pre><code>util-linux:mount: ERROR: unknown mount option
+TO FIX: See mount(8).  util-linux:mount:017</code></pre>
+<p>and after</p>
+<pre><code>MSGVERB=text:action; export MSGVERB</code></pre>
+<p>the output becomes:</p>
+<pre><code>unknown mount option
+TO FIX: See mount(8).</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>addseverity</strong>(3), <strong>perror</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

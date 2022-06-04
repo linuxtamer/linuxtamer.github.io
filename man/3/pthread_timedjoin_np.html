@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pthread_timedjoin_np</title><meta name="description" content="Linux command pthread_timedjoin_np try to join with a terminated thread"><meta name="keywords" content="linux, command, pthread_timedjoin_np, bsd, try to join with a terminated thread"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pthread_tryjoin_np, pthread_timedjoin_np - try to join with a terminated thread</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;pthread.h&gt;
+
+int pthread_tryjoin_np(pthread_t thread, void **retval);
+
+int pthread_timedjoin_np(pthread_t thread, void **retval,
+ const struct timespec *abstime);</code></pre>
+<p>Compile and link with <em>-pthread</em>.</p>
+<h1>DESCRIPTION</h1>
+<p>These functions operate in the same way as <strong>pthread_join</strong>(3), except for the differences described on this page.</p>
+<p>The <strong>pthread_tryjoin_np</strong>() function performs a nonblocking join with the thread <em>thread</em>, returning the exit status of the thread in <em>*retval</em>. If <em>thread</em> has not yet terminated, then instead of blocking, as is done by <strong>pthread_join</strong>(3), the call returns an error.</p>
+<p>The <strong>pthread_timedjoin_np</strong>() function performs a join-with-timeout. If <em>thread</em> has not yet terminated, then the call blocks until a maximum time, specified in <em>abstime</em>, measured against the <strong>CLOCK_REALTIME</strong> clock. If the timeout expires before <em>thread</em> terminates, the call returns an error. The <em>abstime</em> argument is a structure of the following form, specifying an absolute time measured since the Epoch (see <strong>time</strong>(2)):</p>
+<pre><code>struct timespec {
+    time_t tv_sec;     /* seconds */
+    long   tv_nsec;    /* nanoseconds */
+};</code></pre>
+<h1>RETURN VALUE</h1>
+<p>On success, these functions return 0; on error, they return an error number.</p>
+<h1>ERRORS</h1>
+<p>These functions can fail with the same errors as <strong>pthread_join</strong>(3). <strong>pthread_tryjoin_np</strong>() can in addition fail with the following error:</p>
+<dl>
+<dt><strong>EBUSY</strong></dt>
+<dd><p><em>thread</em> had not yet terminated at the time of the call.</p>
+</dd>
+</dl>
+<p><strong>pthread_timedjoin_np</strong>() can in addition fail with the following errors:</p>
+<dl>
+<dt><strong>ETIMEDOUT</strong></dt>
+<dd><p>The call timed out before <em>thread</em> terminated.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>abstime</em> value is invalid (<em>tv_sec</em> is less than 0 or <em>tv_nsec</em> is greater than 1e9).</p>
+</dd>
+</dl>
+<p><strong>pthread_timedjoin_np</strong>() never returns the error <strong>EINTR</strong>.</p>
+<h1>VERSIONS</h1>
+<p>These functions first appeared in glibc in version 2.3.3.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>pthread_tryjoin_np</strong>(), <strong>pthread_timedjoin_np</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>These functions are nonstandard GNU extensions; hence the suffix "_np" (nonportable) in the names.</p>
+<h1>EXAMPLES</h1>
+<p>The following code waits to join for up to 5 seconds:</p>
+<pre><code>struct timespec ts;
+int s;
+
+...
+
+if (clock_gettime(CLOCK_REALTIME, &amp;ts) == -1) {
+    /* Handle error */
+}
+
+ts.tv_sec += 5;
+
+s = pthread_timedjoin_np(thread, NULL, &amp;ts);
+if (s != 0) {
+    /* Handle error */
+}</code></pre>
+<h1>BUGS</h1>
+<p>The <strong>pthread_timedjoin_np</strong>() function measures time by internally calculating a relative sleep interval that is then measured against the <strong>CLOCK_MONOTONIC</strong> clock instead of the <strong>CLOCK_REALTIME</strong> clock. Consequently, the timeout is unaffected by discontinuous changes to the <strong>CLOCK_REALTIME</strong> clock.</p>
+<h1>SEE ALSO</h1>
+<p><strong>clock_gettime</strong>(2), <strong>pthread_exit</strong>(3), <strong>pthread_join</strong>(3), <strong>pthreads</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

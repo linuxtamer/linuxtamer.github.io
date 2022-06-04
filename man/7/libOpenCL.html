@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command libOpenCL</title><meta name="description" content="Linux command libOpenCL OCL-ICD implementation of OpenCL ICD loader"><meta name="keywords" content="linux, command, libOpenCL, bsd, OCL-ICD implementation of OpenCL ICD loader"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>libOpenCL, libOpenCL.so - OCL-ICD implementation of OpenCL ICD loader</p>
+<h1>DESCRIPTION</h1>
+<p>libOpenCL.so is the library linked by OpenCL programs. It does not contains any OpenCL implementation itself, but merely act as a dispatcher to real OpenCL implementations provided as OpenCL Installable Client Driver (ICD). An ICD loader should be able to load ICDs provided by any vendors.</p>
+<p>According to OpenCL specifications from Khronos (see [Khronos]), the ICD Loader looks for files into <em>/etc/OpenCL/vendors</em> directory and, for each file whose name ends with <em>.icd</em>, the ICD Loader loads with <strong>dlopen</strong>(3) the shared library whose name is on the first line of the <em>.icd</em> file.</p>
+<p>Each shared library name in ".icd" files can have its path, or it can be a plain filename. In the latter case, the ICD shared library will be looked for into the standard dynamic library loader paths.</p>
+<h1>ENVIRONMENT</h1>
+<p>Some environment variables can be used modify the default behavior of libOpenCL.</p>
+<p><strong>OPENCL_VENDOR_PATH</strong></p>
+<blockquote>
+<p>This variable allows one to modify the default <em>/etc/OpenCL/vendors</em> path. It is compatible with some other ICD loaders (but not all of them, as the variable is not part of the standard). Note that <strong>$OCL_ICD_VENDORS</strong> (see below) is used in priority if defined and not empty.</p>
+</blockquote>
+<p><strong>OCL_ICD_VENDORS</strong></p>
+<blockquote>
+<p>This variable allows one to change the way ICD are searched on the system. Several cases are considered:</p>
+<blockquote>
+<p>1.</p>
+<p>if <strong>$OCL_ICD_VENDORS</strong> is a directory path, then this path replaces the "/etc/OpenCL/vendors" path in the standard behavior: the loader will use the <em>.icd</em> files in this directory;</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>else, if <strong>$OCL_ICD_VENDORS</strong> ends with <em>.icd</em>, libOpenCL.so will only load the ICD whose shared library name is wrote into the specified ".icd" file;</p>
+<p>If there is no slashes into <strong>$OCL_ICD_VENDORS</strong>, libOpenCL.so will first try to use <em>/etc/OpenCL/vendors/</em><strong>$OCL_ICD_VENDORS</strong> (or <strong>$OPENCL_VENDOR_PATH</strong><em>/</em><strong>$OCL_ICD_VENDORS</strong> if <strong>OPENCL_VENDOR_PATH</strong> is defined). If this fail or if there are shashes, it uses <strong>$OCL_ICD_VENDORS</strong> (as a relative or absolute file name path).</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>else libOpenCL.so will try to load <strong>$OCL_ICD_VENDORS</strong> as the ICD shared library itself (i.e. to load it directly with <strong>dlopen</strong>(3)).</p>
+</blockquote>
+</blockquote>
+<p><strong>OCL_ICD_LAYERS</strong></p>
+<blockquote>
+<p>This variable allows one to specify a colon separated list of layers to load, specifying their path. This support is experimental.</p>
+</blockquote>
+<p><strong>OCL_ICD_ASSUME_ICD_EXTENSION</strong></p>
+<blockquote>
+<p>If set to an non-empty value, contrary the Khronos specification, the loader will not check that the loaded ICDs declare the cl_khr_icd extension. It will also use the clGetPlatformInfo from the dispatch table if no such function is globally available. You may need to define this environment variable if you are using not (fully) compliant ICD, or if you are using the Intel ICD together with <strong>optirun</strong>(1). In the latter case, a bug into the Intel ICD will make the application crash.</p>
+</blockquote>
+<p>If set to the <em>debug</em> value, some additional messages will be printed in debug mode (see <strong>OCL_ICD_DEBUG</strong> below).</p>
+<p><strong>OCL_ICD_PLATFORM_SORT</strong></p>
+<blockquote>
+<p>Allows one to choose the way platforms are sorted when presented to programs through <strong>clGetPlatformIDs</strong>(3). Current provided algorithms are:</p>
+<blockquote>
+<p>·</p>
+<p><strong>devices</strong>: first, list platforms that support most GPU, then most CPU then most accelerators. If <strong>OCL_ICD_PLATFORM_SORT</strong> is not set or set to an unknown value, this algorithm is used.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>none</strong>: no sort is done and the order can change at each run.</p>
+</blockquote>
+</blockquote>
+<p><strong>OCL_ICD_DEFAULT_PLATFORM</strong></p>
+<blockquote>
+<p>Number of the platform to choose as default platform. Note that using this environment variable without ensuring the use of a sort algorithm for platforms is not really useful.</p>
+</blockquote>
+<p><strong>OCL_ICD_DEBUG</strong></p>
+<blockquote>
+<p>If ocl-icd has been compiled with debug support, you can set this environment variable to a value where each bit display some kind of informations. Defined values are:</p>
+<blockquote>
+<p>·</p>
+<p><strong>1</strong>: warnings (enabled by default if debug support is present and <strong>OCL_ICD_DEBUG</strong> is not set)</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>2</strong>: informative messages</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>4</strong>: entering/exiting for some OpenCL functions</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>8</strong>: dump of the internal structure of loaded ICDs</p>
+</blockquote>
+<p><strong>OCL_ICD_DEBUG</strong> is mainly useful for ocl-icd development itself and/or for ICD development.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p>Khronos OpenCL registry website</p>
+<h1>AUTHOR</h1>
+<p><strong>Vincent Danjean</strong> &lt;Vincent.Danjean@ens-lyon.org&gt;</p>
+<blockquote>
+<p>Author.</p>
+</blockquote>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

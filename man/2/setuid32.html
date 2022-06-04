@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command setuid32</title><meta name="description" content="Linux command setuid32 set user identity"><meta name="keywords" content="linux, command, setuid32, bsd, set user identity"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>setuid - set user identity</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/types.h&gt;</strong><br />
+<strong>#include &lt;unistd.h&gt;</strong></p>
+<p><strong>int setuid(uid_t </strong><em>uid</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>setuid</strong>() sets the effective user ID of the calling process. If the calling process is privileged (more precisely: if the process has the <strong>CAP_SETUID</strong> capability in its user namespace), the real UID and saved set-user-ID are also set.</p>
+<p>Under Linux, <strong>setuid</strong>() is implemented like the POSIX version with the <strong>_POSIX_SAVED_IDS</strong> feature. This allows a set-user-ID (other than root) program to drop all of its user privileges, do some un-privileged work, and then reengage the original effective user ID in a secure manner.</p>
+<p>If the user is root or the program is set-user-ID-root, special care must be taken: <strong>setuid</strong>() checks the effective user ID of the caller and if it is the superuser, all process-related user ID's are set to <em>uid</em>. After this has occurred, it is impossible for the program to regain root privileges.</p>
+<p>Thus, a set-user-ID-root program wishing to temporarily drop root privileges, assume the identity of an unprivileged user, and then regain root privileges afterward cannot use <strong>setuid</strong>(). You can accomplish this with <strong>seteuid</strong>(2).</p>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<p><em>Note</em>: there are cases where <strong>setuid</strong>() can fail even when the caller is UID 0; it is a grave security error to omit checking for a failure return from <strong>setuid</strong>().</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>The call would change the caller's real UID (i.e., <em>uid</em> does not match the caller's real UID), but there was a temporary failure allocating the necessary kernel data structures.</p>
+</dd>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p><em>uid</em> does not match the real user ID of the caller and this call would bring the number of processes belonging to the real user ID <em>uid</em> over the caller's <strong>RLIMIT_NPROC</strong> resource limit. Since Linux 3.1, this error case no longer occurs (but robust applications should check for this error); see the description of <strong>EAGAIN</strong> in <strong>execve</strong>(2).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The user ID specified in <em>uid</em> is not valid in this user namespace.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The user is not privileged (Linux: does not have the <strong>CAP_SETUID</strong> capability in its user namespace) and <em>uid</em> does not match the real UID or saved set-user-ID of the calling process.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4. Not quite compatible with the 4.4BSD call, which sets all of the real, saved, and effective user IDs.</p>
+<h1>NOTES</h1>
+<p>Linux has the concept of the filesystem user ID, normally equal to the effective user ID. The <strong>setuid</strong>() call also sets the filesystem user ID of the calling process. See <strong>setfsuid</strong>(2).</p>
+<p>If <em>uid</em> is different from the old effective UID, the process will be forbidden from leaving core dumps.</p>
+<p>The original Linux <strong>setuid</strong>() system call supported only 16-bit user IDs. Subsequently, Linux 2.4 added <strong>setuid32</strong>() supporting 32-bit IDs. The glibc <strong>setuid</strong>() wrapper function transparently deals with the variation across kernel versions.</p>
+<h2>C library/kernel differences</h2>
+<p>At the kernel level, user IDs and group IDs are a per-thread attribute. However, POSIX requires that all threads in a process share the same credentials. The NPTL threading implementation handles the POSIX requirements by providing wrapper functions for the various system calls that change process UIDs and GIDs. These wrapper functions (including the one for <strong>setuid</strong>()) employ a signal-based technique to ensure that when one thread changes credentials, all of the other threads in the process also change their credentials. For details, see <strong>nptl</strong>(7).</p>
+<h1>SEE ALSO</h1>
+<p><strong>getuid</strong>(2), <strong>seteuid</strong>(2), <strong>setfsuid</strong>(2), <strong>setreuid</strong>(2), <strong>capabilities</strong>(7), <strong>credentials</strong>(7), <strong>user_namespaces</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

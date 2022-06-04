@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command arch_prctl</title><meta name="description" content="Linux command arch_prctl set architecture-specific thread state"><meta name="keywords" content="linux, command, arch_prctl, bsd, set architecture-specific thread state"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>arch_prctl - set architecture-specific thread state</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;asm/prctl.h&gt;
+#include &lt;sys/prctl.h&gt;
+
+int arch_prctl(int code, unsigned long addr);
+int arch_prctl(int code, unsigned long *addr);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>arch_prctl</strong>() sets architecture-specific process or thread state. <em>code</em> selects a subfunction and passes argument <em>addr</em> to it; <em>addr</em> is interpreted as either an <em>unsigned long</em> for the "set" operations, or as an <em>unsigned long *</em>, for the "get" operations.</p>
+<p>Subfunctions for both x86 and x86-64 are:</p>
+<dl>
+<dt><strong>ARCH_SET_CPUID</strong> (since Linux 4.12)</dt>
+<dd><p>Enable (<em>addr != 0</em>) or disable (<em>addr == 0</em>) the <em>cpuid</em> instruction for the calling thread. The instruction is enabled by default. If disabled, any execution of a <em>cpuid</em> instruction will instead generate a <strong>SIGSEGV</strong> signal. This feature can be used to emulate <em>cpuid</em> results that differ from what the underlying hardware would have produced (e.g., in a paravirtualization setting).</p>
+<p>The <strong>ARCH_SET_CPUID</strong> setting is preserved across <strong>fork</strong>(2) and <strong>clone</strong>(2) but reset to the default (i.e., <em>cpuid</em> enabled) on <strong>execve</strong>(2).</p>
+</dd>
+<dt><strong>ARCH_GET_CPUID</strong> (since Linux 4.12)</dt>
+<dd><p>Return the setting of the flag manipulated by <strong>ARCH_SET_CPUID</strong> as the result of the system call (1 for enabled, 0 for disabled). <em>addr</em> is ignored.</p>
+</dd>
+<dt>Subfunctions for x86-64 only are:</dt>
+<dd>
+</dd>
+<dt><strong>ARCH_SET_FS</strong></dt>
+<dd><p>Set the 64-bit base for the <em>FS</em> register to <em>addr</em>.</p>
+</dd>
+<dt><strong>ARCH_GET_FS</strong></dt>
+<dd><p>Return the 64-bit base value for the <em>FS</em> register of the calling thread in the <em>unsigned long</em> pointed to by <em>addr</em>.</p>
+</dd>
+<dt><strong>ARCH_SET_GS</strong></dt>
+<dd><p>Set the 64-bit base for the <em>GS</em> register to <em>addr</em>.</p>
+</dd>
+<dt><strong>ARCH_GET_GS</strong></dt>
+<dd><p>Return the 64-bit base value for the <em>GS</em> register of the calling thread in the <em>unsigned long</em> pointed to by <em>addr</em>.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>arch_prctl</strong>() returns 0; on error, -1 is returned, and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>addr</em> points to an unmapped address or is outside the process address space.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>code</em> is not a valid subcommand.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p><em>addr</em> is outside the process address space.</p>
+</dd>
+<dt><strong>ENODEV</strong></dt>
+<dd><p><strong>ARCH_SET_CPUID</strong> was requested, but the underlying hardware does not support CPUID faulting.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p><strong>arch_prctl</strong>() is a Linux/x86-64 extension and should not be used in programs intended to be portable.</p>
+<h1>NOTES</h1>
+<p><strong>arch_prctl</strong>() is supported only on Linux/x86-64 for 64-bit programs currently.</p>
+<p>The 64-bit base changes when a new 32-bit segment selector is loaded.</p>
+<p><strong>ARCH_SET_GS</strong> is disabled in some kernels.</p>
+<p>Context switches for 64-bit segment bases are rather expensive. As an optimization, if a 32-bit TLS base address is used, <strong>arch_prctl</strong>() may use a real TLS entry as if <strong>set_thread_area</strong>(2) had been called, instead of manipulating the segment base register directly. Memory in the first 2 GB of address space can be allocated by using <strong>mmap</strong>(2) with the <strong>MAP_32BIT</strong> flag.</p>
+<p>Because of the aforementioned optimization, using <strong>arch_prctl</strong>() and <strong>set_thread_area</strong>(2) in the same thread is dangerous, as they may overwrite each other's TLS entries.</p>
+<p>As of version 2.7, glibc provides no prototype for <strong>arch_prctl</strong>(). You have to declare it yourself for now. This may be fixed in future glibc versions.</p>
+<p><em>FS</em> may be already used by the threading library. Programs that use <strong>ARCH_SET_FS</strong> directly are very likely to crash.</p>
+<h1>SEE ALSO</h1>
+<p><strong>mmap</strong>(2), <strong>modify_ldt</strong>(2), <strong>prctl</strong>(2), <strong>set_thread_area</strong>(2)</p>
+<p>AMD X86-64 Programmer's manual</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

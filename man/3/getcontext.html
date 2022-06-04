@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command getcontext</title><meta name="description" content="Linux command getcontext get or set the user context"><meta name="keywords" content="linux, command, getcontext, bsd, get or set the user context"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getcontext, setcontext - get or set the user context</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;ucontext.h&gt;</strong></p>
+<p><strong>int getcontext(ucontext_t *</strong><em>ucp</em><strong>);</strong><br />
+<strong>int setcontext(const ucontext_t *</strong><em>ucp</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>In a System V-like environment, one has the two types <em>mcontext_t</em> and <em>ucontext_t</em> defined in <em>&lt;ucontext.h&gt;</em> and the four functions <strong>getcontext</strong>(), <strong>setcontext</strong>(), <strong>makecontext</strong>(3), and <strong>swapcontext</strong>(3) that allow user-level context switching between multiple threads of control within a process.</p>
+<p>The <em>mcontext_t</em> type is machine-dependent and opaque. The <em>ucontext_t</em> type is a structure that has at least the following fields:</p>
+<pre><code>typedef struct ucontext_t {
+    struct ucontext_t *uc_link;
+    sigset_t          uc_sigmask;
+    stack_t           uc_stack;
+    mcontext_t        uc_mcontext;
+    ...
+} ucontext_t;</code></pre>
+<p>with <em>sigset_t</em> and <em>stack_t</em> defined in <em>&lt;signal.h&gt;</em>. Here <em>uc_link</em> points to the context that will be resumed when the current context terminates (in case the current context was created using <strong>makecontext</strong>(3)), <em>uc_sigmask</em> is the set of signals blocked in this context (see <strong>sigprocmask</strong>(2)), <em>uc_stack</em> is the stack used by this context (see <strong>sigaltstack</strong>(2)), and <em>uc_mcontext</em> is the machine-specific representation of the saved context, that includes the calling thread's machine registers.</p>
+<p>The function <strong>getcontext</strong>() initializes the structure pointed to by <em>ucp</em> to the currently active context.</p>
+<p>The function <strong>setcontext</strong>() restores the user context pointed to by <em>ucp</em>. A successful call does not return. The context should have been obtained by a call of <strong>getcontext</strong>(), or <strong>makecontext</strong>(3), or received as the third argument to a signal handler (see the discussion of the <strong>SA_SIGINFO</strong> flag in <strong>sigaction</strong>(2)).</p>
+<p>If the context was obtained by a call of <strong>getcontext</strong>(), program execution continues as if this call just returned.</p>
+<p>If the context was obtained by a call of <strong>makecontext</strong>(3), program execution continues by a call to the function <em>func</em> specified as the second argument of that call to <strong>makecontext</strong>(3). When the function <em>func</em> returns, we continue with the <em>uc_link</em> member of the structure <em>ucp</em> specified as the first argument of that call to <strong>makecontext</strong>(3). When this member is NULL, the thread exits.</p>
+<p>If the context was obtained by a call to a signal handler, then old standard text says that "program execution continues with the program instruction following the instruction interrupted by the signal". However, this sentence was removed in SUSv2, and the present verdict is "the result is unspecified".</p>
+<h1>RETURN VALUE</h1>
+<p>When successful, <strong>getcontext</strong>() returns 0 and <strong>setcontext</strong>() does not return. On error, both return -1 and set <em>errno</em> appropriately.</p>
+<h1>ERRORS</h1>
+<p>None defined.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getcontext</strong>(), <strong>setcontext</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe race:ucp</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>SUSv2, POSIX.1-2001. POSIX.1-2008 removes the specification of <strong>getcontext</strong>(), citing portability issues, and recommending that applications be rewritten to use POSIX threads instead.</p>
+<h1>NOTES</h1>
+<p>The earliest incarnation of this mechanism was the <strong>setjmp</strong>(3)/<strong>longjmp</strong>(3) mechanism. Since that does not define the handling of the signal context, the next stage was the <strong>sigsetjmp</strong>(3)/<strong>siglongjmp</strong>(3) pair. The present mechanism gives much more control. On the other hand, there is no easy way to detect whether a return from <strong>getcontext</strong>() is from the first call, or via a <strong>setcontext</strong>() call. The user has to invent their own bookkeeping device, and a register variable won't do since registers are restored.</p>
+<p>When a signal occurs, the current user context is saved and a new context is created by the kernel for the signal handler. Do not leave the handler using <strong>longjmp</strong>(3): it is undefined what would happen with contexts. Use <strong>siglongjmp</strong>(3) or <strong>setcontext</strong>() instead.</p>
+<h1>SEE ALSO</h1>
+<p><strong>sigaction</strong>(2), <strong>sigaltstack</strong>(2), <strong>sigprocmask</strong>(2), <strong>longjmp</strong>(3), <strong>makecontext</strong>(3), <strong>sigsetjmp</strong>(3), <strong>signal</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

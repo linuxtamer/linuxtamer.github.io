@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command getline</title><meta name="description" content="Linux command getline delimited string input"><meta name="keywords" content="linux, command, getline, bsd, delimited string input"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getline, getdelim - delimited string input</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdio.h&gt;
+
+ssize_t getline(char **lineptr, size_t *n, FILE *stream);
+
+ssize_t getdelim(char **lineptr, size_t *n, int delim&quot;,FILE*&quot;stream);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>getline</strong>(), <strong>getdelim</strong>():</p>
+<blockquote>
+<dl>
+<dt>Since glibc 2.10:</dt>
+<dd><p>_POSIX_C_SOURCE &gt;= 200809L</p>
+</dd>
+<dt>Before glibc 2.10:</dt>
+<dd><p>_GNU_SOURCE</p>
+</dd>
+</dl>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p><strong>getline</strong>() reads an entire line from <em>stream</em>, storing the address of the buffer containing the text into <em>*lineptr</em>. The buffer is null-terminated and includes the newline character, if one was found.</p>
+<p>If <em>*lineptr</em> is set to NULL and <em>*n</em> is set 0 before the call, then <strong>getline</strong>() will allocate a buffer for storing the line. This buffer should be freed by the user program even if <strong>getline</strong>() failed.</p>
+<p>Alternatively, before calling <strong>getline</strong>(), <em>*lineptr</em> can contain a pointer to a <strong>malloc</strong>(3)-allocated buffer <em>*n</em> bytes in size. If the buffer is not large enough to hold the line, <strong>getline</strong>() resizes it with <strong>realloc</strong>(3), updating <em>*lineptr</em> and <em>*n</em> as necessary.</p>
+<p>In either case, on a successful call, <em>*lineptr</em> and <em>*n</em> will be updated to reflect the buffer address and allocated size respectively.</p>
+<p><strong>getdelim</strong>() works like <strong>getline</strong>(), except that a line delimiter other than newline can be specified as the <em>delimiter</em> argument. As with <strong>getline</strong>(), a delimiter character is not added if one was not present in the input before end of file was reached.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>getline</strong>() and <strong>getdelim</strong>() return the number of characters read, including the delimiter character, but not including the terminating null byte ('\0'). This value can be used to handle embedded null bytes in the line read.</p>
+<p>Both functions return -1 on failure to read a line (including end-of-file condition). In the event of an error, <em>errno</em> is set to indicate the cause.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Bad arguments (<em>n</em> or <em>lineptr</em> is NULL, or <em>stream</em> is not valid).</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Allocation or reallocation of the line buffer failed.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getline</strong>(), <strong>getdelim</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>Both <strong>getline</strong>() and <strong>getdelim</strong>() were originally GNU extensions. They were standardized in POSIX.1-2008.</p>
+<h1>EXAMPLES</h1>
+<pre><code>#define _GNU_SOURCE
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    FILE *stream;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t nread;
+
+    if (argc != 2) {
+        fprintf(stderr, &quot;Usage: %s &lt;file&gt;\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    stream = fopen(argv[1], &quot;r&quot;);
+    if (stream == NULL) {
+        perror(&quot;fopen&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    while ((nread = getline(&amp;line, &amp;len, stream)) != -1) {
+        printf(&quot;Retrieved line of length %zd:\n&quot;, nread);
+        fwrite(line, nread, 1, stdout);
+    }
+
+    free(line);
+    fclose(stream);
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>read</strong>(2), <strong>fgets</strong>(3), <strong>fopen</strong>(3), <strong>fread</strong>(3), <strong>scanf</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

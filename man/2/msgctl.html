@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command msgctl</title><meta name="description" content="Linux command msgctl System V message control operations"><meta name="keywords" content="linux, command, msgctl, bsd, System V message control operations"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>msgctl - System V message control operations</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/ipc.h&gt;
+#include &lt;sys/msg.h&gt;
+
+int msgctl(int msqid, int cmd, struct msqid_ds *buf);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>msgctl</strong>() performs the control operation specified by <em>cmd</em> on the System V message queue with identifier <em>msqid</em>.</p>
+<p>The <em>msqid_ds</em> data structure is defined in <em>&lt;sys/msg.h&gt;</em> as follows:</p>
+<pre><code>struct msqid_ds {
+    struct ipc_perm msg_perm;   /* Ownership and permissions */
+    time_t          msg_stime;  /* Time of last msgsnd(2) */
+    time_t          msg_rtime;  /* Time of last msgrcv(2) */
+    time_t          msg_ctime;  /* Time of creation or last
+                                   modification by msgctl() */
+    unsigned long   msg_cbytes; /* # of bytes in queue */
+    msgqnum_t       msg_qnum;   /* # number of messages in queue */
+    msglen_t        msg_qbytes; /* Maximum # of bytes in queue */
+    pid_t           msg_lspid;  /* PID of last msgsnd(2) */
+    pid_t           msg_lrpid;  /* PID of last msgrcv(2) */
+};</code></pre>
+<p>The fields of the <em>msgid_ds</em> structure are as follows:</p>
+<dl>
+<dt><em>msg_perm</em></dt>
+<dd><p>This is an <em>ipc_perm</em> structure (see below) that specifies the access permissions on the message queue.</p>
+</dd>
+<dt><em>msg_stime</em></dt>
+<dd><p>Time of the last <strong>msgsnd</strong>(2) system call.</p>
+</dd>
+<dt><em>msg_rtime</em></dt>
+<dd><p>Time of the last <strong>msgrcv</strong>(2) system call.</p>
+</dd>
+<dt><em>msg_ctime</em></dt>
+<dd><p>Time of creation of queue or time of last <strong>msgctl</strong>() <strong>IPC_SET</strong> operation.</p>
+</dd>
+<dt><em>msg_cbytes</em></dt>
+<dd><p>Number of bytes in all messages currently on the message queue. This is a nonstandard Linux extension that is not specified in POSIX.</p>
+</dd>
+<dt><em>msg_qnum</em></dt>
+<dd><p>Number of messages currently on the message queue.</p>
+</dd>
+<dt><em>msg_qbytes</em></dt>
+<dd><p>Maximum number of bytes of message text allowed on the message queue.</p>
+</dd>
+<dt><em>msg_lspid</em></dt>
+<dd><p>ID of the process that performed the last <strong>msgsnd</strong>(2) system call.</p>
+</dd>
+<dt><em>msg_lrpid</em></dt>
+<dd><p>ID of the process that performed the last <strong>msgrcv</strong>(2) system call.</p>
+</dd>
+</dl>
+<p>The <em>ipc_perm</em> structure is defined as follows (the highlighted fields are settable using <strong>IPC_SET</strong>):</p>
+<pre><code>struct ipc_perm {
+    key_t          __key;       /* Key supplied to msgget(2) */
+    uid_t          uid;         /* Effective UID of owner */
+    gid_t          gid;         /* Effective GID of owner */
+    uid_t          cuid;        /* Effective UID of creator */
+    gid_t          cgid;        /* Effective GID of creator */
+    unsigned short mode;        /* Permissions */
+    unsigned short __seq;       /* Sequence number */
+};</code></pre>
+<p>The least significant 9 bits of the <em>mode</em> field of the <em>ipc_perm</em> structure define the access permissions for the message queue. The permission bits are as follows:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">0400</td>
+<td style="text-align: left;">Read by user</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">0200</td>
+<td style="text-align: left;">Write by user</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">0040</td>
+<td style="text-align: left;">Read by group</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">0020</td>
+<td style="text-align: left;">Write by group</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">0004</td>
+<td style="text-align: left;">Read by others</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">0002</td>
+<td style="text-align: left;">Write by others</td>
+</tr>
+</tbody>
+</table>
+<p>Bits 0100, 0010, and 0001 (the execute bits) are unused by the system.</p>
+<p>Valid values for <em>cmd</em> are:</p>
+<dl>
+<dt><strong>IPC_STAT</strong></dt>
+<dd><p>Copy information from the kernel data structure associated with <em>msqid</em> into the <em>msqid_ds</em> structure pointed to by <em>buf</em>. The caller must have read permission on the message queue.</p>
+</dd>
+<dt><strong>IPC_SET</strong></dt>
+<dd><p>Write the values of some members of the <em>msqid_ds</em> structure pointed to by <em>buf</em> to the kernel data structure associated with this message queue, updating also its <em>msg_ctime</em> member.</p>
+<p>The following members of the structure are updated: <em>msg_qbytes</em>, <em>msg_perm.uid</em>, <em>msg_perm.gid</em>, and (the least significant 9 bits of) <em>msg_perm.mode</em>.</p>
+<p>The effective UID of the calling process must match the owner (<em>msg_perm.uid</em>) or creator (<em>msg_perm.cuid</em>) of the message queue, or the caller must be privileged. Appropriate privilege (Linux: the <strong>CAP_SYS_RESOURCE</strong> capability) is required to raise the <em>msg_qbytes</em> value beyond the system parameter <strong>MSGMNB</strong>.</p>
+</dd>
+<dt><strong>IPC_RMID</strong></dt>
+<dd><p>Immediately remove the message queue, awakening all waiting reader and writer processes (with an error return and <em>errno</em> set to <strong>EIDRM</strong>). The calling process must have appropriate privileges or its effective user ID must be either that of the creator or owner of the message queue. The third argument to <strong>msgctl</strong>() is ignored in this case.</p>
+</dd>
+<dt><strong>IPC_INFO</strong> (Linux-specific)</dt>
+<dd><p>Return information about system-wide message queue limits and parameters in the structure pointed to by <em>buf</em>. This structure is of type <em>msginfo</em> (thus, a cast is required), defined in <em>&lt;sys/msg.h&gt;</em> if the <strong>_GNU_SOURCE</strong> feature test macro is defined:</p>
+<pre><code>struct msginfo {
+    int msgpool; /* Size in kibibytes of buffer pool
+                    used to hold message data;
+                    unused within kernel */
+    int msgmap;  /* Maximum number of entries in message
+                    map; unused within kernel */
+    int msgmax;  /* Maximum number of bytes that can be
+                    written in a single message */
+    int msgmnb;  /* Maximum number of bytes that can be
+                    written to queue; used to initialize
+                    msg_qbytes during queue creation
+                    (msgget(2)) */
+    int msgmni;  /* Maximum number of message queues */
+    int msgssz;  /* Message segment size;
+                    unused within kernel */
+    int msgtql;  /* Maximum number of messages on all queues
+                    in system; unused within kernel */
+    unsigned short msgseg;
+                 /* Maximum number of segments;
+                    unused within kernel */
+};</code></pre>
+<p>The <em>msgmni</em>, <em>msgmax</em>, and <em>msgmnb</em> settings can be changed via <em>/proc</em> files of the same name; see <strong>proc</strong>(5) for details.</p>
+</dd>
+<dt><strong>MSG_INFO</strong> (Linux-specific)</dt>
+<dd><p>Return a <em>msginfo</em> structure containing the same information as for <strong>IPC_INFO</strong>, except that the following fields are returned with information about system resources consumed by message queues: the <em>msgpool</em> field returns the number of message queues that currently exist on the system; the <em>msgmap</em> field returns the total number of messages in all queues on the system; and the <em>msgtql</em> field returns the total number of bytes in all messages in all queues on the system.</p>
+</dd>
+<dt><strong>MSG_STAT</strong> (Linux-specific)</dt>
+<dd><p>Return a <em>msqid_ds</em> structure as for <strong>IPC_STAT</strong>. However, the <em>msqid</em> argument is not a queue identifier, but instead an index into the kernel's internal array that maintains information about all message queues on the system.</p>
+</dd>
+<dt><strong>MSG_STAT_ANY</strong> (Linux-specific, since Linux 4.17)</dt>
+<dd><p>Return a <em>msqid_ds</em> structure as for <strong>MSG_STAT</strong>. However, <em>msg_perm.mode</em> is not checked for read access for <em>msqid</em> meaning that any user can employ this operation (just as any user may read <em>/proc/sysvipc/msg</em> to obtain the same information).</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>IPC_STAT</strong>, <strong>IPC_SET</strong>, and <strong>IPC_RMID</strong> return 0. A successful <strong>IPC_INFO</strong> or <strong>MSG_INFO</strong> operation returns the index of the highest used entry in the kernel's internal array recording information about all message queues. (This information can be used with repeated <strong>MSG_STAT</strong> or <strong>MSG_STAT_ANY</strong> operations to obtain information about all queues on the system.) A successful <strong>MSG_STAT</strong> or <strong>MSG_STAT_ANY</strong> operation returns the identifier of the queue whose index was given in <em>msqid</em>.</p>
+<p>On error, -1 is returned with <em>errno</em> indicating the error.</p>
+<h1>ERRORS</h1>
+<p>On failure, <em>errno</em> is set to one of the following:</p>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>The argument <em>cmd</em> is equal to <strong>IPC_STAT</strong> or <strong>MSG_STAT</strong>, but the calling process does not have read permission on the message queue <em>msqid</em>, and does not have the <strong>CAP_IPC_OWNER</strong> capability in the user namespace that governs its IPC namespace.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>The argument <em>cmd</em> has the value <strong>IPC_SET</strong> or <strong>IPC_STAT</strong>, but the address pointed to by <em>buf</em> isn't accessible.</p>
+</dd>
+<dt><strong>EIDRM</strong></dt>
+<dd><p>The message queue was removed.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Invalid value for <em>cmd</em> or <em>msqid</em>. Or: for a <strong>MSG_STAT</strong> operation, the index value specified in <em>msqid</em> referred to an array slot that is currently unused.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The argument <em>cmd</em> has the value <strong>IPC_SET</strong> or <strong>IPC_RMID</strong>, but the effective user ID of the calling process is not the creator (as found in <em>msg_perm.cuid</em>) or the owner (as found in <em>msg_perm.uid</em>) of the message queue, and the caller is not privileged (Linux: does not have the <strong>CAP_SYS_ADMIN</strong> capability).</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>An attempt (<strong>IPC_SET</strong>) was made to increase <em>msg_qbytes</em> beyond the system parameter <strong>MSGMNB</strong>, but the caller is not privileged (Linux: does not have the <strong>CAP_SYS_RESOURCE</strong> capability).</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4.</p>
+<h1>NOTES</h1>
+<p>The inclusion of <em>&lt;sys/types.h&gt;</em> and <em>&lt;sys/ipc.h&gt;</em> isn't required on Linux or by any version of POSIX. However, some old implementations required the inclusion of these header files, and the SVID also documented their inclusion. Applications intended to be portable to such old systems may need to include these header files.</p>
+<p>The <strong>IPC_INFO</strong>, <strong>MSG_STAT</strong>, and <strong>MSG_INFO</strong> operations are used by the <strong>ipcs</strong>(1) program to provide information on allocated resources. In the future these may modified or moved to a <em>/proc</em> filesystem interface.</p>
+<p>Various fields in the <em>struct msqid_ds</em> were typed as <em>short</em> under Linux 2.2 and have become <em>long</em> under Linux 2.4. To take advantage of this, a recompilation under glibc-2.1.91 or later should suffice. (The kernel distinguishes old and new calls by an <strong>IPC_64</strong> flag in <em>cmd</em>.)</p>
+<h1>SEE ALSO</h1>
+<p><strong>msgget</strong>(2), <strong>msgrcv</strong>(2), <strong>msgsnd</strong>(2), <strong>capabilities</strong>(7), <strong>mq_overview</strong>(7), <strong>sysvipc</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

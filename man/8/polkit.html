@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command polkit</title><meta name="description" content="Linux command polkit Authorization Framework"><meta name="keywords" content="linux, command, polkit, bsd, Authorization Framework"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>polkit - Authorization Framework</p>
+<h1>OVERVIEW</h1>
+<p>PolicyKit provides an authorization API intended to be used by privileged programs (“MECHANISMS”) offering service to unprivileged programs (“CLIENTS”) through some form of IPC mechanism such as D-Bus or Unix pipes. In this scenario, the mechanism typically treats the client as untrusted. For every request from a client, the mechanism needs to determine if the request is authorized or if it should refuse to service the client. Using the PolicyKit API, a mechanism can offload this decision to a trusted party: The PolicyKit Authority.</p>
+<p>In addition to acting as an authority, PolicyKit allows users to obtain temporary authorization through authenticating either an administrative user or the owner of the session the client belongs to. This is useful for scenarios where a mechanism needs to verify that the operator of the system really is the user or really is an administrative user.</p>
+<h1>SYSTEM ARCHITECTURE</h1>
+<p>The system architecture of PolicyKit is comprised of the <em>Authority</em> (implemented as a service on the system message bus) and a <em>Authentication Agent</em> per user session (provided and started by the user session e.g. GNOME or KDE). Additionally, PolicyKit supports a number of extension points – specifically, vendors and/or sites can write extensions to completely control authorization policy. In a block diagram, the architecture looks like this:</p>
+<blockquote>
+<p>[IMAGE][1]</p>
+<blockquote>
+<pre><code> +-------------------+
+ |   Authentication  |
+ |       Agent       |
+ +-------------------+
+ | libpolkit-agent-1 |
+ +-------------------+
+        ^                                  +--------+
+        |                                  | Client |
+        +--------------+                   +--------+
+                       |                        ^
+                       |                        |
+User Session           |                        |
+=======================|========================|=============
+System Context         |                        |
+                       |                        |
+                       |                    +---+
+                       V                    |
+                     /------------\         |
+                     | System Bus |         |
+                     \------------/         |
+                       ^        ^           V
+                       |        |      +---------------------+
+        +--------------+        |      |      Mechanism      |
+        |                       |      +---------------------+
+        V                       +----&gt; | libpolkit-gobject-1 |
++------------------+                   +---------------------+
+| org.freedesktop. |
+|    PolicyKit1    |
++------------------+
+|   Backends and   |
+|    Extensions    |
++------------------+</code></pre>
+</blockquote>
+</blockquote>
+<p>For convenience, the libpolkit-gobject-1 library wraps the PolicyKit D-Bus API using GObject. However, a mechanism can also use the D-Bus API or the <strong>pkcheck</strong>(1) command to check authorizations.</p>
+<p>The libpolkit-agent-1 library provides an abstraction of the native authentication system, e.g. <strong>pam</strong>(8) and also facilities registration and communication with the PolicyKit D-Bus service.</p>
+<p>See the <strong>developer documentation</strong>[2] for more information about using and extending PolicyKit.</p>
+<p>See <strong>pklocalauthority</strong>(8) for information about the Local Authority - the default authority implementation shipped with PolicyKit.</p>
+<h1>AUTHENTICATION AGENTS</h1>
+<p>An authentication agent is used to make the user of a session prove that the user of the session really is the user (by authenticating as the user) or an administrative user (by authenticating as a administrator). In order to integrate well with the rest of the user session (e.g. match the look and feel), authentication agents are meant to be provided by the user session that the user uses. For example, an authentication agent may look like this:</p>
+<blockquote>
+<p>[IMAGE][3]</p>
+<blockquote>
+<pre><code>+----------------------------------------------------------+
+|                     Authenticate                     [X] |
++----------------------------------------------------------+
+|                                                          |
+|  [Icon]  Authentication is required to run ATA SMART     |
+|          self tests                                      |
+|                                                          |
+|          An application is attempting to perform an      |
+|          action that requires privileges. Authentication |
+|          as the super user is required to perform this   |
+|          action.                                         |
+|                                                          |
+|          Password for root: [_________________________]  |
+|                                                          |
+| [V] Details:                                             |
+|  Drive:  ATA INTEL SSDSA2MH08 (045C)                     |
+|  Device: /dev/sda                                        |
+|  Action: org.fd.devicekit.disks.drive-ata-smart-selftest |
+|  Vendor: The DeviceKit Project                           |
+|                                                          |
+|                                  [Cancel] [Authenticate] |
++----------------------------------------------------------+</code></pre>
+</blockquote>
+</blockquote>
+<p>If the system is configured without a <em>root</em> account it may allow you to select the administrative user who is authenticating:</p>
+<blockquote>
+<p>[IMAGE][4]</p>
+<blockquote>
+<pre><code>+----------------------------------------------------------+
+|                     Authenticate                     [X] |
++----------------------------------------------------------+
+|                                                          |
+|  [Icon]  Authentication is required to run ATA SMART     |
+|          self tests                                      |
+|                                                          |
+|          An application is attempting to perform an      |
+|          action that requires privileges. Authentication |
+|          as one of the users below is required to        |
+|          perform this action.                            |
+|                                                          |
+|          [[Face] Patrick Bateman (bateman)         [V]]  |
+|                                                          |
+|          Password for bateman: [______________________]  |
+|                                                          |
+| [V] Details:                                             |
+|  Drive:  ATA INTEL SSDSA2MH08 (045C)                     |
+|  Device: /dev/sda                                        |
+|  Action: org.fd.devicekit.disks.drive-ata-smart-selftest |
+|  Vendor: The DeviceKit Project                           |
+|                                                          |
+|                                  [Cancel] [Authenticate] |
++----------------------------------------------------------+</code></pre>
+</blockquote>
+</blockquote>
+<p>See <strong>pklocalauthority</strong>(8) on how to set up the local authority implemention for systems without a root account.</p>
+<p>Applications that do not run under a desktop environment (for example, if launched from a <strong>ssh</strong>(1) login) may not have have an authentication agent associated with them. Such applications may use the PolkitAgentTextListener type or the <strong>pkttyagent</strong>(1) helper so the user can authenticate using a textual interface.</p>
+<h1>DECLARING ACTIONS</h1>
+<p>A mechanism need to declare a set of “ACTIONS” in order to use PolicyKit. Actions correspond to operations that clients can request the mechanism to carry out and are defined in XML files that the mechanism installs into the /usr/share/polkit-1/actions directory.</p>
+<p>PolicyKit actions are namespaced and can only contain the characters [a-z][0-9].- e.g. lower-case ASCII, digits, period and hyphen. Each XML file can contain more than one action but all actions need to be in the same namespace and the file needs to be named after the namespace and have the extension .policy.</p>
+<p>The XML file must have the following doctype declaration</p>
+<blockquote>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!DOCTYPE policyconfig PUBLIC &quot;-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN&quot;
+&quot;http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd&quot;&gt;</code></pre>
+</blockquote>
+<p>The <em>policyconfig</em> element must be present exactly once. Elements that can be used inside <em>policyconfig</em> includes:</p>
+<p><em>vendor</em></p>
+<blockquote>
+<p>The name of the project or vendor that is supplying the actions in the XML document. Optional.</p>
+</blockquote>
+<p><em>vendor_url</em></p>
+<blockquote>
+<p>A URL to the project or vendor that is supplying the actions in the XML document. Optional.</p>
+</blockquote>
+<p><em>icon_name</em></p>
+<blockquote>
+<p>An icon representing the project or vendor that is supplying the actions in the XML document. The icon name must adhere to the <strong>Freedesktop.org Icon Naming Specification</strong>[5]. Optional.</p>
+</blockquote>
+<p><em>action</em></p>
+<blockquote>
+<p>Declares an action. The action name is specified using the id attribute and can only contain the characters [a-z][0-9].- e.g. lower-case ASCII, digits, period and hyphen.</p>
+</blockquote>
+<p>Elements that can be used inside <em>action</em> includes:</p>
+<p><em>description</em></p>
+<blockquote>
+<p>A human readable description of the action, e.g. “Install unsigned software”.</p>
+</blockquote>
+<p><em>message</em></p>
+<blockquote>
+<p>A human readable message displayed to the user when asking for credentials when authentication is needed, e.g. “Installing unsigned software requires authentication”.</p>
+</blockquote>
+<p><em>defaults</em></p>
+<blockquote>
+<p>This element is used to specify implicit authorizations for clients.</p>
+<p>Elements that can be used inside <em>defaults</em> includes:</p>
+<p><em>allow_any</em></p>
+<blockquote>
+<p>Implicit authorizations that apply to any client. Optional.</p>
+</blockquote>
+<p><em>allow_inactive</em></p>
+<blockquote>
+<p>Implicit authorizations that apply to clients in inactive sessions on local consoles. Optional.</p>
+</blockquote>
+<p><em>allow_active</em></p>
+<blockquote>
+<p>Implicit authorizations that apply to clients in active sessions on local consoles. Optional.</p>
+</blockquote>
+<p>Each of the <em>allow_any</em>, <em>allow_inactive</em> and <em>allow_active</em> elements can contain the following values:</p>
+<p>no</p>
+<blockquote>
+<p>Not authorized.</p>
+</blockquote>
+<p>yes</p>
+<blockquote>
+<p>Authorized.</p>
+</blockquote>
+<p>auth_self</p>
+<blockquote>
+<p>Authentication by the owner of the session that the client originates from is required.</p>
+</blockquote>
+<p>auth_admin</p>
+<blockquote>
+<p>Authentication by an administrative user is required.</p>
+</blockquote>
+<p>auth_self_keep</p>
+<blockquote>
+<p>Like auth_self but the authorization is kept for a brief period.</p>
+</blockquote>
+<p>auth_admin_keep</p>
+<blockquote>
+<p>Like auth_admin but the authorization is kept for a brief period.</p>
+</blockquote>
+</blockquote>
+<p><em>annotate</em></p>
+<blockquote>
+<p>Used for annotating an action with a key/value pair. The key is specified using the the key attribute and the value is specified using the value attribute. This element may appear zero or more times. See below for known annotations.</p>
+</blockquote>
+<p><em>vendor</em></p>
+<blockquote>
+<p>Used for overriding the vendor on a per-action basis. Optional.</p>
+</blockquote>
+<p><em>vendor_url</em></p>
+<blockquote>
+<p>Used for overriding the vendor URL on a per-action basis. Optional.</p>
+</blockquote>
+<p><em>icon_name</em></p>
+<blockquote>
+<p>Used for overriding the icon name on a per-action basis. Optional.</p>
+</blockquote>
+<p>For localization, <em>description</em> and <em>message</em> elements may occur multiple times with different xml:lang attributes.</p>
+<p>To list installed PolicyKit actions, use the <strong>pkaction</strong>(1) command.</p>
+<h2>Known annotations</h2>
+<p>The org.freedesktop.policykit.exec.path annotation is used by the <strong>pkexec</strong> program shipped with PolicyKit - see the <strong>pkexec</strong>(1) man page for details.</p>
+<p>The org.freedesktop.policykit.imply annotation (its value is a string containing a space separated list of action identifiers) can be used to define <em>meta actions</em>. The way it works is that if a subject is authorized for an action with this annotation, then it is also authorized for any action specified by the annotation. A typical use of this annotation is when defining an UI shell with a single lock button that should unlock multiple actions from distinct mechanisms.</p>
+<p>The org.freedesktop.policykit.owner annotation can be used to define a set of users who can query whether a client is authorized to perform this action. If this annotation is not specified then only root can query whether a client running as a different user is authorized for an action. The value of this annotation is a string containing a space separated list of PolkitIdentity entries, for example "unix-user:42 unix-user:colord". A typical use of this annotation is for a daemon process that runs as a system user rather than root.</p>
+<h1>AUTHOR</h1>
+<p>Written by David Zeuthen &lt;davidz@redhat.com&gt; with a lot of help from many others.</p>
+<h1>BUGS</h1>
+<p>Please send bug reports to either the distribution or the polkit-devel mailing list, see the link <strong>http://lists.freedesktop.org/mailman/listinfo/polkit-devel</strong> on how to subscribe.</p>
+<h1>SEE ALSO</h1>
+<p><strong>pklocalauthority</strong>(8) <strong>polkitd</strong>(8) <strong>pkaction</strong>(1), <strong>pkcheck</strong>(1), <strong>pkexec</strong>(1), <strong>pkttyagent</strong>(1)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>/usr/share/gtk-doc/html/polkit-1/polkit-architecture.png</p></li>
+<li><p>developer documentation</p>
+<p>file:///usr/share/gtk-doc/html/polkit-1/index.html</p></li>
+<li><p>/usr/share/gtk-doc/html/polkit-1/polkit-authentication-agent-example.png</p></li>
+<li><p>/usr/share/gtk-doc/html/polkit-1/polkit-authentication-agent-example-wheel.png</p></li>
+<li><p>Freedesktop.org Icon Naming Specification</p>
+<p>http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

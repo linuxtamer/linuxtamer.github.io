@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command icmp</title><meta name="description" content="Linux command icmp Linux IPv4 ICMP kernel module."><meta name="keywords" content="linux, command, icmp, bsd, Linux IPv4 ICMP kernel module."><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>icmp - Linux IPv4 ICMP kernel module.</p>
+<h1>DESCRIPTION</h1>
+<p>This kernel protocol module implements the Internet Control Message Protocol defined in RFC 792. It is used to signal error conditions and for diagnosis. The user doesn't interact directly with this module; instead it communicates with the other protocols in the kernel and these pass the ICMP errors to the application layers. The kernel ICMP module also answers ICMP requests.</p>
+<p>A user protocol may receive ICMP packets for all local sockets by opening a raw socket with the protocol <strong>IPPROTO_ICMP</strong>. See <strong>raw</strong>(7) for more information. The types of ICMP packets passed to the socket can be filtered using the <strong>ICMP_FILTER</strong> socket option. ICMP packets are always processed by the kernel too, even when passed to a user socket.</p>
+<p>Linux limits the rate of ICMP error packets to each destination. <strong>ICMP_REDIRECT</strong> and <strong>ICMP_DEST_UNREACH</strong> are also limited by the destination route of the incoming packets.</p>
+<h2>/proc interfaces</h2>
+<p>ICMP supports a set of <em>/proc</em> interfaces to configure some global IP parameters. The parameters can be accessed by reading or writing files in the directory <em>/proc/sys/net/ipv4/</em>. Most of these parameters are rate limitations for specific ICMP types. Linux 2.2 uses a token bucket filter to limit ICMPs. The value is the timeout in jiffies until the token bucket filter is cleared after a burst. A jiffy is a system dependent unit, usually 10ms on i386 and about 1ms on alpha and ia64.</p>
+<dl>
+<dt><em>icmp_destunreach_rate</em> (Linux 2.2 to 2.4.9)</dt>
+<dd><p>Maximum rate to send ICMP Destination Unreachable packets. This limits the rate at which packets are sent to any individual route or destination. The limit does not affect sending of <strong>ICMP_FRAG_NEEDED</strong> packets needed for path MTU discovery.</p>
+</dd>
+<dt><em>icmp_echo_ignore_all</em> (since Linux 2.2)</dt>
+<dd><p>If this value is nonzero, Linux will ignore all <strong>ICMP_ECHO</strong> requests.</p>
+</dd>
+<dt><em>icmp_echo_ignore_broadcasts</em> (since Linux 2.2)</dt>
+<dd><p>If this value is nonzero, Linux will ignore all <strong>ICMP_ECHO</strong> packets sent to broadcast addresses.</p>
+</dd>
+<dt><em>icmp_echoreply_rate</em> (Linux 2.2 to 2.4.9)</dt>
+<dd><p>Maximum rate for sending <strong>ICMP_ECHOREPLY</strong> packets in response to <strong>ICMP_ECHOREQUEST</strong> packets.</p>
+</dd>
+<dt><em>icmp_errors_use_inbound_ifaddr</em> (Boolean; default: disabled; since Linux 2.6.12)</dt>
+<dd><p>If disabled, ICMP error messages are sent with the primary address of the exiting interface.</p>
+<p>If enabled, the message will be sent with the primary address of the interface that received the packet that caused the ICMP error. This is the behavior that many network administrators will expect from a router. And it can make debugging complicated network layouts much easier.</p>
+<p>Note that if no primary address exists for the interface selected, then the primary address of the first non-loopback interface that has one will be used regardless of this setting.</p>
+</dd>
+<dt><em>icmp_ignore_bogus_error_responses</em> (Boolean; default: disabled; since Linux 2.2)</dt>
+<dd><p>Some routers violate RFC1122 by sending bogus responses to broadcast frames. Such violations are normally logged via a kernel warning. If this parameter is enabled, the kernel will not give such warnings, which will avoid log file clutter.</p>
+</dd>
+<dt><em>icmp_paramprob_rate</em> (Linux 2.2 to 2.4.9)</dt>
+<dd><p>Maximum rate for sending <strong>ICMP_PARAMETERPROB</strong> packets. These packets are sent when a packet arrives with an invalid IP header.</p>
+</dd>
+<dt><em>icmp_ratelimit</em> (integer; default: 1000; since Linux 2.4.10)</dt>
+<dd><p>Limit the maximum rates for sending ICMP packets whose type matches <em>icmp_ratemask</em> (see below) to specific targets. 0 to disable any limiting, otherwise the minimum space between responses in milliseconds.</p>
+</dd>
+<dt><em>icmp_ratemask</em> (integer; default: see below; since Linux 2.4.10)</dt>
+<dd><p>Mask made of ICMP types for which rates are being limited.</p>
+<p>Significant bits: IHGFEDCBA9876543210<br />
+Default mask: 0000001100000011000 (0x1818)</p>
+<p>Bit definitions (see the Linux kernel source file <em>include/linux/icmp.h</em>):</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">0 Echo Reply</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">3 Destination Unreachable *</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4 Source Quench *</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">5 Redirect</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">8 Echo Request</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">B Time Exceeded *</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">C Parameter Problem *</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">D Timestamp Request</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">E Timestamp Reply</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">F Info Request</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">G Info Reply</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">H Address Mask Request</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">I Address Mask Reply</td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p>The bits marked with an asterisk are rate limited by default (see the default mask above).</p>
+<dl>
+<dt><em>icmp_timeexceed_rate</em> (Linux 2.2 to 2.4.9)</dt>
+<dd><p>Maximum rate for sending <strong>ICMP_TIME_EXCEEDED</strong> packets. These packets are sent to prevent loops when a packet has crossed too many hops.</p>
+</dd>
+<dt><em>ping_group_range</em> (two integers; default: see below; since Linux 2.6.39)</dt>
+<dd><p>Range of the group IDs (minimum and maximum group IDs, inclusive) that are allowed to create ICMP Echo sockets. The default is "1 0", which means no group is allowed to create ICMP Echo sockets.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>Support for the <strong>ICMP_ADDRESS</strong> request was removed in 2.2.</p>
+<p>Support for <strong>ICMP_SOURCE_QUENCH</strong> was removed in Linux 2.2.</p>
+<h1>NOTES</h1>
+<p>As many other implementations don't support <strong>IPPROTO_ICMP</strong> raw sockets, this feature should not be relied on in portable programs.</p>
+<p><strong>ICMP_REDIRECT</strong> packets are not sent when Linux is not acting as a router. They are also accepted only from the old gateway defined in the routing table and the redirect routes are expired after some time.</p>
+<p>The 64-bit timestamp returned by <strong>ICMP_TIMESTAMP</strong> is in milliseconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).</p>
+<p>Linux ICMP internally uses a raw socket to send ICMPs. This raw socket may appear in <strong>netstat</strong>(8) output with a zero inode.</p>
+<h1>SEE ALSO</h1>
+<p><strong>ip</strong>(7), <strong>rdisc</strong>(8)</p>
+<p>RFC 792 for a description of the ICMP protocol.</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

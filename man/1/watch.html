@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command watch</title><meta name="description" content="Linux command watch execute a program periodically, showing output fullscreen"><meta name="keywords" content="linux, command, watch, bsd, execute a program periodically, showing output fullscreen"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>watch - execute a program periodically, showing output fullscreen</p>
+<h1>SYNOPSIS</h1>
+<p><strong>watch</strong> [<em>options</em>] <em>command</em></p>
+<h1>DESCRIPTION</h1>
+<p><strong>watch</strong> runs <em>command</em> repeatedly, displaying its output and errors (the first screenfull). This allows you to watch the program output change over time. By default, <em>command</em> is run every 2 seconds and <strong>watch</strong> will run until interrupted.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-d</strong>, <strong>--differences</strong>[=<em>permanent</em>]</dt>
+<dd><p>Highlight the differences between successive updates. If the optional <em>permanent</em> argument is specified then <strong>watch</strong> will show all changes since the first iteration.</p>
+</dd>
+<dt><strong>-n</strong>, <strong>--interval</strong> <em>seconds</em></dt>
+<dd><p>Specify update interval. The command will not allow quicker than 0.1 second interval, in which the smaller values are converted. Both '.' and ',' work for any locales. The WATCH_INTERVAL environment can be used to persistently set a non-default interval (following the same rules and formatting).</p>
+</dd>
+<dt><strong>-p</strong>, <strong>--precise</strong></dt>
+<dd><p>Make <strong>watch</strong> attempt to run <em>command</em> every <strong>--interval</strong> <em>seconds</em>. Try it with <strong>ntptime</strong> (if present) and notice how the fractional seconds stays (nearly) the same, as opposed to normal mode where they continuously increase.</p>
+</dd>
+<dt><strong>-t</strong>, <strong>--no-title</strong></dt>
+<dd><p>Turn off the header showing the interval, command, and current time at the top of the display, as well as the following blank line.</p>
+</dd>
+<dt><strong>-b</strong>, <strong>--beep</strong></dt>
+<dd><p>Beep if command has a non-zero exit.</p>
+</dd>
+<dt><strong>-e</strong>, <strong>--errexit</strong></dt>
+<dd><p>Freeze updates on command error, and exit after a key press.</p>
+</dd>
+<dt><strong>-g</strong>, <strong>--chgexit</strong></dt>
+<dd><p>Exit when the output of <em>command</em> changes.</p>
+</dd>
+<dt><strong>-c</strong>, <strong>--color</strong></dt>
+<dd><p>Interpret ANSI color and style sequences.</p>
+</dd>
+<dt><strong>-x</strong>, <strong>--exec</strong></dt>
+<dd><p>Pass <em>command</em> to <strong>exec</strong>(2) instead of <strong>sh -c</strong> which reduces the need to use extra quoting to get the desired effect.</p>
+</dd>
+<dt><strong>-w</strong>, <strong>--no-linewrap</strong></dt>
+<dd><p>Turn off line wrapping. Long lines will be truncated instead of wrapped to the next line.</p>
+</dd>
+<dt><strong>-h</strong>, <strong>--help</strong></dt>
+<dd><p>Display help text and exit.</p>
+</dd>
+<dt><strong>-v</strong>, <strong>--version</strong></dt>
+<dd><p>Display version information and exit.</p>
+</dd>
+</dl>
+<h1>EXIT STATUS</h1>
+<blockquote>
+<dl>
+<dt><strong>0</strong></dt>
+<dd><p>Success.</p>
+</dd>
+<dt><strong>1</strong></dt>
+<dd><p>Various failures.</p>
+</dd>
+<dt><strong>2</strong></dt>
+<dd><p>Forking the process to watch failed.</p>
+</dd>
+<dt><strong>3</strong></dt>
+<dd><p>Replacing child process stdout with write side pipe failed.</p>
+</dd>
+<dt><strong>4</strong></dt>
+<dd><p>Command execution failed.</p>
+</dd>
+<dt><strong>5</strong></dt>
+<dd><p>Closing child process write pipe failed.</p>
+</dd>
+<dt><strong>7</strong></dt>
+<dd><p>IPC pipe creation failed.</p>
+</dd>
+<dt><strong>8</strong></dt>
+<dd><p>Getting child process return value with <strong>waitpid</strong>(2) failed, or command exited up on error.</p>
+</dd>
+<dt><strong>other</strong></dt>
+<dd><p>The watch will propagate command exit status as child exit status.</p>
+</dd>
+</dl>
+</blockquote>
+<h1>ENVIRONMENT</h1>
+<p>The behaviour of <strong>watch</strong> is affected by the following environment variables.</p>
+<dl>
+<dt><strong>WATCH_INTERVAL</strong></dt>
+<dd><p>Update interval, follows the same rules as the <strong>--interval</strong> command line option.</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>POSIX option processing is used (i.e., option processing stops at the first non-option argument). This means that flags after <em>command</em> don't get interpreted by <strong>watch</strong> itself.</p>
+<h1>BUGS</h1>
+<p>Upon terminal resize, the screen will not be correctly repainted until the next scheduled update. All <strong>--differences</strong> highlighting is lost on that update as well.</p>
+<p>Non-printing characters are stripped from program output. Use <strong>cat -v</strong> as part of the command pipeline if you want to see them.</p>
+<p>Combining Characters that are supposed to display on the character at the last column on the screen may display one column early, or they may not display at all.</p>
+<p>Combining Characters never count as different in <strong>--differences</strong> mode. Only the base character counts.</p>
+<p>Blank lines directly after a line which ends in the last column do not display.</p>
+<p><strong>--precise</strong> mode doesn't yet have advanced temporal distortion technology to compensate for a <em>command</em> that takes more than <strong>--interval</strong> <em>seconds</em> to execute. <strong>watch</strong> also can get into a state where it rapid-fires as many executions of <em>command</em> as it can to catch up from a previous executions running longer than <strong>--interval</strong> (for example, <strong>netstat</strong> taking ages on a DNS lookup).</p>
+<h1>EXAMPLES</h1>
+<p>To watch for mail, you might do</p>
+<blockquote>
+<p>watch -n 60 from</p>
+</blockquote>
+<p>To watch the contents of a directory change, you could use</p>
+<blockquote>
+<p>watch -d ls -l</p>
+</blockquote>
+<p>If you're only interested in files owned by user joe, you might use</p>
+<blockquote>
+<p>watch -d 'ls -l | fgrep joe'</p>
+</blockquote>
+<p>To see the effects of quoting, try these out</p>
+<blockquote>
+<p>watch echo $$<br />
+watch echo '$$'<br />
+watch echo "'"'$$'"'"</p>
+</blockquote>
+<p>To see the effect of precision time keeping, try adding <strong>-p</strong> to</p>
+<blockquote>
+<p>watch -n 10 sleep 1</p>
+</blockquote>
+<p>You can watch for your administrator to install the latest kernel with</p>
+<blockquote>
+<p>watch uname -r</p>
+</blockquote>
+<p>(Note that <strong>-p</strong> isn't guaranteed to work across reboots, especially in the face of <strong>ntpdate</strong> (if present) or other bootup time-changing mechanisms)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

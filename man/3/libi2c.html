@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command libi2c</title><meta name="description" content="Linux command libi2c publicly accessible functions provided by the i2c library"><meta name="keywords" content="linux, command, libi2c, bsd, publicly accessible functions provided by the i2c library"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>libi2c - publicly accessible functions provided by the i2c library</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;linux/i2c.h&gt;
+#include &lt;i2c/smbus.h&gt;
+
+/* Universal SMBus transaction */
+__s32 i2c_smbus_access(int file, char read_write, __u8 command,
+ int size, union i2c_smbus_data *data);
+
+/* Simple SMBus transactions */
+__s32 i2c_smbus_write_quick(int file, __u8 value);
+__s32 i2c_smbus_read_byte(int file);
+__s32 i2c_smbus_write_byte(int file, __u8 value);
+__s32 i2c_smbus_read_byte_data(int file, __u8 command);
+__s32 i2c_smbus_write_byte_data(int file, __u8 command, __u8 value);
+__s32 i2c_smbus_read_word_data(int file, __u8 command);
+__s32 i2c_smbus_write_word_data(int file, __u8 command, __u16 value);
+__s32 i2c_smbus_process_call(int file, __u8 command, __u16 value);
+
+/* Block SMBus (and non-SMBus) transactions */
+__s32 i2c_smbus_read_block_data(int file, __u8 command, __u8 *values);
+__s32 i2c_smbus_write_block_data(int file, __u8 command, __u8 length,
+ const __u8 *values);
+__s32 i2c_smbus_block_process_call(int file, __u8 command, __u8 length,
+ __u8 *values);
+__s32 i2c_smbus_read_i2c_block_data(int file, __u8 command, __u8 length,
+ __u8 *values);
+__s32 i2c_smbus_write_i2c_block_data(int file, __u8 command, __u8 length,
+ const __u8 *values);
+</code></pre>
+<h1>DESCRIPTION</h1>
+<p>This library offers to user-space an SMBus-level API similar to the in-kernel one. Each function is a wrapper around the appropriate ioctl call for i2c-dev to process. The i2c-dev kernel driver will convert the ioctl to its in-kernel equivalent function call, and pass the result back to the user-space caller.</p>
+<p><strong>i2c_smbus_access()</strong> is the universal function to run any SMBus transaction. You have to fill out and link the data structures yourself. It returns 0 on success, or a negative <strong>errno</strong> value on error. In practice you should never need to call this function directly, instead use one of the specific functions below, which will prepare the data and then call it for you.</p>
+<p><strong>i2c_smbus_write_quick()</strong> runs an SMBus "Quick command" transaction.</p>
+<p><strong>i2c_smbus_write_byte()</strong> runs an SMBus "Send byte" transaction.</p>
+<p><strong>i2c_smbus_write_byte_data()</strong> runs an SMBus "Write byte" transaction.</p>
+<p><strong>i2c_smbus_write_word_data()</strong> runs an SMBus "Write word" transaction.</p>
+<p>These write transaction functions return 0 on success. On error, a negative <strong>errno</strong> value is returned.</p>
+<p><strong>i2c_smbus_read_byte()</strong> runs an SMBus "Receive byte" transaction.</p>
+<p><strong>i2c_smbus_read_byte_data()</strong> runs an SMBus "Read byte" transaction.</p>
+<p><strong>i2c_smbus_read_word_data()</strong> runs an SMBus "Read word" transaction.</p>
+<p><strong>i2c_smbus_process_call()</strong> runs an SMBus "Process call" transaction.</p>
+<p>These read transaction functions return the read byte or word value on success. On error, a negative <strong>errno</strong> value is returned.</p>
+<p><strong>i2c_smbus_write_block_data()</strong> runs an SMBus "Block write" transaction.</p>
+<p><strong>i2c_smbus_read_block_data()</strong> runs an SMBus "Block read" transaction.</p>
+<p><strong>i2c_smbus_block_process_call()</strong> runs an SMBus "Block write-block read process call" transaction.</p>
+<p>These block transaction functions return 0 on success. On error, a negative <strong>errno</strong> value is returned. The block length is limited to 32 bytes.</p>
+<p><strong>i2c_smbus_write_i2c_block_data()</strong> runs an "I2C block write" transaction. This is typically used to write to an EEPROM up to 4 kb in size.</p>
+<p><strong>i2c_smbus_read_i2c_block_data()</strong> runs an "I2C block read" transaction. This is typically used to read from an EEPROM up to 4 kb in size.</p>
+<p>While technically not part of the SMBus specification, these I2C block transactions are supported by many SMBus host controllers. These block transaction functions return 0 on success. On error, a negative <strong>errno</strong> value is returned. Like their SMBus counterparts, the block length is limited to 32 bytes.</p>
+<h1>DATA STRUCTURES</h1>
+<p>Structure <strong>i2c_smbus_ioctl_data</strong> is used to send data to and retrieve data from the kernel through the i2c-dev driver. It will be filled out for you by <strong>i2c_smbus_access()</strong> so you do not need to care about the details.</p>
+<p>Union <strong>i2c_smbus_data</strong> is used to store all possible SMBus data.</p>
+<p>union <strong>i2c_smbus_data</strong> {<br />
+<strong>__u8</strong> byte;<br />
+<strong>__u16</strong> word;<br />
+<strong>__u8</strong> block[I2C_SMBUS_BLOCK_MAX + 2];<br />
+};</p>
+<p><strong>block[0]</strong> is used for length and the last byte is reserved. If you use the higher-level functions, this structure will be filled out for you so you do not have to care about the details. Only if you call <strong>i2c_smbus_access()</strong> directly, you need to fill it out yourself.</p>
+<h1>BUGS</h1>
+<p>To report bugs or send fixes, please write to the Linux I2C mailing list &lt;linux-i2c@vger.kernel.org&gt; with Cc to the current maintainer: Jean Delvare &lt;jdelvare@suse.de&gt;.</p>
+<h1>AUTHOR</h1>
+<p>Simon G. Vogl, Frodo Looijaard, Jean Delvare and others</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

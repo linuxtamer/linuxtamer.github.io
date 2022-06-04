@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command init-d-script</title><meta name="description" content="Linux command init-d-script interpreter for short and simple init.d scripts"><meta name="keywords" content="linux, command, init-d-script, bsd, interpreter for short and simple init.d scripts"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<p>Generic init.d script framework to reduce the redundant code in</p>
+<p>The goal is to create an init.d script that is Debian and LSB compliant. When the Debian policy conflicts with the LSB, the Debian policy takes precedence.</p>
+<p>This is a simple example on how init-d-script can be used to start and stop a daemon with PID file support:</p>
+<p>#!/usr/bin/env /lib/init/init-d-script ### BEGIN INIT INFO # Provides: atd # Required-Start: $syslog $time $remote_fs # Required-Stop: $syslog $time $remote_fs # Default-Start: 2 3 4 5 # Default-Stop: 0 1 6 # Short-Description: run at jobs # Description: Debian init script to start the daemon # running at jobs. ### END INIT INFO DAEMON=/usr/sbin/atd</p>
+<p>The following variables affect behaviour of an init script:</p>
+<p>Path to daemon being started. If the init script is not supposed to start any kind of daemon, the functions</p>
+<p>and</p>
+<p>should be defined instead.</p>
+<p>Additional arguments, passed to daemon during start.</p>
+<p>Additional environment variables are sources from</p>
+<p>If unset, this variable defaults to the basename of the</p>
+<p>value.</p>
+<p>If this variable is set, it is used as argument to the</p>
+<p>option of</p>
+<p>It may be useful if the value of the</p>
+<p>variable is too long.</p>
+<p>Path to file where the process identifier of the started daemon will be stored during start. If the value is verbatim</p>
+<p>the process identifier will not be stored in any file. If this variable is not set, it gets a sensible default value, so it is rarely necessary to set this variable explicitly.</p>
+<p>Additionally, it is possible to change the behaviour of the resulting shell script by overriding some of the internal functions. To do so, define function with an</p>
+<p>suffix. So, for example, to override the</p>
+<p>function, one should define a</p>
+<p>function. The</p>
+<p>to this rule is the</p>
+<p>function, whose override should be defined as-is,</p>
+<p>the above-mentioned suffix.</p>
+<p>Here is a control flow chart that explains what functions are called and when:</p>
+<p>/etc/init.d/script start do_start do_start_prepare # no-op do_start_cmd # start-stop-daemon is called here do_start_cleanup # no-op</p>
+<p>/etc/init.d/script stop do_stop do_stop_prepare # no-op do_stop_cmd # start-stop-daemon is called here do_stop_cleanup # no-op</p>
+<p>/etc/init.d/script status do_status</p>
+<p>/etc/init.d/script reload do_reload do_usage exit 3</p>
+<p>/etc/init.d/script force-reload do_force_reload do_reload # if overridden do_restart do_restart_prepare do_stop_cmd do_start_cmd do_restart_cleanup</p>
+<p>/etc/init.d/script restart do_force_restart /etc/init.d/script try-restart if do_status; then do_restart do_restart_prepare do_stop_cmd # start-stop-daemon is called here do_start_cmd # start-stop-daemon is called here do_restart_cleanup</p>
+<p>/etc/init.d/script arg do_unknown arg exit 3</p>
+<p>/etc/init.d/script do_usage</p>
+<p>As can be seen, by default, the script does not support the</p>
+<p>action; it should be implemented by the script writer by defining a</p>
+<p>function.</p>
+<p>If the daemon performs reload action upon receiving a</p>
+<p>signal, a generic implementation can be used with the following code:</p>
+<p>alias do_reload=do_reload_sigusr1</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

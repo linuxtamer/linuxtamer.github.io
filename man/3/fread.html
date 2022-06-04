@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fread</title><meta name="description" content="Linux command fread binary stream input/output"><meta name="keywords" content="linux, command, fread, bsd, binary stream input/output"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>fread, fwrite - binary stream input/output</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdio.h&gt;
+
+size_t fread(void *ptr, size_t size, size_t nmemb&quot;,FILE*&quot;stream);
+
+size_t fwrite(const void *ptr, size_t size, size_t nmemb,
+ FILE *stream);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The function <strong>fread</strong>() reads <em>nmemb</em> items of data, each <em>size</em> bytes long, from the stream pointed to by <em>stream</em>, storing them at the location given by <em>ptr</em>.</p>
+<p>The function <strong>fwrite</strong>() writes <em>nmemb</em> items of data, each <em>size</em> bytes long, to the stream pointed to by <em>stream</em>, obtaining them from the location given by <em>ptr</em>.</p>
+<p>For nonlocking counterparts, see <strong>unlocked_stdio</strong>(3).</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>fread</strong>() and <strong>fwrite</strong>() return the number of items read or written. This number equals the number of bytes transferred only when <em>size</em> is 1. If an error occurs, or the end of the file is reached, the return value is a short item count (or zero).</p>
+<p>The file position indicator for the stream is advanced by the number of bytes successfully read or written.</p>
+<p><strong>fread</strong>() does not distinguish between end-of-file and error, and callers must use <strong>feof</strong>(3) and <strong>ferror</strong>(3) to determine which occurred.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fread</strong>(), <strong>fwrite</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, C89.</p>
+<h1>EXAMPLES</h1>
+<p>The program below demonstrates the use of <strong>fread</strong>() by parsing /bin/sh ELF executable in binary mode and printing its magic and class:</p>
+<pre><code>$ ./a.out
+ELF magic: 0x7f454c46
+Class: 0x02</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+int
+main(void)
+{
+    FILE *fp = fopen(&quot;/bin/sh&quot;, &quot;rb&quot;);
+    if (!fp) {
+        perror(&quot;fopen&quot;);
+        return EXIT_FAILURE;
+    }
+
+    unsigned char buffer[4];
+
+    size_t ret = fread(buffer, ARRAY_SIZE(buffer), sizeof(*buffer), fp);
+    if (ret != sizeof(*buffer)) {
+        fprintf(stderr, &quot;fread() failed: %zu\n&quot;, ret);
+        exit(EXIT_FAILURE);
+    }
+
+    printf(&quot;ELF magic: %#04x%02x%02x%02x\n&quot;, buffer[0], buffer[1],
+           buffer[2], buffer[3]);
+
+    ret = fread(buffer, 1, 1, fp);
+    if (ret != 1) {
+        fprintf(stderr, &quot;fread() failed: %zu\n&quot;, ret);
+        exit(EXIT_FAILURE);
+    }
+
+    printf(&quot;Class: %#04x\n&quot;, buffer[0]);
+
+    fclose(fp);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>read</strong>(2), <strong>write</strong>(2), <strong>feof</strong>(3), <strong>ferror</strong>(3), <strong>unlocked_stdio</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

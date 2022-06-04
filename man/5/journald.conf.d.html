@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command journald.conf.d</title><meta name="description" content="Linux command journald.conf.d Journal service configuration files"><meta name="keywords" content="linux, command, journald.conf.d, bsd, Journal service configuration files"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>journald.conf, journald.conf.d, journald@.conf - Journal service configuration files</p>
+<h1>SYNOPSIS</h1>
+<p>/etc/systemd/journald.conf</p>
+<p>/etc/systemd/journald.conf.d/*.conf</p>
+<p>/run/systemd/journald.conf.d/*.conf</p>
+<p>/usr/lib/systemd/journald.conf.d/*.conf</p>
+<p>/etc/systemd/journald@<em>NAMESPACE</em>.conf</p>
+<h1>DESCRIPTION</h1>
+<p>These files configure various parameters of the systemd journal service, <strong>systemd-journald.service</strong>(8). See <strong>systemd.syntax</strong>(7) for a general description of the syntax.</p>
+<p>The <strong>systemd-journald</strong> instance managing the default namespace is configured by /etc/systemd/journald.conf and associated drop-ins. Instances managing other namespaces read /etc/systemd/journald@<em>NAMESPACE</em>.conf with the namespace identifier filled in. This allows each namespace to carry a distinct configuration. See <strong>systemd-journald.service</strong>(8) for details about journal namespaces.</p>
+<h1>CONFIGURATION DIRECTORIES AND PRECEDENCE</h1>
+<p>The default configuration is defined during compilation, so a configuration file is only needed when it is necessary to deviate from those defaults. By default, the configuration file in /etc/systemd/ contains commented out entries showing the defaults as a guide to the administrator. This file can be edited to create local overrides.</p>
+<p>When packages need to customize the configuration, they can install configuration snippets in /usr/lib/systemd/*.conf.d/ or /usr/local/lib/systemd/*.conf.d/. The main configuration file is read before any of the configuration directories, and has the lowest precedence; entries in a file in any configuration directory override entries in the single configuration file. Files in the *.conf.d/ configuration subdirectories are sorted by their filename in lexicographic order, regardless of in which of the subdirectories they reside. When multiple files specify the same option, for options which accept just a single value, the entry in the file with the lexicographically latest name takes precedence. For options which accept a list of values, entries are collected as they occur in files sorted lexicographically.</p>
+<p>Files in /etc/ are reserved for the local administrator, who may use this logic to override the configuration files installed by vendor packages. It is recommended to prefix all filenames in those subdirectories with a two-digit number and a dash, to simplify the ordering of the files.</p>
+<p>To disable a configuration file supplied by the vendor, the recommended way is to place a symlink to /dev/null in the configuration directory in /etc/, with the same filename as the vendor configuration file.</p>
+<h1>OPTIONS</h1>
+<p>All options are configured in the [Journal] section:</p>
+<p><em>Storage=</em></p>
+<blockquote>
+<p>Controls where to store journal data. One of "volatile", "persistent", "auto" and "none". If "volatile", journal log data will be stored only in memory, i.e. below the /run/log/journal hierarchy (which is created if needed). If "persistent", data will be stored preferably on disk, i.e. below the /var/log/journal hierarchy (which is created if needed), with a fallback to /run/log/journal (which is created if needed), during early boot and if the disk is not writable. "auto" behaves like "persistent" if the /var/log/journal directory exists, and "volatile" otherwise (the existence of the directory controls the storage mode). "none" turns off all storage, all log data received will be dropped (but forwarding to other targets, such as the console, the kernel log buffer, or a syslog socket will still work). Defaults to "auto" in the default journal namespace, and "persistent" in all others.</p>
+<p>Note that when this option is changed to "volatile", existing persistent data is not removed. In the other direction, <strong>journalctl</strong>(1) with the <strong>--flush</strong> option may be used to move volatile data to persistent storage.</p>
+</blockquote>
+<p><em>Compress=</em></p>
+<blockquote>
+<p>Can take a boolean value. If enabled (the default), data objects that shall be stored in the journal and are larger than the default threshold of 512 bytes are compressed before they are written to the file system. It can also be set to a number of bytes to specify the compression threshold directly. Suffixes like K, M, and G can be used to specify larger units.</p>
+</blockquote>
+<p><em>Seal=</em></p>
+<blockquote>
+<p>Takes a boolean value. If enabled (the default), and a sealing key is available (as created by <strong>journalctl</strong>(1)s <strong>--setup-keys</strong> command), Forward Secure Sealing (FSS) for all persistent journal files is enabled. FSS is based on <strong>Seekable Sequential Key Generators</strong>[1] by G. A. Marson and B. Poettering (doi:10.1007/978-3-642-40203-6_7) and may be used to protect journal files from unnoticed alteration.</p>
+</blockquote>
+<p><em>SplitMode=</em></p>
+<blockquote>
+<p>Controls whether to split up journal files per user, either "uid" or "none". Split journal files are primarily useful for access control: on UNIX/Linux access control is managed per file, and the journal daemon will assign users read access to their journal files. If "uid", all regular users (with UID outside the range of system users, dynamic service users, and the nobody user) will each get their own journal files, and system users will log to the system journal. See <strong>Users, Groups, UIDs and GIDs on systemd systems</strong>[2] for more details about UID ranges. If "none", journal files are not split up by user and all messages are instead stored in the single system journal. In this mode unprivileged users generally do not have access to their own log data. Note that splitting up journal files by user is only available for journals stored persistently. If journals are stored on volatile storage (see <em>Storage=</em> above), only a single journal file is used. Defaults to "uid".</p>
+</blockquote>
+<p><em>RateLimitIntervalSec=</em>, <em>RateLimitBurst=</em></p>
+<blockquote>
+<p>Configures the rate limiting that is applied to all messages generated on the system. If, in the time interval defined by <em>RateLimitIntervalSec=</em>, more messages than specified in <em>RateLimitBurst=</em> are logged by a service, all further messages within the interval are dropped until the interval is over. A message about the number of dropped messages is generated. This rate limiting is applied per-service, so that two services which log do not interfere with each others limits. Defaults to 10000 messages in 30s. The time specification for <em>RateLimitIntervalSec=</em> may be specified in the following units: "s", "min", "h", "ms", "us". To turn off any kind of rate limiting, set either value to 0.</p>
+<p>Note that the effective rate limit is multiplied by a factor derived from the available free disk space for the journal. Currently, this factor is calculated using the base 2 logarithm.</p>
+<p><br />
+<strong>Table 1. Example <em>RateLimitBurst=</em> rate modifications by the available disk space</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Available Disk Space</td>
+<td style="text-align: left;">Burst Multiplier</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&lt;= 1MB</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">&lt;= 16MB</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&lt;= 256MB</td>
+<td style="text-align: left;">3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">&lt;= 4GB</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">&lt;= 64GB</td>
+<td style="text-align: left;">5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">&lt;= 1TB</td>
+<td style="text-align: left;">6</td>
+</tr>
+</tbody>
+</table>
+<p>If a service provides rate limits for itself through <em>LogRateLimitIntervalSec=</em> and/or <em>LogRateLimitBurst=</em> in <strong>systemd.exec</strong>(5), those values will override the settings specified here.</p>
+</blockquote>
+<p><em>SystemMaxUse=</em>, <em>SystemKeepFree=</em>, <em>SystemMaxFileSize=</em>, <em>SystemMaxFiles=</em>, <em>RuntimeMaxUse=</em>, <em>RuntimeKeepFree=</em>, <em>RuntimeMaxFileSize=</em>, <em>RuntimeMaxFiles=</em></p>
+<blockquote>
+<p>Enforce size limits on the journal files stored. The options prefixed with "System" apply to the journal files when stored on a persistent file system, more specifically /var/log/journal. The options prefixed with "Runtime" apply to the journal files when stored on a volatile in-memory file system, more specifically /run/log/journal. The former is used only when /var/ is mounted, writable, and the directory /var/log/journal exists. Otherwise, only the latter applies. Note that this means that during early boot and if the administrator disabled persistent logging, only the latter options apply, while the former apply if persistent logging is enabled and the system is fully booted up. <strong>journalctl</strong> and <strong>systemd-journald</strong> ignore all files with names not ending with ".journal" or ".journal~", so only such files, located in the appropriate directories, are taken into account when calculating current disk usage.</p>
+<p><em>SystemMaxUse=</em> and <em>RuntimeMaxUse=</em> control how much disk space the journal may use up at most. <em>SystemKeepFree=</em> and <em>RuntimeKeepFree=</em> control how much disk space systemd-journald shall leave free for other uses. <strong>systemd-journald</strong> will respect both limits and use the smaller of the two values.</p>
+<p>The first pair defaults to 10% and the second to 15% of the size of the respective file system, but each value is capped to 4G. If the file system is nearly full and either <em>SystemKeepFree=</em> or <em>RuntimeKeepFree=</em> are violated when systemd-journald is started, the limit will be raised to the percentage that is actually free. This means that if there was enough free space before and journal files were created, and subsequently something else causes the file system to fill up, journald will stop using more space, but it will not be removing existing files to reduce the footprint again, either. Also note that only archived files are deleted to reduce the space occupied by journal files. This means that, in effect, there might still be more space used than <em>SystemMaxUse=</em> or <em>RuntimeMaxUse=</em> limit after a vacuuming operation is complete.</p>
+<p><em>SystemMaxFileSize=</em> and <em>RuntimeMaxFileSize=</em> control how large individual journal files may grow at most. This influences the granularity in which disk space is made available through rotation, i.e. deletion of historic data. Defaults to one eighth of the values configured with <em>SystemMaxUse=</em> and <em>RuntimeMaxUse=</em>, so that usually seven rotated journal files are kept as history.</p>
+<p>Specify values in bytes or use K, M, G, T, P, E as units for the specified sizes (equal to 1024, 1024², ... bytes). Note that size limits are enforced synchronously when journal files are extended, and no explicit rotation step triggered by time is needed.</p>
+<p><em>SystemMaxFiles=</em> and <em>RuntimeMaxFiles=</em> control how many individual journal files to keep at most. Note that only archived files are deleted to reduce the number of files until this limit is reached; active files will stay around. This means that, in effect, there might still be more journal files around in total than this limit after a vacuuming operation is complete. This setting defaults to 100.</p>
+</blockquote>
+<p><em>MaxFileSec=</em></p>
+<blockquote>
+<p>The maximum time to store entries in a single journal file before rotating to the next one. Normally, time-based rotation should not be required as size-based rotation with options such as <em>SystemMaxFileSize=</em> should be sufficient to ensure that journal files do not grow without bounds. However, to ensure that not too much data is lost at once when old journal files are deleted, it might make sense to change this value from the default of one month. Set to 0 to turn off this feature. This setting takes time values which may be suffixed with the units "year", "month", "week", "day", "h" or "m" to override the default time unit of seconds.</p>
+</blockquote>
+<p><em>MaxRetentionSec=</em></p>
+<blockquote>
+<p>The maximum time to store journal entries. This controls whether journal files containing entries older than the specified time span are deleted. Normally, time-based deletion of old journal files should not be required as size-based deletion with options such as <em>SystemMaxUse=</em> should be sufficient to ensure that journal files do not grow without bounds. However, to enforce data retention policies, it might make sense to change this value from the default of 0 (which turns off this feature). This setting also takes time values which may be suffixed with the units "year", "month", "week", "day", "h" or " m" to override the default time unit of seconds.</p>
+</blockquote>
+<p><em>SyncIntervalSec=</em></p>
+<blockquote>
+<p>The timeout before synchronizing journal files to disk. After syncing, journal files are placed in the OFFLINE state. Note that syncing is unconditionally done immediately after a log message of priority CRIT, ALERT or EMERG has been logged. This setting hence applies only to messages of the levels ERR, WARNING, NOTICE, INFO, DEBUG. The default timeout is 5 minutes.</p>
+</blockquote>
+<p><em>ForwardToSyslog=</em>, <em>ForwardToKMsg=</em>, <em>ForwardToConsole=</em>, <em>ForwardToWall=</em></p>
+<blockquote>
+<p>Control whether log messages received by the journal daemon shall be forwarded to a traditional syslog daemon, to the kernel log buffer (kmsg), to the system console, or sent as wall messages to all logged-in users. These options take boolean arguments. If forwarding to syslog is enabled but nothing reads messages from the socket, forwarding to syslog has no effect. By default, only forwarding to syslog and wall is enabled. These settings may be overridden at boot time with the kernel command line options "systemd.journald.forward_to_syslog", "systemd.journald.forward_to_kmsg", "systemd.journald.forward_to_console", and "systemd.journald.forward_to_wall". If the option name is specified without "=" and the following argument, true is assumed. Otherwise, the argument is parsed as a boolean.</p>
+<p>When forwarding to the console, the TTY to log to can be changed with <em>TTYPath=</em>, described below.</p>
+<p>When forwarding to the kernel log buffer (kmsg), make sure to select a suitably large size for the log buffer, for example by adding "log_buf_len=8M" to the kernel command line. <strong>systemd</strong> will automatically disable kernels rate-limiting applied to userspace processes (equivalent to setting "printk.devkmsg=on").</p>
+</blockquote>
+<p><em>MaxLevelStore=</em>, <em>MaxLevelSyslog=</em>, <em>MaxLevelKMsg=</em>, <em>MaxLevelConsole=</em>, <em>MaxLevelWall=</em></p>
+<blockquote>
+<p>Controls the maximum log level of messages that are stored in the journal, forwarded to syslog, kmsg, the console or wall (if that is enabled, see above). As argument, takes one of "emerg", "alert", "crit", "err", "warning", "notice", "info", "debug", or integer values in the range of 0–7 (corresponding to the same levels). Messages equal or below the log level specified are stored/forwarded, messages above are dropped. Defaults to "debug" for <em>MaxLevelStore=</em> and <em>MaxLevelSyslog=</em>, to ensure that the all messages are stored in the journal and forwarded to syslog. Defaults to "notice" for <em>MaxLevelKMsg=</em>, "info" for <em>MaxLevelConsole=</em>, and "emerg" for <em>MaxLevelWall=</em>. These settings may be overridden at boot time with the kernel command line options "systemd.journald.max_level_store=", "systemd.journald.max_level_syslog=", "systemd.journald.max_level_kmsg=", "systemd.journald.max_level_console=", "systemd.journald.max_level_wall=".</p>
+</blockquote>
+<p><em>ReadKMsg=</em></p>
+<blockquote>
+<p>Takes a boolean value. If enabled <strong>systemd-journal</strong> processes /dev/kmsg messages generated by the kernel. In the default journal namespace this option is enabled by default, it is disabled in all others.</p>
+</blockquote>
+<p><em>Audit=</em></p>
+<blockquote>
+<p>Takes a boolean value. If enabled <strong>systemd-journal</strong> will turn on kernel auditing on start-up. If disabled it will turn it off. If unset it will neither enable nor disable it, leaving the previous state unchanged. Note that this option does not control whether <strong>systemd-journald</strong> collects generated audit records, it just controls whether it tells the kernel to generate them. This means if another tool turns on auditing even if <strong>systemd-journald</strong> left it off, it will still collect the generated messages. Defaults to off.</p>
+</blockquote>
+<p><em>TTYPath=</em></p>
+<blockquote>
+<p>Change the console TTY to use if <em>ForwardToConsole=yes</em> is used. Defaults to /dev/console.</p>
+</blockquote>
+<p><em>LineMax=</em></p>
+<blockquote>
+<p>The maximum line length to permit when converting stream logs into record logs. When a systemd units standard output/error are connected to the journal via a stream socket, the data read is split into individual log records at newline ("\n", ASCII 10) and <strong>NUL</strong> characters. If no such delimiter is read for the specified number of bytes a hard log record boundary is artificially inserted, breaking up overly long lines into multiple log records. Selecting overly large values increases the possible memory usage of the Journal daemon for each stream client, as in the worst case the journal daemon needs to buffer the specified number of bytes in memory before it can flush a new log record to disk. Also note that permitting overly large line maximum line lengths affects compatibility with traditional log protocols as log records might not fit anymore into a single <strong>AF_UNIX</strong> or <strong>AF_INET</strong> datagram. Takes a size in bytes. If the value is suffixed with K, M, G or T, the specified size is parsed as Kilobytes, Megabytes, Gigabytes, or Terabytes (with the base 1024), respectively. Defaults to 48K, which is relatively large but still small enough so that log records likely fit into network datagrams along with extra room for metadata. Note that values below 79 are not accepted and will be bumped to 79.</p>
+</blockquote>
+<h1>FORWARDING TO TRADITIONAL SYSLOG DAEMONS</h1>
+<p>Journal events can be transferred to a different logging daemon in two different ways. With the first method, messages are immediately forwarded to a socket (/run/systemd/journal/syslog), where the traditional syslog daemon can read them. This method is controlled by the <em>ForwardToSyslog=</em> option. With a second method, a syslog daemon behaves like a normal journal client, and reads messages from the journal files, similarly to <strong>journalctl</strong>(1). With this, messages do not have to be read immediately, which allows a logging daemon which is only started late in boot to access all messages since the start of the system. In addition, full structured meta-data is available to it. This method of course is available only if the messages are stored in a journal file at all. So it will not work if <em>Storage=none</em> is set. It should be noted that usually the <em>second</em> method is used by syslog daemons, so the <em>Storage=</em> option, and not the <em>ForwardToSyslog=</em> option, is relevant for them.</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemd-journald.service</strong>(8), <strong>journalctl</strong>(1), <strong>systemd.journal-fields</strong>(7), <strong>systemd-system.conf</strong>(5)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>Seekable Sequential Key Generators</p>
+<p>https://eprint.iacr.org/2013/397</p></li>
+<li><p>Users, Groups, UIDs and GIDs on systemd systems</p>
+<p>https://systemd.io/UIDS-GIDS</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

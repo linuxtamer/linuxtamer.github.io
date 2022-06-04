@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command zdump</title><meta name="description" content="Linux command zdump timezone dumper"><meta name="keywords" content="linux, command, zdump, bsd, timezone dumper"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>zdump - timezone dumper</p>
+<h1>SYNOPSIS</h1>
+<p><strong>zdump</strong> [ <em>option</em> ... ] [ <em>timezone</em> ... ]</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>zdump</strong> program prints the current time in each <em>timezone</em> named on the command line.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>version</strong></dt>
+<dd><p>Output version information and exit.</p>
+</dd>
+<dt><strong>help</strong></dt>
+<dd><p>Output short usage message and exit.</p>
+</dd>
+<dt><strong>i</strong></dt>
+<dd><p>Output a description of time intervals. For each <em>timezone</em> on the command line, output an interval-format description of the timezone. See “INTERVAL FORMAT” below.</p>
+</dd>
+<dt><strong>v</strong></dt>
+<dd><p>Output a verbose description of time intervals. For each <em>timezone</em> on the command line, print the time at the lowest possible time value, the time one day after the lowest possible time value, the times both one second before and exactly at each detected time discontinuity, the time at one day less than the highest possible time value, and the time at the highest possible time value. Each line is followed by <strong>isdst=</strong><em>D</em> where <em>D</em> is positive, zero, or negative depending on whether the given time is daylight saving time, standard time, or an unknown time type, respectively. Each line is also followed by <strong>gmtoff=</strong><em>N</em> if the given local time is known to be <em>N</em> seconds east of Greenwich.</p>
+</dd>
+<dt><strong>V</strong></dt>
+<dd><p>Like <strong>v</strong>, except omit the times relative to the extreme time values. This generates output that is easier to compare to that of implementations with different time representations.</p>
+</dd>
+<dt><strong>c </strong><em>[<em>loyear</em></em><strong>,</strong><em>]<em>hiyear</em></em></dt>
+<dd><p>Cut off interval output at the given year(s). Cutoff times are computed using the proleptic Gregorian calendar with year 0 and with Universal Time (UT) ignoring leap seconds. Cutoffs are at the start of each year, where the lower-bound timestamp is exclusive and the upper is inclusive; for example, <strong>c 1970,2070</strong> selects transitions after 1970-01-01 00:00:00 UTC and on or before 2070-01-01 00:00:00 UTC. The default cutoff is <strong>500,2500</strong>.</p>
+</dd>
+<dt><strong>t </strong><em>[<em>lotime</em></em><strong>,</strong><em>]<em>hitime</em></em></dt>
+<dd><p>Cut off interval output at the given time(s), given in decimal seconds since 1970-01-01 00:00:00 Coordinated Universal Time (UTC). The <em>timezone</em> determines whether the count includes leap seconds. As with <strong>c</strong>, the cutoff's lower bound is exclusive and its upper bound is inclusive.</p>
+</dd>
+</dl>
+<h1>INTERVAL FORMAT</h1>
+<p>The interval format is a compact text representation that is intended to be both human- and machine-readable. It consists of an empty line, then a line “TZ=<em>string”</em> where <em>string</em> is a double-quoted string giving the timezone, a second line “ <em>interval”</em> describing the time interval before the first transition if any, and zero or more following lines “<em>date time interval”,</em> one line for each transition time and following interval. Fields are separated by single tabs.</p>
+<p>Dates are in <em>yyyy</em>-<em>mm</em>-<em>dd</em> format and times are in 24-hour <em>hh</em>:<em>mm</em>:<em>ss</em> format where <em>hh</em>&lt;24. Times are in local time immediately after the transition. A time interval description consists of a UT offset in signed ±<em>hhmmss</em> format, a time zone abbreviation, and an isdst flag. An abbreviation that equals the UT offset is omitted; other abbreviations are double-quoted strings unless they consist of one or more alphabetic characters. An isdst flag is omitted for standard time, and otherwise is a decimal integer that is unsigned and positive (typically 1) for daylight saving time and negative for unknown.</p>
+<p>In times and in UT offsets with absolute value less than 100 hours, the seconds are omitted if they are zero, and the minutes are also omitted if they are also zero. Positive UT offsets are east of Greenwich. The UT offset 00 denotes a UT placeholder in areas where the actual offset is unspecified; by convention, this occurs when the UT offset is zero and the time zone abbreviation begins with “” or is “zzz”.</p>
+<p>In double-quoted strings, escape sequences represent unusual characters. The escape sequences are \s for space, and \", \\, \f, \n, \r, \t, and \v with their usual meaning in the C programming language. E.g., the double-quoted string “"CET\s\"\\"” represents the character sequence “CET "\”.</p>
+<p>Here is an example of the output, with the leading empty line omitted. (This example is shown with tab stops set far enough apart so that the tabbed columns line up.)</p>
+<pre><code>
+TZ=&quot;Pacific/Honolulu&quot;
+-	-	-103126	LMT
+1896-01-13	12:01:26	-1030	HST
+1933-04-30	03	-0930	HDT	1
+1933-05-21	11	-1030	HST
+1942-02-09	03	-0930	HWT	1
+1945-08-14	13:30	-0930	HPT	1
+1945-09-30	01	-1030	HST
+1947-06-08	02:30	-10	HST
+</code></pre>
+<p>Here, local time begins 10 hours, 31 minutes and 26 seconds west of UT, and is a standard time abbreviated LMT. Immediately after the first transition, the date is 1896-01-13 and the time is 12:01:26, and the following time interval is 10.5 hours west of UT, a standard time abbreviated HST. Immediately after the second transition, the date is 1933-04-30 and the time is 03:00:00 and the following time interval is 9.5 hours west of UT, is abbreviated HDT, and is daylight saving time. Immediately after the last transition the date is 1947-06-08 and the time is 02:30:00, and the following time interval is 10 hours west of UT, a standard time abbreviated HST.</p>
+<p>Here are excerpts from another example:</p>
+<pre><code>
+TZ=&quot;Europe/Astrakhan&quot;
+-	-	+031212	LMT
+1924-04-30	23:47:48	+03
+1930-06-21	01	+04
+1981-04-01	01	+05		1
+1981-09-30	23	+04
+...
+2014-10-26	01	+03
+2016-03-27	03	+04
+</code></pre>
+<p>This time zone is east of UT, so its UT offsets are positive. Also, many of its time zone abbreviations are omitted since they duplicate the text of the UT offset.</p>
+<h1>LIMITATIONS</h1>
+<p>Time discontinuities are found by sampling the results returned by localtime at twelve-hour intervals. This works in all real-world cases; one can construct artificial time zones for which this fails.</p>
+<p>In the <strong>v</strong> and <strong>V</strong> output, “UT” denotes the value returned by <strong>gmtime</strong>(3), which uses UTC for modern timestamps and some other UT flavor for timestamps that predate the introduction of UTC. No attempt is currently made to have the output use “UTC” for newer and “UT” for older timestamps, partly because the exact date of the introduction of UTC is problematic.</p>
+<h1>SEE ALSO</h1>
+<p><strong>tzfile</strong>(5), <strong>zic</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

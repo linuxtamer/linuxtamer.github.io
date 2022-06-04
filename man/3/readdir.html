@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command readdir</title><meta name="description" content="Linux command readdir read a directory"><meta name="keywords" content="linux, command, readdir, bsd, read a directory"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>readdir - read a directory</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;dirent.h&gt;
+
+struct dirent *readdir(DIR *dirp);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>readdir</strong>() function returns a pointer to a <em>dirent</em> structure representing the next directory entry in the directory stream pointed to by <em>dirp</em>. It returns NULL on reaching the end of the directory stream or if an error occurred.</p>
+<p>In the glibc implementation, the <em>dirent</em> structure is defined as follows:</p>
+<pre><code>struct dirent {
+    ino_t          d_ino;       /* Inode number */
+    off_t          d_off;       /* Not an offset; see below */
+    unsigned short d_reclen;    /* Length of this record */
+    unsigned char  d_type;      /* Type of file; not supported
+                                   by all filesystem types */
+    char           d_name[256]; /* Null-terminated filename */
+};</code></pre>
+<p>The only fields in the <em>dirent</em> structure that are mandated by POSIX.1 are <em>d_name</em> and <em>d_ino</em>. The other fields are unstandardized, and not present on all systems; see NOTES below for some further details.</p>
+<p>The fields of the <em>dirent</em> structure are as follows:</p>
+<dl>
+<dt><em>d_ino</em></dt>
+<dd><p>This is the inode number of the file.</p>
+</dd>
+<dt><em>d_off</em></dt>
+<dd><p>The value returned in <em>d_off</em> is the same as would be returned by calling <strong>telldir</strong>(3) at the current position in the directory stream. Be aware that despite its type and name, the <em>d_off</em> field is seldom any kind of directory offset on modern filesystems. Applications should treat this field as an opaque value, making no assumptions about its contents; see also <strong>telldir</strong>(3).</p>
+</dd>
+<dt><em>d_reclen</em></dt>
+<dd><p>This is the size (in bytes) of the returned record. This may not match the size of the structure definition shown above; see NOTES.</p>
+</dd>
+<dt><em>d_type</em></dt>
+<dd><p>This field contains a value indicating the file type, making it possible to avoid the expense of calling <strong>lstat</strong>(2) if further actions depend on the type of the file.</p>
+<p>When a suitable feature test macro is defined (<strong>_DEFAULT_SOURCE</strong> on glibc versions since 2.19, or <strong>_BSD_SOURCE</strong> on glibc versions 2.19 and earlier), glibc defines the following macro constants for the value returned in <em>d_type</em>:</p>
+<dl>
+<dt><strong>DT_BLK</strong></dt>
+<dd><p>This is a block device.</p>
+</dd>
+<dt><strong>DT_CHR</strong></dt>
+<dd><p>This is a character device.</p>
+</dd>
+<dt><strong>DT_DIR</strong></dt>
+<dd><p>This is a directory.</p>
+</dd>
+<dt><strong>DT_FIFO</strong></dt>
+<dd><p>This is a named pipe (FIFO).</p>
+</dd>
+<dt><strong>DT_LNK</strong></dt>
+<dd><p>This is a symbolic link.</p>
+</dd>
+<dt><strong>DT_REG</strong></dt>
+<dd><p>This is a regular file.</p>
+</dd>
+<dt><strong>DT_SOCK</strong></dt>
+<dd><p>This is a UNIX domain socket.</p>
+</dd>
+<dt><strong>DT_UNKNOWN</strong></dt>
+<dd><p>The file type could not be determined.</p>
+</dd>
+</dl>
+<p>Currently, only some filesystems (among them: Btrfs, ext2, ext3, and ext4) have full support for returning the file type in <em>d_type</em>. All applications must properly handle a return of <strong>DT_UNKNOWN</strong>.</p>
+</dd>
+<dt><em>d_name</em></dt>
+<dd><p>This field contains the null terminated filename. <em>See NOTES</em>.</p>
+</dd>
+</dl>
+<p>The data returned by <strong>readdir</strong>() may be overwritten by subsequent calls to <strong>readdir</strong>() for the same directory stream.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>readdir</strong>() returns a pointer to a <em>dirent</em> structure. (This structure may be statically allocated; do not attempt to <strong>free</strong>(3) it.)</p>
+<p>If the end of the directory stream is reached, NULL is returned and <em>errno</em> is not changed. If an error occurs, NULL is returned and <em>errno</em> is set appropriately. To distinguish end of stream from an error, set <em>errno</em> to zero before calling <strong>readdir</strong>() and then check the value of <em>errno</em> if NULL is returned.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p>Invalid directory stream descriptor <em>dirp</em>.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>readdir</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:dirstream</td>
+</tr>
+</tbody>
+</table>
+<p>In the current POSIX.1 specification (POSIX.1-2008), <strong>readdir</strong>() is not required to be thread-safe. However, in modern implementations (including the glibc implementation), concurrent calls to <strong>readdir</strong>() that specify different directory streams are thread-safe. In cases where multiple threads must read from the same directory stream, using <strong>readdir</strong>() with external synchronization is still preferable to the use of the deprecated <strong>readdir_r</strong>(3) function. It is expected that a future version of POSIX.1 will require that <strong>readdir</strong>() be thread-safe when concurrently employed on different directory streams.</p>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4, 4.3BSD.</p>
+<h1>NOTES</h1>
+<p>A directory stream is opened using <strong>opendir</strong>(3).</p>
+<p>The order in which filenames are read by successive calls to <strong>readdir</strong>() depends on the filesystem implementation; it is unlikely that the names will be sorted in any fashion.</p>
+<p>Only the fields <em>d_name</em> and (as an XSI extension) <em>d_ino</em> are specified in POSIX.1. Other than Linux, the <em>d_type</em> field is available mainly only on BSD systems. The remaining fields are available on many, but not all systems. Under glibc, programs can check for the availability of the fields not defined in POSIX.1 by testing whether the macros <strong>_DIRENT_HAVE_D_NAMLEN</strong>, <strong>_DIRENT_HAVE_D_RECLEN</strong>, <strong>_DIRENT_HAVE_D_OFF</strong>, or <strong>_DIRENT_HAVE_D_TYPE</strong> are defined.</p>
+<h2>The d_name field</h2>
+<p>The <em>dirent</em> structure definition shown above is taken from the glibc headers, and shows the <em>d_name</em> field with a fixed size.</p>
+<p><em>Warning</em>: applications should avoid any dependence on the size of the <em>d_name</em> field. POSIX defines it as <em>char d_name[]</em>, a character array of unspecified size, with at most <strong>NAME_MAX</strong> characters preceding the terminating null byte ('\0').</p>
+<p>POSIX.1 explicitly notes that this field should not be used as an lvalue. The standard also notes that the use of <em>sizeof(d_name)</em> is incorrect; use <em>strlen(d_name)</em> instead. (On some systems, this field is defined as <em>char d_name[1]</em>!) By implication, the use <em>sizeof(struct dirent)</em> to capture the size of the record including the size of <em>d_name</em> is also incorrect.</p>
+<p>Note that while the call</p>
+<p>fpathconf(fd, _PC_NAME_MAX)</p>
+<p>returns the value 255 for most filesystems, on some filesystems (e.g., CIFS, Windows SMB servers), the null-terminated filename that is (correctly) returned in <em>d_name</em> can actually exceed this size. In such cases, the <em>d_reclen</em> field will contain a value that exceeds the size of the glibc <em>dirent</em> structure shown above.</p>
+<h1>SEE ALSO</h1>
+<p><strong>getdents</strong>(2), <strong>read</strong>(2), <strong>closedir</strong>(3), <strong>dirfd</strong>(3), <strong>ftw</strong>(3), <strong>offsetof</strong>(3), <strong>opendir</strong>(3), <strong>readdir_r</strong>(3), <strong>rewinddir</strong>(3), <strong>scandir</strong>(3), <strong>seekdir</strong>(3), <strong>telldir</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

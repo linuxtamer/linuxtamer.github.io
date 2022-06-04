@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-mount</title><meta name="description" content="Linux command systemd-mount Establish and destroy transient mount or auto-mount points"><meta name="keywords" content="linux, command, systemd-mount, bsd, Establish and destroy transient mount or auto-mount points"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-mount, systemd-umount - Establish and destroy transient mount or auto-mount points</p>
+<h1>SYNOPSIS</h1>
+<p><strong>systemd-mount</strong> [<em>OPTIONS</em>...] <em>WHAT</em> [<em>WHERE</em>]</p>
+<p><strong>systemd-mount</strong> [<em>OPTIONS</em>...] <strong>--list</strong></p>
+<p><strong>systemd-mount</strong> [<em>OPTIONS</em>...] <strong>--umount</strong> <em>WHAT|WHERE</em>...</p>
+<h1>DESCRIPTION</h1>
+<p><strong>systemd-mount</strong> may be used to create and start a transient .mount or .automount unit of the file system <em>WHAT</em> on the mount point <em>WHERE</em>.</p>
+<p>In many ways, <strong>systemd-mount</strong> is similar to the lower-level <strong>mount</strong>(8) command, however instead of executing the mount operation directly and immediately, <strong>systemd-mount</strong> schedules it through the service manager job queue, so that it may pull in further dependencies (such as parent mounts, or a file system checker to execute a priori), and may make use of the auto-mounting logic.</p>
+<p>The command takes either one or two arguments. If only one argument is specified it should refer to a block device or regular file containing a file system (e.g. "/dev/sdb1" or "/path/to/disk.img"). The block device or image file is then probed for a file system label and other metadata, and is mounted to a directory below /run/media/system/ whose name is generated from the file system label. In this mode the block device or image file must exist at the time of invocation of the command, so that it may be probed. If the device is found to be a removable block device (e.g. a USB stick), an automount point is created instead of a regular mount point (i.e. the <strong>--automount=</strong> option is implied, see below).</p>
+<p>If two arguments are specified, the first indicates the mount source (the <em>WHAT</em>) and the second indicates the path to mount it on (the <em>WHERE</em>). In this mode no probing of the source is attempted, and a backing device node doesnt have to exist. However, if this mode is combined with <strong>--discover</strong>, device node probing for additional metadata is enabled, and – much like in the single-argument case discussed above – the specified device has to exist at the time of invocation of the command.</p>
+<p>Use the <strong>--list</strong> command to show a terse table of all local, known block devices with file systems that may be mounted with this command.</p>
+<p><strong>systemd-umount</strong> can be used to unmount a mount or automount point. It is the same as <strong>systemd-mount</strong> <strong>--umount</strong>.</p>
+<h1>OPTIONS</h1>
+<p>The following options are understood:</p>
+<p><strong>--no-block</strong></p>
+<blockquote>
+<p>Do not synchronously wait for the requested operation to finish. If this is not specified, the job will be verified, enqueued and <strong>systemd-mount</strong> will wait until the mount or automount units start-up is completed. By passing this argument, it is only verified and enqueued.</p>
+</blockquote>
+<p><strong>-l</strong>, <strong>--full</strong></p>
+<blockquote>
+<p>Do not ellipsize the output when <strong>--list</strong> is specified.</p>
+</blockquote>
+<p><strong>--no-pager</strong></p>
+<blockquote>
+<p>Do not pipe output into a pager.</p>
+</blockquote>
+<p><strong>--no-legend</strong></p>
+<blockquote>
+<p>Do not print the legend, i.e. column headers and the footer with hints.</p>
+</blockquote>
+<p><strong>--no-ask-password</strong></p>
+<blockquote>
+<p>Do not query the user for authentication for privileged operations.</p>
+</blockquote>
+<p><strong>--quiet</strong>, <strong>-q</strong></p>
+<blockquote>
+<p>Suppresses additional informational output while running.</p>
+</blockquote>
+<p><strong>--discover</strong></p>
+<blockquote>
+<p>Enable probing of the mount source. This switch is implied if a single argument is specified on the command line. If passed, additional metadata is read from the device to enhance the unit to create. For example, a descriptive string for the transient units is generated from the file system label and device model. Moreover if a removable block device (e.g. USB stick) is detected an automount unit instead of a regular mount unit is created, with a short idle timeout, in order to ensure the file-system is placed in a clean state quickly after each access.</p>
+</blockquote>
+<p><strong>--type=</strong>, <strong>-t</strong></p>
+<blockquote>
+<p>Specifies the file system type to mount (e.g. "vfat" or "ext4"). If omitted or set to "auto", the file system type is determined automatically.</p>
+</blockquote>
+<p><strong>--options=</strong>, <strong>-o</strong></p>
+<blockquote>
+<p>Additional mount options for the mount point.</p>
+</blockquote>
+<p><strong>--owner=</strong><em>USER</em></p>
+<blockquote>
+<p>Let the specified user <em>USER</em> own the mounted file system. This is done by appending <strong>uid=</strong> and <strong>gid=</strong> options to the list of mount options. Only certain file systems support this option.</p>
+</blockquote>
+<p><strong>--fsck=</strong></p>
+<blockquote>
+<p>Takes a boolean argument, defaults to on. Controls whether to run a file system check immediately before the mount operation. In the automount case (see <strong>--automount=</strong> below) the check will be run the moment the first access to the device is made, which might slightly delay the access.</p>
+</blockquote>
+<p><strong>--description=</strong></p>
+<blockquote>
+<p>Provide a description for the mount or automount unit. See <em>Description=</em> in <strong>systemd.unit</strong>(5).</p>
+</blockquote>
+<p><strong>--property=</strong>, <strong>-p</strong></p>
+<blockquote>
+<p>Sets a unit property for the mount unit that is created. This takes an assignment in the same format as <strong>systemctl</strong>(1)s <strong>set-property</strong> command.</p>
+</blockquote>
+<p><strong>--automount=</strong></p>
+<blockquote>
+<p>Takes a boolean argument. Controls whether to create an automount point or a regular mount point. If true an automount point is created that is backed by the actual file system at the time of first access. If false a plain mount point is created that is backed by the actual file system immediately. Automount points have the benefit that the file system stays unmounted and hence in clean state until it is first accessed. In automount mode the <strong>--timeout-idle-sec=</strong> switch (see below) may be used to ensure the mount point is unmounted automatically after the last access and an idle period passed.</p>
+<p>If this switch is not specified it defaults to false. If not specified and <strong>--discover</strong> is used (or only a single argument passed, which implies <strong>--discover</strong>, see above), and the file system block device is detected to be removable, it is set to true, in order to increase the chance that the file system is in a fully clean state if the device is unplugged abruptly.</p>
+</blockquote>
+<p><strong>-A</strong></p>
+<blockquote>
+<p>Equivalent to <strong>--automount=yes</strong>.</p>
+</blockquote>
+<p><strong>--timeout-idle-sec=</strong></p>
+<blockquote>
+<p>Takes a time value that controls the idle timeout in automount mode. If set to "infinity" (the default) no automatic unmounts are done. Otherwise the file system backing the automount point is detached after the last access and the idle timeout passed. See <strong>systemd.time</strong>(7) for details on the time syntax supported. This option has no effect if only a regular mount is established, and automounting is not used.</p>
+<p>Note that if <strong>--discover</strong> is used (or only a single argument passed, which implies <strong>--discover</strong>, see above), and the file system block device is detected to be removable, <strong>--timeout-idle-sec=1s</strong> is implied.</p>
+</blockquote>
+<p><strong>--automount-property=</strong></p>
+<blockquote>
+<p>Similar to <strong>--property=</strong>, but applies additional properties to the automount unit created, instead of the mount unit.</p>
+</blockquote>
+<p><strong>--bind-device</strong></p>
+<blockquote>
+<p>This option only has an effect in automount mode, and controls whether the automount unit shall be bound to the backing devices lifetime. If set, the automount point will be removed automatically when the backing device vanishes. By default the automount point stays around, and subsequent accesses will block until backing device is replugged. This option has no effect in case of non-device mounts, such as network or virtual file system mounts.</p>
+<p>Note that if <strong>--discover</strong> is used (or only a single argument passed, which implies <strong>--discover</strong>, see above), and the file system block device is detected to be removable, this option is implied.</p>
+</blockquote>
+<p><strong>--list</strong></p>
+<blockquote>
+<p>Instead of establishing a mount or automount point, print a terse list of block devices containing file systems that may be mounted with "systemd-mount", along with useful metadata such as labels, etc.</p>
+</blockquote>
+<p><strong>-u</strong>, <strong>--umount</strong></p>
+<blockquote>
+<p>Stop the mount and automount units corresponding to the specified mount points <em>WHERE</em> or the devices <em>WHAT</em>. <strong>systemd-mount</strong> with this option or <strong>systemd-umount</strong> can take multiple arguments which can be mount points, devices, /etc/fstab style node names, or backing files corresponding to loop devices, like <strong>systemd-mount --umount /path/to/umount /dev/sda1 UUID=xxxxxx-xxxx LABEL=xxxxx /path/to/disk.img</strong>. Note that when <strong>-H</strong> or <strong>-M</strong> is specified, only absolute paths to mount points are supported.</p>
+</blockquote>
+<p><strong>-G</strong>, <strong>--collect</strong></p>
+<blockquote>
+<p>Unload the transient unit after it completed, even if it failed. Normally, without this option, all mount units that mount and failed are kept in memory until the user explicitly resets their failure state with <strong>systemctl reset-failed</strong> or an equivalent command. On the other hand, units that stopped successfully are unloaded immediately. If this option is turned on the "garbage collection" of units is more aggressive, and unloads units regardless if they exited successfully or failed. This option is a shortcut for <strong>--property=CollectMode=inactive-or-failed</strong>, see the explanation for <em>CollectMode=</em> in <strong>systemd.unit</strong>(5) for further information.</p>
+</blockquote>
+<p><strong>--user</strong></p>
+<blockquote>
+<p>Talk to the service manager of the calling user, rather than the service manager of the system.</p>
+</blockquote>
+<p><strong>--system</strong></p>
+<blockquote>
+<p>Talk to the service manager of the system. This is the implied default.</p>
+</blockquote>
+<p><strong>-H</strong>, <strong>--host=</strong></p>
+<blockquote>
+<p>Execute the operation remotely. Specify a hostname, or a username and hostname separated by "@", to connect to. The hostname may optionally be suffixed by a port ssh is listening on, separated by ":", and then a container name, separated by "/", which connects directly to a specific container on the specified host. This will use SSH to talk to the remote machine manager instance. Container names may be enumerated with <strong>machinectl -H </strong><em>HOST</em>. Put IPv6 addresses in brackets.</p>
+</blockquote>
+<p><strong>-M</strong>, <strong>--machine=</strong></p>
+<blockquote>
+<p>Execute operation on a local container. Specify a container name to connect to.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<h1>EXIT STATUS</h1>
+<p>On success, 0 is returned, a non-zero failure code otherwise.</p>
+<h1>THE UDEV DATABASE</h1>
+<p>If <strong>--discover</strong> is used, <strong>systemd-mount</strong> honors a couple of additional udev properties of block devices:</p>
+<p><em>SYSTEMD_MOUNT_OPTIONS=</em></p>
+<blockquote>
+<p>The mount options to use, if <strong>--options=</strong> is not used.</p>
+</blockquote>
+<p><em>SYSTEMD_MOUNT_WHERE=</em></p>
+<blockquote>
+<p>The file system path to place the mount point at, instead of the automatically generated one.</p>
+</blockquote>
+<h1>EXAMPLE</h1>
+<p>Use a udev rule like the following to automatically mount all USB storage plugged in:</p>
+<blockquote>
+<pre><code>ACTION==&quot;add&quot;, SUBSYSTEMS==&quot;usb&quot;, SUBSYSTEM==&quot;block&quot;, ENV{ID_FS_USAGE}==&quot;filesystem&quot;, \
+        RUN{program}+=&quot;/usr/bin/systemd-mount --no-block --automount=yes --collect $devnode&quot;</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>mount</strong>(8), <strong>systemctl</strong>(1), <strong>systemd.unit</strong>(5), <strong>systemd.mount</strong>(5), <strong>systemd.automount</strong>(5), <strong>systemd-run</strong>(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

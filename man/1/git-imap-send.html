@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command git-imap-send</title><meta name="description" content="Linux command git-imap-send Send a collection of patches from stdin to an IMAP folder"><meta name="keywords" content="linux, command, git-imap-send, bsd, Send a collection of patches from stdin to an IMAP folder"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>git-imap-send - Send a collection of patches from stdin to an IMAP folder</p>
+<h1>SYNOPSIS</h1>
+<pre><code>git imap-send [-v] [-q] [--[no-]curl]</code></pre>
+<h1>DESCRIPTION</h1>
+<p>This command uploads a mailbox generated with <em>git format-patch</em> into an IMAP drafts folder. This allows patches to be sent as other email is when using mail clients that cannot read mailbox files directly. The command also works with any general mailbox in which emails have the fields "From", "Date", and "Subject" in that order.</p>
+<p>Typical usage is something like:</p>
+<p>git format-patch --signoff --stdout --attach origin | git imap-send</p>
+<h1>OPTIONS</h1>
+<p>-v, --verbose</p>
+<blockquote>
+<p>Be verbose.</p>
+</blockquote>
+<p>-q, --quiet</p>
+<blockquote>
+<p>Be quiet.</p>
+</blockquote>
+<p>--curl</p>
+<blockquote>
+<p>Use libcurl to communicate with the IMAP server, unless tunneling into it. Ignored if Git was built without the USE_CURL_FOR_IMAP_SEND option set.</p>
+</blockquote>
+<p>--no-curl</p>
+<blockquote>
+<p>Talk to the IMAP server using git’s own IMAP routines instead of using libcurl. Ignored if Git was built with the NO_OPENSSL option set.</p>
+</blockquote>
+<h1>CONFIGURATION</h1>
+<p>To use the tool, <strong>imap.folder</strong> and either <strong>imap.tunnel</strong> or <strong>imap.host</strong> must be set to appropriate values.</p>
+<p>imap.folder</p>
+<blockquote>
+<p>The folder to drop the mails into, which is typically the Drafts folder. For example: "INBOX.Drafts", "INBOX/Drafts" or "[Gmail]/Drafts". Required.</p>
+</blockquote>
+<p>imap.tunnel</p>
+<blockquote>
+<p>Command used to setup a tunnel to the IMAP server through which commands will be piped instead of using a direct network connection to the server. Required when imap.host is not set.</p>
+</blockquote>
+<p>imap.host</p>
+<blockquote>
+<p>A URL identifying the server. Use an <strong>imap://</strong> prefix for non-secure connections and an <strong>imaps://</strong> prefix for secure connections. Ignored when imap.tunnel is set, but required otherwise.</p>
+</blockquote>
+<p>imap.user</p>
+<blockquote>
+<p>The username to use when logging in to the server.</p>
+</blockquote>
+<p>imap.pass</p>
+<blockquote>
+<p>The password to use when logging in to the server.</p>
+</blockquote>
+<p>imap.port</p>
+<blockquote>
+<p>An integer port number to connect to on the server. Defaults to 143 for imap:// hosts and 993 for imaps:// hosts. Ignored when imap.tunnel is set.</p>
+</blockquote>
+<p>imap.sslverify</p>
+<blockquote>
+<p>A boolean to enable/disable verification of the server certificate used by the SSL/TLS connection. Default is <strong>true</strong>. Ignored when imap.tunnel is set.</p>
+</blockquote>
+<p>imap.preformattedHTML</p>
+<blockquote>
+<p>A boolean to enable/disable the use of html encoding when sending a patch. An html encoded patch will be bracketed with &lt;pre&gt; and have a content type of text/html. Ironically, enabling this option causes Thunderbird to send the patch as a plain/text, format=fixed email. Default is <strong>false</strong>.</p>
+</blockquote>
+<p>imap.authMethod</p>
+<blockquote>
+<p>Specify authenticate method for authentication with IMAP server. If Git was built with the NO_CURL option, or if your curl version is older than 7.34.0, or if you’re running git-imap-send with the <strong>--no-curl</strong> option, the only supported method is <em>CRAM-MD5</em>. If this is not set then <em>git imap-send</em> uses the basic IMAP plaintext LOGIN command.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>Using tunnel mode:</p>
+<blockquote>
+<pre><code>[imap]
+    folder = &quot;INBOX.Drafts&quot;
+    tunnel = &quot;ssh -q -C user@example.com /usr/bin/imapd ./Maildir 2&gt; /dev/null&quot;</code></pre>
+</blockquote>
+<p>Using direct mode:</p>
+<blockquote>
+<pre><code>[imap]
+    folder = &quot;INBOX.Drafts&quot;
+    host = imap://imap.example.com
+    user = bob
+    pass = p4ssw0rd</code></pre>
+</blockquote>
+<p>Using direct mode with SSL:</p>
+<blockquote>
+<pre><code>[imap]
+    folder = &quot;INBOX.Drafts&quot;
+    host = imaps://imap.example.com
+    user = bob
+    pass = p4ssw0rd
+    port = 123
+    ; sslVerify = false</code></pre>
+</blockquote>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+</p>
+<p>You may want to use <strong>sslVerify=false</strong> while troubleshooting, if you suspect that the reason you are having trouble connecting is because the certificate you use at the private server <strong>example.com</strong> you are trying to set up (or have set up) may not be verified correctly.</p>
+</blockquote>
+<p>Using Gmail’s IMAP interface:</p>
+<blockquote>
+<pre><code>[imap]
+        folder = &quot;[Gmail]/Drafts&quot;
+        host = imaps://imap.gmail.com
+        user = user@gmail.com
+        port = 993</code></pre>
+</blockquote>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+</p>
+<p>You might need to instead use: <strong>folder = "[Google Mail]/Drafts"</strong> if you get an error that the "Folder doesn’t exist".</p>
+</blockquote>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+</p>
+<p>If your Gmail account is set to another language than English, the name of the "Drafts" folder will be localized.</p>
+</blockquote>
+<p>Once the commits are ready to be sent, run the following command:</p>
+<blockquote>
+<pre><code>$ git format-patch --cover-letter -M --stdout origin/master | git imap-send</code></pre>
+</blockquote>
+<p>Just make sure to disable line wrapping in the email client (Gmail’s web interface will wrap lines no matter what, so you need to use a real IMAP client).</p>
+<h1>CAUTION</h1>
+<p>It is still your responsibility to make sure that the email message sent by your email program meets the standards of your project. Many projects do not like patches to be attached. Some mail agents will transform patches (e.g. wrap lines, send them as format=flowed) in ways that make them fail. You will get angry flames ridiculing you if you don’t check this.</p>
+<p>Thunderbird in particular is known to be problematic. Thunderbird users may wish to visit this web page for more information: <strong>http://kb.mozillazine.org/Plain_text_e-mail_-_Thunderbird#Completely_plain_email</strong></p>
+<h1>SEE ALSO</h1>
+<p><strong>git-format-patch</strong>(1), <strong>git-send-email</strong>(1), mbox(5)</p>
+<h1>GIT</h1>
+<p>Part of the <strong>git</strong>(1) suite</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

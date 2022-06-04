@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command alloc_hugepages</title><meta name="description" content="Linux command alloc_hugepages allocate or free huge pages"><meta name="keywords" content="linux, command, alloc_hugepages, bsd, allocate or free huge pages"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>alloc_hugepages, free_hugepages - allocate or free huge pages</p>
+<h1>SYNOPSIS</h1>
+<pre><code>void *alloc_hugepages(int key, void *addr, size_t len,
+ int prot, int flag);
+
+int free_hugepages(void *addr);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The system calls <strong>alloc_hugepages</strong>() and <strong>free_hugepages</strong>() were introduced in Linux 2.5.36 and removed again in 2.5.54. They existed only on i386 and ia64 (when built with <strong>CONFIG_HUGETLB_PAGE</strong>). In Linux 2.4.20, the syscall numbers exist, but the calls fail with the error <strong>ENOSYS</strong>.</p>
+<p>On i386 the memory management hardware knows about ordinary pages (4 KiB) and huge pages (2 or 4 MiB). Similarly ia64 knows about huge pages of several sizes. These system calls serve to map huge pages into the process's memory or to free them again. Huge pages are locked into memory, and are not swapped.</p>
+<p>The <em>key</em> argument is an identifier. When zero the pages are private, and not inherited by children. When positive the pages are shared with other applications using the same <em>key</em>, and inherited by child processes.</p>
+<p>The <em>addr</em> argument of <strong>free_hugepages</strong>() tells which page is being freed: it was the return value of a call to <strong>alloc_hugepages</strong>(). (The memory is first actually freed when all users have released it.) The <em>addr</em> argument of <strong>alloc_hugepages</strong>() is a hint, that the kernel may or may not follow. Addresses must be properly aligned.</p>
+<p>The <em>len</em> argument is the length of the required segment. It must be a multiple of the huge page size.</p>
+<p>The <em>prot</em> argument specifies the memory protection of the segment. It is one of <strong>PROT_READ</strong>, <strong>PROT_WRITE</strong>, <strong>PROT_EXEC</strong>.</p>
+<p>The <em>flag</em> argument is ignored, unless <em>key</em> is positive. In that case, if <em>flag</em> is <strong>IPC_CREAT</strong>, then a new huge page segment is created when none with the given key existed. If this flag is not set, then <strong>ENOENT</strong> is returned when no segment with the given key exists.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>alloc_hugepages</strong>() returns the allocated virtual address, and <strong>free_hugepages</strong>() returns zero. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>ENOSYS</strong></dt>
+<dd><p>The system call is not supported on this kernel.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>/proc/sys/vm/nr_hugepages</em></dt>
+<dd><p>Number of configured hugetlb pages. This can be read and written.</p>
+</dd>
+<dt><em>/proc/meminfo</em></dt>
+<dd><p>Gives info on the number of configured hugetlb pages and on their size in the three variables HugePages_Total, HugePages_Free, Hugepagesize.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>These calls are specific to Linux on Intel processors, and should not be used in programs intended to be portable.</p>
+<h1>NOTES</h1>
+<p>These system calls are gone; they existed only in Linux 2.5.36 through to 2.5.54. Now the hugetlbfs filesystem can be used instead. Memory backed by huge pages (if the CPU supports them) is obtained by using <strong>mmap</strong>(2) to map files in this virtual filesystem.</p>
+<p>The maximal number of huge pages can be specified using the <strong>hugepages=</strong> boot parameter.</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

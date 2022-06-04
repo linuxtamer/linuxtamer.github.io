@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command hostnamectl</title><meta name="description" content="Linux command hostnamectl Control the system hostname"><meta name="keywords" content="linux, command, hostnamectl, bsd, Control the system hostname"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>hostnamectl - Control the system hostname</p>
+<h1>SYNOPSIS</h1>
+<p><strong>hostnamectl</strong> [OPTIONS...] {COMMAND}</p>
+<h1>DESCRIPTION</h1>
+<p><strong>hostnamectl</strong> may be used to query and change the system hostname and related settings.</p>
+<p>This tool distinguishes three different hostnames: the high-level "pretty" hostname which might include all kinds of special characters (e.g. "Lennarts Laptop"), the static hostname which is used to initialize the kernel hostname at boot (e.g. "lennarts-laptop"), and the transient hostname which is a fallback value received from network configuration. If a static hostname is set, and is valid (something other than localhost), then the transient hostname is not used.</p>
+<p>Note that the pretty hostname has little restrictions on the characters and length used, while the static and transient hostnames are limited to the usually accepted characters of Internet domain names, and 64 characters at maximum (the latter being a Linux limitation).</p>
+<p>The static hostname is stored in /etc/hostname, see <strong>hostname</strong>(5) for more information. The pretty hostname, chassis type, and icon name are stored in /etc/machine-info, see <strong>machine-info</strong>(5).</p>
+<p>Use <strong>systemd-firstboot</strong>(1) to initialize the system hostname for mounted (but not booted) system images.</p>
+<h1>COMMANDS</h1>
+<p>The following commands are understood:</p>
+<p><strong>status</strong></p>
+<blockquote>
+<p>Show current system hostname and related information. If no command is specified, this is the implied default.</p>
+</blockquote>
+<p><strong>set-hostname </strong><em>NAME</em></p>
+<blockquote>
+<p>Set the system hostname to <em>NAME</em>. By default, this will alter the pretty, the static, and the transient hostname alike; however, if one or more of <strong>--static</strong>, <strong>--transient</strong>, <strong>--pretty</strong> are used, only the selected hostnames are changed. If the pretty hostname is being set, and static or transient are being set as well, the specified hostname will be simplified in regards to the character set used before the latter are updated. This is done by removing special characters and spaces. This ensures that the pretty and the static hostname are always closely related while still following the validity rules of the specific name. This simplification of the hostname string is not done if only the transient and/or static hostnames are set, and the pretty hostname is left untouched.</p>
+<p>Pass the empty string "" as the hostname to reset the selected hostnames to their default (usually "localhost").</p>
+</blockquote>
+<p><strong>set-icon-name </strong><em>NAME</em></p>
+<blockquote>
+<p>Set the system icon name to <em>NAME</em>. The icon name is used by some graphical applications to visualize this host. The icon name should follow the <strong>Icon Naming Specification</strong>[1].</p>
+<p>Pass an empty string to reset the icon name to the default value, which is determined from chassis type (see below) and possibly other parameters.</p>
+</blockquote>
+<p><strong>set-chassis </strong><em>TYPE</em></p>
+<blockquote>
+<p>Set the chassis type to <em>TYPE</em>. The chassis type is used by some graphical applications to visualize the host or alter user interaction. Currently, the following chassis types are defined: "desktop", "laptop", "convertible", "server", "tablet", "handset", "watch", "embedded", as well as the special chassis types "vm" and "container" for virtualized systems that lack an immediate physical chassis.</p>
+<p>Pass an empty string to reset the chassis type to the default value which is determined from the firmware and possibly other parameters.</p>
+</blockquote>
+<p><strong>set-deployment </strong><em>ENVIRONMENT</em></p>
+<blockquote>
+<p>Set the deployment environment description. <em>ENVIRONMENT</em> must be a single word without any control characters. One of the following is suggested: "development", "integration", "staging", "production".</p>
+<p>Pass an empty string to reset to the default empty value.</p>
+</blockquote>
+<p><strong>set-location </strong><em>LOCATION</em></p>
+<blockquote>
+<p>Set the location string for the system, if it is known. <em>LOCATION</em> should be a human-friendly, free-form string describing the physical location of the system, if it is known and applicable. This may be as generic as "Berlin, Germany" or as specific as "Left Rack, 2nd Shelf".</p>
+<p>Pass an empty string to reset to the default empty value.</p>
+</blockquote>
+<h1>OPTIONS</h1>
+<p>The following options are understood:</p>
+<p><strong>--no-ask-password</strong></p>
+<blockquote>
+<p>Do not query the user for authentication for privileged operations.</p>
+</blockquote>
+<p><strong>--static</strong>, <strong>--transient</strong>, <strong>--pretty</strong></p>
+<blockquote>
+<p>If <strong>status</strong> is invoked (or no explicit command is given) and one of these switches is specified, <strong>hostnamectl</strong> will print out just this selected hostname.</p>
+<p>If used with <strong>set-hostname</strong>, only the selected hostname(s) will be updated. When more than one of these switches are specified, all the specified hostnames will be updated.</p>
+</blockquote>
+<p><strong>-H</strong>, <strong>--host=</strong></p>
+<blockquote>
+<p>Execute the operation remotely. Specify a hostname, or a username and hostname separated by "@", to connect to. The hostname may optionally be suffixed by a port ssh is listening on, separated by ":", and then a container name, separated by "/", which connects directly to a specific container on the specified host. This will use SSH to talk to the remote machine manager instance. Container names may be enumerated with <strong>machinectl -H </strong><em>HOST</em>. Put IPv6 addresses in brackets.</p>
+</blockquote>
+<p><strong>-M</strong>, <strong>--machine=</strong></p>
+<blockquote>
+<p>Execute operation on a local container. Specify a container name to connect to.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<h1>EXIT STATUS</h1>
+<p>On success, 0 is returned, a non-zero failure code otherwise.</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>hostname</strong>(1), <strong>hostname</strong>(5), <strong>machine-info</strong>(5), <strong>systemctl</strong>(1), <strong>systemd-hostnamed.service</strong>(8), <strong>systemd-firstboot</strong>(1)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>Icon Naming Specification</p>
+<p>http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

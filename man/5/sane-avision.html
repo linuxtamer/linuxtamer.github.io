@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sane-avision</title><meta name="description" content="Linux command sane-avision SANE backend for original Avision and Avision OEM scanners (HP, Minolta, Mitsubishi, UMAX and possibly more) flatbed and f..."><meta name="keywords" content="linux, command, sane-avision, bsd, SANE backend for original Avision and Avision OEM scanners (HP, Minolta, Mitsubishi, UMAX and possibly more) flatbed and f..."><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sane-avision - SANE backend for original Avision and Avision OEM scanners (HP, Minolta, Mitsubishi, UMAX and possibly more) flatbed and film scanners.</p>
+<h1>ABOUT THIS FILE</h1>
+<p>This file is a short description for the avision-backend shipped with SANE.</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sane-avision</strong> library implements a SANE (Scanner Access Now Easy) backend that provides access to various Avision scanners and the Avision OEM scanners labelled by HP, Minolta, Mitsubishi or Fujitsu.</p>
+<p>It is fully big-endian aware and in every-day use on PowerPC and SPARC systems.</p>
+<p><strong>I suggest you hold one hand on the power-button of the scanner while</strong> you try the first scans - especially with film-scanners!</p>
+<h1>CONFIGURATION</h1>
+<p>The configuration file for this backend resides in <em>/etc/sane.d/avision.conf</em>.</p>
+<p>Its contents is a list of device names that correspond to Avision and Avision compatible scanners and backend-options. Empty lines and lines starting with a hash mark (#) are ignored. A sample configuration file is shown below:</p>
+<pre><code> # this is a comment
+ option force-a4
+ option force-a3
+ option skip-adf
+ option disable-gamma-table
+ option disable-calibration
+ #scsi Vendor Model Type Bus Channel ID LUN
+ scsi AVISION
+ scsi HP
+ scsi /dev/scanner
+ usb 0x03f0 0x0701</code></pre>
+<dl>
+<dt>force-a4:</dt>
+<dd><p>Forces the backend to overwrite the scanable area returned by the scanner to ISO A4. Scanner that are known to return bogus data are marked in the backend so if you need this option please report this to the backend maintainer. USE WITH CARE!</p>
+</dd>
+<dt>force-a3:</dt>
+<dd><p>Forces the backend to overwrite the scanable area returned by the scanner to ISO A3. Scanner that are known to return bogus data are marked in the backend so if you need this option please report this to the backend maintainer. USE WITH CARE!</p>
+</dd>
+<dt>skip-adf:</dt>
+<dd><p>Forces the backend to ignore an inconsistent ADF status returned by the scanner (ADF not present, but ADF model number non-zero). Without this option, the backend will make several attempts to reset the ADF and retry the query in this situation, and will fail with a "not supported" error if the ADF still doesn't respond.</p>
+</dd>
+<dt>disable-gamma-table:</dt>
+<dd><p>Disables the usage of the scanner's gamma-table. You might try this if your scans hang or only produces random garbage.</p>
+</dd>
+<dt>disable-calibration:</dt>
+<dd><p>Disables the scanner's color calibration. You might try this if your scans hang or only produces random garbage.</p>
+</dd>
+<dt>Note:</dt>
+<dd><p>Any option above modifies the default code-flow for your scanner. The options should only be used when you encounter problems with the default be- haviour of the backend. Please report the need of options to the backend-author so the backend can be fixed as soon as possible.</p>
+</dd>
+</dl>
+<h1>DEVICE NAMES</h1>
+<p>This backend expects device names of the form:</p>
+<blockquote>
+<p><em>scsi scsi-spec</em></p>
+<p><em>usb usb-spec</em></p>
+</blockquote>
+<p>Where <em>scsi-spec</em> is the path-name to a special device or a device ID for the device that corresponds to a SCSI scanner. The special device name must be a generic SCSI device or a symlink to such a device, for example on Linux "/dev/sga" or "/dev/sg0". The device ID is the ID returned by the scanner, for example "HP" or "AVISION". See sane-scsi(5) for details.</p>
+<dl>
+<dt>Note:</dt>
+<dd><p>Since the backend now includes native USB access, it is no longer needed - even considered obsolete - to access USB scanner via the SCSI emulation (named hpusbscsi on Linux) for Avision USB devices such as the HP 53xx, HP 74xx or Minolta film-scanners.</p>
+</dd>
+</dl>
+<p><em>usb-spec</em> is the USB device name, the vendor/product ID pair or the name used by libusb corresponding to the USB scanner. For example "0x03f0 0x0701" or "libusb:002:003". See sane-usb(5) for details.</p>
+<p>The program <em>sane-find-scanner</em> helps to find out the correct scsi or usb device name.</p>
+<p>A list with supported devices is built into the avision backend so normally specifying an ID should not be necessary.</p>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/sane.d/avision.conf</em></dt>
+<dd><p>The backend configuration file (see also description of <strong>SANE_CONFIG_DIR</strong> below).</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-avision.a</em></dt>
+<dd><p>The static library implementing this backend.</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-avision.so</em></dt>
+<dd><p>The shared library implementing this backend (present on systems that support dynamic loading).</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>SANE_CONFIG_DIR</strong></dt>
+<dd><p>This environment variable specifies the list of directories that may contain the configuration file. Under UNIX, the directories are separated by a colon (`:'), under OS/2, they are separated by a semi-colon (`;'). If this variable is not set, the configuration file is searched in two default directories: first, the current working directory (".") and then in /etc/sane.d. If the value of the environment variable ends with the directory separator character, then the default directories are searched after the explicitly specified directories. For example, setting <strong>SANE_CONFIG_DIR</strong> to "/tmp/config:" would result in directories "tmp/config", ".", and "/etc/sane.d" being searched (in this order).</p>
+</dd>
+<dt><strong>SANE_DEBUG_AVISION</strong></dt>
+<dd><p>If the library was compiled with debug support enabled, this environment variable controls the debug level for this backend. Higher debug levels increase the verbosity of the output. The debug level 7 is the author's preferred value to debug backend problems.</p>
+</dd>
+</dl>
+<p>Example: export SANE_DEBUG_AVISION=7</p>
+<h1>SEE ALSO</h1>
+<p>sane(7), sane-scsi(5), sane-usb(5)<br />
+http://exactcode.com/site/open_source/saneavision/</p>
+<h1>MAINTAINER</h1>
+<p>René Rebe</p>
+<h1>AUTHOR</h1>
+<p>René Rebe and Meino Christian Cramer</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

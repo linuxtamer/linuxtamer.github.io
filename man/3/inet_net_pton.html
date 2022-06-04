@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command inet_net_pton</title><meta name="description" content="Linux command inet_net_pton Internet network number conversion"><meta name="keywords" content="linux, command, inet_net_pton, bsd, Internet network number conversion"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>inet_net_pton, inet_net_ntop - Internet network number conversion</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;arpa/inet.h&gt;
+
+int inet_net_pton(int af, const char *pres,
+ void *netp, size_t nsize);
+
+char *inet_net_ntop(int af, const void *netp, int bits,
+ char *pres, size_t psize);</code></pre>
+<p>Link with <em>-lresolv</em>.</p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>inet_net_pton</strong>(), <strong>inet_net_ntop</strong>():</p>
+<blockquote>
+<dl>
+<dt>Since glibc 2.20:</dt>
+<dd><p>_DEFAULT_SOURCE</p>
+</dd>
+<dt>Before glibc 2.20:</dt>
+<dd><p>_BSD_SOURCE || _SVID_SOURCE</p>
+</dd>
+</dl>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>These functions convert network numbers between presentation (i.e., printable) format and network (i.e., binary) format.</p>
+<p>For both functions, <em>af</em> specifies the address family for the conversion; the only supported value is <strong>AF_INET</strong>.</p>
+<h2>inet_net_pton()</h2>
+<p>The <strong>inet_net_pton</strong>() function converts <em>pres</em>, a null-terminated string containing an Internet network number in presentation format to network format. The result of the conversion, which is in network byte order, is placed in the buffer pointed to by <em>net</em>. (The <em>netp</em> argument typically points to an <em>in_addr</em> structure.) The <em>nsize</em> argument specifies the number of bytes available in <em>netp</em>.</p>
+<p>On success, <strong>inet_net_pton</strong>() returns the number of bits in the network number field of the result placed in <em>netp</em>. For a discussion of the input presentation format and the return value, see NOTES.</p>
+<p><em>Note</em>: the buffer pointed to by <em>netp</em> should be zeroed out before calling <strong>inet_net_pton</strong>(), since the call writes only as many bytes as are required for the network number (or as are explicitly specified by <em>pres</em>), which may be less than the number of bytes in a complete network address.</p>
+<h2>inet_net_ntop()</h2>
+<p>The <strong>inet_net_ntop</strong>() function converts the network number in the buffer pointed to by <em>netp</em> to presentation format; <em>*netp</em> is interpreted as a value in network byte order. The <em>bits</em> argument specifies the number of bits in the network number in <em>*netp</em>.</p>
+<p>The null-terminated presentation-format string is placed in the buffer pointed to by <em>pres</em>. The <em>psize</em> argument specifies the number of bytes available in <em>pres</em>. The presentation string is in CIDR format: a dotted-decimal number representing the network address, followed by a slash, and the size of the network number in bits.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>inet_net_pton</strong>() returns the number of bits in the network number. On error, it returns -1, and <em>errno</em> is set to indicate the cause of the error.</p>
+<p>On success, <strong>inet_net_ntop</strong>() returns <em>pres</em>. On error, it returns NULL, and <em>errno</em> is set to indicate the cause of the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EAFNOSUPPORT</strong></dt>
+<dd><p><em>af</em> specified a value other than <strong>AF_INET</strong>.</p>
+</dd>
+<dt><strong>EMSGSIZE</strong></dt>
+<dd><p>The size of the output buffer was insufficient.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>(<strong>inet_net_pton</strong>()) <em>pres</em> was not in correct presentation format.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>The <strong>inet_net_pton</strong>() and <strong>inet_net_ntop</strong>() functions are nonstandard, but widely available.</p>
+<h1>NOTES</h1>
+<h2>Input presentation format for inet_net_pton()</h2>
+<p>The network number may be specified either as a hexadecimal value or in dotted-decimal notation.</p>
+<p>Hexadecimal values are indicated by an initial "0x" or "0X". The hexadecimal digits populate the nibbles (half octets) of the network number from left to right in network byte order.</p>
+<p>In dotted-decimal notation, up to four octets are specified, as decimal numbers separated by dots. Thus, any of the following forms are accepted:</p>
+<p>a.b.c.d a.b.c a.b a</p>
+<p>Each part is a number in the range 0 to 255 that populates one byte of the resulting network number, going from left to right, in network-byte (big endian) order. Where a part is omitted, the resulting byte in the network number is zero.</p>
+<p>For either hexadecimal or dotted-decimal format, the network number can optionally be followed by a slash and a number in the range 0 to 32, which specifies the size of the network number in bits.</p>
+<h2>Return value of inet_net_pton()</h2>
+<p>The return value of <strong>inet_net_pton</strong>() is the number of bits in the network number field. If the input presentation string terminates with a slash and an explicit size value, then that size becomes the return value of <strong>inet_net_pton</strong>(). Otherwise, the return value, <em>bits</em>, is inferred as follows:</p>
+<ul>
+<li><p>If the most significant byte of the network number is greater than or equal to 240, then <em>bits</em> is 32.</p></li>
+<li><p>Otherwise, if the most significant byte of the network number is greater than or equal to 224, then <em>bits</em> is 4.</p></li>
+<li><p>Otherwise, if the most significant byte of the network number is greater than or equal to 192, then <em>bits</em> is 24.</p></li>
+<li><p>Otherwise, if the most significant byte of the network number is greater than or equal to 128, then <em>bits</em> is 16.</p></li>
+<li><p>Otherwise, <em>bits</em> is 8.</p></li>
+</ul>
+<p>If the resulting <em>bits</em> value from the above steps is greater than or equal to 8, but the number of octets specified in the network number exceed <em>bits/8</em>, then <em>bits</em> is set to 8 times the number of octets actually specified.</p>
+<h1>EXAMPLES</h1>
+<p>The program below demonstrates the use of <strong>inet_net_pton</strong>() and <strong>inet_net_ntop</strong>(). It uses <strong>inet_net_pton</strong>() to convert the presentation format network address provided in its first command-line argument to binary form, displays the return value from <strong>inet_net_pton</strong>(). It then uses <strong>inet_net_ntop</strong>() to convert the binary form back to presentation format, and displays the resulting string.</p>
+<p>In order to demonstrate that <strong>inet_net_pton</strong>() may not write to all bytes of its <em>netp</em> argument, the program allows an optional second command-line argument, a number used to initialize the buffer before <strong>inet_net_pton</strong>() is called. As its final line of output, the program displays all of the bytes of the buffer returned by <strong>inet_net_pton</strong>() allowing the user to see which bytes have not been touched by <strong>inet_net_pton</strong>().</p>
+<p>An example run, showing that <strong>inet_net_pton</strong>() infers the number of bits in the network number:</p>
+<pre><code>$ ./a.out 193.168
+inet_net_pton() returned: 24
+inet_net_ntop() yielded:  193.168.0/24
+Raw address:              c1a80000</code></pre>
+<p>Demonstrate that <strong>inet_net_pton</strong>() does not zero out unused bytes in its result buffer:</p>
+<pre><code>$ ./a.out 193.168 0xffffffff
+inet_net_pton() returned: 24
+inet_net_ntop() yielded:  193.168.0/24
+Raw address:              c1a800ff</code></pre>
+<p>Demonstrate that <strong>inet_net_pton</strong>() will widen the inferred size of the network number, if the supplied number of bytes in the presentation string exceeds the inferred value:</p>
+<pre><code>$ ./a.out 193.168.1.128
+inet_net_pton() returned: 32
+inet_net_ntop() yielded:  193.168.1.128/32
+Raw address:              c1a80180</code></pre>
+<p>Explicitly specifying the size of the network number overrides any inference about its size (but any extra bytes that are explicitly specified will still be used by <strong>inet_net_pton</strong>(): to populate the result buffer):</p>
+<pre><code>$ ./a.out 193.168.1.128/24
+inet_net_pton() returned: 24
+inet_net_ntop() yielded:  193.168.1/24
+Raw address:              c1a80180</code></pre>
+<h2>Program source</h2>
+<pre><code>/* Link with &quot;-lresolv&quot; */
+
+#include &lt;arpa/inet.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
+                        } while (0)
+
+int
+main(int argc, char *argv[])
+{
+    char buf[100];
+    struct in_addr addr;
+    int bits;
+
+    if (argc &lt; 2) {
+        fprintf(stderr,
+                &quot;Usage: %s presentation-form [addr-init-value]\n&quot;,
+                argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    /* If argv[2] is supplied (a numeric value), use it to initialize
+       the output buffer given to inet_net_pton(), so that we can see
+       that inet_net_pton() initializes only those bytes needed for
+       the network number. If argv[2] is not supplied, then initialize
+       the buffer to zero (as is recommended practice). */
+
+    addr.s_addr = (argc &gt; 2) ? strtod(argv[2], NULL) : 0;
+
+    /* Convert presentation network number in argv[1] to binary */
+
+    bits = inet_net_pton(AF_INET, argv[1], &amp;addr, sizeof(addr));
+    if (bits == -1)
+        errExit(&quot;inet_net_ntop&quot;);
+
+    printf(&quot;inet_net_pton() returned: %d\n&quot;, bits);
+
+    /* Convert binary format back to presentation, using &#39;bits&#39;
+       returned by inet_net_pton() */
+
+    if (inet_net_ntop(AF_INET, &amp;addr, bits, buf, sizeof(buf)) == NULL)
+        errExit(&quot;inet_net_ntop&quot;);
+
+    printf(&quot;inet_net_ntop() yielded:  %s\n&quot;, buf);
+
+    /* Display &#39;addr&#39; in raw form (in network byte order), so we can
+       see bytes not displayed by inet_net_ntop(); some of those bytes
+       may not have been touched by inet_net_ntop(), and so will still
+       have any initial value that was specified in argv[2]. */
+
+    printf(&quot;Raw address:              %x\n&quot;, htonl(addr.s_addr));
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>inet</strong>(3), <strong>networks</strong>(5)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

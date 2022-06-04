@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command git-commit-graph</title><meta name="description" content="Linux command git-commit-graph Write and verify Git commit-graph files"><meta name="keywords" content="linux, command, git-commit-graph, bsd, Write and verify Git commit-graph files"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>git-commit-graph - Write and verify Git commit-graph files</p>
+<h1>SYNOPSIS</h1>
+<pre><code>git commit-graph verify [--object-dir &lt;dir&gt;] [--shallow] [--[no-]progress]
+git commit-graph write &lt;options&gt; [--object-dir &lt;dir&gt;] [--[no-]progress]</code></pre>
+<h1>DESCRIPTION</h1>
+<p>Manage the serialized commit-graph file.</p>
+<h1>OPTIONS</h1>
+<p>--object-dir</p>
+<blockquote>
+<p>Use given directory for the location of packfiles and commit-graph file. This parameter exists to specify the location of an alternate that only has the objects directory, not a full <strong>.git</strong> directory. The commit-graph file is expected to be in the <strong>&lt;dir&gt;/info</strong> directory and the packfiles are expected to be in <strong>&lt;dir&gt;/pack</strong>. If the directory could not be made into an absolute path, or does not match any known object directory, <strong>git commit-graph ...</strong> will exit with non-zero status.</p>
+</blockquote>
+<p>--[no-]progress</p>
+<blockquote>
+<p>Turn progress on/off explicitly. If neither is specified, progress is shown if standard error is connected to a terminal.</p>
+</blockquote>
+<h1>COMMANDS</h1>
+<p><em>write</em></p>
+<blockquote>
+<p>Write a commit-graph file based on the commits found in packfiles. If the config option <strong>core.commitGraph</strong> is disabled, then this command will output a warning, then return success without writing a commit-graph file.</p>
+<p>With the <strong>--stdin-packs</strong> option, generate the new commit graph by walking objects only in the specified pack-indexes. (Cannot be combined with <strong>--stdin-commits</strong> or <strong>--reachable</strong>.)</p>
+<p>With the <strong>--stdin-commits</strong> option, generate the new commit graph by walking commits starting at the commits specified in stdin as a list of OIDs in hex, one OID per line. OIDs that resolve to non-commits (either directly, or by peeling tags) are silently ignored. OIDs that are malformed, or do not exist generate an error. (Cannot be combined with <strong>--stdin-packs</strong> or <strong>--reachable</strong>.)</p>
+<p>With the <strong>--reachable</strong> option, generate the new commit graph by walking commits starting at all refs. (Cannot be combined with <strong>--stdin-commits</strong> or <strong>--stdin-packs</strong>.)</p>
+<p>With the <strong>--append</strong> option, include all commits that are present in the existing commit-graph file.</p>
+<p>With the <strong>--changed-paths</strong> option, compute and write information about the paths changed between a commit and its first parent. This operation can take a while on large repositories. It provides significant performance gains for getting history of a directory or a file with <strong>git log -- &lt;path&gt;</strong>. If this option is given, future commit-graph writes will automatically assume that this option was intended. Use <strong>--no-changed-paths</strong> to stop storing this data.</p>
+<p>With the <strong>--max-new-filters=&lt;n&gt;</strong> option, generate at most <strong>n</strong> new Bloom filters (if <strong>--changed-paths</strong> is specified). If <strong>n</strong> is <strong>-1</strong>, no limit is enforced. Only commits present in the new layer count against this limit. To retroactively compute Bloom filters over earlier layers, it is advised to use <strong>--split=replace</strong>. Overrides the <strong>commitGraph.maxNewFilters</strong> configuration.</p>
+<p>With the <strong>--split[=&lt;strategy&gt;]</strong> option, write the commit-graph as a chain of multiple commit-graph files stored in <strong>&lt;dir&gt;/info/commit-graphs</strong>. Commit-graph layers are merged based on the strategy and other splitting options. The new commits not already in the commit-graph are added in a new "tip" file. This file is merged with the existing file if the following merge conditions are met:</p>
+<blockquote>
+<p>·</p>
+<p>If <strong>--split=no-merge</strong> is specified, a merge is never performed, and the remaining options are ignored. <strong>--split=replace</strong> overwrites the existing chain with a new one. A bare <strong>--split</strong> defers to the remaining options. (Note that merging a chain of commit graphs replaces the existing chain with a length-1 chain where the first and only incremental holds the entire graph).</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>If <strong>--size-multiple=&lt;X&gt;</strong> is not specified, let <strong>X</strong> equal 2. If the new tip file would have <strong>N</strong> commits and the previous tip has <strong>M</strong> commits and <strong>X</strong> times <strong>N</strong> is greater than <strong>M</strong>, instead merge the two files into a single file.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>If <strong>--max-commits=&lt;M&gt;</strong> is specified with <strong>M</strong> a positive integer, and the new tip file would have more than <strong>M</strong> commits, then instead merge the new tip with the previous tip.</p>
+<p>Finally, if <strong>--expire-time=&lt;datetime&gt;</strong> is not specified, let <strong>datetime</strong> be the current time. After writing the split commit-graph, delete all unused commit-graph whose modified times are older than <strong>datetime</strong>.</p>
+</blockquote>
+</blockquote>
+<p><em>verify</em></p>
+<blockquote>
+<p>Read the commit-graph file and verify its contents against the object database. Used to check for corrupted data.</p>
+<p>With the <strong>--shallow</strong> option, only check the tip commit-graph file in a chain of split commit-graphs.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<blockquote>
+<p>·</p>
+<p>Write a commit-graph file for the packed commits in your local <strong>.git</strong> directory.</p>
+<blockquote>
+<pre><code>$ git commit-graph write</code></pre>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Write a commit-graph file, extending the current commit-graph file using commits in <strong>&lt;pack-index&gt;</strong>.</p>
+<blockquote>
+<pre><code>$ echo &lt;pack-index&gt; | git commit-graph write --stdin-packs</code></pre>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Write a commit-graph file containing all reachable commits.</p>
+<blockquote>
+<pre><code>$ git show-ref -s | git commit-graph write --stdin-commits</code></pre>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Write a commit-graph file containing all commits in the current commit-graph file along with those reachable from <strong>HEAD</strong>.</p>
+<blockquote>
+<pre><code>$ git rev-parse HEAD | git commit-graph write --stdin-commits --append</code></pre>
+</blockquote>
+</blockquote>
+<h1>GIT</h1>
+<p>Part of the <strong>git</strong>(1) suite</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

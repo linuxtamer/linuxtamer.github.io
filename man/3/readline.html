@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command readline</title><meta name="description" content="Linux command readline get a line from a user with editing"><meta name="keywords" content="linux, command, readline, bsd, get a line from a user with editing"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>readline - get a line from a user with editing</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;readline/readline.h&gt;
+#include &lt;readline/history.h&gt;</code></pre>
+<pre><code>char *
+
+
+readline (const char *prompt);</code></pre>
+<h1>COPYRIGHT</h1>
+<p>Readline is Copyright (C) 1989-2020 Free Software Foundation, Inc.</p>
+<h1>DESCRIPTION</h1>
+<p><strong>readline</strong> will read a line from the terminal and return it, using <strong>prompt</strong> as a prompt. If <strong>prompt</strong> is <strong>NULL</strong> or the empty string, no prompt is issued. The line returned is allocated with <em>malloc</em>(3); the caller must free it when finished. The line returned has the final newline removed, so only the text of the line remains.</p>
+<p><strong>readline</strong> offers editing capabilities while the user is entering the line. By default, the line editing commands are similar to those of emacs. A vi-style line editing interface is also available.</p>
+<p>This manual page describes only the most basic use of <strong>readline</strong>. Much more functionality is available; see <em>The GNU Readline Library</em> and <em>The GNU History Library</em> for additional information.</p>
+<h1>RETURN VALUE</h1>
+<p><strong>readline</strong> returns the text of the line read. A blank line returns the empty string. If <strong>EOF</strong> is encountered while reading a line, and the line is empty, <strong>NULL</strong> is returned. If an <strong>EOF</strong> is read with a non-empty line, it is treated as a newline.</p>
+<h1>NOTATION</h1>
+<p>An Emacs-style notation is used to denote keystrokes. Control keys are denoted by C-<em>key</em>, e.g., C-n means Control-N. Similarly, <em>meta</em> keys are denoted by M-<em>key</em>, so M-x means Meta-X. (On keyboards without a <em>meta</em> key, M-<em>x</em> means ESC <em>x</em>, i.e., press the Escape key then the <em>x</em> key. This makes ESC the <em>meta prefix</em>. The combination M-C-<em>x</em> means ESC-Control-<em>x</em>, or press the Escape key then hold the Control key while pressing the <em>x</em> key.)</p>
+<p>Readline commands may be given numeric <em>arguments</em>, which normally act as a repeat count. Sometimes, however, it is the sign of the argument that is significant. Passing a negative argument to a command that acts in the forward direction (e.g., <strong>kill-line</strong>) causes that command to act in a backward direction. Commands whose behavior with arguments deviates from this are noted below.</p>
+<p>When a command is described as <em>killing</em> text, the text deleted is saved for possible future retrieval (<em>yanking</em>). The killed text is saved in a <em>kill ring</em>. Consecutive kills cause the text to be accumulated into one unit, which can be yanked all at once. Commands which do not kill text separate the chunks of text on the kill ring.</p>
+<h1>INITIALIZATION FILE</h1>
+<p>Readline is customized by putting commands in an initialization file (the <em>inputrc</em> file). The name of this file is taken from the value of the <strong>INPUTRC</strong> environment variable. If that variable is unset, the default is <em>~/.inputrc</em>. If that file does not exist or cannot be read, the ultimate default is <em>/etc/inputrc</em>. When a program which uses the readline library starts up, the init file is read, and the key bindings and variables are set. There are only a few basic constructs allowed in the readline init file. Blank lines are ignored. Lines beginning with a <strong>#</strong> are comments. Lines beginning with a <strong>$</strong> indicate conditional constructs. Other lines denote key bindings and variable settings. Each program using this library may add its own commands and bindings.</p>
+<p>For example, placing</p>
+<blockquote>
+<p>M-Control-u: universal-argument</p>
+</blockquote>
+<p>or</p>
+<blockquote>
+<p>C-Meta-u: universal-argument</p>
+</blockquote>
+<p>into the <em>inputrc</em> would make M-C-u execute the readline command <em>universal-argument</em>.</p>
+<p>The following symbolic character names are recognized while processing key bindings: <em>DEL</em>, <em>ESC</em>, <em>ESCAPE</em>, <em>LFD</em>, <em>NEWLINE</em>, <em>RET</em>, <em>RETURN</em>, <em>RUBOUT</em>, <em>SPACE</em>, <em>SPC</em>, and <em>TAB</em>.</p>
+<p>In addition to command names, readline allows keys to be bound to a string that is inserted when the key is pressed (a <em>macro</em>).</p>
+<h2>Key Bindings</h2>
+<p>The syntax for controlling key bindings in the <em>inputrc</em> file is simple. All that is required is the name of the command or the text of a macro and a key sequence to which it should be bound. The name may be specified in one of two ways: as a symbolic key name, possibly with <em>Meta-</em> or <em>Control-</em> prefixes, or as a key sequence. The name and key sequence are separated by a colon. There can be no whitespace between the name and the colon.</p>
+<p>When using the form <strong>keyname</strong>: <em>function-name</em> or <em>macro</em>, <em>keyname</em> is the name of a key spelled out in English. For example:</p>
+<blockquote>
+<p>Control-u: universal-argument<br />
+Meta-Rubout: backward-kill-word<br />
+Control-o: "&gt; output"</p>
+</blockquote>
+<p>In the above example, <em>C-u</em> is bound to the function <strong>universal-argument</strong>, <em>M-DEL</em> is bound to the function <strong>backward-kill-word</strong>, and <em>C-o</em> is bound to run the macro expressed on the right hand side (that is, to insert the text ``&gt; output'' into the line).</p>
+<p>In the second form, <strong>"keyseq"</strong>: <em>function-name</em> or <em>macro</em>, <strong>keyseq</strong> differs from <strong>keyname</strong> above in that strings denoting an entire key sequence may be specified by placing the sequence within double quotes. Some GNU Emacs style key escapes can be used, as in the following example, but the symbolic character names are not recognized.</p>
+<blockquote>
+<p>"\C-u": universal-argument<br />
+"\C-x\C-r": re-read-init-file<br />
+"\e[11~": "Function Key 1"</p>
+</blockquote>
+<p>In this example, <em>C-u</em> is again bound to the function <strong>universal-argument</strong>. <em>C-x C-r</em> is bound to the function <strong>re-read-init-file</strong>, and <em>ESC [ 1 1 ~</em> is bound to insert the text ``Function Key 1''.</p>
+<p>The full set of GNU Emacs style escape sequences available when specifying key sequences is</p>
+<blockquote>
+<dl>
+<dt><strong>\C-</strong></dt>
+<dd><p>control prefix</p>
+</dd>
+<dt><strong>\M-</strong></dt>
+<dd><p>meta prefix</p>
+</dd>
+<dt><strong>\e</strong></dt>
+<dd><p>an escape character</p>
+</dd>
+<dt><strong>\\</strong></dt>
+<dd><p>backslash</p>
+</dd>
+<dt><strong>\"</strong></dt>
+<dd><p>literal ", a double quote</p>
+</dd>
+<dt><strong>\'</strong></dt>
+<dd><p>literal ', a single quote</p>
+</dd>
+</dl>
+</blockquote>
+<p>In addition to the GNU Emacs style escape sequences, a second set of backslash escapes is available:</p>
+<blockquote>
+<dl>
+<dt><strong>\a</strong></dt>
+<dd><p>alert (bell)</p>
+</dd>
+<dt><strong>\b</strong></dt>
+<dd><p>backspace</p>
+</dd>
+<dt><strong>\d</strong></dt>
+<dd><p>delete</p>
+</dd>
+<dt><strong>\f</strong></dt>
+<dd><p>form feed</p>
+</dd>
+<dt><strong>\n</strong></dt>
+<dd><p>newline</p>
+</dd>
+<dt><strong>\r</strong></dt>
+<dd><p>carriage return</p>
+</dd>
+<dt><strong>\t</strong></dt>
+<dd><p>horizontal tab</p>
+</dd>
+<dt><strong>\v</strong></dt>
+<dd><p>vertical tab</p>
+</dd>
+<dt><strong>\<em>nnn</em></strong></dt>
+<dd><p>the eight-bit character whose value is the octal value <em>nnn</em> (one to three digits)</p>
+</dd>
+<dt><strong>\x<em>HH</em></strong></dt>
+<dd><p>the eight-bit character whose value is the hexadecimal value <em>HH</em> (one or two hex digits)</p>
+</dd>
+</dl>
+</blockquote>
+<p>When entering the text of a macro, single or double quotes should be used to indicate a macro definition. Unquoted text is assumed to be a function name. In the macro body, the backslash escapes described above are expanded. Backslash will quote any other character in the macro text, including " and '.</p>
+<p><strong>Bash</strong> allows the current readline key bindings to be displayed or modified with the <strong>bind</strong> builtin command. The editing mode may be switched during interactive use by using the <strong>-o</strong> option to the <strong>set</strong> builtin command. Other programs using this library provide similar mechanisms. The <em>inputrc</em> file may be edited and re-read if a program does not provide any other means to incorporate new bindings.</p>
+<h2>Variables</h2>
+<p>Readline has variables that can be used to further customize its behavior. A variable may be set in the <em>inputrc</em> file with a statement of the form</p>
+<blockquote>
+<p><strong>set</strong> <em>variable-name</em> <em>value</em></p>
+</blockquote>
+<p>Except where noted, readline variables can take the values <strong>On</strong> or <strong>Off</strong> (without regard to case). Unrecognized variable names are ignored. When a variable value is read, empty or null values, "on" (case-insensitive), and "1" are equivalent to <strong>On</strong>. All other values are equivalent to <strong>Off</strong>. The variables and their default values are:</p>
+<dl>
+<dt><strong>bell-style (audible)</strong></dt>
+<dd><p>Controls what happens when readline wants to ring the terminal bell. If set to <strong>none</strong>, readline never rings the bell. If set to <strong>visible</strong>, readline uses a visible bell if one is available. If set to <strong>audible</strong>, readline attempts to ring the terminal's bell.</p>
+</dd>
+<dt><strong>bind-tty-special-chars (On)</strong></dt>
+<dd><p>If set to <strong>On</strong> (the default), readline attempts to bind the control characters treated specially by the kernel's terminal driver to their readline equivalents.</p>
+</dd>
+<dt><strong>blink-matching-paren (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, readline attempts to briefly move the cursor to an opening parenthesis when a closing parenthesis is inserted.</p>
+</dd>
+<dt><strong>colored-completion-prefix (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, when listing completions, readline displays the common prefix of the set of possible completions using a different color. The color definitions are taken from the value of the <strong>LS_COLORS</strong> environment variable.</p>
+</dd>
+<dt><strong>colored-stats (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, readline displays possible completions using different colors to indicate their file type. The color definitions are taken from the value of the <strong>LS_COLORS</strong> environment variable.</p>
+</dd>
+<dt><strong>comment-begin (``#'')</strong></dt>
+<dd><p>The string that is inserted in <strong>vi</strong> mode when the <strong>insert-comment</strong> command is executed. This command is bound to <strong>M-#</strong> in emacs mode and to <strong>#</strong> in vi command mode.</p>
+</dd>
+<dt><strong>completion-display-width (-1)</strong></dt>
+<dd><p>The number of screen columns used to display possible matches when performing completion. The value is ignored if it is less than 0 or greater than the terminal screen width. A value of 0 will cause matches to be displayed one per line. The default value is -1.</p>
+</dd>
+<dt><strong>completion-ignore-case (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, readline performs filename matching and completion in a case-insensitive fashion.</p>
+</dd>
+<dt><strong>completion-map-case (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, and <strong>completion-ignore-case</strong> is enabled, readline treats hyphens (<em>-</em>) and underscores (<em>_</em>) as equivalent when performing case-insensitive filename matching and completion.</p>
+</dd>
+<dt><strong>completion-prefix-display-length (0)</strong></dt>
+<dd><p>The length in characters of the common prefix of a list of possible completions that is displayed without modification. When set to a value greater than zero, common prefixes longer than this value are replaced with an ellipsis when displaying possible completions.</p>
+</dd>
+<dt><strong>completion-query-items (100)</strong></dt>
+<dd><p>This determines when the user is queried about viewing the number of possible completions generated by the <strong>possible-completions</strong> command. It may be set to any integer value greater than or equal to zero. If the number of possible completions is greater than or equal to the value of this variable, readline will ask whether or not the user wishes to view them; otherwise they are simply listed on the terminal. A negative value causes readline to never ask.</p>
+</dd>
+<dt><strong>convert-meta (On)</strong></dt>
+<dd><p>If set to <strong>On</strong>, readline will convert characters with the eighth bit set to an ASCII key sequence by stripping the eighth bit and prefixing it with an escape character (in effect, using escape as the <em>meta prefix</em>). The default is <em>On</em>, but readline will set it to <em>Off</em> if the locale contains eight-bit characters.</p>
+</dd>
+<dt><strong>disable-completion (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, readline will inhibit word completion. Completion characters will be inserted into the line as if they had been mapped to <strong>self-insert</strong>.</p>
+</dd>
+<dt><strong>echo-control-characters (On)</strong></dt>
+<dd><p>When set to <strong>On</strong>, on operating systems that indicate they support it, readline echoes a character corresponding to a signal generated from the keyboard.</p>
+</dd>
+<dt><strong>editing-mode (emacs)</strong></dt>
+<dd><p>Controls whether readline begins with a set of key bindings similar to <em>Emacs</em> or <em>vi</em>. <strong>editing-mode</strong> can be set to either <strong>emacs</strong> or <strong>vi</strong>.</p>
+</dd>
+<dt><strong>emacs-mode-string (@)</strong></dt>
+<dd><p>If the <em>show-mode-in-prompt</em> variable is enabled, this string is displayed immediately before the last line of the primary prompt when emacs editing mode is active. The value is expanded like a key binding, so the standard set of meta- and control prefixes and backslash escape sequences is available. Use the \1 and \2 escapes to begin and end sequences of non-printing characters, which can be used to embed a terminal control sequence into the mode string.</p>
+</dd>
+<dt><strong>enable-bracketed-paste (On)</strong></dt>
+<dd><p>When set to <strong>On</strong>, readline will configure the terminal in a way that will enable it to insert each paste into the editing buffer as a single string of characters, instead of treating each character as if it had been read from the keyboard. This can prevent pasted characters from being interpreted as editing commands.</p>
+</dd>
+<dt><strong>enable-keypad (Off)</strong></dt>
+<dd><p>When set to <strong>On</strong>, readline will try to enable the application keypad when it is called. Some systems need this to enable the arrow keys.</p>
+</dd>
+<dt><strong>enable-meta-key (On)</strong></dt>
+<dd><p>When set to <strong>On</strong>, readline will try to enable any meta modifier key the terminal claims to support when it is called. On many terminals, the meta key is used to send eight-bit characters.</p>
+</dd>
+<dt><strong>expand-tilde (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, tilde expansion is performed when readline attempts word completion.</p>
+</dd>
+<dt><strong>history-preserve-point (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, the history code attempts to place point at the same location on each history line retrieved with <strong>previous-history</strong> or <strong>next-history</strong>.</p>
+</dd>
+<dt><strong>history-size (unset)</strong></dt>
+<dd><p>Set the maximum number of history entries saved in the history list. If set to zero, any existing history entries are deleted and no new entries are saved. If set to a value less than zero, the number of history entries is not limited. By default, the number of history entries is not limited. If an attempt is made to set <em>history-size</em> to a non-numeric value, the maximum number of history entries will be set to 500.</p>
+</dd>
+<dt><strong>horizontal-scroll-mode (Off)</strong></dt>
+<dd><p>When set to <strong>On</strong>, makes readline use a single line for display, scrolling the input horizontally on a single screen line when it becomes longer than the screen width rather than wrapping to a new line. This setting is automatically enabled for terminals of height 1.</p>
+</dd>
+<dt><strong>input-meta (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, readline will enable eight-bit input (that is, it will not clear the eighth bit in the characters it reads), regardless of what the terminal claims it can support. The name <strong>meta-flag</strong> is a synonym for this variable. The default is <em>Off</em>, but readline will set it to <em>On</em> if the locale contains eight-bit characters.</p>
+</dd>
+<dt><strong>isearch-terminators (``C-[ C-J'')</strong></dt>
+<dd><p>The string of characters that should terminate an incremental search without subsequently executing the character as a command. If this variable has not been given a value, the characters <em>ESC</em> and <em>C-J</em> will terminate an incremental search.</p>
+</dd>
+<dt><strong>keymap (emacs)</strong></dt>
+<dd><p>Set the current readline keymap. The set of legal keymap names is <em>emacs, emacs-standard, emacs-meta, emacs-ctlx, vi, vi-move,</em> vi-command, and <em>vi-insert</em>. <em>vi</em> is equivalent to <em>vi-command</em>; <em>emacs</em> is equivalent to <em>emacs-standard</em>. The default value is <em>emacs</em>. The value of <strong>editing-mode</strong> also affects the default keymap.</p>
+</dd>
+<dt><strong>keyseq-timeout (500)</strong></dt>
+<dd><p>Specifies the duration <em>readline</em> will wait for a character when reading an ambiguous key sequence (one that can form a complete key sequence using the input read so far, or can take additional input to complete a longer key sequence). If no input is received within the timeout, <em>readline</em> will use the shorter but complete key sequence. The value is specified in milliseconds, so a value of 1000 means that <em>readline</em> will wait one second for additional input. If this variable is set to a value less than or equal to zero, or to a non-numeric value, <em>readline</em> will wait until another key is pressed to decide which key sequence to complete.</p>
+</dd>
+<dt><strong>mark-directories (On)</strong></dt>
+<dd><p>If set to <strong>On</strong>, completed directory names have a slash appended.</p>
+</dd>
+<dt><strong>mark-modified-lines (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, history lines that have been modified are displayed with a preceding asterisk (<strong>*</strong>).</p>
+</dd>
+<dt><strong>mark-symlinked-directories (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, completed names which are symbolic links to directories have a slash appended (subject to the value of <strong>mark-directories</strong>).</p>
+</dd>
+<dt><strong>match-hidden-files (On)</strong></dt>
+<dd><p>This variable, when set to <strong>On</strong>, causes readline to match files whose names begin with a `.' (hidden files) when performing filename completion. If set to <strong>Off</strong>, the leading `.' must be supplied by the user in the filename to be completed.</p>
+</dd>
+<dt><strong>menu-complete-display-prefix (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, menu completion displays the common prefix of the list of possible completions (which may be empty) before cycling through the list.</p>
+</dd>
+<dt><strong>output-meta (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, readline will display characters with the eighth bit set directly rather than as a meta-prefixed escape sequence. The default is <em>Off</em>, but readline will set it to <em>On</em> if the locale contains eight-bit characters.</p>
+</dd>
+<dt><strong>page-completions (On)</strong></dt>
+<dd><p>If set to <strong>On</strong>, readline uses an internal <em>more</em>-like pager to display a screenful of possible completions at a time.</p>
+</dd>
+<dt><strong>print-completions-horizontally (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, readline will display completions with matches sorted horizontally in alphabetical order, rather than down the screen.</p>
+</dd>
+<dt><strong>revert-all-at-newline (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, readline will undo all changes to history lines before returning when <strong>accept-line</strong> is executed. By default, history lines may be modified and retain individual undo lists across calls to <strong>readline</strong>.</p>
+</dd>
+<dt><strong>show-all-if-ambiguous (Off)</strong></dt>
+<dd><p>This alters the default behavior of the completion functions. If set to <strong>On</strong>, words which have more than one possible completion cause the matches to be listed immediately instead of ringing the bell.</p>
+</dd>
+<dt><strong>show-all-if-unmodified (Off)</strong></dt>
+<dd><p>This alters the default behavior of the completion functions in a fashion similar to <strong>show-all-if-ambiguous</strong>. If set to <strong>On</strong>, words which have more than one possible completion without any possible partial completion (the possible completions don't share a common prefix) cause the matches to be listed immediately instead of ringing the bell.</p>
+</dd>
+<dt><strong>show-mode-in-prompt (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, add a string to the beginning of the prompt indicating the editing mode: emacs, vi command, or vi insertion. The mode strings are user-settable (e.g., <em>emacs-mode-string</em>).</p>
+</dd>
+<dt><strong>skip-completed-text (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, this alters the default completion behavior when inserting a single match into the line. It's only active when performing completion in the middle of a word. If enabled, readline does not insert characters from the completion that match characters after point in the word being completed, so portions of the word following the cursor are not duplicated.</p>
+</dd>
+<dt><strong>vi-cmd-mode-string ((cmd))</strong></dt>
+<dd><p>If the <em>show-mode-in-prompt</em> variable is enabled, this string is displayed immediately before the last line of the primary prompt when vi editing mode is active and in command mode. The value is expanded like a key binding, so the standard set of meta- and control prefixes and backslash escape sequences is available. Use the \1 and \2 escapes to begin and end sequences of non-printing characters, which can be used to embed a terminal control sequence into the mode string.</p>
+</dd>
+<dt><strong>vi-ins-mode-string ((ins))</strong></dt>
+<dd><p>If the <em>show-mode-in-prompt</em> variable is enabled, this string is displayed immediately before the last line of the primary prompt when vi editing mode is active and in insertion mode. The value is expanded like a key binding, so the standard set of meta- and control prefixes and backslash escape sequences is available. Use the \1 and \2 escapes to begin and end sequences of non-printing characters, which can be used to embed a terminal control sequence into the mode string.</p>
+</dd>
+<dt><strong>visible-stats (Off)</strong></dt>
+<dd><p>If set to <strong>On</strong>, a character denoting a file's type as reported by <em>stat</em>(2) is appended to the filename when listing possible completions.</p>
+</dd>
+</dl>
+<h2>Conditional Constructs</h2>
+<p>Readline implements a facility similar in spirit to the conditional compilation features of the C preprocessor which allows key bindings and variable settings to be performed as the result of tests. There are four parser directives used.</p>
+<ul>
+<li><p>The <strong>$if</strong> construct allows bindings to be made based on the editing mode, the terminal being used, or the application using readline. The text of the test, after any comparison operator, extends to the end of the line; unless otherwise noted, no characters are required to isolate it.</p>
+<ul>
+<li><p>The <strong>mode=</strong> form of the <strong>$if</strong> directive is used to test whether readline is in emacs or vi mode. This may be used in conjunction with the <strong>set keymap</strong> command, for instance, to set bindings in the <em>emacs-standard</em> and <em>emacs-ctlx</em> keymaps only if readline is starting out in emacs mode.</p></li>
+<li><p>The <strong>term=</strong> form may be used to include terminal-specific key bindings, perhaps to bind the key sequences output by the terminal's function keys. The word on the right side of the <strong>=</strong> is tested against the full name of the terminal and the portion of the terminal name before the first <strong>-</strong>. This allows <em>sun</em> to match both <em>sun</em> and <em>sun-cmd</em>, for instance.</p></li>
+<li><p>The <strong>version</strong> test may be used to perform comparisons against specific readline versions. The <strong>version</strong> expands to the current readline version. The set of comparison operators includes <strong>=</strong>, (and <strong>==</strong>), <strong>!=</strong>, <strong>&lt;=</strong>, <strong>&gt;=</strong>, <strong>&lt;</strong>, and <strong>&gt;</strong>. The version number supplied on the right side of the operator consists of a major version number, an optional decimal point, and an optional minor version (e.g., <strong>7.1</strong>). If the minor version is omitted, it is assumed to be <strong>0</strong>. The operator may be separated from the string <strong>version</strong> and from the version number argument by whitespace.</p></li>
+<li><p>The <strong>application</strong> construct is used to include application-specific settings. Each program using the readline library sets the <em>application name</em>, and an initialization file can test for a particular value. This could be used to bind key sequences to functions useful for a specific program. For instance, the following command adds a key sequence that quotes the current or previous word in <strong>bash</strong>:</p></li>
+</ul>
+<blockquote>
+<pre><code>$if Bash
+# Quote the current or previous word
+&quot;\C-xq&quot;: &quot;\eb\&quot;\ef\&quot;&quot;
+$endif</code></pre>
+</blockquote>
+<ul>
+<li><p>The <em>variable</em> construct provides simple equality tests for readline variables and values. The permitted comparison operators are <em>=</em>, <em>==</em>, and <em>!=</em>. The variable name must be separated from the comparison operator by whitespace; the operator may be separated from the value on the right hand side by whitespace. Both string and boolean variables may be tested. Boolean variables must be tested against the values <em>on</em> and <em>off</em>.</p></li>
+</ul></li>
+<li><p>This command, as seen in the previous example, terminates an <strong>$if</strong> command.</p></li>
+<li><p>Commands in this branch of the <strong>$if</strong> directive are executed if the test fails.</p></li>
+<li><p>This directive takes a single filename as an argument and reads commands and bindings from that file. For example, the following directive would read <em>/etc/inputrc</em>:</p></li>
+</ul>
+<blockquote>
+<pre><code>$include   /etc/inputrc</code></pre>
+</blockquote>
+<h1>SEARCHING</h1>
+<p>Readline provides commands for searching through the command history for lines containing a specified string. There are two search modes: <em>incremental</em> and <em>non-incremental</em>.</p>
+<p>Incremental searches begin before the user has finished typing the search string. As each character of the search string is typed, readline displays the next entry from the history matching the string typed so far. An incremental search requires only as many characters as needed to find the desired history entry. To search backward in the history for a particular string, type <strong>C-r</strong>. Typing <strong>C-s</strong> searches forward through the history. The characters present in the value of the <strong>isearch-terminators</strong> variable are used to terminate an incremental search. If that variable has not been assigned a value the <em>Escape</em> and <strong>C-J</strong> characters will terminate an incremental search. <strong>C-G</strong> will abort an incremental search and restore the original line. When the search is terminated, the history entry containing the search string becomes the current line.</p>
+<p>To find other matching entries in the history list, type <strong>C-s</strong> or <strong>C-r</strong> as appropriate. This will search backward or forward in the history for the next line matching the search string typed so far. Any other key sequence bound to a readline command will terminate the search and execute that command. For instance, a newline will terminate the search and accept the line, thereby executing the command from the history list. A movement command will terminate the search, make the last line found the current line, and begin editing.</p>
+<p>Non-incremental searches read the entire search string before starting to search for matching history lines. The search string may be typed by the user or be part of the contents of the current line.</p>
+<h1>EDITING COMMANDS</h1>
+<p>The following is a list of the names of the commands and the default key sequences to which they are bound. Command names without an accompanying key sequence are unbound by default.</p>
+<p>In the following descriptions, <em>point</em> refers to the current cursor position, and <em>mark</em> refers to a cursor position saved by the <strong>set-mark</strong> command. The text between the point and mark is referred to as the <em>region</em>.</p>
+<h2>Commands for Moving</h2>
+<dl>
+<dt><strong>beginning-of-line (C-a)</strong></dt>
+<dd><p>Move to the start of the current line.</p>
+</dd>
+<dt><strong>end-of-line (C-e)</strong></dt>
+<dd><p>Move to the end of the line.</p>
+</dd>
+<dt><strong>forward-char (C-f)</strong></dt>
+<dd><p>Move forward a character.</p>
+</dd>
+<dt><strong>backward-char (C-b)</strong></dt>
+<dd><p>Move back a character.</p>
+</dd>
+<dt><strong>forward-word (M-f)</strong></dt>
+<dd><p>Move forward to the end of the next word. Words are composed of alphanumeric characters (letters and digits).</p>
+</dd>
+<dt><strong>backward-word (M-b)</strong></dt>
+<dd><p>Move back to the start of the current or previous word. Words are composed of alphanumeric characters (letters and digits).</p>
+</dd>
+<dt><strong>previous-screen-line</strong></dt>
+<dd><p>Attempt to move point to the same physical screen column on the previous physical screen line. This will not have the desired effect if the current Readline line does not take up more than one physical line or if point is not greater than the length of the prompt plus the screen width.</p>
+</dd>
+<dt><strong>next-screen-line</strong></dt>
+<dd><p>Attempt to move point to the same physical screen column on the next physical screen line. This will not have the desired effect if the current Readline line does not take up more than one physical line or if the length of the current Readline line is not greater than the length of the prompt plus the screen width.</p>
+</dd>
+<dt><strong>clear-display (M-C-l)</strong></dt>
+<dd><p>Clear the screen and, if possible, the terminal's scrollback buffer, then redraw the current line, leaving the current line at the top of the screen.</p>
+</dd>
+<dt><strong>clear-screen (C-l)</strong></dt>
+<dd><p>Clear the screen, then redraw the current line, leaving the current line at the top of the screen. With an argument, refresh the current line without clearing the screen.</p>
+</dd>
+<dt><strong>redraw-current-line</strong></dt>
+<dd><p>Refresh the current line.</p>
+</dd>
+</dl>
+<h2>Commands for Manipulating the History</h2>
+<dl>
+<dt><strong>accept-line (Newline, Return)</strong></dt>
+<dd><p>Accept the line regardless of where the cursor is. If this line is non-empty, it may be added to the history list for future recall with <strong>add_history()</strong>. If the line is a modified history line, the history line is restored to its original state.</p>
+</dd>
+<dt><strong>previous-history (C-p)</strong></dt>
+<dd><p>Fetch the previous command from the history list, moving back in the list.</p>
+</dd>
+<dt><strong>next-history (C-n)</strong></dt>
+<dd><p>Fetch the next command from the history list, moving forward in the list.</p>
+</dd>
+<dt><strong>beginning-of-history (M-&lt;)</strong></dt>
+<dd><p>Move to the first line in the history.</p>
+</dd>
+<dt><strong>end-of-history (M-&gt;)</strong></dt>
+<dd><p>Move to the end of the input history, i.e., the line currently being entered.</p>
+</dd>
+<dt><strong>reverse-search-history (C-r)</strong></dt>
+<dd><p>Search backward starting at the current line and moving `up' through the history as necessary. This is an incremental search.</p>
+</dd>
+<dt><strong>forward-search-history (C-s)</strong></dt>
+<dd><p>Search forward starting at the current line and moving `down' through the history as necessary. This is an incremental search.</p>
+</dd>
+<dt><strong>non-incremental-reverse-search-history (M-p)</strong></dt>
+<dd><p>Search backward through the history starting at the current line using a non-incremental search for a string supplied by the user.</p>
+</dd>
+<dt><strong>non-incremental-forward-search-history (M-n)</strong></dt>
+<dd><p>Search forward through the history using a non-incremental search for a string supplied by the user.</p>
+</dd>
+<dt><strong>history-search-backward</strong></dt>
+<dd><p>Search backward through the history for the string of characters between the start of the current line and the current cursor position (the <em>point</em>). The search string must match at the beginning of a history line. This is a non-incremental search.</p>
+</dd>
+<dt><strong>history-search-forward</strong></dt>
+<dd><p>Search forward through the history for the string of characters between the start of the current line and the point. The search string must match at the beginning of a history line. This is a non-incremental search.</p>
+</dd>
+<dt><strong>history-substring-search-backward</strong></dt>
+<dd><p>Search backward through the history for the string of characters between the start of the current line and the current cursor position (the <em>point</em>). The search string may match anywhere in a history line. This is a non-incremental search.</p>
+</dd>
+<dt><strong>history-substring-search-forward</strong></dt>
+<dd><p>Search forward through the history for the string of characters between the start of the current line and the point. The search string may match anywhere in a history line. This is a non-incremental search.</p>
+</dd>
+<dt><strong>yank-nth-arg (M-C-y)</strong></dt>
+<dd><p>Insert the first argument to the previous command (usually the second word on the previous line) at point. With an argument <em>n</em>, insert the <em>n</em>th word from the previous command (the words in the previous command begin with word 0). A negative argument inserts the <em>n</em>th word from the end of the previous command. Once the argument <em>n</em> is computed, the argument is extracted as if the "!<em>n</em>" history expansion had been specified.</p>
+</dd>
+<dt><strong>yank-last-arg (M-. , M-_ )</strong></dt>
+<dd><p>Insert the last argument to the previous command (the last word of the previous history entry). With a numeric argument, behave exactly like <strong>yank-nth-arg</strong>. Successive calls to <strong>yank-last-arg</strong> move back through the history list, inserting the last word (or the word specified by the argument to the first call) of each line in turn. Any numeric argument supplied to these successive calls determines the direction to move through the history. A negative argument switches the direction through the history (back or forward). The history expansion facilities are used to extract the last argument, as if the "!$" history expansion had been specified.</p>
+</dd>
+<dt><strong>operate-and-get-next (C-o)</strong></dt>
+<dd><p>Accept the current line for return to the calling application as if a newline had been entered, and fetch the next line relative to the current line from the history for editing. A numeric argument, if supplied, specifies the history entry to use instead of the current line.</p>
+</dd>
+</dl>
+<h2>Commands for Changing Text</h2>
+<dl>
+<dt><strong><em>end-of-file</em> (usually C-d)</strong></dt>
+<dd><p>The character indicating end-of-file as set, for example, by ``stty''. If this character is read when there are no characters on the line, and point is at the beginning of the line, Readline interprets it as the end of input and returns</p>
+</dd>
+</dl>
+<p><strong>EOF</strong>.</p>
+<dl>
+<dt><strong>delete-char (C-d)</strong></dt>
+<dd><p>Delete the character at point. If this function is bound to the same character as the tty <strong>EOF</strong> character, as <strong>C-d</strong> commonly is, see above for the effects.</p>
+</dd>
+<dt><strong>backward-delete-char (Rubout)</strong></dt>
+<dd><p>Delete the character behind the cursor. When given a numeric argument, save the deleted text on the kill ring.</p>
+</dd>
+<dt><strong>forward-backward-delete-char</strong></dt>
+<dd><p>Delete the character under the cursor, unless the cursor is at the end of the line, in which case the character behind the cursor is deleted.</p>
+</dd>
+<dt><strong>quoted-insert (C-q, C-v)</strong></dt>
+<dd><p>Add the next character that you type to the line verbatim. This is how to insert characters like <strong>C-q</strong>, for example.</p>
+</dd>
+<dt><strong>tab-insert (M-TAB)</strong></dt>
+<dd><p>Insert a tab character.</p>
+</dd>
+<dt><strong>self-insert (a, b, A, 1, !, ...)</strong></dt>
+<dd><p>Insert the character typed.</p>
+</dd>
+<dt><strong>transpose-chars (C-t)</strong></dt>
+<dd><p>Drag the character before point forward over the character at point, moving point forward as well. If point is at the end of the line, then this transposes the two characters before point. Negative arguments have no effect.</p>
+</dd>
+<dt><strong>transpose-words (M-t)</strong></dt>
+<dd><p>Drag the word before point past the word after point, moving point over that word as well. If point is at the end of the line, this transposes the last two words on the line.</p>
+</dd>
+<dt><strong>upcase-word (M-u)</strong></dt>
+<dd><p>Uppercase the current (or following) word. With a negative argument, uppercase the previous word, but do not move point.</p>
+</dd>
+<dt><strong>downcase-word (M-l)</strong></dt>
+<dd><p>Lowercase the current (or following) word. With a negative argument, lowercase the previous word, but do not move point.</p>
+</dd>
+<dt><strong>capitalize-word (M-c)</strong></dt>
+<dd><p>Capitalize the current (or following) word. With a negative argument, capitalize the previous word, but do not move point.</p>
+</dd>
+<dt><strong>overwrite-mode</strong></dt>
+<dd><p>Toggle overwrite mode. With an explicit positive numeric argument, switches to overwrite mode. With an explicit non-positive numeric argument, switches to insert mode. This command affects only <strong>emacs</strong> mode; <strong>vi</strong> mode does overwrite differently. Each call to <em>readline()</em> starts in insert mode. In overwrite mode, characters bound to <strong>self-insert</strong> replace the text at point rather than pushing the text to the right. Characters bound to <strong>backward-delete-char</strong> replace the character before point with a space. By default, this command is unbound.</p>
+</dd>
+</dl>
+<h2>Killing and Yanking</h2>
+<dl>
+<dt><strong>kill-line (C-k)</strong></dt>
+<dd><p>Kill the text from point to the end of the line.</p>
+</dd>
+<dt><strong>backward-kill-line (C-x Rubout)</strong></dt>
+<dd><p>Kill backward to the beginning of the line.</p>
+</dd>
+<dt><strong>unix-line-discard (C-u)</strong></dt>
+<dd><p>Kill backward from point to the beginning of the line. The killed text is saved on the kill-ring.</p>
+</dd>
+<dt><strong>kill-whole-line</strong></dt>
+<dd><p>Kill all characters on the current line, no matter where point is.</p>
+</dd>
+<dt><strong>kill-word (M-d)</strong></dt>
+<dd><p>Kill from point the end of the current word, or if between words, to the end of the next word. Word boundaries are the same as those used by <strong>forward-word</strong>.</p>
+</dd>
+<dt><strong>backward-kill-word (M-Rubout)</strong></dt>
+<dd><p>Kill the word behind point. Word boundaries are the same as those used by <strong>backward-word</strong>.</p>
+</dd>
+<dt><strong>unix-word-rubout (C-w)</strong></dt>
+<dd><p>Kill the word behind point, using white space as a word boundary. The killed text is saved on the kill-ring.</p>
+</dd>
+<dt><strong>unix-filename-rubout</strong></dt>
+<dd><p>Kill the word behind point, using white space and the slash character as the word boundaries. The killed text is saved on the kill-ring.</p>
+</dd>
+<dt><strong>delete-horizontal-space (M-\)</strong></dt>
+<dd><p>Delete all spaces and tabs around point.</p>
+</dd>
+<dt><strong>kill-region</strong></dt>
+<dd><p>Kill the text between the point and <em>mark</em> (saved cursor position). This text is referred to as the <em>region</em>.</p>
+</dd>
+<dt><strong>copy-region-as-kill</strong></dt>
+<dd><p>Copy the text in the region to the kill buffer.</p>
+</dd>
+<dt><strong>copy-backward-word</strong></dt>
+<dd><p>Copy the word before point to the kill buffer. The word boundaries are the same as <strong>backward-word</strong>.</p>
+</dd>
+<dt><strong>copy-forward-word</strong></dt>
+<dd><p>Copy the word following point to the kill buffer. The word boundaries are the same as <strong>forward-word</strong>.</p>
+</dd>
+<dt><strong>yank (C-y)</strong></dt>
+<dd><p>Yank the top of the kill ring into the buffer at point.</p>
+</dd>
+<dt><strong>yank-pop (M-y)</strong></dt>
+<dd><p>Rotate the kill ring, and yank the new top. Only works following <strong>yank</strong> or <strong>yank-pop</strong>.</p>
+</dd>
+</dl>
+<h2>Numeric Arguments</h2>
+<dl>
+<dt><strong>digit-argument (M-0, M-1, ..., M--)</strong></dt>
+<dd><p>Add this digit to the argument already accumulating, or start a new argument. M-- starts a negative argument.</p>
+</dd>
+<dt><strong>universal-argument</strong></dt>
+<dd><p>This is another way to specify an argument. If this command is followed by one or more digits, optionally with a leading minus sign, those digits define the argument. If the command is followed by digits, executing <strong>universal-argument</strong> again ends the numeric argument, but is otherwise ignored. As a special case, if this command is immediately followed by a character that is neither a digit or minus sign, the argument count for the next command is multiplied by four. The argument count is initially one, so executing this function the first time makes the argument count four, a second time makes the argument count sixteen, and so on.</p>
+</dd>
+</dl>
+<h2>Completing</h2>
+<dl>
+<dt><strong>complete (TAB)</strong></dt>
+<dd><p>Attempt to perform completion on the text before point. The actual completion performed is application-specific. <strong>Bash</strong>, for instance, attempts completion treating the text as a variable (if the text begins with <strong>$</strong>), username (if the text begins with <strong>~</strong>), hostname (if the text begins with <strong>@</strong>), or command (including aliases and functions) in turn. If none of these produces a match, filename completion is attempted. <strong>Gdb</strong>, on the other hand, allows completion of program functions and variables, and only attempts filename completion under certain circumstances.</p>
+</dd>
+<dt><strong>possible-completions (M-?)</strong></dt>
+<dd><p>List the possible completions of the text before point. When displaying completions, readline sets the number of columns used for display to the value of <strong>completion-display-width</strong>, the value of the environment variable</p>
+</dd>
+</dl>
+<p><strong>COLUMNS</strong>, or the screen width, in that order.</p>
+<dl>
+<dt><strong>insert-completions (M-*)</strong></dt>
+<dd><p>Insert all completions of the text before point that would have been generated by <strong>possible-completions</strong>.</p>
+</dd>
+<dt><strong>menu-complete</strong></dt>
+<dd><p>Similar to <strong>complete</strong>, but replaces the word to be completed with a single match from the list of possible completions. Repeated execution of <strong>menu-complete</strong> steps through the list of possible completions, inserting each match in turn. At the end of the list of completions, the bell is rung (subject to the setting of <strong>bell-style</strong>) and the original text is restored. An argument of <em>n</em> moves <em>n</em> positions forward in the list of matches; a negative argument may be used to move backward through the list. This command is intended to be bound to <strong>TAB</strong>, but is unbound by default.</p>
+</dd>
+<dt><strong>menu-complete-backward</strong></dt>
+<dd><p>Identical to <strong>menu-complete</strong>, but moves backward through the list of possible completions, as if <strong>menu-complete</strong> had been given a negative argument. This command is unbound by default.</p>
+</dd>
+<dt><strong>delete-char-or-list</strong></dt>
+<dd><p>Deletes the character under the cursor if not at the beginning or end of the line (like <strong>delete-char</strong>). If at the end of the line, behaves identically to <strong>possible-completions</strong>.</p>
+</dd>
+</dl>
+<h2>Keyboard Macros</h2>
+<dl>
+<dt><strong>start-kbd-macro (C-x ( )</strong></dt>
+<dd><p>Begin saving the characters typed into the current keyboard macro.</p>
+</dd>
+<dt><strong>end-kbd-macro (C-x ) )</strong></dt>
+<dd><p>Stop saving the characters typed into the current keyboard macro and store the definition.</p>
+</dd>
+<dt><strong>call-last-kbd-macro (C-x e)</strong></dt>
+<dd><p>Re-execute the last keyboard macro defined, by making the characters in the macro appear as if typed at the keyboard.</p>
+</dd>
+<dt><strong>print-last-kbd-macro ()</strong></dt>
+<dd><p>Print the last keyboard macro defined in a format suitable for the <em>inputrc</em> file.</p>
+</dd>
+</dl>
+<h2>Miscellaneous</h2>
+<dl>
+<dt><strong>re-read-init-file (C-x C-r)</strong></dt>
+<dd><p>Read in the contents of the <em>inputrc</em> file, and incorporate any bindings or variable assignments found there.</p>
+</dd>
+<dt><strong>abort (C-g)</strong></dt>
+<dd><p>Abort the current editing command and ring the terminal's bell (subject to the setting of <strong>bell-style</strong>).</p>
+</dd>
+<dt><strong>do-lowercase-version (M-A, M-B, M-<em>x</em>, ...)</strong></dt>
+<dd><p>If the metafied character <em>x</em> is uppercase, run the command that is bound to the corresponding metafied lowercase character. The behavior is undefined if <em>x</em> is already lowercase.</p>
+</dd>
+<dt><strong>prefix-meta (ESC)</strong></dt>
+<dd><p>Metafy the next character typed.</p>
+</dd>
+</dl>
+<p><strong>ESC</strong> <strong>f</strong> is equivalent to <strong>Meta-f</strong>.</p>
+<dl>
+<dt><strong>undo (C-_, C-x C-u)</strong></dt>
+<dd><p>Incremental undo, separately remembered for each line.</p>
+</dd>
+<dt><strong>revert-line (M-r)</strong></dt>
+<dd><p>Undo all changes made to this line. This is like executing the <strong>undo</strong> command enough times to return the line to its initial state.</p>
+</dd>
+<dt><strong>tilde-expand (M-&amp;)</strong></dt>
+<dd><p>Perform tilde expansion on the current word.</p>
+</dd>
+<dt><strong>set-mark (C-@, M-&lt;space&gt;)</strong></dt>
+<dd><p>Set the mark to the point. If a numeric argument is supplied, the mark is set to that position.</p>
+</dd>
+<dt><strong>exchange-point-and-mark (C-x C-x)</strong></dt>
+<dd><p>Swap the point with the mark. The current cursor position is set to the saved position, and the old cursor position is saved as the mark.</p>
+</dd>
+<dt><strong>character-search (C-])</strong></dt>
+<dd><p>A character is read and point is moved to the next occurrence of that character. A negative count searches for previous occurrences.</p>
+</dd>
+<dt><strong>character-search-backward (M-C-])</strong></dt>
+<dd><p>A character is read and point is moved to the previous occurrence of that character. A negative count searches for subsequent occurrences.</p>
+</dd>
+<dt><strong>skip-csi-sequence</strong></dt>
+<dd><p>Read enough characters to consume a multi-key sequence such as those defined for keys like Home and End. Such sequences begin with a Control Sequence Indicator (CSI), usually ESC-[. If this sequence is bound to "\[", keys producing such sequences will have no effect unless explicitly bound to a readline command, instead of inserting stray characters into the editing buffer. This is unbound by default, but usually bound to ESC-[.</p>
+</dd>
+<dt><strong>insert-comment (M-#)</strong></dt>
+<dd><p>Without a numeric argument, the value of the readline <strong>comment-begin</strong> variable is inserted at the beginning of the current line. If a numeric argument is supplied, this command acts as a toggle: if the characters at the beginning of the line do not match the value of <strong>comment-begin</strong>, the value is inserted, otherwise the characters in <strong>comment-begin</strong> are deleted from the beginning of the line. In either case, the line is accepted as if a newline had been typed. The default value of <strong>comment-begin</strong> makes the current line a shell comment. If a numeric argument causes the comment character to be removed, the line will be executed by the shell.</p>
+</dd>
+<dt><strong>dump-functions</strong></dt>
+<dd><p>Print all of the functions and their key bindings to the readline output stream. If a numeric argument is supplied, the output is formatted in such a way that it can be made part of an <em>inputrc</em> file.</p>
+</dd>
+<dt><strong>dump-variables</strong></dt>
+<dd><p>Print all of the settable variables and their values to the readline output stream. If a numeric argument is supplied, the output is formatted in such a way that it can be made part of an <em>inputrc</em> file.</p>
+</dd>
+<dt><strong>dump-macros</strong></dt>
+<dd><p>Print all of the readline key sequences bound to macros and the strings they output. If a numeric argument is supplied, the output is formatted in such a way that it can be made part of an <em>inputrc</em> file.</p>
+</dd>
+<dt><strong>emacs-editing-mode (C-e)</strong></dt>
+<dd><p>When in <strong>vi</strong> command mode, this causes a switch to <strong>emacs</strong> editing mode.</p>
+</dd>
+<dt><strong>vi-editing-mode (M-C-j)</strong></dt>
+<dd><p>When in <strong>emacs</strong> editing mode, this causes a switch to <strong>vi</strong> editing mode.</p>
+</dd>
+</dl>
+<h1>DEFAULT KEY BINDINGS</h1>
+<p>The following is a list of the default emacs and vi bindings. Characters with the eighth bit set are written as M-&lt;character&gt;, and are referred to as <em>metafied</em> characters. The printable ASCII characters not mentioned in the list of emacs standard bindings are bound to the <strong>self-insert</strong> function, which just inserts the given character into the input line. In vi insertion mode, all characters not specifically mentioned are bound to <strong>self-insert</strong>. Characters assigned to signal generation by <em>stty</em>(1) or the terminal driver, such as C-Z or C-C, retain that function. Upper and lower case metafied characters are bound to the same function in the emacs mode meta keymap. The remaining characters are unbound, which causes readline to ring the bell (subject to the setting of the <strong>bell-style</strong> variable).</p>
+<h2>Emacs Mode</h2>
+<blockquote>
+<pre><code>
+Emacs Standard bindings
+
+&quot;C-@&quot;  set-mark
+&quot;C-A&quot;  beginning-of-line
+&quot;C-B&quot;  backward-char
+&quot;C-D&quot;  delete-char
+&quot;C-E&quot;  end-of-line
+&quot;C-F&quot;  forward-char
+&quot;C-G&quot;  abort
+&quot;C-H&quot;  backward-delete-char
+&quot;C-I&quot;  complete
+&quot;C-J&quot;  accept-line
+&quot;C-K&quot;  kill-line
+&quot;C-L&quot;  clear-screen
+&quot;C-M&quot;  accept-line
+&quot;C-N&quot;  next-history
+&quot;C-P&quot;  previous-history
+&quot;C-Q&quot;  quoted-insert
+&quot;C-R&quot;  reverse-search-history
+&quot;C-S&quot;  forward-search-history
+&quot;C-T&quot;  transpose-chars
+&quot;C-U&quot;  unix-line-discard
+&quot;C-V&quot;  quoted-insert
+&quot;C-W&quot;  unix-word-rubout
+&quot;C-Y&quot;  yank
+&quot;C-]&quot;  character-search
+&quot;C-_&quot;  undo
+&quot;  &quot; to &quot;/&quot;  self-insert
+&quot;0&quot;  to &quot;9&quot;  self-insert
+&quot;:&quot;  to &quot;~&quot;  self-insert
+&quot;C-?&quot;  backward-delete-char
+
+Emacs Meta bindings
+
+&quot;M-C-G&quot;  abort
+&quot;M-C-H&quot;  backward-kill-word
+&quot;M-C-I&quot;  tab-insert
+&quot;M-C-J&quot;  vi-editing-mode
+&quot;M-C-L&quot;  clear-display
+&quot;M-C-M&quot;  vi-editing-mode
+&quot;M-C-R&quot;  revert-line
+&quot;M-C-Y&quot;  yank-nth-arg
+&quot;M-C-[&quot;  complete
+&quot;M-C-]&quot;  character-search-backward
+&quot;M-space&quot;  set-mark
+&quot;M-#&quot;  insert-comment
+&quot;M-&amp;&quot;  tilde-expand
+&quot;M-*&quot;  insert-completions
+&quot;M--&quot;  digit-argument
+&quot;M-.&quot;  yank-last-arg
+&quot;M-0&quot;  digit-argument
+&quot;M-1&quot;  digit-argument
+&quot;M-2&quot;  digit-argument
+&quot;M-3&quot;  digit-argument
+&quot;M-4&quot;  digit-argument
+&quot;M-5&quot;  digit-argument
+&quot;M-6&quot;  digit-argument
+&quot;M-7&quot;  digit-argument
+&quot;M-8&quot;  digit-argument
+&quot;M-9&quot;  digit-argument
+&quot;M-&lt;&quot;  beginning-of-history
+&quot;M-=&quot;  possible-completions
+&quot;M-&gt;&quot;  end-of-history
+&quot;M-?&quot;  possible-completions
+&quot;M-B&quot;  backward-word
+&quot;M-C&quot;  capitalize-word
+&quot;M-D&quot;  kill-word
+&quot;M-F&quot;  forward-word
+&quot;M-L&quot;  downcase-word
+&quot;M-N&quot;  non-incremental-forward-search-history
+&quot;M-P&quot;  non-incremental-reverse-search-history
+&quot;M-R&quot;  revert-line
+&quot;M-T&quot;  transpose-words
+&quot;M-U&quot;  upcase-word
+&quot;M-Y&quot;  yank-pop
+&quot;M-\&quot;  delete-horizontal-space
+&quot;M-~&quot;  tilde-expand
+&quot;M-C-?&quot;  backward-kill-word
+&quot;M-_&quot;  yank-last-arg
+
+Emacs Control-X bindings
+
+&quot;C-XC-G&quot;  abort
+&quot;C-XC-R&quot;  re-read-init-file
+&quot;C-XC-U&quot;  undo
+&quot;C-XC-X&quot;  exchange-point-and-mark
+&quot;C-X(&quot;  start-kbd-macro
+&quot;C-X)&quot;  end-kbd-macro
+&quot;C-XE&quot;  call-last-kbd-macro
+&quot;C-XC-?&quot;  backward-kill-line
+</code></pre>
+</blockquote>
+<h2>VI Mode bindings</h2>
+<blockquote>
+<pre><code>
+
+VI Insert Mode functions
+
+&quot;C-D&quot;  vi-eof-maybe
+&quot;C-H&quot;  backward-delete-char
+&quot;C-I&quot;  complete
+&quot;C-J&quot;  accept-line
+&quot;C-M&quot;  accept-line
+&quot;C-R&quot;  reverse-search-history
+&quot;C-S&quot;  forward-search-history
+&quot;C-T&quot;  transpose-chars
+&quot;C-U&quot;  unix-line-discard
+&quot;C-V&quot;  quoted-insert
+&quot;C-W&quot;  unix-word-rubout
+&quot;C-Y&quot;  yank
+&quot;C-[&quot;  vi-movement-mode
+&quot;C-_&quot;  undo
+&quot;  &quot; to &quot;~&quot;  self-insert
+&quot;C-?&quot;  backward-delete-char
+
+VI Command Mode functions
+
+&quot;C-D&quot;  vi-eof-maybe
+&quot;C-E&quot;  emacs-editing-mode
+&quot;C-G&quot;  abort
+&quot;C-H&quot;  backward-char
+&quot;C-J&quot;  accept-line
+&quot;C-K&quot;  kill-line
+&quot;C-L&quot;  clear-screen
+&quot;C-M&quot;  accept-line
+&quot;C-N&quot;  next-history
+&quot;C-P&quot;  previous-history
+&quot;C-Q&quot;  quoted-insert
+&quot;C-R&quot;  reverse-search-history
+&quot;C-S&quot;  forward-search-history
+&quot;C-T&quot;  transpose-chars
+&quot;C-U&quot;  unix-line-discard
+&quot;C-V&quot;  quoted-insert
+&quot;C-W&quot;  unix-word-rubout
+&quot;C-Y&quot;  yank
+&quot;C-_&quot;  vi-undo
+&quot;  &quot;  forward-char
+&quot;#&quot;  insert-comment
+&quot;$&quot;  end-of-line
+&quot;%&quot;  vi-match
+&quot;&amp;&quot;  vi-tilde-expand
+&quot;*&quot;  vi-complete
+&quot;+&quot;  next-history
+&quot;,&quot;  vi-char-search
+&quot;-&quot;  previous-history
+&quot;.&quot;  vi-redo
+&quot;/&quot;  vi-search
+&quot;0&quot;  beginning-of-line
+&quot;1&quot; to &quot;9&quot;  vi-arg-digit
+&quot;;&quot;  vi-char-search
+&quot;=&quot;  vi-complete
+&quot;?&quot;  vi-search
+&quot;A&quot;  vi-append-eol
+&quot;B&quot;  vi-prev-word
+&quot;C&quot;  vi-change-to
+&quot;D&quot;  vi-delete-to
+&quot;E&quot;  vi-end-word
+&quot;F&quot;  vi-char-search
+&quot;G&quot;  vi-fetch-history
+&quot;I&quot;  vi-insert-beg
+&quot;N&quot;  vi-search-again
+&quot;P&quot;  vi-put
+&quot;R&quot;  vi-replace
+&quot;S&quot;  vi-subst
+&quot;T&quot;  vi-char-search
+&quot;U&quot;  revert-line
+&quot;W&quot;  vi-next-word
+&quot;X&quot;  backward-delete-char
+&quot;Y&quot;  vi-yank-to
+&quot;\&quot;  vi-complete
+&quot;^&quot;  vi-first-print
+&quot;_&quot;  vi-yank-arg
+&quot;`&quot;  vi-goto-mark
+&quot;a&quot;  vi-append-mode
+&quot;b&quot;  vi-prev-word
+&quot;c&quot;  vi-change-to
+&quot;d&quot;  vi-delete-to
+&quot;e&quot;  vi-end-word
+&quot;f&quot;  vi-char-search
+&quot;h&quot;  backward-char
+&quot;i&quot;  vi-insertion-mode
+&quot;j&quot;  next-history
+&quot;k&quot;  prev-history
+&quot;l&quot;  forward-char
+&quot;m&quot;  vi-set-mark
+&quot;n&quot;  vi-search-again
+&quot;p&quot;  vi-put
+&quot;r&quot;  vi-change-char
+&quot;s&quot;  vi-subst
+&quot;t&quot;  vi-char-search
+&quot;u&quot;  vi-undo
+&quot;w&quot;  vi-next-word
+&quot;x&quot;  vi-delete
+&quot;y&quot;  vi-yank-to
+&quot;|&quot;  vi-column
+&quot;~&quot;  vi-change-case</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<dl>
+<dt><em>The Gnu Readline Library</em>, Brian Fox and Chet Ramey</dt>
+<dd>
+</dd>
+<dt><em>The Gnu History Library</em>, Brian Fox and Chet Ramey</dt>
+<dd>
+</dd>
+<dt><em>bash</em>(1)</dt>
+<dd>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em> ~/.inputrc </em></dt>
+<dd><p>Individual <strong>readline</strong> initialization file</p>
+</dd>
+</dl>
+<h1>AUTHORS</h1>
+<p>Brian Fox, Free Software Foundation<br />
+bfox@gnu.org</p>
+<p>Chet Ramey, Case Western Reserve University<br />
+chet.ramey@case.edu</p>
+<h1>BUG REPORTS</h1>
+<p>If you find a bug in <strong>readline,</strong> you should report it. But first, you should make sure that it really is a bug, and that it appears in the latest version of the <strong>readline</strong> library that you have.</p>
+<p>Once you have determined that a bug actually exists, mail a bug report to <em>bug-readline</em>@<em>gnu.org</em>. If you have a fix, you are welcome to mail that as well! Suggestions and `philosophical' bug reports may be mailed to <em>bug-readline</em>@<em>gnu.org</em> or posted to the Usenet newsgroup <strong>gnu.bash.bug</strong>.</p>
+<p>Comments and bug reports concerning this manual page should be directed to <em>chet.ramey@case.edu</em>.</p>
+<h1>BUGS</h1>
+<p>It's too big and too slow.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

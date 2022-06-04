@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pthread_getaffinity_np</title><meta name="description" content="Linux command pthread_getaffinity_np set/get CPU affinity of a thread"><meta name="keywords" content="linux, command, pthread_getaffinity_np, bsd, set/get CPU affinity of a thread"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pthread_setaffinity_np, pthread_getaffinity_np - set/get CPU affinity of a thread</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;pthread.h&gt;
+
+int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize,
+ const cpu_set_t *cpuset);
+int pthread_getaffinity_np(pthread_t thread, size_t cpusetsize,
+ cpu_set_t *cpuset);
+
+Compile and link with -pthread.</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>pthread_setaffinity_np</strong>() function sets the CPU affinity mask of the thread <em>thread</em> to the CPU set pointed to by <em>cpuset</em>. If the call is successful, and the thread is not currently running on one of the CPUs in <em>cpuset</em>, then it is migrated to one of those CPUs.</p>
+<p>The <strong>pthread_getaffinity_np</strong>() function returns the CPU affinity mask of the thread <em>thread</em> in the buffer pointed to by <em>cpuset</em>.</p>
+<p>For more details on CPU affinity masks, see <strong>sched_setaffinity</strong>(2). For a description of a set of macros that can be used to manipulate and inspect CPU sets, see <strong>CPU_SET</strong>(3).</p>
+<p>The argument <em>cpusetsize</em> is the length (in bytes) of the buffer pointed to by <em>cpuset</em>. Typically, this argument would be specified as <em>sizeof(cpu_set_t)</em>. (It may be some other value, if using the macros described in <strong>CPU_SET</strong>(3) for dynamically allocating a CPU set.)</p>
+<h1>RETURN VALUE</h1>
+<p>On success, these functions return 0; on error, they return a nonzero error number.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>A supplied memory address was invalid.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(<strong>pthread_setaffinity_np</strong>()) The affinity bit mask <em>mask</em> contains no processors that are currently physically on the system and permitted to the thread according to any restrictions that may be imposed by the "cpuset" mechanism described in <strong>cpuset</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(<strong>pthread_setaffinity_np</strong>()) <em>cpuset</em> specified a CPU that was outside the set supported by the kernel. (The kernel configuration option <strong>CONFIG_NR_CPUS</strong> defines the range of the set supported by the kernel data type used to represent CPU sets.)</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(<strong>pthread_getaffinity_np</strong>()) <em>cpusetsize</em> is smaller than the size of the affinity mask used by the kernel.</p>
+</dd>
+<dt><strong>ESRCH</strong></dt>
+<dd><p>No thread with the ID <em>thread</em> could be found.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>These functions are provided by glibc since version 2.3.4.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>pthread_setaffinity_np</strong>(), <strong>pthread_getaffinity_np</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>These functions are nonstandard GNU extensions; hence the suffix "_np" (nonportable) in the names.</p>
+<h1>NOTES</h1>
+<p>After a call to <strong>pthread_setaffinity_np</strong>(), the set of CPUs on which the thread will actually run is the intersection of the set specified in the <em>cpuset</em> argument and the set of CPUs actually present on the system. The system may further restrict the set of CPUs on which the thread runs if the "cpuset" mechanism described in <strong>cpuset</strong>(7) is being used. These restrictions on the actual set of CPUs on which the thread will run are silently imposed by the kernel.</p>
+<p>These functions are implemented on top of the <strong>sched_setaffinity</strong>(2) and <strong>sched_getaffinity</strong>(2) system calls.</p>
+<p>In glibc 2.3.3 only, versions of these functions were provided that did not have a <em>cpusetsize</em> argument. Instead the CPU set size given to the underlying system calls was always <em>sizeof(cpu_set_t)</em>.</p>
+<p>A new thread created by <strong>pthread_create</strong>(3) inherits a copy of its creator's CPU affinity mask.</p>
+<h1>EXAMPLES</h1>
+<p>In the following program, the main thread uses <strong>pthread_setaffinity_np</strong>() to set its CPU affinity mask to include CPUs 0 to 7 (which may not all be available on the system), and then calls <strong>pthread_getaffinity_np</strong>() to check the resulting CPU affinity mask of the thread.</p>
+<pre><code>#define _GNU_SOURCE
+#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;errno.h&gt;
+
+#define handle_error_en(en, msg) \
+        do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+
+int
+main(int argc, char *argv[])
+{
+    int s;
+    cpu_set_t cpuset;
+    pthread_t thread;
+
+    thread = pthread_self();
+
+    /* Set affinity mask to include CPUs 0 to 7 */
+
+    CPU_ZERO(&amp;cpuset);
+    for (int j = 0; j &lt; 8; j++)
+        CPU_SET(j, &amp;cpuset);
+
+    s = pthread_setaffinity_np(thread, sizeof(cpuset), &amp;cpuset);
+    if (s != 0)
+        handle_error_en(s, &quot;pthread_setaffinity_np&quot;);
+
+    /* Check the actual affinity mask assigned to the thread */
+
+    s = pthread_getaffinity_np(thread, sizeof(cpuset), &amp;cpuset);
+    if (s != 0)
+        handle_error_en(s, &quot;pthread_getaffinity_np&quot;);
+
+    printf(&quot;Set returned by pthread_getaffinity_np() contained:\n&quot;);
+    for (int j = 0; j &lt; CPU_SETSIZE; j++)
+        if (CPU_ISSET(j, &amp;cpuset))
+            printf(&quot;    CPU %d\n&quot;, j);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>sched_setaffinity</strong>(2), <strong>CPU_SET</strong>(3), <strong>pthread_attr_setaffinity_np</strong>(3), <strong>pthread_self</strong>(3), <strong>sched_getcpu</strong>(3), <strong>cpuset</strong>(7), <strong>pthreads</strong>(7), <strong>sched</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

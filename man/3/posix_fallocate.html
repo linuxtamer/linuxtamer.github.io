@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command posix_fallocate</title><meta name="description" content="Linux command posix_fallocate allocate file space"><meta name="keywords" content="linux, command, posix_fallocate, bsd, allocate file space"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>posix_fallocate - allocate file space</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;fcntl.h&gt;
+
+int posix_fallocate(int fd, off_t offset, off_t len);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>posix_fallocate</strong>():</p>
+<blockquote>
+<p>_POSIX_C_SOURCE &gt;= 200112L</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>The function <strong>posix_fallocate</strong>() ensures that disk space is allocated for the file referred to by the file descriptor <em>fd</em> for the bytes in the range starting at <em>offset</em> and continuing for <em>len</em> bytes. After a successful call to <strong>posix_fallocate</strong>(), subsequent writes to bytes in the specified range are guaranteed not to fail because of lack of disk space.</p>
+<p>If the size of the file is less than <em>offset</em>+<em>len</em>, then the file is increased to this size; otherwise the file size is left unchanged.</p>
+<h1>RETURN VALUE</h1>
+<p><strong>posix_fallocate</strong>() returns zero on success, or an error number on failure. Note that <em>errno</em> is not set.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not a valid file descriptor, or is not opened for writing.</p>
+</dd>
+<dt><strong>EFBIG</strong></dt>
+<dd><p><em>offset+len</em> exceeds the maximum file size.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>A signal was caught during execution.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>offset</em> was less than 0, or <em>len</em> was less than or equal to 0, or the underlying filesystem does not support the operation.</p>
+</dd>
+<dt><strong>ENODEV</strong></dt>
+<dd><p><em>fd</em> does not refer to a regular file.</p>
+</dd>
+<dt><strong>ENOSPC</strong></dt>
+<dd><p>There is not enough space left on the device containing the file referred to by <em>fd</em>.</p>
+</dd>
+<dt><strong>EOPNOTSUPP</strong></dt>
+<dd><p>The filesystem containing the file referred to by <em>fd</em> does not support this operation. This error code can be returned by C libraries that don't perform the emulation shown in NOTES, such as musl libc.</p>
+</dd>
+<dt><strong>ESPIPE</strong></dt>
+<dd><p><em>fd</em> refers to a pipe.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>posix_fallocate</strong>() is available since glibc 2.1.94.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>posix_fallocate</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe (but see NOTES)</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001.</p>
+<p>POSIX.1-2008 says that an implementation <em>shall</em> give the <strong>EINVAL</strong> error if <em>len</em> was 0, or <em>offset</em> was less than 0. POSIX.1-2001 says that an implementation <em>shall</em> give the <strong>EINVAL</strong> error if <em>len</em> is less than 0, or <em>offset</em> was less than 0, and <em>may</em> give the error if <em>len</em> equals zero.</p>
+<h1>NOTES</h1>
+<p>In the glibc implementation, <strong>posix_fallocate</strong>() is implemented using the <strong>fallocate</strong>(2) system call, which is MT-safe. If the underlying filesystem does not support <strong>fallocate</strong>(2), then the operation is emulated with the following caveats:</p>
+<ul>
+<li><p>The emulation is inefficient.</p></li>
+<li><p>There is a race condition where concurrent writes from another thread or process could be overwritten with null bytes.</p></li>
+<li><p>There is a race condition where concurrent file size increases by another thread or process could result in a file whose size is smaller than expected.</p></li>
+<li><p>If <em>fd</em> has been opened with the <strong>O_APPEND</strong> or <strong>O_WRONLY</strong> flags, the function fails with the error <strong>EBADF</strong>.</p></li>
+</ul>
+<p>In general, the emulation is not MT-safe. On Linux, applications may use <strong>fallocate</strong>(2) if they cannot tolerate the emulation caveats. In general, this is only recommended if the application plans to terminate the operation if <strong>EOPNOTSUPP</strong> is returned, otherwise the application itself will need to implement a fallback with all the same problems as the emulation provided by glibc.</p>
+<h1>SEE ALSO</h1>
+<p><strong>fallocate</strong>(1), <strong>fallocate</strong>(2), <strong>lseek</strong>(2), <strong>posix_fadvise</strong>(2)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

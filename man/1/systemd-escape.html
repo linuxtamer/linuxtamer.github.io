@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-escape</title><meta name="description" content="Linux command systemd-escape Escape strings for usage in systemd unit names"><meta name="keywords" content="linux, command, systemd-escape, bsd, Escape strings for usage in systemd unit names"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-escape - Escape strings for usage in systemd unit names</p>
+<h1>SYNOPSIS</h1>
+<p><strong>systemd-escape</strong> [OPTIONS...] [STRING...]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>systemd-escape</strong> may be used to escape strings for inclusion in systemd unit names. The command may be used to escape and to undo escaping of strings.</p>
+<p>The command takes any number of strings on the command line, and will process them individually, one after another. It will output them separated by spaces to stdout.</p>
+<p>By default, this command will escape the strings passed, unless <strong>--unescape</strong> is passed which results in the inverse operation being applied. If <strong>--mangle</strong> is given, a special mode of escaping is applied instead, which assumes the string is already escaped but will escape everything that appears obviously non-escaped.</p>
+<p>For details on the escaping and unescaping algorithms see the relevant section in <strong>systemd.unit</strong>(5).</p>
+<h1>OPTIONS</h1>
+<p>The following options are understood:</p>
+<p><strong>--suffix=</strong></p>
+<blockquote>
+<p>Appends the specified unit type suffix to the escaped string. Takes one of the unit types supported by systemd, such as "service" or "mount". May not be used in conjunction with <strong>--template=</strong>, <strong>--unescape</strong> or <strong>--mangle</strong>.</p>
+</blockquote>
+<p><strong>--template=</strong></p>
+<blockquote>
+<p>Inserts the escaped strings in a unit name template. Takes a unit name template such as foobar@.service. With <strong>--unescape</strong>, expects instantiated unit names for this template and extracts and unescapes just the instance part. May not be used in conjunction with <strong>--suffix=</strong>, <strong>--instance</strong> or <strong>--mangle</strong>.</p>
+</blockquote>
+<p><strong>--path</strong>, <strong>-p</strong></p>
+<blockquote>
+<p>When escaping or unescaping a string, assume it refers to a file system path. This eliminates leading, trailing or duplicate "/" characters and rejects "." and ".." path components. This is particularly useful for generating strings suitable for unescaping with the "%f" specifier in unit files, see <strong>systemd.unit</strong>(5).</p>
+</blockquote>
+<p><strong>--unescape</strong>, <strong>-u</strong></p>
+<blockquote>
+<p>Instead of escaping the specified strings, undo the escaping, reversing the operation. May not be used in conjunction with <strong>--suffix=</strong> or <strong>--mangle</strong>.</p>
+</blockquote>
+<p><strong>--mangle</strong>, <strong>-m</strong></p>
+<blockquote>
+<p>Like <strong>--escape</strong>, but only escape characters that are obviously not escaped yet, and possibly automatically append an appropriate unit type suffix to the string. May not be used in conjunction with <strong>--suffix=</strong>, <strong>--template=</strong> or <strong>--unescape</strong>.</p>
+</blockquote>
+<p><strong>--instance</strong></p>
+<blockquote>
+<p>With <strong>--unescape</strong>, unescape and print only the instance part of an instantiated unit name template. Results in an error for an uninstantiated template like ssh@.service or a non-template name like ssh.service. Must be used in conjunction with <strong>--unescape</strong> and may not be used in conjunction with <strong>--template</strong>.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>To escape a single string:</p>
+<blockquote>
+<pre><code>$ systemd-escape Hallöchen, Meister
+Hall\xc3\xb6chen\x2c\x20Meister</code></pre>
+</blockquote>
+<p>To undo escaping on a single string:</p>
+<blockquote>
+<pre><code>$ systemd-escape -u Hall\xc3\xb6chen\x2c\x20Meister
+Hallöchen, Meister</code></pre>
+</blockquote>
+<p>To generate the mount unit for a path:</p>
+<blockquote>
+<pre><code>$ systemd-escape -p --suffix=mount &quot;/tmp//waldi/foobar/&quot;
+tmp-waldi-foobar.mount</code></pre>
+</blockquote>
+<p>To generate instance names of three strings:</p>
+<blockquote>
+<pre><code>$ systemd-escape --template=systemd-nspawn@.service My Container 1 containerb container/III
+systemd-nspawn@My\x20Container\x201.service systemd-nspawn@containerb.service systemd-nspawn@container-III.service</code></pre>
+</blockquote>
+<p>To extract the instance part of an instantiated unit:</p>
+<blockquote>
+<pre><code>$ systemd-escape -u --instance systemd-nspawn@My\x20Container\x201.service
+My Container 1</code></pre>
+</blockquote>
+<p>To extract the instance part of an instance of a particular template:</p>
+<blockquote>
+<pre><code>$ systemd-escape -u --template=systemd-nspawn@.service systemd-nspawn@My\x20Container\x201.service
+My Container 1</code></pre>
+</blockquote>
+<h1>EXIT STATUS</h1>
+<p>On success, 0 is returned, a non-zero failure code otherwise.</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemd.unit</strong>(5), <strong>systemctl</strong>(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command iconv</title><meta name="description" content="Linux command iconv perform character set conversion"><meta name="keywords" content="linux, command, iconv, bsd, perform character set conversion"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>iconv - perform character set conversion</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;iconv.h&gt;
+
+size_t iconv(iconv_t cd,
+ char **inbuf, size_t *inbytesleft,
+ char **outbuf, size_t *outbytesleft);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>iconv</strong>() function converts a sequence of characters in one character encoding to a sequence of characters in another character encoding. The <em>cd</em> argument is a conversion descriptor, previously created by a call to <strong>iconv_open</strong>(3); the conversion descriptor defines the character encodings that <strong>iconv</strong>() uses for the conversion. The <em>inbuf</em> argument is the address of a variable that points to the first character of the input sequence; <em>inbytesleft</em> indicates the number of bytes in that buffer. The <em>outbuf</em> argument is the address of a variable that points to the first byte available in the output buffer; <em>outbytesleft</em> indicates the number of bytes available in the output buffer.</p>
+<p>The main case is when <em>inbuf</em> is not NULL and <em>*inbuf</em> is not NULL. In this case, the <strong>iconv</strong>() function converts the multibyte sequence starting at <em>*inbuf</em> to a multibyte sequence starting at <em>*outbuf</em>. At most <em>*inbytesleft</em> bytes, starting at <em>*inbuf</em>, will be read. At most <em>*outbytesleft</em> bytes, starting at <em>*outbuf</em>, will be written.</p>
+<p>The <strong>iconv</strong>() function converts one multibyte character at a time, and for each character conversion it increments <em>*inbuf</em> and decrements <em>*inbytesleft</em> by the number of converted input bytes, it increments <em>*outbuf</em> and decrements <em>*outbytesleft</em> by the number of converted output bytes, and it updates the conversion state contained in <em>cd</em>. If the character encoding of the input is stateful, the <strong>iconv</strong>() function can also convert a sequence of input bytes to an update to the conversion state without producing any output bytes; such input is called a <em>shift sequence</em>. The conversion can stop for four reasons:</p>
+<ol type="1">
+<li><p>An invalid multibyte sequence is encountered in the input. In this case, it sets <em>errno</em> to <strong>EILSEQ</strong> and returns <em>(size_t) -1</em>. <em>*inbuf</em> is left pointing to the beginning of the invalid multibyte sequence.</p></li>
+<li><p>The input byte sequence has been entirely converted, that is, <em>*inbytesleft</em> has gone down to 0. In this case, <strong>iconv</strong>() returns the number of nonreversible conversions performed during this call.</p></li>
+<li><p>An incomplete multibyte sequence is encountered in the input, and the input byte sequence terminates after it. In this case, it sets <em>errno</em> to <strong>EINVAL</strong> and returns <em>(size_t) -1</em>. <em>*inbuf</em> is left pointing to the beginning of the incomplete multibyte sequence.</p></li>
+<li><p>The output buffer has no more room for the next converted character. In this case, it sets <em>errno</em> to <strong>E2BIG</strong> and returns <em>(size_t) -1</em>.</p></li>
+</ol>
+<p>A different case is when <em>inbuf</em> is NULL or <em>*inbuf</em> is NULL, but <em>outbuf</em> is not NULL and <em>*outbuf</em> is not NULL. In this case, the <strong>iconv</strong>() function attempts to set <em>cd</em>'s conversion state to the initial state and store a corresponding shift sequence at <em>*outbuf</em>. At most <em>*outbytesleft</em> bytes, starting at <em>*outbuf</em>, will be written. If the output buffer has no more room for this reset sequence, it sets <em>errno</em> to <strong>E2BIG</strong> and returns <em>(size_t) -1</em>. Otherwise, it increments <em>*outbuf</em> and decrements <em>*outbytesleft</em> by the number of bytes written.</p>
+<p>A third case is when <em>inbuf</em> is NULL or <em>*inbuf</em> is NULL, and <em>outbuf</em> is NULL or <em>*outbuf</em> is NULL. In this case, the <strong>iconv</strong>() function sets <em>cd</em>'s conversion state to the initial state.</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>iconv</strong>() function returns the number of characters converted in a nonreversible way during this call; reversible conversions are not counted. In case of error, it sets <em>errno</em> and returns <em>(size_t) -1</em>.</p>
+<h1>ERRORS</h1>
+<p>The following errors can occur, among others:</p>
+<dl>
+<dt><strong>E2BIG</strong></dt>
+<dd><p>There is not sufficient room at <em>*outbuf</em>.</p>
+</dd>
+<dt><strong>EILSEQ</strong></dt>
+<dd><p>An invalid multibyte sequence has been encountered in the input.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>An incomplete multibyte sequence has been encountered in the input.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>This function is available in glibc since version 2.1.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>iconv</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe race:cd</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>iconv</strong>() function is MT-Safe, as long as callers arrange for mutual exclusion on the <em>cd</em> argument.</p>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>In each series of calls to <strong>iconv</strong>(), the last should be one with <em>inbuf</em> or <em>*inbuf</em> equal to NULL, in order to flush out any partially converted input.</p>
+<p>Although <em>inbuf</em> and <em>outbuf</em> are typed as <em>char **</em>, this does not mean that the objects they point can be interpreted as C strings or as arrays of characters: the interpretation of character byte sequences is handled internally by the conversion functions. In some encodings, a zero byte may be a valid part of a multibyte character.</p>
+<p>The caller of <strong>iconv</strong>() must ensure that the pointers passed to the function are suitable for accessing characters in the appropriate character set. This includes ensuring correct alignment on platforms that have tight restrictions on alignment.</p>
+<h1>SEE ALSO</h1>
+<p><strong>iconv_close</strong>(3), <strong>iconv_open</strong>(3), <strong>iconvconfig</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

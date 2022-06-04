@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command delete_module</title><meta name="description" content="Linux command delete_module unload a kernel module"><meta name="keywords" content="linux, command, delete_module, bsd, unload a kernel module"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>delete_module - unload a kernel module</p>
+<h1>SYNOPSIS</h1>
+<pre><code>int delete_module(const char *name, int flags);</code></pre>
+<p><em>Note</em>: No declaration of this system call is provided in glibc headers; see NOTES.</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>delete_module</strong>() system call attempts to remove the unused loadable module entry identified by <em>name</em>. If the module has an <em>exit</em> function, then that function is executed before unloading the module. The <em>flags</em> argument is used to modify the behavior of the system call, as described below. This system call requires privilege.</p>
+<p>Module removal is attempted according to the following rules:</p>
+<ol type="1">
+<li><p>If there are other loaded modules that depend on (i.e., refer to symbols defined in) this module, then the call fails.</p></li>
+<li><p>Otherwise, if the reference count for the module (i.e., the number of processes currently using the module) is zero, then the module is immediately unloaded.</p></li>
+<li><p>If a module has a nonzero reference count, then the behavior depends on the bits set in <em>flags</em>. In normal usage (see NOTES), the <strong>O_NONBLOCK</strong> flag is always specified, and the <strong>O_TRUNC</strong> flag may additionally be specified.</p>
+<p>The various combinations for <em>flags</em> have the following effect:</p>
+<dl>
+<dt><strong>flags == O_NONBLOCK</strong></dt>
+<dd><p>The call returns immediately, with an error.</p>
+</dd>
+<dt><strong>flags == (O_NONBLOCK | O_TRUNC)</strong></dt>
+<dd><p>The module is unloaded immediately, regardless of whether it has a nonzero reference count.</p>
+</dd>
+<dt><strong>(flags &amp; O_NONBLOCK) == 0</strong></dt>
+<dd><p>If <em>flags</em> does not specify <strong>O_NONBLOCK</strong>, the following steps occur:</p>
+<ul>
+<li><p>The module is marked so that no new references are permitted.</p></li>
+<li><p>If the module's reference count is nonzero, the caller is placed in an uninterruptible sleep state (<strong>TASK_UNINTERRUPTIBLE</strong>) until the reference count is zero, at which point the call unblocks.</p></li>
+<li><p>The module is unloaded in the usual way.</p></li>
+</ul>
+</dd>
+</dl></li>
+</ol>
+<p>The <strong>O_TRUNC</strong> flag has one further effect on the rules described above. By default, if a module has an <em>init</em> function but no <em>exit</em> function, then an attempt to remove the module fails. However, if <strong>O_TRUNC</strong> was specified, this requirement is bypassed.</p>
+<p>Using the <strong>O_TRUNC</strong> flag is dangerous! If the kernel was not built with <strong>CONFIG_MODULE_FORCE_UNLOAD</strong>, this flag is silently ignored. (Normally, <strong>CONFIG_MODULE_FORCE_UNLOAD</strong> is enabled.) Using this flag taints the kernel (TAINT_FORCED_RMMOD).</p>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBUSY</strong></dt>
+<dd><p>The module is not "live" (i.e., it is still being initialized or is already marked for removal); or, the module has an <em>init</em> function but has no <em>exit</em> function, and <strong>O_TRUNC</strong> was not specified in <em>flags</em>.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>name</em> refers to a location outside the process's accessible address space.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>No module by that name exists.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The caller was not privileged (did not have the <strong>CAP_SYS_MODULE</strong> capability), or module unloading is disabled (see <em>/proc/sys/kernel/modules_disabled</em> in <strong>proc</strong>(5)).</p>
+</dd>
+<dt><strong>EWOULDBLOCK</strong></dt>
+<dd><p>Other modules depend on this module; or, <strong>O_NONBLOCK</strong> was specified in <em>flags</em>, but the reference count of this module is nonzero and <strong>O_TRUNC</strong> was not specified in <em>flags</em>.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p><strong>delete_module</strong>() is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>The <strong>delete_module</strong>() system call is not supported by glibc. No declaration is provided in glibc headers, but, through a quirk of history, glibc versions before 2.23 did export an ABI for this system call. Therefore, in order to employ this system call, it is (before glibc 2.23) sufficient to manually declare the interface in your code; alternatively, you can invoke the system call using <strong>syscall</strong>(2).</p>
+<p>The uninterruptible sleep that may occur if <strong>O_NONBLOCK</strong> is omitted from <em>flags</em> is considered undesirable, because the sleeping process is left in an unkillable state. As at Linux 3.7, specifying <strong>O_NONBLOCK</strong> is optional, but in future kernels it is likely to become mandatory.</p>
+<h2>Linux 2.4 and earlier</h2>
+<p>In Linux 2.4 and earlier, the system call took only one argument:</p>
+<p><strong> int delete_module(const char *</strong><em>name</em><strong>);</strong></p>
+<p>If <em>name</em> is NULL, all unused modules marked auto-clean are removed.</p>
+<p>Some further details of differences in the behavior of <strong>delete_module</strong>() in Linux 2.4 and earlier are <em>not</em> currently explained in this manual page.</p>
+<h1>SEE ALSO</h1>
+<p><strong>create_module</strong>(2), <strong>init_module</strong>(2), <strong>query_module</strong>(2), <strong>lsmod</strong>(8), <strong>modprobe</strong>(8), <strong>rmmod</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

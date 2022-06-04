@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-socket-proxyd</title><meta name="description" content="Linux command systemd-socket-proxyd Bidirectionally proxy local sockets to another (possibly remote) socket"><meta name="keywords" content="linux, command, systemd-socket-proxyd, bsd, Bidirectionally proxy local sockets to another (possibly remote) socket"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-socket-proxyd - Bidirectionally proxy local sockets to another (possibly remote) socket</p>
+<h1>SYNOPSIS</h1>
+<p><strong>systemd-socket-proxyd</strong> [<em>OPTIONS</em>...] <em>HOST</em>:<em>PORT</em></p>
+<p><strong>systemd-socket-proxyd</strong> [<em>OPTIONS</em>...] <em>UNIX-DOMAIN-SOCKET-PATH</em></p>
+<h1>DESCRIPTION</h1>
+<p><strong>systemd-socket-proxyd</strong> is a generic socket-activated network socket forwarder proxy daemon for IPv4, IPv6 and UNIX stream sockets. It may be used to bi-directionally forward traffic from a local listening socket to a local or remote destination socket.</p>
+<p>One use of this tool is to provide socket activation support for services that do not natively support socket activation. On behalf of the service to activate, the proxy inherits the socket from systemd, accepts each client connection, opens a connection to a configured server for each client, and then bidirectionally forwards data between the two.</p>
+<p>This utilitys behavior is similar to <strong>socat</strong>(1). The main differences for <strong>systemd-socket-proxyd</strong> are support for socket activation with "Accept=no" and an event-driven design that scales better with the number of connections.</p>
+<h1>OPTIONS</h1>
+<p>The following options are understood:</p>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<p><strong>--connections-max=</strong>, <strong>-c</strong></p>
+<blockquote>
+<p>Sets the maximum number of simultaneous connections, defaults to 256. If the limit of concurrent connections is reached further connections will be refused.</p>
+</blockquote>
+<p><strong>--exit-idle-time=</strong></p>
+<blockquote>
+<p>Sets the time before exiting when there are no connections, defaults to <strong>infinity</strong>. Takes a unit-less value in seconds, or a time span value such as "5min 20s".</p>
+</blockquote>
+<h1>EXIT STATUS</h1>
+<p>On success, 0 is returned, a non-zero failure code otherwise.</p>
+<h1>EXAMPLES</h1>
+<h2>Simple Example</h2>
+<p>Use two services with a dependency and no namespace isolation.</p>
+<p><strong>Example 1. proxy-to-nginx.socket</strong></p>
+<blockquote>
+<pre><code>[Socket]
+ListenStream=80
+
+[Install]
+WantedBy=sockets.target</code></pre>
+</blockquote>
+<p><strong>Example 2. proxy-to-nginx.service</strong></p>
+<blockquote>
+<pre><code>[Unit]
+Requires=nginx.service
+After=nginx.service
+Requires=proxy-to-nginx.socket
+After=proxy-to-nginx.socket
+
+[Service]
+ExecStart=/lib/systemd/systemd-socket-proxyd /run/nginx/socket
+PrivateTmp=yes
+PrivateNetwork=yes</code></pre>
+</blockquote>
+<p><strong>Example 3. nginx.conf</strong></p>
+<blockquote>
+<pre><code>[...]
+server {
+    listen       unix:/run/nginx/socket;
+    [...]</code></pre>
+</blockquote>
+<p><strong>Example 4. Enabling the proxy</strong></p>
+<blockquote>
+<pre><code># systemctl enable --now proxy-to-nginx.socket
+$ curl http://localhost:80/</code></pre>
+</blockquote>
+<p>If nginx.service has <em>StopWhenUnneeded=</em> set, then passing <strong>--exit-idle-time=</strong> to <strong>systemd-socket-proxyd</strong> allows both services to stop during idle periods.</p>
+<h2>Namespace Example</h2>
+<p>Similar as above, but runs the socket proxy and the main service in the same private namespace, assuming that nginx.service has <em>PrivateTmp=</em> and <em>PrivateNetwork=</em> set, too.</p>
+<p><strong>Example 5. proxy-to-nginx.socket</strong></p>
+<blockquote>
+<pre><code>[Socket]
+ListenStream=80
+
+[Install]
+WantedBy=sockets.target</code></pre>
+</blockquote>
+<p><strong>Example 6. proxy-to-nginx.service</strong></p>
+<blockquote>
+<pre><code>[Unit]
+Requires=nginx.service
+After=nginx.service
+Requires=proxy-to-nginx.socket
+After=proxy-to-nginx.socket
+JoinsNamespaceOf=nginx.service
+
+[Service]
+ExecStart=/lib/systemd/systemd-socket-proxyd 127.0.0.1:8080
+PrivateTmp=yes
+PrivateNetwork=yes</code></pre>
+</blockquote>
+<p><strong>Example 7. nginx.conf</strong></p>
+<blockquote>
+<pre><code>[...]
+server {
+    listen       8080;
+    [...]</code></pre>
+</blockquote>
+<p><strong>Example 8. Enabling the proxy</strong></p>
+<blockquote>
+<pre><code># systemctl enable --now proxy-to-nginx.socket
+$ curl http://localhost:80/</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemd.socket</strong>(5), <strong>systemd.service</strong>(5), <strong>systemctl</strong>(1), <strong>socat</strong>(1), <strong>nginx</strong>(1), <strong>curl</strong>(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

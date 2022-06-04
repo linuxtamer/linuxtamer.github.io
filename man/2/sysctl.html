@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sysctl</title><meta name="description" content="Linux command sysctl read/write system parameters"><meta name="keywords" content="linux, command, sysctl, bsd, read/write system parameters"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sysctl - read/write system parameters</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;linux/sysctl.h&gt;
+
+int _sysctl(struct __sysctl_args *args);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>This system call no longer exists on current kernels!</strong> See NOTES.</p>
+<p>The <strong>_sysctl</strong>() call reads and/or writes kernel parameters. For example, the hostname, or the maximum number of open files. The argument has the form</p>
+<pre><code>struct __sysctl_args {
+    int    *name;    /* integer vector describing variable */
+    int     nlen;    /* length of this vector */
+    void   *oldval;  /* 0 or address where to store old value */
+    size_t *oldlenp; /* available room for old value,
+                        overwritten by actual size of old value */
+    void   *newval;  /* 0 or address of new value */
+    size_t  newlen;  /* size of new value */
+};</code></pre>
+<p>This call does a search in a tree structure, possibly resembling a directory tree under <em>/proc/sys</em>, and if the requested item is found calls some appropriate routine to read or modify the value.</p>
+<h1>RETURN VALUE</h1>
+<p>Upon successful completion, <strong>_sysctl</strong>() returns 0. Otherwise, a value of -1 is returned and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong>, <strong>EPERM</strong></dt>
+<dd><p>No search permission for one of the encountered "directories", or no read permission where <em>oldval</em> was nonzero, or no write permission where <em>newval</em> was nonzero.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>The invocation asked for the previous value by setting <em>oldval</em> non-NULL, but allowed zero room in <em>oldlenp</em>.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p><em>name</em> was not found.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>This system call first appeared in Linux 1.3.57. It was removed in Linux 5.5; glibc support was removed in version 2.32.</p>
+<h1>CONFORMING TO</h1>
+<p>This call is Linux-specific, and should not be used in programs intended to be portable. It originated in 4.4BSD. Only Linux has the <em>/proc/sys</em> mirror, and the object naming schemes differ between Linux and 4.4BSD, but the declaration of the <strong>sysctl</strong>() function is the same in both.</p>
+<h1>NOTES</h1>
+<p>Use of this system call was long discouraged: since Linux 2.6.24, uses of this system call result in warnings in the kernel log, and in Linux 5.5, the system call was finally removed. Use the <em>/proc/sys</em> interface instead.</p>
+<p>Note that on older kernels where this system call still exists, it is available only if the kernel was configured with the <strong>CONFIG_SYSCTL_SYSCALL</strong> option. Furthermore, glibc does not provide a wrapper for this system call, necessitating the use of <strong>syscall</strong>(2).</p>
+<h1>BUGS</h1>
+<p>The object names vary between kernel versions, making this system call worthless for applications.</p>
+<p>Not all available objects are properly documented.</p>
+<p>It is not yet possible to change operating system by writing to <em>/proc/sys/kernel/ostype</em>.</p>
+<h1>EXAMPLES</h1>
+<pre><code>#define _GNU_SOURCE
+#include &lt;unistd.h&gt;
+#include &lt;sys/syscall.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;linux/sysctl.h&gt;
+
+int _sysctl(struct __sysctl_args *args );
+
+#define OSNAMESZ 100
+
+int
+main(void)
+{
+    struct __sysctl_args args;
+    char osname[OSNAMESZ];
+    size_t osnamelth;
+    int name[] = { CTL_KERN, KERN_OSTYPE };
+
+    memset(&amp;args, 0, sizeof(args));
+    args.name = name;
+    args.nlen = sizeof(name)/sizeof(name[0]);
+    args.oldval = osname;
+    args.oldlenp = &amp;osnamelth;
+
+    osnamelth = sizeof(osname);
+
+    if (syscall(SYS__sysctl, &amp;args) == -1) {
+        perror(&quot;_sysctl&quot;);
+        exit(EXIT_FAILURE);
+    }
+    printf(&quot;This machine is running %*s\n&quot;, osnamelth, osname);
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>proc</strong>(5)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

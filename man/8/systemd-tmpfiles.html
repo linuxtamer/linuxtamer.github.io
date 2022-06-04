@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-tmpfiles</title><meta name="description" content="Linux command systemd-tmpfiles Creates, deletes and cleans up volatile and temporary files and directories"><meta name="keywords" content="linux, command, systemd-tmpfiles, bsd, Creates, deletes and cleans up volatile and temporary files and directories"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-tmpfiles, systemd-tmpfiles-setup.service, systemd-tmpfiles-setup-dev.service, systemd-tmpfiles-clean.service, systemd-tmpfiles-clean.timer - Creates, deletes and cleans up volatile and temporary files and directories</p>
+<h1>SYNOPSIS</h1>
+<p><strong>systemd-tmpfiles</strong> [OPTIONS...] [<em>CONFIGFILE</em>...]</p>
+<p>System units:</p>
+<pre><code>systemd-tmpfiles-setup.service
+systemd-tmpfiles-setup-dev.service
+systemd-tmpfiles-clean.service
+systemd-tmpfiles-clean.timer</code></pre>
+<p>User units:</p>
+<pre><code>systemd-tmpfiles-setup.service
+systemd-tmpfiles-clean.service
+systemd-tmpfiles-clean.timer</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>systemd-tmpfiles</strong> creates, deletes, and cleans up volatile and temporary files and directories, based on the configuration file format and location specified in <strong>tmpfiles.d</strong>(5).</p>
+<p>If invoked with no arguments, it applies all directives from all configuration files. When invoked with <strong>--replace=</strong><em>PATH</em>, arguments specified on the command line are used instead of the configuration file <em>PATH</em>. Otherwise, if one or more absolute filenames are passed on the command line, only the directives in these files are applied. If "-" is specified instead of a filename, directives are read from standard input. If only the basename of a configuration file is specified, all configuration directories as specified in <strong>tmpfiles.d</strong>(5) are searched for a matching file and the file found that has the highest priority is executed.</p>
+<p>System services (systemd-tmpfiles-setup.service, systemd-tmpfiles-setup-dev.service, systemd-tmpfiles-clean.service) invoke <strong>systemd-tmpfiles</strong> to create system files and to perform system wide cleanup. Those services read administrator-controlled configuration files in tmpfiles.d/ directories. User services (systemd-tmpfiles-setup.service, systemd-tmpfiles-clean.service) also invoke <strong>systemd-tmpfiles</strong>, but it reads a separate set of files, which includes user-controlled files under ~/.config/user-tmpfiles.d/ and ~/.local/share/user-tmpfiles.d/, and administrator-controlled files under /usr/share/user-tmpfiles.d/. Users may use this to create and clean up files under their control, but the system instance performs global cleanup and is not influenced by user configuration. Note that this means a time-based cleanup configured in the system instance, such as the one typically configured for /tmp/, will thus also affect files created by the user instance if they are placed in /tmp/, even if the user instances time-based cleanup is turned off.</p>
+<h1>OPTIONS</h1>
+<p>The following options are understood:</p>
+<p><strong>--create</strong></p>
+<blockquote>
+<p>If this option is passed, all files and directories marked with <em>f</em>, <em>F</em>, <em>w</em>, <em>d</em>, <em>D</em>, <em>v</em>, <em>p</em>, <em>L</em>, <em>c</em>, <em>b</em>, <em>m</em> in the configuration files are created or written to. Files and directories marked with <em>z</em>, <em>Z</em>, <em>t</em>, <em>T</em>, <em>a</em>, and <em>A</em> have their ownership, access mode and security labels set.</p>
+</blockquote>
+<p><strong>--clean</strong></p>
+<blockquote>
+<p>If this option is passed, all files and directories with an age parameter configured will be cleaned up.</p>
+</blockquote>
+<p><strong>--remove</strong></p>
+<blockquote>
+<p>If this option is passed, the contents of directories marked with <em>D</em> or <em>R</em>, and files or directories themselves marked with <em>r</em> or <em>R</em> are removed.</p>
+</blockquote>
+<p><strong>--user</strong></p>
+<blockquote>
+<p>Execute "user" configuration, i.e. tmpfiles.d files in user configuration directories.</p>
+</blockquote>
+<p><strong>--boot</strong></p>
+<blockquote>
+<p>Also execute lines with an exclamation mark.</p>
+</blockquote>
+<p><strong>--prefix=</strong><em>path</em></p>
+<blockquote>
+<p>Only apply rules with paths that start with the specified prefix. This option can be specified multiple times.</p>
+</blockquote>
+<p><strong>--exclude-prefix=</strong><em>path</em></p>
+<blockquote>
+<p>Ignore rules with paths that start with the specified prefix. This option can be specified multiple times.</p>
+</blockquote>
+<p><strong>-E</strong></p>
+<blockquote>
+<p>A shortcut for "--exclude-prefix=/dev --exclude-prefix=/proc --exclude-prefix=/run --exclude-prefix=/sys", i.e. exclude the hierarchies typically backed by virtual or memory file systems. This is useful in combination with <strong>--root=</strong>, if the specified directory tree contains an OS tree without these virtual/memory file systems mounted in, as it is typically not desirable to create any files and directories below these subdirectories if they are supposed to be overmounted during runtime.</p>
+</blockquote>
+<p><strong>--root=</strong><em>root</em></p>
+<blockquote>
+<p>Takes a directory path as an argument. All paths will be prefixed with the given alternate <em>root</em> path, including config search paths.</p>
+<p>When this option is used, the libc Name Service Switch (NSS) is bypassed for resolving users and groups. Instead the files /etc/passwd and /etc/group inside the alternate root are read directly. This means that users/groups not listed in these files will not be resolved, i.e. LDAP NIS and other complex databases are not considered.</p>
+<p>Consider combining this with <strong>-E</strong> to ensure the invocation does not create files or directories below mount points in the OS image operated on that are typically overmounted during runtime.</p>
+</blockquote>
+<p><strong>--image=</strong><em>image</em></p>
+<blockquote>
+<p>Takes a path to a disk image file or block device node. If specified all operations are applied to file system in the indicated disk image. This is similar to <strong>--root=</strong> but operates on file systems stored in disk images or block devices. The disk image should either contain just a file system or a set of file systems within a GPT partition table, following the <strong>Discoverable Partitions Specification</strong>[1]. For further information on supported disk images, see <strong>systemd-nspawn</strong>(1)s switch of the same name.</p>
+<p>Implies <strong>-E</strong>.</p>
+</blockquote>
+<p><strong>--replace=</strong><em>PATH</em></p>
+<blockquote>
+<p>When this option is given, one ore more positional arguments must be specified. All configuration files found in the directories listed in <strong>tmpfiles.d</strong>(5) will be read, and the configuration given on the command line will be handled instead of and with the same priority as the configuration file <em>PATH</em>.</p>
+<p>This option is intended to be used when package installation scripts are running and files belonging to that package are not yet available on disk, so their contents must be given on the command line, but the admin configuration might already exist and should be given higher priority.</p>
+</blockquote>
+<p><strong>--cat-config</strong></p>
+<blockquote>
+<p>Copy the contents of config files to standard output. Before each file, the filename is printed as a comment.</p>
+</blockquote>
+<p><strong>--no-pager</strong></p>
+<blockquote>
+<p>Do not pipe output into a pager.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<p>It is possible to combine <strong>--create</strong>, <strong>--clean</strong>, and <strong>--remove</strong> in one invocation (in which case removal and cleanup are executed before creation of new files). For example, during boot the following command line is executed to ensure that all temporary and volatile directories are removed and created according to the configuration file:</p>
+<blockquote>
+<pre><code>systemd-tmpfiles --remove --create</code></pre>
+</blockquote>
+<h1>UNPRIVILEGED --CLEANUP OPERATION</h1>
+<p><strong>systemd-tmpfiles</strong> tries to avoid changing the access and modification times on the directories it accesses, which requires <strong>CAP_FOWNER</strong> privileges. When running as non-root, directories which are checked for files to clean up will have their access time bumped, which might prevent their cleanup.</p>
+<h1>EXIT STATUS</h1>
+<p>On success, 0 is returned. If the configuration was syntactically invalid (syntax errors, missing arguments, ...), so some lines had to be ignored, but no other errors occurred, <strong>65</strong> is returned (<strong>EX_DATAERR</strong> from /usr/include/sysexits.h). If the configuration was syntactically valid, but could not be executed (lack of permissions, creation of files in missing directories, invalid contents when writing to /sys/ values, ...), <strong>73</strong> is returned (<strong>EX_CANTCREAT</strong> from /usr/include/sysexits.h). Otherwise, <strong>1</strong> is returned (<strong>EXIT_FAILURE</strong> from /usr/include/stdlib.h).</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>tmpfiles.d</strong>(5)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>Discoverable Partitions Specification</p>
+<p>https://systemd.io/DISCOVERABLE_PARTITIONS</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

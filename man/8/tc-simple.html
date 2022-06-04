@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-simple</title><meta name="description" content="Linux command tc-simple basic example action"><meta name="keywords" content="linux, command, tc-simple, bsd, basic example action"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>simple - basic example action</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc</strong> ... <strong>action simple</strong> [ <strong>sdata</strong><em> STRING</em> ] [ <strong>index</strong><em> INDEX</em> ] [ <em>CONTROL</em> ]</p>
+<p><em>CONTROL</em> := { <strong>reclassify</strong> | <strong>pipe</strong> | <strong>drop</strong> | <strong>continue</strong> | <strong>ok</strong> }</p>
+<h1>DESCRIPTION</h1>
+<p>This is a pedagogical example rather than an actually useful action. Upon every access, it prints the given <em>STRING</em> which may be of arbitrary length.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>sdata</strong><em> STRING</em></dt>
+<dd><p>The actual string to print.</p>
+</dd>
+<dt><strong>index</strong><em> INDEX</em></dt>
+<dd><p>Optional action index value.</p>
+</dd>
+<dt><em>CONTROL</em></dt>
+<dd><p>Indicate how <strong>tc</strong> should proceed after executing the action. For a description of the possible <em>CONTROL</em> values, see <strong>tc-actions</strong>(8).</p>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<p>The following example makes the kernel yell "Incoming ICMP!" every time it sees an incoming ICMP on eth0. Steps are:</p>
+<ol type="1">
+<li><p>Add an ingress qdisc point to eth0</p></li>
+<li><p>Start a chain on ingress of eth0 that first matches ICMP then invokes the simple action to shout.</p></li>
+<li><p>display stats and show that no packet has been seen by the action</p></li>
+<li><p>Send one ping packet to google (expect to receive a response back)</p></li>
+<li><p>grep the logs to see the logged message</p></li>
+<li><p>display stats again and observe increment by 1</p></li>
+</ol>
+<pre><code>  hadi@noma1:$ tc qdisc add dev eth0 ingress
+  hadi@noma1:$tc filter add dev eth0 parent ffff: protocol ip prio 5 \
+	 u32 match ip protocol 1 0xff flowid 1:1 action simple sdata &quot;Incoming ICMP&quot;
+
+  hadi@noma1:$ sudo tc -s filter ls  dev eth0 parent ffff:
+   filter protocol ip pref 5 u32
+   filter protocol ip pref 5 u32 fh 800: ht divisor 1
+   filter protocol ip pref 5 u32 fh 800::800 order 2048 key ht 800 bkt 0 flowid 1:1
+     match 00010000/00ff0000 at 8
+	action order 1: Simple &lt;Incoming ICMP&gt;
+	 index 4 ref 1 bind 1 installed 29 sec used 29 sec
+	 Action statistics:
+		Sent 0 bytes 0 pkt (dropped 0, overlimits 0 requeues 0)
+		backlog 0b 0p requeues 0
+
+
+  hadi@noma1$ ping -c 1 www.google.ca
+  PING www.google.ca (74.125.225.120) 56(84) bytes of data.
+  64 bytes from ord08s08-in-f24.1e100.net (74.125.225.120): icmp_req=1 ttl=53 time=31.3 ms
+
+  --- www.google.ca ping statistics ---
+  1 packets transmitted, 1 received, 0% packet loss, time 0ms
+  rtt min/avg/max/mdev = 31.316/31.316/31.316/0.000 ms
+
+  hadi@noma1$ dmesg | grep simple
+  [135354.473951] simple: Incoming ICMP_1
+
+  hadi@noma1$ sudo tc/tc -s filter ls  dev eth0 parent ffff:
+  filter protocol ip pref 5 u32
+  filter protocol ip pref 5 u32 fh 800: ht divisor 1
+  filter protocol ip pref 5 u32 fh 800::800 order 2048 key ht 800 bkt 0 flowid 1:1
+    match 00010000/00ff0000 at 8
+	action order 1: Simple &lt;Incoming ICMP&gt;
+	 index 4 ref 1 bind 1 installed 206 sec used 67 sec
+	Action statistics:
+	Sent 84 bytes 1 pkt (dropped 0, overlimits 0 requeues 0)
+	backlog 0b 0p requeues 0</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8) <strong>tc-actions</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

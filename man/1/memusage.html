@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command memusage</title><meta name="description" content="Linux command memusage profile memory usage of a program"><meta name="keywords" content="linux, command, memusage, bsd, profile memory usage of a program"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>memusage - profile memory usage of a program</p>
+<h1>SYNOPSIS</h1>
+<p><strong>memusage</strong> [<em>option</em>]... <em>program</em> [<em>programoption</em>]...</p>
+<h1>DESCRIPTION</h1>
+<p><strong>memusage</strong> is a bash script which profiles memory usage of the program, <em>program</em>. It preloads the <strong>libmemusage.so</strong> library into the caller's environment (via the <strong>LD_PRELOAD</strong> environment variable; see <strong>ld.so</strong>(8)). The <strong>libmemusage.so</strong> library traces memory allocation by intercepting calls to <strong>malloc</strong>(3), <strong>calloc</strong>(3), <strong>free</strong>(3), and <strong>realloc</strong>(3); optionally, calls to <strong>mmap</strong>(2), <strong>mremap</strong>(2), and <strong>munmap</strong>(2) can also be intercepted.</p>
+<p><strong>memusage</strong> can output the collected data in textual form, or it can use <strong>memusagestat</strong>(1) (see the <strong>-p</strong> option, below) to create a PNG file containing graphical representation of the collected data.</p>
+<h2>Memory usage summary</h2>
+<p>The "Memory usage summary" line output by <strong>memusage</strong> contains three fields:</p>
+<blockquote>
+<dl>
+<dt><strong>heap total</strong></dt>
+<dd><p>Sum of <em>size</em> arguments of all <strong>malloc</strong>(3) calls, products of arguments (<em>nmemb</em>*<em>size</em>) of all <strong>calloc</strong>(3) calls, and sum of <em>length</em> arguments of all <strong>mmap</strong>(2) calls. In the case of <strong>realloc</strong>(3) and <strong>mremap</strong>(2), if the new size of an allocation is larger than the previous size, the sum of all such differences (new size minus old size) is added.</p>
+</dd>
+<dt><strong>heap peak</strong></dt>
+<dd><p>Maximum of all <em>size</em> arguments of <strong>malloc</strong>(3), all products of <em>nmemb</em>*<em>size</em> of <strong>calloc</strong>(3), all <em>size</em> arguments of <strong>realloc</strong>(3), <em>length</em> arguments of <strong>mmap</strong>(2), and <em>new_size</em> arguments of <strong>mremap</strong>(2).</p>
+</dd>
+<dt><strong>stack peak</strong></dt>
+<dd><p>Before the first call to any monitored function, the stack pointer address (base stack pointer) is saved. After each function call, the actual stack pointer address is read and the difference from the base stack pointer computed. The maximum of these differences is then the stack peak.</p>
+</dd>
+</dl>
+</blockquote>
+<p>Immediately following this summary line, a table shows the number calls, total memory allocated or deallocated, and number of failed calls for each intercepted function. For <strong>realloc</strong>(3) and <strong>mremap</strong>(2), the additional field "nomove" shows reallocations that changed the address of a block, and the additional "dec" field shows reallocations that decreased the size of the block. For <strong>realloc</strong>(3), the additional field "free" shows reallocations that caused a block to be freed (i.e., the reallocated size was 0).</p>
+<p>The "realloc/total memory" of the table output by <strong>memusage</strong> does not reflect cases where <strong>realloc</strong>(3) is used to reallocate a block of memory to have a smaller size than previously. This can cause sum of all "total memory" cells (excluding "free") to be larger than the "free/total memory" cell.</p>
+<h2>Histogram for block sizes</h2>
+<p>The "Histogram for block sizes" provides a breakdown of memory allocations into various bucket sizes.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-n </strong><em>name</em><strong>, <strong>--progname=</strong></strong><em>name</em></dt>
+<dd><p>Name of the program file to profile.</p>
+</dd>
+<dt><strong>-p </strong><em>file</em><strong>, <strong>--png=</strong></strong><em>file</em></dt>
+<dd><p>Generate PNG graphic and store it in <em>file</em>.</p>
+</dd>
+<dt><strong>-d </strong><em>file</em><strong>, <strong>--data=</strong></strong><em>file</em></dt>
+<dd><p>Generate binary data file and store it in <em>file</em>.</p>
+</dd>
+<dt><strong>-u, <strong>--unbuffered</strong></strong></dt>
+<dd><p>Do not buffer output.</p>
+</dd>
+<dt><strong>-b </strong><em>size</em><strong>, <strong>--buffer=</strong></strong><em>size</em></dt>
+<dd><p>Collect <em>size</em> entries before writing them out.</p>
+</dd>
+<dt><strong>--no-timer</strong></dt>
+<dd><p>Disable timer-based (<strong>SIGPROF</strong>) sampling of stack pointer value.</p>
+</dd>
+<dt><strong>-m, <strong>--mmap</strong></strong></dt>
+<dd><p>Also trace <strong>mmap</strong>(2), <strong>mremap</strong>(2), and <strong>munmap</strong>(2).</p>
+</dd>
+<dt><strong>-?, <strong>--help</strong></strong></dt>
+<dd><p>Print help and exit.</p>
+</dd>
+<dt><strong>--usage</strong></dt>
+<dd><p>Print a short usage message and exit.</p>
+</dd>
+<dt><strong>-V, <strong>--version</strong></strong></dt>
+<dd><p>Print version information and exit.</p>
+</dd>
+<dt>The following options apply only when generating graphical output:</dt>
+<dd>
+</dd>
+<dt><strong>-t, <strong>--time-based</strong></strong></dt>
+<dd><p>Use time (rather than number of function calls) as the scale for the X axis.</p>
+</dd>
+<dt><strong>-T, <strong>--total</strong></strong></dt>
+<dd><p>Also draw a graph of total memory use.</p>
+</dd>
+<dt><strong><strong>--title=</strong></strong><em>name</em></dt>
+<dd><p>Use <em>name</em> as the title of the graph.</p>
+</dd>
+<dt><strong>-x </strong><em>size</em><strong>, <strong>--x-size=</strong></strong><em>size</em></dt>
+<dd><p>Make the graph <em>size</em> pixels wide.</p>
+</dd>
+<dt><strong>-y </strong><em>size</em><strong>, <strong>--y-size=</strong></strong><em>size</em></dt>
+<dd><p>Make the graph <em>size</em> pixels high.</p>
+</dd>
+</dl>
+<h1>EXIT STATUS</h1>
+<p>Exit status is equal to the exit status of profiled program.</p>
+<h1>BUGS</h1>
+<p>To report bugs, see <a href="http://www.gnu.org/software/libc/bugs.html"></a></p>
+<h1>EXAMPLES</h1>
+<p>Below is a simple program that reallocates a block of memory in cycles that rise to a peak before then cyclically reallocating the memory in smaller blocks that return to zero. After compiling the program and running the following commands, a graph of the memory usage of the program can be found in the file <em>memusage.png</em>:</p>
+<pre><code>$ memusage --data=memusage.dat ./a.out
+...
+Memory usage summary: heap total: 45200, heap peak: 6440, stack peak: 224
+        total calls  total memory  failed calls
+ malloc|         1           400             0
+realloc|        40         44800             0  (nomove:40, dec:19, free:0)
+ calloc|         0             0             0
+   free|         1           440
+Histogram for block sizes:
+  192-207             1   2% ================
+...
+ 2192-2207            1   2% ================
+ 2240-2255            2   4% =================================
+ 2832-2847            2   4% =================================
+ 3440-3455            2   4% =================================
+ 4032-4047            2   4% =================================
+ 4640-4655            2   4% =================================
+ 5232-5247            2   4% =================================
+ 5840-5855            2   4% =================================
+ 6432-6447            1   2% ================
+$ memusagestat memusage.dat memusage.png</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define CYCLES 20
+
+int
+main(int argc, char *argv[])
+{
+    int i, j;
+    size_t size;
+    int *p;
+
+    size = sizeof(*p) * 100;
+    printf(&quot;malloc: %zu\n&quot;, size);
+    p = malloc(size);
+
+    for (i = 0; i &lt; CYCLES; i++) {
+        if (i &lt; CYCLES / 2)
+            j = i;
+        else
+            j--;
+
+        size = sizeof(*p) * (j * 50 + 110);
+        printf(&quot;realloc: %zu\n&quot;, size);
+        p = realloc(p, size);
+
+        size = sizeof(*p) * ((j + 1) * 150 + 110);
+        printf(&quot;realloc: %zu\n&quot;, size);
+        p = realloc(p, size);
+    }
+
+    free(p);
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>memusagestat</strong>(1), <strong>mtrace</strong>(1), <strong>ld.so</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

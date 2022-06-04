@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command funzip</title><meta name="description" content="Linux command funzip filter for extracting from a ZIP archive in a pipe"><meta name="keywords" content="linux, command, funzip, bsd, filter for extracting from a ZIP archive in a pipe"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>funzip - filter for extracting from a ZIP archive in a pipe</p>
+<h1>SYNOPSIS</h1>
+<p><strong>funzip</strong> [<strong>-password</strong>] [<em>input[.zip|.gz]</em>]</p>
+<h1>ARGUMENTS</h1>
+<ul>
+<li><p>Optional password to be used if ZIP archive is encrypted. Decryption may not be supported at some sites. See DESCRIPTION for more details.</p></li>
+<li><p>Optional input archive file specification. See DESCRIPTION for details.</p></li>
+</ul>
+<h1>DESCRIPTION</h1>
+<p><em>funzip</em> without a file argument acts as a filter; that is, it assumes that a ZIP archive (or a <em>gzip</em>'d(1) file) is being piped into standard input, and it extracts the first member from the archive to stdout. When stdin comes from a tty device, <em>funzip</em> assumes that this cannot be a stream of (binary) compressed data and shows a short help text, instead. If there is a file argument, then input is read from the specified file instead of from stdin.</p>
+<p>A password for encrypted zip files can be specified on the command line (preceding the file name, if any) by prefixing the password with a dash. Note that this constitutes a security risk on many systems; currently running processes are often visible via simple commands (e.g., <em>ps</em>(1) under Unix), and command-line histories can be read. If the first entry of the zip file is encrypted and no password is specified on the command line, then the user is prompted for a password and the password is not echoed on the console.</p>
+<p>Given the limitation on single-member extraction, <em>funzip</em> is most useful in conjunction with a secondary archiver program such as <em>tar</em>(1). The following section includes an example illustrating this usage in the case of disk backups to tape.</p>
+<h1>EXAMPLES</h1>
+<p>To use <em>funzip</em> to extract the first member file of the archive test.zip and to pipe it into <em>more</em>(1):</p>
+<pre><code>funzip test.zip | more</code></pre>
+<p>To use <em>funzip</em> to test the first member file of test.zip (any errors will be reported on standard error):</p>
+<pre><code>funzip test.zip &gt; /dev/null</code></pre>
+<p>To use <em>zip</em> and <em>funzip</em> in place of <em>compress</em>(1) and <em>zcat</em>(1) (or <em>gzip</em>(1) and <em>gzcat</em>(1)) for tape backups:</p>
+<pre><code>tar cf - . | zip -7 | dd of=/dev/nrst0 obs=8k
+dd if=/dev/nrst0 ibs=8k | funzip | tar xf -</code></pre>
+<p>(where, for example, nrst0 is a SCSI tape drive).</p>
+<h1>BUGS</h1>
+<p>When piping an encrypted file into <em>more</em> and allowing <em>funzip</em> to prompt for password, the terminal may sometimes be reset to a non-echo mode. This is apparently due to a race condition between the two programs; <em>funzip</em> changes the terminal mode to non-echo before <em>more</em> reads its state, and <em>more</em> then ``restores'' the terminal to this mode before exiting. To recover, run <em>funzip</em> on the same file but redirect to /dev/null rather than piping into more; after prompting again for the password, <em>funzip</em> will reset the terminal properly.</p>
+<p>There is presently no way to extract any member but the first from a ZIP archive. This would be useful in the case where a ZIP archive is included within another archive. In the case where the first member is a directory, <em>funzip</em> simply creates the directory and exits.</p>
+<p>The functionality of <em>funzip</em> should be incorporated into <em>unzip</em> itself (future release).</p>
+<h1>SEE ALSO</h1>
+<p><em>gzip</em>(1), <em>unzip</em>(1), <em>unzipsfx</em>(1), <em>zip</em>(1), <em>zipcloak</em>(1), <em>zipinfo</em>(1), <em>zipnote</em>(1), <em>zipsplit</em>(1)</p>
+<h1>URL</h1>
+<p>The Info-ZIP home page is currently at</p>
+<pre><code>http://www.info-zip.org/pub/infozip/</code></pre>
+<p>or</p>
+<pre><code>ftp://ftp.info-zip.org/pub/infozip/ .</code></pre>
+<h1>AUTHOR</h1>
+<p>Mark Adler (Info-ZIP)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

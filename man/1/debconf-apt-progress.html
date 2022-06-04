@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command debconf-apt-progress</title><meta name="description" content="Linux command debconf-apt-progress install packages using debconf to display a progress bar"><meta name="keywords" content="linux, command, debconf-apt-progress, bsd, install packages using debconf to display a progress bar"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>debconf-apt-progress - install packages using debconf to display a progress bar</p>
+<h1>SYNOPSIS</h1>
+<p>debconf-apt-progress [--] command [args ...] debconf-apt-progress --config debconf-apt-progress --start debconf-apt-progress --from waypoint --to waypoint [--] command [args ...] debconf-apt-progress --stop</p>
+<h1>DESCRIPTION</h1>
+<p><strong>debconf-apt-progress</strong> installs packages using debconf to display a progress bar. The given <em>command</em> should be any command-line apt frontend; specifically, it must send progress information to the file descriptor selected by the <code>APT::Status-Fd</code> configuration option, and must keep the file descriptors nominated by the <code>APT::Keep-Fds</code> configuration option open when invoking debconf (directly or indirectly), as those file descriptors will be used for the debconf passthrough protocol.</p>
+<p>The arguments to the command you supply should generally include <strong>-y</strong> (for <strong>apt-get</strong> or <strong>aptitude</strong>) or similar to avoid the apt frontend prompting for input. <strong>debconf-apt-progress</strong> cannot do this itself because the appropriate argument may differ between apt frontends.</p>
+<p>The <strong>--start</strong>, <strong>--stop</strong>, <strong>--from</strong>, and <strong>--to</strong> options may be used to create a progress bar with multiple segments for different stages of installation, provided that the caller is a debconf confmodule. The caller may also interact with the progress bar itself using the debconf protocol if it so desires.</p>
+<p>debconf locks its config database when it starts up, which makes it unfortunately inconvenient to have one instance of debconf displaying the progress bar and another passing through questions from packages being installed. If you're using a multiple-segment progress bar, you'll need to eval the output of the <strong>--config</strong> option before starting the debconf frontend to work around this. See EXAMPLES in the EXAMPLES section below.</p>
+<h1>OPTIONS</h1>
+<ul>
+<li><p>Print environment variables necessary to start up a progress bar frontend.</p></li>
+<li><p>Start up a progress bar, running from 0 to 100 by default. Use <strong>--from</strong> and <strong>--to</strong> to use other endpoints.</p></li>
+<li><p>If used with <strong>--start</strong>, make the progress bar begin at <em>waypoint</em> rather than 0. Otherwise, install packages with their progress bar beginning at this waypoint. Must be used with <strong>--to</strong>.</p></li>
+<li><p>If used with <strong>--start</strong>, make the progress bar end at <em>waypoint</em> rather than 100. Otherwise, install packages with their progress bar ending at this waypoint. Must be used with <strong>--from</strong>.</p></li>
+<li><p>Stop a running progress bar.</p></li>
+<li><p>Avoid starting, stopping, or stepping the progress bar. Progress messages from apt, media change events, and debconf questions will still be passed through to debconf.</p></li>
+<li><p>Specify what percent of the progress bar to use for downloading packages. The remainder will be used for installing packages. The default is to use 15% for downloading and the remaining 85% for installing.</p></li>
+<li><p>Send the normal output from apt to the given file.</p></li>
+<li><p>Send the normal output from apt to stderr. If you supply neither <strong>--logfile</strong> nor <strong>--logstderr</strong>, the normal output from apt will be discarded.</p></li>
+<li><p>Terminate options. Since you will normally need to give at least the <strong>-y</strong> argument to the command being run, you will usually need to use <strong>--</strong> to prevent that being interpreted as an option to <strong>debconf-apt-progress</strong> itself.</p></li>
+</ul>
+<h1>EXAMPLES</h1>
+<p>Install the GNOME desktop and an X window system development environment within a progress bar:</p>
+<p>debconf-apt-progress -- aptitude -y install gnome x-window-system-dev</p>
+<p>Install the GNOME, KDE, and XFCE desktops within a single progress bar, allocating 45% of the progress bar for each of GNOME and KDE and the remaining 10% for XFCE:</p>
+<p>#! /bin/sh set -e case $1 in ) eval "$(debconf-apt-progress --config)" "$0" debconf ;; debconf) . /usr/share/debconf/confmodule debconf-apt-progress --start debconf-apt-progress --from 0 --to 45 -- apt-get -y install gnome debconf-apt-progress --from 45 --to 90 -- apt-get -y install kde debconf-apt-progress --from 90 --to 100 -- apt-get -y install xfce4 debconf-apt-progress --stop ;; esac</p>
+<h1>RETURN CODE</h1>
+<p>The exit code of the specified command is returned, unless the user hit the cancel button on the progress bar. If the cancel button was hit, a value of 30 is returned. To avoid ambiguity, if the command returned 30, a value of 3 will be returned.</p>
+<h1>AUTHORS</h1>
+<p>Colin Watson &lt;cjwatson@debian.org&gt;</p>
+<p>Joey Hess &lt;joeyh@debian.org&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

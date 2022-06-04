@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sane-dll</title><meta name="description" content="Linux command sane-dll SANE dynamic backend loader"><meta name="keywords" content="linux, command, sane-dll, bsd, SANE dynamic backend loader"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sane-dll - SANE dynamic backend loader</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sane-dll</strong> library implements a SANE (Scanner Access Now Easy) backend that provides access to an arbitrary number of other SANE backends. These backends may either be pre-loaded at the time the <strong>sane-dll</strong> library is built or, on systems that support dynamic loading of shared libraries, the backends may be loaded at runtime. In the latter case, adding support for a new backend simply involves installing the relevant library in <em>/usr/lib/x86_64-linux-gnu/sane</em> and adding an entry to the <em>dll.conf</em> configuration file. In other words, no applications need to be modified or recompiled to add support for new devices.</p>
+<h1>DEVICE NAMES</h1>
+<p>This backend expects device names of the form:</p>
+<blockquote>
+<p><em>backend</em>:<em>device</em></p>
+</blockquote>
+<p>Where <em>backend</em> is the name of the backend and <em>device</em> is the name of the device in this backend that should be addressed. If the device name does not contain a colon (:), then the entire string is treated as the <em>device</em> string for the default backend. The default backend is the backend listed last in the configuration file (see below) or the first pre-loaded backend (if any).</p>
+<h1>CONFIGURATION</h1>
+<p>The contents of the <em>dll.conf</em> file is a list of backend names that may be loaded dynamically upon demand. Empty lines are ignored, also everything after a hash mark (#). A sample configuration file is shown below:</p>
+<blockquote>
+<p>net<br />
+# this is a comment<br />
+pnm<br />
+mustek</p>
+</blockquote>
+<p>It is also possible to add a file in <em>/etc/sane.d/dll.d</em> that contains the list of backends to be added. Backends mentioned in a file included in this directory will be added before any backends listed in <em>dll.conf.</em> Files in <em>/etc/sane.d/dll.d</em> can be freely named. They shall follow the format conventions as apply for <em>dll.conf.</em></p>
+<p>Note that backends that were pre-loaded when building this library do not have to be listed in this configuration file. That is, if a backend was preloaded, then that backend will always be present, regardless of whether it's listed in the configuration file or not.</p>
+<p>The list of preloaded backends is determined by macro <strong>PRELOADABLE_BACKENDS</strong> in file backend/Makefile.in of the SANE source code distribution. After changing the value of this macro, it is necessary to reconfigure, rebuild, and reinstall SANE for the change to take effect.</p>
+<p>Aliases are defined in the config file <em>dll.aliases</em>. It can contain entries of the form</p>
+<blockquote>
+<p><br />
+alias SomeName SaneDeviceName<br />
+alias "Some Name" SaneDeviceName<br />
+hide SaneDeviceName</p>
+</blockquote>
+<p>For example:</p>
+<blockquote>
+<p><br />
+alias Epson net:somehost:epson:/dev/sgX<br />
+alias "Siemens ST400" st400:/dev/sgY<br />
+hide net:somehost:pnm:0<br />
+hide net:somehost:pnm:1<br />
+alias "Read from file" pnm:0<br />
+hide pnm:1</p>
+</blockquote>
+<p>Aliased device names are automatically hidden.</p>
+<p>The idea is that users don't have to deal with complicated device names (especially for networked devices), and to hide other exported devices which might confuse them. Note that a hidden device can still be accessed if the device name is known, it just doesn't appear on the list.</p>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/sane.d/dll.aliases</em></dt>
+<dd><p>The list of aliased or hidden backends.</p>
+</dd>
+<dt><em>/etc/sane.d/dll.conf</em></dt>
+<dd><p>The backend configuration file (see also description of <strong>SANE_CONFIG_DIR</strong> below).</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-dll.a</em></dt>
+<dd><p>The static library implementing this backend.</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-dll.so</em></dt>
+<dd><p>The shared library implementing this backend (present on systems that support dynamic loading).</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>SANE_CONFIG_DIR</strong></dt>
+<dd><p>This environment variable specifies the list of directories that may contain the configuration file. Under UNIX, the directories are separated by a colon (`:'), under OS/2, they are separated by a semi-colon (`;'). If this variable is not set, the configuration file is searched in two default directories: first, the current working directory (".") and then in /etc/sane.d. If the value of the environment variable ends with the directory separator character, then the default directories are searched after the explicitly specified directories. For example, setting <strong>SANE_CONFIG_DIR</strong> to "/tmp/config:" would result in directories "tmp/config", ".", and "/etc/sane.d" being searched (in this order).</p>
+</dd>
+<dt><strong>SANE_DEBUG_DLL</strong></dt>
+<dd><p>If the library was compiled with debug support enabled, this environment variable controls the debug level for this backend. E.g., a value of 128 requests all debug output to be printed. Smaller levels reduce verbosity.</p>
+</dd>
+</dl>
+<pre><code>Value  Description
+0      print severe errors only
+1      print normal errors and important messages
+2      print normal messages
+3      print debugging messages
+4      print everything</code></pre>
+<p>Example: export SANE_DEBUG_DLL=3</p>
+<h1>SEE ALSO</h1>
+<p><strong>sane</strong>(7), <strong>scanimage</strong>(1), <strong>sane-"backendname"</strong>(5)</p>
+<h1>AUTHOR</h1>
+<p>David Mosberger</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

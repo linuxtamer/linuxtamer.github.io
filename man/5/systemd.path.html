@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd.path</title><meta name="description" content="Linux command systemd.path Path unit configuration"><meta name="keywords" content="linux, command, systemd.path, bsd, Path unit configuration"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd.path - Path unit configuration</p>
+<h1>SYNOPSIS</h1>
+<p><em>path</em>.path</p>
+<h1>DESCRIPTION</h1>
+<p>A unit configuration file whose name ends in ".path" encodes information about a path monitored by systemd, for path-based activation.</p>
+<p>This man page lists the configuration options specific to this unit type. See <strong>systemd.unit</strong>(5) for the common options of all unit configuration files. The common configuration items are configured in the generic [Unit] and [Install] sections. The path specific configuration options are configured in the [Path] section.</p>
+<p>For each path file, a matching unit file must exist, describing the unit to activate when the path changes. By default, a service by the same name as the path (except for the suffix) is activated. Example: a path file foo.path activates a matching service foo.service. The unit to activate may be controlled by <em>Unit=</em> (see below).</p>
+<p>Internally, path units use the <strong>inotify</strong>(7) API to monitor file systems. Due to that, it suffers by the same limitations as inotify, and for example cannot be used to monitor files or directories changed by other machines on remote NFS file systems.</p>
+<p>When a service unit triggered by a path unit terminates (regardless whether it exited successfully or failed), monitored paths are checked immediately again, and the service accordingly restarted instantly. As protection against busy looping in this trigger/start cycle, a start rate limit is enforced on the service unit, see <em>StartLimitIntervalSec=</em> and <em>StartLimitBurst=</em> in <strong>systemd.unit</strong>(5). Unlike other service failures, the error condition that the start rate limit is hit is propagated from the service unit to the path unit and causes the path unit to fail as well, thus ending the loop.</p>
+<h1>AUTOMATIC DEPENDENCIES</h1>
+<h2>Implicit Dependencies</h2>
+<p>The following dependencies are implicitly added:</p>
+<blockquote>
+<p>·</p>
+<p>If a path unit is beneath another mount unit in the file system hierarchy, both a requirement and an ordering dependency between both units are created automatically.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>An implicit <em>Before=</em> dependency is added between a path unit and the unit it is supposed to activate.</p>
+</blockquote>
+<h2>Default Dependencies</h2>
+<p>The following dependencies are added unless <em>DefaultDependencies=no</em> is set:</p>
+<blockquote>
+<p>·</p>
+<p>Path units will automatically have dependencies of type <em>Before=</em> on paths.target, dependencies of type <em>After=</em> and <em>Requires=</em> on sysinit.target, and have dependencies of type <em>Conflicts=</em> and <em>Before=</em> on shutdown.target. These ensure that path units are terminated cleanly prior to system shutdown. Only path units involved with early boot or late system shutdown should disable <em>DefaultDependencies=</em> option.</p>
+</blockquote>
+<h1>OPTIONS</h1>
+<p>Path files must include a [Path] section, which carries information about the path(s) it monitors. The options specific to the [Path] section of path units are the following:</p>
+<p><em>PathExists=</em>, <em>PathExistsGlob=</em>, <em>PathChanged=</em>, <em>PathModified=</em>, <em>DirectoryNotEmpty=</em></p>
+<blockquote>
+<p>Defines paths to monitor for certain changes: <em>PathExists=</em> may be used to watch the mere existence of a file or directory. If the file specified exists, the configured unit is activated. <em>PathExistsGlob=</em> works similar, but checks for the existence of at least one file matching the globbing pattern specified. <em>PathChanged=</em> may be used to watch a file or directory and activate the configured unit whenever it changes. It is not activated on every write to the watched file but it is activated if the file which was open for writing gets closed. <em>PathModified=</em> is similar, but additionally it is activated also on simple writes to the watched file. <em>DirectoryNotEmpty=</em> may be used to watch a directory and activate the configured unit whenever it contains at least one file.</p>
+<p>The arguments of these directives must be absolute file system paths.</p>
+<p>Multiple directives may be combined, of the same and of different types, to watch multiple paths. If the empty string is assigned to any of these options, the list of paths to watch is reset, and any prior assignments of these options will not have any effect.</p>
+<p>If a path already exists (in case of <em>PathExists=</em> and <em>PathExistsGlob=</em>) or a directory already is not empty (in case of <em>DirectoryNotEmpty=</em>) at the time the path unit is activated, then the configured unit is immediately activated as well. Something similar does not apply to <em>PathChanged=</em> and <em>PathModified=</em>.</p>
+<p>If the path itself or any of the containing directories are not accessible, <strong>systemd</strong> will watch for permission changes and notice that conditions are satisfied when permissions allow that.</p>
+</blockquote>
+<p><em>Unit=</em></p>
+<blockquote>
+<p>The unit to activate when any of the configured paths changes. The argument is a unit name, whose suffix is not ".path". If not specified, this value defaults to a service that has the same name as the path unit, except for the suffix. (See above.) It is recommended that the unit name that is activated and the unit name of the path unit are named identical, except for the suffix.</p>
+</blockquote>
+<p><em>MakeDirectory=</em></p>
+<blockquote>
+<p>Takes a boolean argument. If true, the directories to watch are created before watching. This option is ignored for <em>PathExists=</em> settings. Defaults to <strong>false</strong>.</p>
+</blockquote>
+<p><em>DirectoryMode=</em></p>
+<blockquote>
+<p>If <em>MakeDirectory=</em> is enabled, use the mode specified here to create the directories in question. Takes an access mode in octal notation. Defaults to <strong>0755</strong>.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemctl</strong>(1), <strong>systemd.unit</strong>(5), <strong>systemd.service</strong>(5), <strong>inotify</strong>(7), <strong>systemd.directives</strong>(7)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

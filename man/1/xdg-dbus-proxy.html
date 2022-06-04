@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command xdg-dbus-proxy</title><meta name="description" content="Linux command xdg-dbus-proxy D-Bus proxy"><meta name="keywords" content="linux, command, xdg-dbus-proxy, bsd, D-Bus proxy"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>xdg-dbus-proxy - D-Bus proxy</p>
+<h1>SYNOPSIS</h1>
+<p><strong>xdg-dbus-proxy</strong> [<em>OPTION</em>...] [<em>ADDRESS</em> <em>PATH</em> [<em>OPTION</em>...]...]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>xdg-dbus-proxy</strong> is a filtering proxy for D-Bus connections. Its arguments are one or more <em>ADDRESS</em>-<em>PATH</em> pairs specifying the buses to proxy, with options that specify what filtering to apply.</p>
+<h2>Basic Operation</h2>
+<p>The proxy listens to the unix domain socket at <em>PATH</em>, and for each client that connects to the socket, it opens up a new connection to the specified D-Bus <em>ADDRESS</em> (typically the session bus) and forwards data between the two. During the authentication phase all data is forwarded as received, and additionally for the first 1 byte zero we also send the proxy credentials to the bus.</p>
+<p>Once the connection is authenticated there are two modes, filtered and unfiltered. In the unfiltered mode all messages are sent on as they are received. In the filtering mode policy is applied to determine which messages to allow, and which to drop.</p>
+<p>Filtering is applied only to outgoing signals and method calls and incoming broadcast signals. All replies (errors or method returns) are allowed once for an outstanding method call, and never otherwise.</p>
+<p>If a client ever receives a message from another peer on the bus, the senders unique name is made visible, so the client can track caller lifetimes via NameOwnerChanged signals. If a client calls a method on or receives a broadcast signal from a name (even if filtered to some subset of paths or interfaces), that names basic policy is considered to be (at least) TALK, from then on.</p>
+<h2>Policy</h2>
+<p>The policy for the filtering consists of a mapping from well-known names to a policy that is either SEE, TALK or OWN. The default initial policy is that the the user is only allowed to TALK to the bus itself (org.freedesktop.DBus, or no destination specified), and TALK to its own unique ID. All other clients are invisible.</p>
+<p>Here is a description of the policy levels (each level implies the ones before it):</p>
+<p>SEE</p>
+<blockquote>
+<p>The name/ID is visible in the ListNames reply</p>
+<p>The name/ID is visible in the ListActivatableNames reply</p>
+<p>You can call GetNameOwner on the name</p>
+<p>You can call NameHasOwner on the name</p>
+<p>You see NameOwnerChanged signals on the name</p>
+<p>You see NameOwnerChanged signals on the ID when the client disconnects</p>
+<p>You can call the GetXXX methods on the name/ID to get e.g. the peer pid</p>
+<p>You get AccessDenied rather than NameHasNoOwner when sending messages to the name/ID</p>
+</blockquote>
+<p>TALK</p>
+<blockquote>
+<p>You can send any method calls and signals to the name/ID</p>
+<p>You will receive broadcast signals from the name/ID (if you have a match rule for them)</p>
+<p>You can call StartServiceByName on the name</p>
+</blockquote>
+<p>OWN</p>
+<blockquote>
+<p>You are allowed to call RequestName/ReleaseName/ListQueuedOwners on the name</p>
+</blockquote>
+<p>Policy is specified with the <strong>--see</strong>, <strong>--talk</strong> and <strong>--own</strong> options. The well-known names in these options can have a .* suffix. A name of "org.foo.*" matches "org.foo", org.foo.bar", and "org.foo.bar.gazonk", but not "org.foobar".</p>
+<p>Polices are specified for well-known names, but they also affect the owner of that name, so that the policy for a unique ID is the union of the polices for all the names it owns. For technical reasons, the policy for a unique name is "sticky", in that the highest policy granted by a once-owned name is kept, even when the client releases that name. This is impossible to avoid in a race-free way in a proxy. But it is rarely a problem in practice, as few clients release names and stay on the bus.</p>
+<p>In addition to the basic SEE/TALK/OWN policy, it is possible to specify more complicated rules about what method calls can be made on and what broadcast signals can be received from well-known names. A rule can restrict the allowed calls/signals to a specific object path or a subtree of object paths, and it can restrict the allowed interface down to an individual method or signal name.</p>
+<p>Rules are specified with the <strong>--call</strong> and <strong>--broadcast</strong> options. The <em>RULE</em> in these options determines what interfaces, methods and object paths are allowed. It must be of the form [<em>METHOD</em>][@<em>PATH</em>], where <em>METHOD</em> can be either * or a D-Bus interface, possible with a .* suffix, or a fully-qualified method name, and <em>PATH</em> is a D-Bus object path, possible with a /* suffix.</p>
+<h1>OPTIONS</h1>
+<p>When options are used multiple times, the last option wins, unless otherwise specified.</p>
+<p>General options:</p>
+<p><strong>--help</strong></p>
+<blockquote>
+<p>Print help and exit</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print version</p>
+</blockquote>
+<p><strong>--fd=FD</strong></p>
+<blockquote>
+<p>Write to FD when the proxies are ready, and stop when it is closed.</p>
+</blockquote>
+<p><strong>--args=FD</strong></p>
+<blockquote>
+<p>Parse nul-separated arguments from the given file descriptor. This option can be used multiple times to parse options from multiple sources.</p>
+</blockquote>
+<p>Proxy Options:</p>
+<p>These options can only be used after an ADDRESS and apply to the proxy for that address.</p>
+<p><strong>--filter</strong></p>
+<blockquote>
+<p>Enable filtering</p>
+</blockquote>
+<p><strong>--log</strong></p>
+<blockquote>
+<p>Turn on logging</p>
+</blockquote>
+<p><strong>--sloppy-names</strong></p>
+<blockquote>
+<p>Make all unique names visible.</p>
+</blockquote>
+<p><strong>--see=</strong><em>NAME</em></p>
+<blockquote>
+<p>Set the SEE policy for the given name.</p>
+</blockquote>
+<p><strong>--talk=</strong><em>NAME</em></p>
+<blockquote>
+<p>Set the TALK policy for the given name.</p>
+</blockquote>
+<p><strong>--own=</strong><em>NAME</em></p>
+<blockquote>
+<p>Set the OWN policy for the given name.</p>
+</blockquote>
+<p><strong>--call=</strong><em>NAME</em><strong>=</strong><em>RULE</em></p>
+<blockquote>
+<p>Set a rule for calls on the given name.</p>
+</blockquote>
+<p><strong>--broadcast=</strong><em>NAME</em><strong>=</strong><em>RULE</em></p>
+<blockquote>
+<p>Set a rule for broadcast signals from the given name.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p><strong>$ xdg-dbus-proxy --fd=26 unix:path=/run/usr/1000/bus /run/usr/1000/.dbus-proxy/session-bus-proxy --filter --own=org.gnome.ghex.* --talk=ca.desrt.dconf --call=org.freedesktop.portal.*=* --broadcast=org.freedesktop.portal.*=@/org/freedesktop/portal/*</strong></p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

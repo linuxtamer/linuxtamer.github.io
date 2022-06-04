@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sane-fujitsu</title><meta name="description" content="Linux command sane-fujitsu SANE backend for Fujitsu flatbed and ADF scanners"><meta name="keywords" content="linux, command, sane-fujitsu, bsd, SANE backend for Fujitsu flatbed and ADF scanners"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sane-fujitsu - SANE backend for Fujitsu flatbed and ADF scanners</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sane-fujitsu</strong> library implements a SANE (Scanner Access Now Easy) backend which provides access to most Fujitsu flatbed and ADF scanners.</p>
+<p>This document describes backend version 136, which shipped with SANE 1.0.30.</p>
+<h1>SUPPORTED HARDWARE</h1>
+<p>This version supports every known model which speaks the Fujitsu SCSI and SCSI-over-USB protocols. Specifically, the SCSI M309x and M409x series, the SCSI fi-series, most of the USB fi-series, the USB ScanSnap S5xx/S15xx, and the USB iX1xx/5xx series scanners are supported. Please see the list at http://www.sane-project.org/sane-supported-devices.html for details.</p>
+<p>This backend may support other Fujitsu scanners. The best way to determine level of support is to test the scanner directly, or to collect a trace of the windows driver in action. Please contact the author for help or with test results.</p>
+<h1>UNSUPPORTED HARDWARE</h1>
+<p>The following scanners are known NOT to work with this backend, either because they have a non-fujitsu chipset, or an unsupported interface type. Some of these scanners may be supported by another backend.</p>
+<blockquote>
+<pre><code>--------------------------------------
+SCSI:        SERIAL:      USB:
+------------ ------------ ------------
+ScanStation  M3093E/DE/EX fi-4110EOX/2
+ScanPartner  M3096EX      fi-4010CU
+SP-Jr        M3097E+/DE   S300/S300M
+SP-10/10C    M3099A/EH/EX S1300/S1100
+SP-15C/300C               fi-60F/65F
+SP-600C/620C              fi-5015C
+                          SP-2x/3x</code></pre>
+</blockquote>
+<h1>OPTIONS</h1>
+<p>Effort has been made to expose all hardware options, including:</p>
+<p>source s</p>
+<blockquote>
+<p>Selects the source for the scan. Options may include "Flatbed", "ADF Front", "ADF Back", "ADF Duplex", "Card Front", "Card Back", "Card Duplex".</p>
+</blockquote>
+<p>mode m</p>
+<blockquote>
+<p>Selects the mode for the scan. Options may include "Lineart", "Halftone", "Gray", and "Color".</p>
+</blockquote>
+<p>resolution, y-resolution</p>
+<blockquote>
+<p>Controls scan resolution. Setting --resolution also sets --y-resolution, though this behavior is overridden by some frontends.</p>
+</blockquote>
+<p>tl-x, tl-y, br-x, br-y</p>
+<blockquote>
+<p>Sets scan area upper left and lower right coordinates. These are renamed t, l, x, y by some frontends.</p>
+</blockquote>
+<p>page-width, page-height</p>
+<blockquote>
+<p>Sets paper size. Used by scanner to determine centering of scan coordinates when using ADF and to detect double feed errors.</p>
+</blockquote>
+<p>Other options will be available based on the capabilities of the scanner: machines with IPC or DTC will have additional enhancement options, those with CMP will have compression options, those with a printer will have a group of endorser options.</p>
+<p>Additionally, several 'software' options are exposed by the backend. These are reimplementations of features provided natively by larger scanners, but running on the host computer. This enables smaller machines to have similar capabilities. Please note that these features are somewhat simplistic, and may not perform as well as the native implementations. Note also that these features all require that the driver cache the entire image in memory. This will almost certainly result in a reduction of scanning speed.</p>
+<p>Use 'scanimage --help' to get a list, but be aware that some options may be settable only when another option has been set, and that advanced options may be hidden by some frontend programs.</p>
+<h1>CONFIGURATION FILE</h1>
+<p>The configuration file "fujitsu.conf" is used to tell the backend how to look for scanners, and provide options controlling the operation of the backend. This file is read each time the frontend asks the backend for a list of scanners, generally only when the frontend starts. If the configuration file is missing, the backend will be unable to locate any scanners.</p>
+<p>Scanners can be specified in the configuration file in 4 ways:</p>
+<p>"scsi FUJITSU"</p>
+<blockquote>
+<p>Requests backend to search all scsi busses in the system for a device which reports itself to be a scanner made by 'FUJITSU'.</p>
+</blockquote>
+<p>"scsi /dev/sg0" (or other scsi device file)</p>
+<blockquote>
+<p>Requests backend to open the named scsi device. Only useful if you have multiple compatible scanners connected to your system, and need to specify one. Probably should not be used with the other "scsi" line above.</p>
+</blockquote>
+<p>"usb 0x04c5 0x1042" (or other vendor/product ids)</p>
+<blockquote>
+<p>Requests backend to search all usb busses in the system for a device which uses that vendor and product id. The device will then be queried to determine if it is a Fujitsu scanner.</p>
+</blockquote>
+<p>"usb /dev/usb/scanner0" (or other device file)</p>
+<blockquote>
+<p>Some systems use a kernel driver to access usb scanners. This method is untested.</p>
+</blockquote>
+<p>The only configuration option supported is "buffer-size=xxx", allowing you to set the number of bytes in the data buffer to something other than the compiled-in default, 65536 (64K). Some users report that their scanner will "hang" mid-page, or fail to transmit the image if the buffer is not large enough.</p>
+<p>Note: This option may appear multiple times in the configuration file. It only applies to scanners discovered by 'scsi/usb' lines that follow this option.</p>
+<p>Note: The backend does not place an upper bound on this value, as some users required it to be quite large. Values above the default are not recommended, and may crash your OS or lockup your scsi card driver. You have been warned.</p>
+<h1>ENVIRONMENT</h1>
+<p>The backend uses a single environment variable, SANE_DEBUG_FUJITSU, which enables debugging output to stderr. Valid values are:</p>
+<blockquote>
+<p>5 Errors<br />
+10 Function trace<br />
+15 Function detail<br />
+20 Option commands<br />
+25 SCSI/USB trace<br />
+30 SCSI/USB writes<br />
+31 SCSI/USB reads<br />
+35 Useless noise</p>
+</blockquote>
+<h1>KNOWN ISSUES</h1>
+<p>Flatbed units may fail to scan at maximum area, particularly at high resolution.</p>
+<p>Any model that does not support VPD during inquiry will not function until an override is added to the backend.</p>
+<p>CCITT Fax compression used by older scanners is not supported.</p>
+<p>JPEG output is supported by the backend, but not by the SANE protocol, so is disabled in this release. It can be enabled if you rebuild from source.</p>
+<h1>CREDITS</h1>
+<p>m3091 backend: Frederik Ramm &lt;frederik a t remote d o t org&gt;<br />
+m3096g backend: Randolph Bentson &lt;bentson a t holmsjoen d o t com&gt;<br />
+(with credit to the unnamed author of the coolscan driver)<br />
+fujitsu backend, m3093, fi-4340C, ipc, cmp, long-time maintainer:<br />
+Oliver Schirrmeister &lt;oschirr a t abm d o t de&gt;<br />
+m3092: Mario Goppold &lt;mgoppold a t tbzpariv d o t tcc-chemnitz dot de&gt;<br />
+fi-4220C and basic USB support: Ron Cemer &lt;ron a t roncemer d o t com&gt;<br />
+fi-4120, fi-series color, backend re-write, jpeg, current maintainer: m. allan noah: &lt;kitno455 a t gmail d o t com&gt;</p>
+<p>JPEG output and low memory usage support funded by: Archivista GmbH www.archivista.ch</p>
+<p>Endorser support funded by: O A S Oilfield Accounting Service Ltd 1500, 840 - 7th Avenue S.W. Calgary, Alberta T2P 3G2 Canada 1-403-263-2600 www.oas.ca</p>
+<p>Automatic length detection support funded by: Martin G. Miller mgmiller at optonline.net</p>
+<p>Hardware donated, software image enhancement and fi-6/7xxx support funded by: Fujitsu Computer Products of America, Inc. www.fcpa.com</p>
+<p>iX500 support funded by: Prefix Computer Services www.prefixservice.com</p>
+<h1>SEE ALSO</h1>
+<p>sane(7), sane-scsi(5), sane-usb(5), sane-sp15c(5), sane-avision(5), sane-epjitsu(5)</p>
+<h1>AUTHOR</h1>
+<p>m. allan noah: &lt;kitno455 a t gmail d o t com&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sendmmsg</title><meta name="description" content="Linux command sendmmsg send multiple messages on a socket"><meta name="keywords" content="linux, command, sendmmsg, bsd, send multiple messages on a socket"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sendmmsg - send multiple messages on a socket</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;sys/socket.h&gt;
+
+int sendmmsg(int sockfd, struct mmsghdr *msgvec&quot;,unsignedint vlen ,&quot;
+ int flags);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sendmmsg</strong>() system call is an extension of <strong>sendmsg</strong>(2) that allows the caller to transmit multiple messages on a socket using a single system call. (This has performance benefits for some applications.)</p>
+<p>The <em>sockfd</em> argument is the file descriptor of the socket on which data is to be transmitted.</p>
+<p>The <em>msgvec</em> argument is a pointer to an array of <em>mmsghdr</em> structures. The size of this array is specified in <em>vlen</em>.</p>
+<p>The <em>mmsghdr</em> structure is defined in <em>&lt;sys/socket.h&gt;</em> as:</p>
+<pre><code>struct mmsghdr {
+    struct msghdr msg_hdr;  /* Message header */
+    unsigned int  msg_len;  /* Number of bytes transmitted */
+};</code></pre>
+<p>The <em>msg_hdr</em> field is a <em>msghdr</em> structure, as described in <strong>sendmsg</strong>(2). The <em>msg_len</em> field is used to return the number of bytes sent from the message in <em>msg_hdr</em> (i.e., the same as the return value from a single <strong>sendmsg</strong>(2) call).</p>
+<p>The <em>flags</em> argument contains flags ORed together. The flags are the same as for <strong>sendmsg</strong>(2).</p>
+<p>A blocking <strong>sendmmsg</strong>() call blocks until <em>vlen</em> messages have been sent. A nonblocking call sends as many messages as possible (up to the limit specified by <em>vlen</em>) and returns immediately.</p>
+<p>On return from <strong>sendmmsg</strong>(), the <em>msg_len</em> fields of successive elements of <em>msgvec</em> are updated to contain the number of bytes transmitted from the corresponding <em>msg_hdr</em>. The return value of the call indicates the number of elements of <em>msgvec</em> that have been updated.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>sendmmsg</strong>() returns the number of messages sent from <em>msgvec</em>; if this is less than <em>vlen</em>, the caller can retry with a further <strong>sendmmsg</strong>() call to send the remaining messages.</p>
+<p>On error, -1 is returned, and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<p>Errors are as for <strong>sendmsg</strong>(2). An error is returned only if no datagrams could be sent. See also BUGS.</p>
+<h1>VERSIONS</h1>
+<p>The <strong>sendmmsg</strong>() system call was added in Linux 3.0. Support in glibc was added in version 2.14.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>sendmmsg</strong>() is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>The value specified in <em>vlen</em> is capped to <strong>UIO_MAXIOV</strong> (1024).</p>
+<h1>BUGS</h1>
+<p>If an error occurs after at least one message has been sent, the call succeeds, and returns the number of messages sent. The error code is lost. The caller can retry the transmission, starting at the first failed message, but there is no guarantee that, if an error is returned, it will be the same as the one that was lost on the previous call.</p>
+<h1>EXAMPLES</h1>
+<p>The example below uses <strong>sendmmsg</strong>() to send <em>onetwo</em> and <em>three</em> in two distinct UDP datagrams using one system call. The contents of the first datagram originates from a pair of buffers.</p>
+<pre><code>#define _GNU_SOURCE
+#include &lt;netinet/ip.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+
+int
+main(void)
+{
+    int sockfd;
+    struct sockaddr_in addr;
+    struct mmsghdr msg[2];
+    struct iovec msg1[2], msg2;
+    int retval;
+
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd == -1) {
+        perror(&quot;socket()&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = htons(1234);
+    if (connect(sockfd, (struct sockaddr *) &amp;addr, sizeof(addr)) == -1) {
+        perror(&quot;connect()&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    memset(msg1, 0, sizeof(msg1));
+    msg1[0].iov_base = &quot;one&quot;;
+    msg1[0].iov_len = 3;
+    msg1[1].iov_base = &quot;two&quot;;
+    msg1[1].iov_len = 3;
+
+    memset(&amp;msg2, 0, sizeof(msg2));
+    msg2.iov_base = &quot;three&quot;;
+    msg2.iov_len = 5;
+
+    memset(msg, 0, sizeof(msg));
+    msg[0].msg_hdr.msg_iov = msg1;
+    msg[0].msg_hdr.msg_iovlen = 2;
+
+    msg[1].msg_hdr.msg_iov = &amp;msg2;
+    msg[1].msg_hdr.msg_iovlen = 1;
+
+    retval = sendmmsg(sockfd, msg, 2, 0);
+    if (retval == -1)
+        perror(&quot;sendmmsg()&quot;);
+    else
+        printf(&quot;%d messages sent\n&quot;, retval);
+
+    exit(0);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>recvmmsg</strong>(2), <strong>sendmsg</strong>(2), <strong>socket</strong>(2), <strong>socket</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

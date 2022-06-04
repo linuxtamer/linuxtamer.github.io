@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command write</title><meta name="description" content="Linux command write write to a file descriptor"><meta name="keywords" content="linux, command, write, bsd, write to a file descriptor"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>write - write to a file descriptor</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;unistd.h&gt;</strong></p>
+<p><strong>ssize_t write(int </strong><em>fd</em><strong>, const void *</strong><em>buf</em><strong>, size_t </strong><em>count</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>write</strong>() writes up to <em>count</em> bytes from the buffer starting at <em>buf</em> to the file referred to by the file descriptor <em>fd</em>.</p>
+<p>The number of bytes written may be less than <em>count</em> if, for example, there is insufficient space on the underlying physical medium, or the <strong>RLIMIT_FSIZE</strong> resource limit is encountered (see <strong>setrlimit</strong>(2)), or the call was interrupted by a signal handler after having written less than <em>count</em> bytes. (See also <strong>pipe</strong>(7).)</p>
+<p>For a seekable file (i.e., one to which <strong>lseek</strong>(2) may be applied, for example, a regular file) writing takes place at the file offset, and the file offset is incremented by the number of bytes actually written. If the file was <strong>open</strong>(2)ed with <strong>O_APPEND</strong>, the file offset is first set to the end of the file before writing. The adjustment of the file offset and the write operation are performed as an atomic step.</p>
+<p>POSIX requires that a <strong>read</strong>(2) that can be proved to occur after a <strong>write</strong>() has returned will return the new data. Note that not all filesystems are POSIX conforming.</p>
+<p>According to POSIX.1, if <em>count</em> is greater than <strong>SSIZE_MAX</strong>, the result is implementation-defined; see NOTES for the upper limit on Linux.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, the number of bytes written is returned. On error, -1 is returned, and <em>errno</em> is set to indicate the cause of the error.</p>
+<p>Note that a successful <strong>write</strong>() may transfer fewer than <em>count</em> bytes. Such partial writes can occur for various reasons; for example, because there was insufficient space on the disk device to write all of the requested bytes, or because a blocked <strong>write</strong>() to a socket, pipe, or similar was interrupted by a signal handler after it had transferred some, but before it had transferred all of the requested bytes. In the event of a partial write, the caller can make another <strong>write</strong>() call to transfer the remaining bytes. The subsequent call will either transfer further bytes or may result in an error (e.g., if the disk is now full).</p>
+<p>If <em>count</em> is zero and <em>fd</em> refers to a regular file, then <strong>write</strong>() may return a failure status if one of the errors below is detected. If no errors are detected, or error detection is not performed, 0 will be returned without causing any other effect. If <em>count</em> is zero and <em>fd</em> refers to a file other than a regular file, the results are not specified.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>The file descriptor <em>fd</em> refers to a file other than a socket and has been marked nonblocking (<strong>O_NONBLOCK</strong>), and the write would block. See <strong>open</strong>(2) for further details on the <strong>O_NONBLOCK</strong> flag.</p>
+</dd>
+<dt><strong>EAGAIN</strong> or <strong>EWOULDBLOCK</strong></dt>
+<dd><p>The file descriptor <em>fd</em> refers to a socket and has been marked nonblocking (<strong>O_NONBLOCK</strong>), and the write would block. POSIX.1-2001 allows either error to be returned for this case, and does not require these constants to have the same value, so a portable application should check for both possibilities.</p>
+</dd>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not a valid file descriptor or is not open for writing.</p>
+</dd>
+<dt><strong>EDESTADDRREQ</strong></dt>
+<dd><p><em>fd</em> refers to a datagram socket for which a peer address has not been set using <strong>connect</strong>(2).</p>
+</dd>
+<dt><strong>EDQUOT</strong></dt>
+<dd><p>The user's quota of disk blocks on the filesystem containing the file referred to by <em>fd</em> has been exhausted.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>buf</em> is outside your accessible address space.</p>
+</dd>
+<dt><strong>EFBIG</strong></dt>
+<dd><p>An attempt was made to write a file that exceeds the implementation-defined maximum file size or the process's file size limit, or to write at a position past the maximum allowed offset.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>The call was interrupted by a signal before any data was written; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>fd</em> is attached to an object which is unsuitable for writing; or the file was opened with the <strong>O_DIRECT</strong> flag, and either the address specified in <em>buf</em>, the value specified in <em>count</em>, or the file offset is not suitably aligned.</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>A low-level I/O error occurred while modifying the inode. This error may relate to the write-back of data written by an earlier <strong>write</strong>(), which may have been issued to a different file descriptor on the same file. Since Linux 4.13, errors from write-back come with a promise that they <em>may</em> be reported by subsequent. <strong>write</strong>() requests, and <em>will</em> be reported by a subsequent <strong>fsync</strong>(2) (whether or not they were also reported by <strong>write</strong>()). An alternate cause of <strong>EIO</strong> on networked filesystems is when an advisory lock had been taken out on the file descriptor and this lock has been lost. See the <em>Lost locks</em> section of <strong>fcntl</strong>(2) for further details.</p>
+</dd>
+<dt><strong>ENOSPC</strong></dt>
+<dd><p>The device containing the file referred to by <em>fd</em> has no room for the data.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The operation was prevented by a file seal; see <strong>fcntl</strong>(2).</p>
+</dd>
+<dt><strong>EPIPE</strong></dt>
+<dd><p><em>fd</em> is connected to a pipe or socket whose reading end is closed. When this happens the writing process will also receive a <strong>SIGPIPE</strong> signal. (Thus, the write return value is seen only if the program catches, blocks or ignores this signal.)</p>
+</dd>
+</dl>
+<p>Other errors may occur, depending on the object connected to <em>fd</em>.</p>
+<h1>CONFORMING TO</h1>
+<p>SVr4, 4.3BSD, POSIX.1-2001.</p>
+<p>Under SVr4 a write may be interrupted and return <strong>EINTR</strong> at any point, not just before any data is written.</p>
+<h1>NOTES</h1>
+<p>The types <em>size_t</em> and <em>ssize_t</em> are, respectively, unsigned and signed integer data types specified by POSIX.1.</p>
+<p>A successful return from <strong>write</strong>() does not make any guarantee that data has been committed to disk. On some filesystems, including NFS, it does not even guarantee that space has successfully been reserved for the data. In this case, some errors might be delayed until a future <strong>write</strong>(), <strong>fsync</strong>(2), or even <strong>close</strong>(2). The only way to be sure is to call <strong>fsync</strong>(2) after you are done writing all your data.</p>
+<p>If a <strong>write</strong>() is interrupted by a signal handler before any bytes are written, then the call fails with the error <strong>EINTR</strong>; if it is interrupted after at least one byte has been written, the call succeeds, and returns the number of bytes written.</p>
+<p>On Linux, <strong>write</strong>() (and similar system calls) will transfer at most 0x7ffff000 (2,147,479,552) bytes, returning the number of bytes actually transferred. (This is true on both 32-bit and 64-bit systems.)</p>
+<p>An error return value while performing <strong>write</strong>() using direct I/O does not mean the entire write has failed. Partial data may be written and the data at the file offset on which the <strong>write</strong>() was attempted should be considered inconsistent.</p>
+<h1>BUGS</h1>
+<p>According to POSIX.1-2008/SUSv4 Section XSI 2.9.7 ("Thread Interactions with Regular File Operations"):</p>
+<blockquote>
+<p>All of the following functions shall be atomic with respect to each other in the effects specified in POSIX.1-2008 when they operate on regular files or symbolic links: ...</p>
+</blockquote>
+<p>Among the APIs subsequently listed are <strong>write</strong>() and <strong>writev</strong>(2). And among the effects that should be atomic across threads (and processes) are updates of the file offset. However, on Linux before version 3.14, this was not the case: if two processes that share an open file description (see <strong>open</strong>(2)) perform a <strong>write</strong>() (or <strong>writev</strong>(2)) at the same time, then the I/O operations were not atomic with respect updating the file offset, with the result that the blocks of data output by the two processes might (incorrectly) overlap. This problem was fixed in Linux 3.14.</p>
+<h1>SEE ALSO</h1>
+<p><strong>close</strong>(2), <strong>fcntl</strong>(2), <strong>fsync</strong>(2), <strong>ioctl</strong>(2), <strong>lseek</strong>(2), <strong>open</strong>(2), <strong>pwrite</strong>(2), <strong>read</strong>(2), <strong>select</strong>(2), <strong>writev</strong>(2), <strong>fwrite</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

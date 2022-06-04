@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command io_submit</title><meta name="description" content="Linux command io_submit submit asynchronous I/O blocks for processing"><meta name="keywords" content="linux, command, io_submit, bsd, submit asynchronous I/O blocks for processing"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>io_submit - submit asynchronous I/O blocks for processing</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;linux/aio_abi.h&gt; /* Defines needed types */
+
+int io_submit(aio_context_t ctx_id, long nr&quot;,structiocb**&quot;iocbpp);</code></pre>
+<p><em>Note</em>: There is no glibc wrapper for this system call; see NOTES.</p>
+<h1>DESCRIPTION</h1>
+<p><em>Note</em>: this page describes the raw Linux system call interface. The wrapper function provided by <em>libaio</em> uses a different type for the <em>ctx_id</em> argument. See NOTES.</p>
+<p>The <strong>io_submit</strong>() system call queues <em>nr</em> I/O request blocks for processing in the AIO context <em>ctx_id</em>. The <em>iocbpp</em> argument should be an array of <em>nr</em> AIO control blocks, which will be submitted to context <em>ctx_id</em>.</p>
+<p>The <em>iocb</em> (I/O control block) structure defined in <em>linux/aio_abi.h</em> defines the parameters that control the I/O operation.</p>
+<pre><code>#include &lt;linux/aio_abi.h&gt;
+
+struct iocb {
+    __u64   aio_data;
+    __u32   PADDED(aio_key, aio_rw_flags);
+    __u16   aio_lio_opcode;
+    __s16   aio_reqprio;
+    __u32   aio_fildes;
+    __u64   aio_buf;
+    __u64   aio_nbytes;
+    __s64   aio_offset;
+    __u64   aio_reserved2;
+    __u32   aio_flags;
+    __u32   aio_resfd;
+};</code></pre>
+<p>The fields of this structure are as follows:</p>
+<dl>
+<dt><em>aio_data</em></dt>
+<dd><p>This data is copied into the <em>data</em> field of the <em>io_event</em> structure upon I/O completion (see <strong>io_getevents</strong>(2)).</p>
+</dd>
+<dt><em>aio_key</em></dt>
+<dd><p>This is an internal field used by the kernel. Do not modify this field after an <strong>io_submit</strong>() call.</p>
+</dd>
+<dt><em>aio_rw_flags</em></dt>
+<dd><p>This defines the R/W flags passed with structure. The valid values are:</p>
+<dl>
+<dt><strong>RWF_APPEND</strong> (since Linux 4.16)</dt>
+<dd><p>Append data to the end of the file. See the description of the flag of the same name in <strong>pwritev2</strong>(2) as well as the description of <strong>O_APPEND</strong> in <strong>open</strong>(2). The <em>aio_offset</em> field is ignored. The file offset is not changed.</p>
+</dd>
+<dt><strong>RWF_DSYNC</strong> (since Linux 4.13)</dt>
+<dd><p>Write operation complete according to requirement of synchronized I/O data integrity. See the description of the flag of the same name in <strong>pwritev2</strong>(2) as well the description of <strong>O_DSYNC</strong> in <strong>open</strong>(2).</p>
+</dd>
+<dt><strong>RWF_HIPRI</strong> (since Linux 4.13)</dt>
+<dd><p>High priority request, poll if possible</p>
+</dd>
+<dt><strong>RWF_NOWAIT</strong> (since Linux 4.14)</dt>
+<dd><p>Don't wait if the I/O will block for operations such as file block allocations, dirty page flush, mutex locks, or a congested block device inside the kernel. If any of these conditions are met, the control block is returned immediately with a return value of <strong>-EAGAIN</strong> in the <em>res</em> field of the <em>io_event</em> structure (see <strong>io_getevents</strong>(2)).</p>
+</dd>
+<dt><strong>RWF_SYNC</strong> (since Linux 4.13)</dt>
+<dd><p>Write operation complete according to requirement of synchronized I/O file integrity. See the description of the flag of the same name in <strong>pwritev2</strong>(2) as well the description of <strong>O_SYNC</strong> in <strong>open</strong>(2).</p>
+</dd>
+</dl>
+</dd>
+<dt><em>aio_lio_opcode</em></dt>
+<dd><p>This defines the type of I/O to be performed by the <em>iocb</em> structure. The valid values are defined by the enum defined in <em>linux/aio_abi.h</em>:</p>
+<pre><code>enum {
+    IOCB_CMD_PREAD = 0,
+    IOCB_CMD_PWRITE = 1,
+    IOCB_CMD_FSYNC = 2,
+    IOCB_CMD_FDSYNC = 3,
+    IOCB_CMD_POLL = 5,
+    IOCB_CMD_NOOP = 6,
+    IOCB_CMD_PREADV = 7,
+    IOCB_CMD_PWRITEV = 8,
+};</code></pre>
+</dd>
+<dt><em>aio_reqprio</em></dt>
+<dd><p>This defines the requests priority.</p>
+</dd>
+<dt><em>aio_fildes</em></dt>
+<dd><p>The file descriptor on which the I/O operation is to be performed.</p>
+</dd>
+<dt><em>aio_buf</em></dt>
+<dd><p>This is the buffer used to transfer data for a read or write operation.</p>
+</dd>
+<dt><em>aio_nbytes</em></dt>
+<dd><p>This is the size of the buffer pointed to by <em>aio_buf</em>.</p>
+</dd>
+<dt><em>aio_offset</em></dt>
+<dd><p>This is the file offset at which the I/O operation is to be performed.</p>
+</dd>
+<dt><em>aio_flags</em></dt>
+<dd><p>This is the set of flags associated with the <em>iocb</em> structure. The valid values are:</p>
+<dl>
+<dt><strong>IOCB_FLAG_RESFD</strong></dt>
+<dd><p>Asynchronous I/O control must signal the file descriptor mentioned in <em>aio_resfd</em> upon completion.</p>
+</dd>
+<dt><strong>IOCB_FLAG_IOPRIO</strong> (since Linux 4.18)</dt>
+<dd><p>Interpret the <em>aio_reqprio</em> field as an <strong>IOPRIO_VALUE</strong> as defined by <em>linux/ioprio.h</em>.</p>
+</dd>
+</dl>
+</dd>
+<dt><em>aio_resfd</em></dt>
+<dd><p>The file descriptor to signal in the event of asynchronous I/O completion.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>io_submit</strong>() returns the number of <em>iocb</em>s submitted (which may be less than <em>nr</em>, or 0 if <em>nr</em> is zero). For the failure return, see NOTES.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>Insufficient resources are available to queue any <em>iocb</em>s.</p>
+</dd>
+<dt><strong>EBADF</strong></dt>
+<dd><p>The file descriptor specified in the first <em>iocb</em> is invalid.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>One of the data structures points to invalid data.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The AIO context specified by <em>ctx_id</em> is invalid. <em>nr</em> is less than 0. The <em>iocb</em> at <em>*iocbpp[0]</em> is not properly initialized, the operation specified is invalid for the file descriptor in the <em>iocb</em>, or the value in the <em>aio_reqprio</em> field is invalid.</p>
+</dd>
+<dt><strong>ENOSYS</strong></dt>
+<dd><p><strong>io_submit</strong>() is not implemented on this architecture.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The <em>aio_reqprio</em> field is set with the class <strong>IOPRIO_CLASS_RT</strong>, but the submitting context does not have the <strong>CAP_SYS_ADMIN</strong> capability.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The asynchronous I/O system calls first appeared in Linux 2.5.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>io_submit</strong>() is Linux-specific and should not be used in programs that are intended to be portable.</p>
+<h1>NOTES</h1>
+<p>Glibc does not provide a wrapper function for this system call. You could invoke it using <strong>syscall</strong>(2). But instead, you probably want to use the <strong>io_submit</strong>() wrapper function provided by <em>libaio</em>.</p>
+<p>Note that the <em>libaio</em> wrapper function uses a different type (<em>io_context_t</em>) for the <em>ctx_id</em> argument. Note also that the <em>libaio</em> wrapper does not follow the usual C library conventions for indicating errors: on error it returns a negated error number (the negative of one of the values listed in ERRORS). If the system call is invoked via <strong>syscall</strong>(2), then the return value follows the usual conventions for indicating an error: -1, with <em>errno</em> set to a (positive) value that indicates the error.</p>
+<h1>SEE ALSO</h1>
+<p><strong>io_cancel</strong>(2), <strong>io_destroy</strong>(2), <strong>io_getevents</strong>(2), <strong>io_setup</strong>(2), <strong>aio</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

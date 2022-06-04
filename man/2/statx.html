@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command statx</title><meta name="description" content="Linux command statx get file status (extended)"><meta name="keywords" content="linux, command, statx, bsd, get file status (extended)"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>statx - get file status (extended)</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt; /* Definition of AT_* constants */
+
+int statx(int dirfd, const char *pathname, int flags,
+ unsigned int mask, struct statx *statxbuf);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>This function returns information about a file, storing it in the buffer pointed to by <em>statxbuf</em>. The returned buffer is a structure of the following type:</p>
+<pre><code>struct statx {
+    __u32 stx_mask;        /* Mask of bits indicating
+                              filled fields */
+    __u32 stx_blksize;     /* Block size for filesystem I/O */
+    __u64 stx_attributes;  /* Extra file attribute indicators */
+    __u32 stx_nlink;       /* Number of hard links */
+    __u32 stx_uid;         /* User ID of owner */
+    __u32 stx_gid;         /* Group ID of owner */
+    __u16 stx_mode;        /* File type and mode */
+    __u64 stx_ino;         /* Inode number */
+    __u64 stx_size;        /* Total size in bytes */
+    __u64 stx_blocks;      /* Number of 512B blocks allocated */
+    __u64 stx_attributes_mask;
+                           /* Mask to show what&#39;s supported
+                              in stx_attributes */
+
+    /* The following fields are file timestamps */
+    struct statx_timestamp stx_atime;  /* Last access */
+    struct statx_timestamp stx_btime;  /* Creation */
+    struct statx_timestamp stx_ctime;  /* Last status change */
+    struct statx_timestamp stx_mtime;  /* Last modification */
+
+    /* If this file represents a device, then the next two
+       fields contain the ID of the device */
+    __u32 stx_rdev_major;  /* Major ID */
+    __u32 stx_rdev_minor;  /* Minor ID */
+
+    /* The next two fields contain the ID of the device
+       containing the filesystem where the file resides */
+    __u32 stx_dev_major;   /* Major ID */
+    __u32 stx_dev_minor;   /* Minor ID */
+};</code></pre>
+<p>The file timestamps are structures of the following type:</p>
+<pre><code>struct statx_timestamp {
+    __s64 tv_sec;    /* Seconds since the Epoch (UNIX time) */
+    __u32 tv_nsec;   /* Nanoseconds since tv_sec */
+};</code></pre>
+<p>(Note that reserved space and padding is omitted.)</p>
+<h2>Invoking <strong>statx</strong>():</h2>
+<p>To access a file's status, no permissions are required on the file itself, but in the case of <strong>statx</strong>() with a pathname, execute (search) permission is required on all of the directories in <em>pathname</em> that lead to the file.</p>
+<p><strong>statx</strong>() uses <em>pathname</em>, <em>dirfd</em>, and <em>flags</em> to identify the target file in one of the following ways:</p>
+<dl>
+<dt>An absolute pathname</dt>
+<dd><p>If <em>pathname</em> begins with a slash, then it is an absolute pathname that identifies the target file. In this case, <em>dirfd</em> is ignored.</p>
+</dd>
+<dt>A relative pathname</dt>
+<dd><p>If <em>pathname</em> is a string that begins with a character other than a slash and <em>dirfd</em> is <strong>AT_FDCWD</strong>, then <em>pathname</em> is a relative pathname that is interpreted relative to the process's current working directory.</p>
+</dd>
+<dt>A directory-relative pathname</dt>
+<dd><p>If <em>pathname</em> is a string that begins with a character other than a slash and <em>dirfd</em> is a file descriptor that refers to a directory, then <em>pathname</em> is a relative pathname that is interpreted relative to the directory referred to by <em>dirfd</em>.</p>
+</dd>
+<dt>By file descriptor</dt>
+<dd><p>If <em>pathname</em> is an empty string and the <strong>AT_EMPTY_PATH</strong> flag is specified in <em>flags</em> (see below), then the target file is the one referred to by the file descriptor <em>dirfd</em>.</p>
+</dd>
+</dl>
+<p><em>flags</em> can be used to influence a pathname-based lookup. A value for <em>flags</em> is constructed by ORing together zero or more of the following constants:</p>
+<dl>
+<dt><strong>AT_EMPTY_PATH</strong></dt>
+<dd><p>If <em>pathname</em> is an empty string, operate on the file referred to by <em>dirfd</em> (which may have been obtained using the <strong>open</strong>(2) <strong>O_PATH</strong> flag). In this case, <em>dirfd</em> can refer to any type of file, not just a directory.</p>
+<p>If <em>dirfd</em> is <strong>AT_FDCWD</strong>, the call operates on the current working directory.</p>
+<p>This flag is Linux-specific; define <strong>_GNU_SOURCE</strong> to obtain its definition.</p>
+</dd>
+<dt><strong>AT_NO_AUTOMOUNT</strong></dt>
+<dd><p>Don't automount the terminal ("basename") component of <em>pathname</em> if it is a directory that is an automount point. This allows the caller to gather attributes of an automount point (rather than the location it would mount). This flag can be used in tools that scan directories to prevent mass-automounting of a directory of automount points. The <strong>AT_NO_AUTOMOUNT</strong> flag has no effect if the mount point has already been mounted over. This flag is Linux-specific; define <strong>_GNU_SOURCE</strong> to obtain its definition.</p>
+</dd>
+<dt><strong>AT_SYMLINK_NOFOLLOW</strong></dt>
+<dd><p>If <em>pathname</em> is a symbolic link, do not dereference it: instead return information about the link itself, like <strong>lstat</strong>(2).</p>
+</dd>
+</dl>
+<p><em>flags</em> can also be used to control what sort of synchronization the kernel will do when querying a file on a remote filesystem. This is done by ORing in one of the following values:</p>
+<dl>
+<dt><strong>AT_STATX_SYNC_AS_STAT</strong></dt>
+<dd><p>Do whatever <strong>stat</strong>(2) does. This is the default and is very much filesystem-specific.</p>
+</dd>
+<dt><strong>AT_STATX_FORCE_SYNC</strong></dt>
+<dd><p>Force the attributes to be synchronized with the server. This may require that a network filesystem perform a data writeback to get the timestamps correct.</p>
+</dd>
+<dt><strong>AT_STATX_DONT_SYNC</strong></dt>
+<dd><p>Don't synchronize anything, but rather just take whatever the system has cached if possible. This may mean that the information returned is approximate, but, on a network filesystem, it may not involve a round trip to the server - even if no lease is held.</p>
+</dd>
+</dl>
+<p>The <em>mask</em> argument to <strong>statx</strong>() is used to tell the kernel which fields the caller is interested in. <em>mask</em> is an ORed combination of the following constants:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">STATX_TYPE</td>
+<td style="text-align: left;">Want stx_mode &amp; S_IFMT</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STATX_MODE</td>
+<td style="text-align: left;">Want stx_mode &amp; ~S_IFMT</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STATX_NLINK</td>
+<td style="text-align: left;">Want stx_nlink</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STATX_UID</td>
+<td style="text-align: left;">Want stx_uid</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STATX_GID</td>
+<td style="text-align: left;">Want stx_gid</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STATX_ATIME</td>
+<td style="text-align: left;">Want stx_atime</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STATX_MTIME</td>
+<td style="text-align: left;">Want stx_mtime</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STATX_CTIME</td>
+<td style="text-align: left;">Want stx_ctime</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STATX_INO</td>
+<td style="text-align: left;">Want stx_ino</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STATX_SIZE</td>
+<td style="text-align: left;">Want stx_size</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STATX_BLOCKS</td>
+<td style="text-align: left;">Want stx_blocks</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STATX_BASIC_STATS</td>
+<td style="text-align: left;">[All of the above]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STATX_BTIME</td>
+<td style="text-align: left;">Want stx_btime</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STATX_ALL</td>
+<td style="text-align: left;">[All currently available fields]</td>
+</tr>
+</tbody>
+</table>
+<p>Note that, in general, the kernel does <em>not</em> reject values in <em>mask</em> other than the above. (For an exception, see <strong>EINVAL</strong> in errors.) Instead, it simply informs the caller which values are supported by this kernel and filesystem via the <em>statx.stx_mask</em> field. Therefore, <em>do not</em> simply set <em>mask</em> to <strong>UINT_MAX</strong> (all bits set), as one or more bits may, in the future, be used to specify an extension to the buffer.</p>
+<h2>The returned information</h2>
+<p>The status information for the target file is returned in the <em>statx</em> structure pointed to by <em>statxbuf</em>. Included in this is <em>stx_mask</em> which indicates what other information has been returned. <em>stx_mask</em> has the same format as the <em>mask</em> argument and bits are set in it to indicate which fields have been filled in.</p>
+<p>It should be noted that the kernel may return fields that weren't requested and may fail to return fields that were requested, depending on what the backing filesystem supports. (Fields that are given values despite being unrequested can just be ignored.) In either case, <em>stx_mask</em> will not be equal <em>mask</em>.</p>
+<p>If a filesystem does not support a field or if it has an unrepresentable value (for instance, a file with an exotic type), then the mask bit corresponding to that field will be cleared in <em>stx_mask</em> even if the user asked for it and a dummy value will be filled in for compatibility purposes if one is available (e.g., a dummy UID and GID may be specified to mount under some circumstances).</p>
+<p>A filesystem may also fill in fields that the caller didn't ask for if it has values for them available and the information is available at no extra cost. If this happens, the corresponding bits will be set in <em>stx_mask</em>.</p>
+<p><em>Note</em>: for performance and simplicity reasons, different fields in the <em>statx</em> structure may contain state information from different moments during the execution of the system call. For example, if <em>stx_mode</em> or <em>stx_uid</em> is changed by another process by calling <strong>chmod</strong>(2) or <strong>chown</strong>(2), <strong>stat</strong>() might return the old <em>stx_mode</em> together with the new <em>stx_uid</em>, or the old <em>stx_uid</em> together with the new <em>stx_mode</em>.</p>
+<p>Apart from <em>stx_mask</em> (which is described above), the fields in the <em>statx</em> structure are:</p>
+<dl>
+<dt><em>stx_blksize</em></dt>
+<dd><p>The "preferred" block size for efficient filesystem I/O. (Writing to a file in smaller chunks may cause an inefficient read-modify-rewrite.)</p>
+</dd>
+<dt><em>stx_attributes</em></dt>
+<dd><p>Further status information about the file (see below for more information).</p>
+</dd>
+<dt><em>stx_nlink</em></dt>
+<dd><p>The number of hard links on a file.</p>
+</dd>
+<dt><em>stx_uid</em></dt>
+<dd><p>This field contains the user ID of the owner of the file.</p>
+</dd>
+<dt><em>stx_gid</em></dt>
+<dd><p>This field contains the ID of the group owner of the file.</p>
+</dd>
+<dt><em>stx_mode</em></dt>
+<dd><p>The file type and mode. See <strong>inode</strong>(7) for details.</p>
+</dd>
+<dt><em>stx_ino</em></dt>
+<dd><p>The inode number of the file.</p>
+</dd>
+<dt><em>stx_size</em></dt>
+<dd><p>The size of the file (if it is a regular file or a symbolic link) in bytes. The size of a symbolic link is the length of the pathname it contains, without a terminating null byte.</p>
+</dd>
+<dt><em>stx_blocks</em></dt>
+<dd><p>The number of blocks allocated to the file on the medium, in 512-byte units. (This may be smaller than <em>stx_size</em>/512 when the file has holes.)</p>
+</dd>
+<dt><em>stx_attributes_mask</em></dt>
+<dd><p>A mask indicating which bits in <em>stx_attributes</em> are supported by the VFS and the filesystem.</p>
+</dd>
+<dt><em>stx_atime</em></dt>
+<dd><p>The file's last access timestamp.</p>
+</dd>
+<dt><em>stx_btime</em></dt>
+<dd><p>The file's creation timestamp.</p>
+</dd>
+<dt><em>stx_ctime</em></dt>
+<dd><p>The file's last status change timestamp.</p>
+</dd>
+<dt><em>stx_mtime</em></dt>
+<dd><p>The file's last modification timestamp.</p>
+</dd>
+<dt><em>stx_dev_major</em> and <em>stx_dev_minor</em></dt>
+<dd><p>The device on which this file (inode) resides.</p>
+</dd>
+<dt><em>stx_rdev_major</em> and <em>stx_rdev_minor</em></dt>
+<dd><p>The device that this file (inode) represents if the file is of block or character device type.</p>
+</dd>
+</dl>
+<p>For further information on the above fields, see <strong>inode</strong>(7).</p>
+<h2>File attributes</h2>
+<p>The <em>stx_attributes</em> field contains a set of ORed flags that indicate additional attributes of the file. Note that any attribute that is not indicated as supported by <em>stx_attributes_mask</em> has no usable value here. The bits in <em>stx_attributes_mask</em> correspond bit-by-bit to <em>stx_attributes</em>.</p>
+<p>The flags are as follows:</p>
+<dl>
+<dt><strong>STATX_ATTR_COMPRESSED</strong></dt>
+<dd><p>The file is compressed by the filesystem and may take extra resources to access.</p>
+</dd>
+<dt><strong>STATX_ATTR_IMMUTABLE</strong></dt>
+<dd><p>The file cannot be modified: it cannot be deleted or renamed, no hard links can be created to this file and no data can be written to it. See <strong>chattr</strong>(1).</p>
+</dd>
+<dt><strong>STATX_ATTR_APPEND</strong></dt>
+<dd><p>The file can only be opened in append mode for writing. Random access writing is not permitted. See <strong>chattr</strong>(1).</p>
+</dd>
+<dt><strong>STATX_ATTR_NODUMP</strong></dt>
+<dd><p>File is not a candidate for backup when a backup program such as <strong>dump</strong>(8) is run. See <strong>chattr</strong>(1).</p>
+</dd>
+<dt><strong>STATX_ATTR_ENCRYPTED</strong></dt>
+<dd><p>A key is required for the file to be encrypted by the filesystem.</p>
+</dd>
+<dt><strong>STATX_ATTR_VERITY</strong> (since Linux 5.5)</dt>
+<dd><p>The file has fs-verity enabled. It cannot be written to, and all reads from it will be verified against a cryptographic hash that covers the entire file (e.g., via a Merkle tree).</p>
+</dd>
+<dt><strong>STATX_ATTR_DAX</strong> (since Linux 5.8)</dt>
+<dd><p>The file is in the DAX (cpu direct access) state. DAX state attempts to minimize software cache effects for both I/O and memory mappings of this file. It requires a file system which has been configured to support DAX.</p>
+<p>DAX generally assumes all accesses are via CPU load / store instructions which can minimize overhead for small accesses, but may adversely affect CPU utilization for large transfers.</p>
+<p>File I/O is done directly to/from user-space buffers and memory mapped I/O may be performed with direct memory mappings that bypass the kernel page cache.</p>
+<p>While the DAX property tends to result in data being transferred synchronously, it does not give the same guarantees as the <strong>O_SYNC</strong> flag (see <strong>open</strong>(2)), where data and the necessary metadata are transferred together.</p>
+<p>A DAX file may support being mapped with the <strong>MAP_SYNC</strong> flag, which enables a program to use CPU cache flush instructions to persist CPU store operations without an explicit <strong>fsync</strong>(2). See <strong>mmap</strong>(2) for more information.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>Search permission is denied for one of the directories in the path prefix of <em>pathname</em>. (See also <strong>path_resolution</strong>(7).)</p>
+</dd>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>dirfd</em> is not a valid open file descriptor.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>pathname</em> or <em>statxbuf</em> is NULL or points to a location outside the process's accessible address space.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Invalid flag specified in <em>flags</em>.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Reserved flag specified in <em>mask</em>. (Currently, there is one such flag, designated by the constant <strong>STATX__RESERVED</strong>, with the value 0x80000000U.)</p>
+</dd>
+<dt><strong>ELOOP</strong></dt>
+<dd><p>Too many symbolic links encountered while traversing the pathname.</p>
+</dd>
+<dt><strong>ENAMETOOLONG</strong></dt>
+<dd><p><em>pathname</em> is too long.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>A component of <em>pathname</em> does not exist, or <em>pathname</em> is an empty string and <strong>AT_EMPTY_PATH</strong> was not specified in <em>flags</em>.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Out of memory (i.e., kernel memory).</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p>A component of the path prefix of <em>pathname</em> is not a directory or <em>pathname</em> is relative and <em>dirfd</em> is a file descriptor referring to a file other than a directory.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>statx</strong>() was added to Linux in kernel 4.11; library support was added in glibc 2.28.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>statx</strong>() is Linux-specific.</p>
+<h1>SEE ALSO</h1>
+<p><strong>ls</strong>(1), <strong>stat</strong>(1), <strong>access</strong>(2), <strong>chmod</strong>(2), <strong>chown</strong>(2), <strong>readlink</strong>(2), <strong>stat</strong>(2), <strong>utime</strong>(2), <strong>capabilities</strong>(7), <strong>inode</strong>(7), <strong>symlink</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

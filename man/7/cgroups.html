@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command cgroups</title><meta name="description" content="Linux command cgroups Linux control groups"><meta name="keywords" content="linux, command, cgroups, bsd, Linux control groups"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>cgroups - Linux control groups</p>
+<h1>DESCRIPTION</h1>
+<p>Control groups, usually referred to as cgroups, are a Linux kernel feature which allow processes to be organized into hierarchical groups whose usage of various types of resources can then be limited and monitored. The kernel's cgroup interface is provided through a pseudo-filesystem called cgroupfs. Grouping is implemented in the core cgroup kernel code, while resource tracking and limits are implemented in a set of per-resource-type subsystems (memory, CPU, and so on).</p>
+<h2>Terminology</h2>
+<p>A <em>cgroup</em> is a collection of processes that are bound to a set of limits or parameters defined via the cgroup filesystem.</p>
+<p>A <em>subsystem</em> is a kernel component that modifies the behavior of the processes in a cgroup. Various subsystems have been implemented, making it possible to do things such as limiting the amount of CPU time and memory available to a cgroup, accounting for the CPU time used by a cgroup, and freezing and resuming execution of the processes in a cgroup. Subsystems are sometimes also known as <em>resource controllers</em> (or simply, controllers).</p>
+<p>The cgroups for a controller are arranged in a <em>hierarchy</em>. This hierarchy is defined by creating, removing, and renaming subdirectories within the cgroup filesystem. At each level of the hierarchy, attributes (e.g., limits) can be defined. The limits, control, and accounting provided by cgroups generally have effect throughout the subhierarchy underneath the cgroup where the attributes are defined. Thus, for example, the limits placed on a cgroup at a higher level in the hierarchy cannot be exceeded by descendant cgroups.</p>
+<h2>Cgroups version 1 and version 2</h2>
+<p>The initial release of the cgroups implementation was in Linux 2.6.24. Over time, various cgroup controllers have been added to allow the management of various types of resources. However, the development of these controllers was largely uncoordinated, with the result that many inconsistencies arose between controllers and management of the cgroup hierarchies became rather complex. A longer description of these problems can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v2.rst</em> (or <em>Documentation/cgroup-v2.txt</em> in Linux 4.17 and earlier).</p>
+<p>Because of the problems with the initial cgroups implementation (cgroups version 1), starting in Linux 3.10, work began on a new, orthogonal implementation to remedy these problems. Initially marked experimental, and hidden behind the <em>-o __DEVEL__sane_behavior</em> mount option, the new version (cgroups version 2) was eventually made official with the release of Linux 4.5. Differences between the two versions are described in the text below. The file <em>cgroup.sane_behavior</em>, present in cgroups v1, is a relic of this mount option. The file always reports "0" and is only retained for backward compatibility.</p>
+<p>Although cgroups v2 is intended as a replacement for cgroups v1, the older system continues to exist (and for compatibility reasons is unlikely to be removed). Currently, cgroups v2 implements only a subset of the controllers available in cgroups v1. The two systems are implemented so that both v1 controllers and v2 controllers can be mounted on the same system. Thus, for example, it is possible to use those controllers that are supported under version 2, while also using version 1 controllers where version 2 does not yet support those controllers. The only restriction here is that a controller can't be simultaneously employed in both a cgroups v1 hierarchy and in the cgroups v2 hierarchy.</p>
+<h1>CGROUPS VERSION 1</h1>
+<p>Under cgroups v1, each controller may be mounted against a separate cgroup filesystem that provides its own hierarchical organization of the processes on the system. It is also possible to comount multiple (or even all) cgroups v1 controllers against the same cgroup filesystem, meaning that the comounted controllers manage the same hierarchical organization of processes.</p>
+<p>For each mounted hierarchy, the directory tree mirrors the control group hierarchy. Each control group is represented by a directory, with each of its child control cgroups represented as a child directory. For instance, <em>/user/joe/1.session</em> represents control group <em>1.session</em>, which is a child of cgroup <em>joe</em>, which is a child of <em>/user</em>. Under each cgroup directory is a set of files which can be read or written to, reflecting resource limits and a few general cgroup properties.</p>
+<h2>Tasks (threads) versus processes</h2>
+<p>In cgroups v1, a distinction is drawn between <em>processes</em> and <em>tasks</em>. In this view, a process can consist of multiple tasks (more commonly called threads, from a user-space perspective, and called such in the remainder of this man page). In cgroups v1, it is possible to independently manipulate the cgroup memberships of the threads in a process.</p>
+<p>The cgroups v1 ability to split threads across different cgroups caused problems in some cases. For example, it made no sense for the <em>memory</em> controller, since all of the threads of a process share a single address space. Because of these problems, the ability to independently manipulate the cgroup memberships of the threads in a process was removed in the initial cgroups v2 implementation, and subsequently restored in a more limited form (see the discussion of "thread mode" below).</p>
+<h2>Mounting v1 controllers</h2>
+<p>The use of cgroups requires a kernel built with the <strong>CONFIG_CGROUP</strong> option. In addition, each of the v1 controllers has an associated configuration option that must be set in order to employ that controller.</p>
+<p>In order to use a v1 controller, it must be mounted against a cgroup filesystem. The usual place for such mounts is under a <strong>tmpfs</strong>(5) filesystem mounted at <em>/sys/fs/cgroup</em>. Thus, one might mount the <em>cpu</em> controller as follows:</p>
+<pre><code>mount -t cgroup -o cpu none /sys/fs/cgroup/cpu</code></pre>
+<p>It is possible to comount multiple controllers against the same hierarchy. For example, here the <em>cpu</em> and <em>cpuacct</em> controllers are comounted against a single hierarchy:</p>
+<pre><code>mount -t cgroup -o cpu,cpuacct none /sys/fs/cgroup/cpu,cpuacct</code></pre>
+<p>Comounting controllers has the effect that a process is in the same cgroup for all of the comounted controllers. Separately mounting controllers allows a process to be in cgroup <em>/foo1</em> for one controller while being in <em>/foo2/foo3</em> for another.</p>
+<p>It is possible to comount all v1 controllers against the same hierarchy:</p>
+<pre><code>mount -t cgroup -o all cgroup /sys/fs/cgroup</code></pre>
+<p>(One can achieve the same result by omitting <em>-o all</em>, since it is the default if no controllers are explicitly specified.)</p>
+<p>It is not possible to mount the same controller against multiple cgroup hierarchies. For example, it is not possible to mount both the <em>cpu</em> and <em>cpuacct</em> controllers against one hierarchy, and to mount the <em>cpu</em> controller alone against another hierarchy. It is possible to create multiple mount points with exactly the same set of comounted controllers. However, in this case all that results is multiple mount points providing a view of the same hierarchy.</p>
+<p>Note that on many systems, the v1 controllers are automatically mounted under <em>/sys/fs/cgroup</em>; in particular, <strong>systemd</strong>(1) automatically creates such mount points.</p>
+<h2>Unmounting v1 controllers</h2>
+<p>A mounted cgroup filesystem can be unmounted using the <strong>umount</strong>(8) command, as in the following example:</p>
+<pre><code>umount /sys/fs/cgroup/pids</code></pre>
+<p><em>But note well</em>: a cgroup filesystem is unmounted only if it is not busy, that is, it has no child cgroups. If this is not the case, then the only effect of the <strong>umount</strong>(8) is to make the mount invisible. Thus, to ensure that the mount point is really removed, one must first remove all child cgroups, which in turn can be done only after all member processes have been moved from those cgroups to the root cgroup.</p>
+<h2>Cgroups version 1 controllers</h2>
+<p>Each of the cgroups version 1 controllers is governed by a kernel configuration option (listed below). Additionally, the availability of the cgroups feature is governed by the <strong>CONFIG_CGROUPS</strong> kernel configuration option.</p>
+<dl>
+<dt><em>cpu</em> (since Linux 2.6.24; <em><strong>CONFIG_CGROUP_SCHED</strong></em>)</dt>
+<dd><p>Cgroups can be guaranteed a minimum number of "CPU shares" when a system is busy. This does not limit a cgroup's CPU usage if the CPUs are not busy. For further information, see <em>Documentation/scheduler/sched-design-CFS.rst</em> (or <em>Documentation/scheduler/sched-design-CFS.txt</em> in Linux 5.2 and earlier).</p>
+<p>In Linux 3.2, this controller was extended to provide CPU "bandwidth" control. If the kernel is configured with <strong>CONFIG_CFS_BANDWIDTH</strong>, then within each scheduling period (defined via a file in the cgroup directory), it is possible to define an upper limit on the CPU time allocated to the processes in a cgroup. This upper limit applies even if there is no other competition for the CPU. Further information can be found in the kernel source file <em>Documentation/scheduler/sched-bwc.rst</em> (or <em>Documentation/scheduler/sched-bwc.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>cpuacct</em> (since Linux 2.6.24; <em><strong>CONFIG_CGROUP_CPUACCT</strong></em>)</dt>
+<dd><p>This provides accounting for CPU usage by groups of processes.</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/cpuacct.rst</em> (or <em>Documentation/cgroup-v1/cpuacct.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>cpuset</em> (since Linux 2.6.24; <em><strong>CONFIG_CPUSETS</strong></em>)</dt>
+<dd><p>This cgroup can be used to bind the processes in a cgroup to a specified set of CPUs and NUMA nodes.</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/cpusets.rst</em> (or <em>Documentation/cgroup-v1/cpusets.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>memory</em> (since Linux 2.6.25; <em><strong>CONFIG_MEMCG</strong></em>)</dt>
+<dd><p>The memory controller supports reporting and limiting of process memory, kernel memory, and swap used by cgroups.</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/memory.rst</em> (or <em>Documentation/cgroup-v1/memory.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>devices</em> (since Linux 2.6.26; <em><strong>CONFIG_CGROUP_DEVICE</strong></em>)</dt>
+<dd><p>This supports controlling which processes may create (mknod) devices as well as open them for reading or writing. The policies may be specified as allow-lists and deny-lists. Hierarchy is enforced, so new rules must not violate existing rules for the target or ancestor cgroups.</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/devices.rst</em> (or <em>Documentation/cgroup-v1/devices.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>freezer</em> (since Linux 2.6.28; <em><strong>CONFIG_CGROUP_FREEZER</strong></em>)</dt>
+<dd><p>The <em>freezer</em> cgroup can suspend and restore (resume) all processes in a cgroup. Freezing a cgroup <em>/A</em> also causes its children, for example, processes in <em>/A/B</em>, to be frozen.</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/freezer-subsystem.rst</em> (or <em>Documentation/cgroup-v1/freezer-subsystem.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>net_cls</em> (since Linux 2.6.29; <em><strong>CONFIG_CGROUP_NET_CLASSID</strong></em>)</dt>
+<dd><p>This places a classid, specified for the cgroup, on network packets created by a cgroup. These classids can then be used in firewall rules, as well as used to shape traffic using <strong>tc</strong>(8). This applies only to packets leaving the cgroup, not to traffic arriving at the cgroup.</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/net_cls.rst</em> (or <em>Documentation/cgroup-v1/net_cls.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>blkio</em> (since Linux 2.6.33; <em><strong>CONFIG_BLK_CGROUP</strong></em>)</dt>
+<dd><p>The <em>blkio</em> cgroup controls and limits access to specified block devices by applying IO control in the form of throttling and upper limits against leaf nodes and intermediate nodes in the storage hierarchy.</p>
+<p>Two policies are available. The first is a proportional-weight time-based division of disk implemented with CFQ. This is in effect for leaf nodes using CFQ. The second is a throttling policy which specifies upper I/O rate limits on a device.</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/blkio-controller.rst</em> (or <em>Documentation/cgroup-v1/blkio-controller.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>perf_event</em> (since Linux 2.6.39; <em><strong>CONFIG_CGROUP_PERF</strong></em>)</dt>
+<dd><p>This controller allows <em>perf</em> monitoring of the set of processes grouped in a cgroup.</p>
+<p>Further information can be found in the kernel source files</p>
+</dd>
+<dt><em>net_prio</em> (since Linux 3.3; <em><strong>CONFIG_CGROUP_NET_PRIO</strong></em>)</dt>
+<dd><p>This allows priorities to be specified, per network interface, for cgroups.</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/net_prio.rst</em> (or <em>Documentation/cgroup-v1/net_prio.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>hugetlb</em> (since Linux 3.5; <em><strong>CONFIG_CGROUP_HUGETLB</strong></em>)</dt>
+<dd><p>This supports limiting the use of huge pages by cgroups.</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/hugetlb.rst</em> (or <em>Documentation/cgroup-v1/hugetlb.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>pids</em> (since Linux 4.3; <em><strong>CONFIG_CGROUP_PIDS</strong></em>)</dt>
+<dd><p>This controller permits limiting the number of process that may be created in a cgroup (and its descendants).</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/pids.rst</em> (or <em>Documentation/cgroup-v1/pids.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+<dt><em>rdma</em> (since Linux 4.11; <em><strong>CONFIG_CGROUP_RDMA</strong></em>)</dt>
+<dd><p>The RDMA controller permits limiting the use of RDMA/IB-specific resources per cgroup.</p>
+<p>Further information can be found in the kernel source file <em>Documentation/admin-guide/cgroup-v1/rdma.rst</em> (or <em>Documentation/cgroup-v1/rdma.txt</em> in Linux 5.2 and earlier).</p>
+</dd>
+</dl>
+<h2>Creating cgroups and moving processes</h2>
+<p>A cgroup filesystem initially contains a single root cgroup, '/', which all processes belong to. A new cgroup is created by creating a directory in the cgroup filesystem:</p>
+<pre><code>mkdir /sys/fs/cgroup/cpu/cg1</code></pre>
+<p>This creates a new empty cgroup.</p>
+<p>A process may be moved to this cgroup by writing its PID into the cgroup's <em>cgroup.procs</em> file:</p>
+<pre><code>echo $$ &gt; /sys/fs/cgroup/cpu/cg1/cgroup.procs</code></pre>
+<p>Only one PID at a time should be written to this file.</p>
+<p>Writing the value 0 to a <em>cgroup.procs</em> file causes the writing process to be moved to the corresponding cgroup.</p>
+<p>When writing a PID into the <em>cgroup.procs</em>, all threads in the process are moved into the new cgroup at once.</p>
+<p>Within a hierarchy, a process can be a member of exactly one cgroup. Writing a process's PID to a <em>cgroup.procs</em> file automatically removes it from the cgroup of which it was previously a member.</p>
+<p>The <em>cgroup.procs</em> file can be read to obtain a list of the processes that are members of a cgroup. The returned list of PIDs is not guaranteed to be in order. Nor is it guaranteed to be free of duplicates. (For example, a PID may be recycled while reading from the list.)</p>
+<p>In cgroups v1, an individual thread can be moved to another cgroup by writing its thread ID (i.e., the kernel thread ID returned by <strong>clone</strong>(2) and <strong>gettid</strong>(2)) to the <em>tasks</em> file in a cgroup directory. This file can be read to discover the set of threads that are members of the cgroup.</p>
+<h2>Removing cgroups</h2>
+<p>To remove a cgroup, it must first have no child cgroups and contain no (nonzombie) processes. So long as that is the case, one can simply remove the corresponding directory pathname. Note that files in a cgroup directory cannot and need not be removed.</p>
+<h2>Cgroups v1 release notification</h2>
+<p>Two files can be used to determine whether the kernel provides notifications when a cgroup becomes empty. A cgroup is considered to be empty when it contains no child cgroups and no member processes.</p>
+<p>A special file in the root directory of each cgroup hierarchy, <em>release_agent</em>, can be used to register the pathname of a program that may be invoked when a cgroup in the hierarchy becomes empty. The pathname of the newly empty cgroup (relative to the cgroup mount point) is provided as the sole command-line argument when the <em>release_agent</em> program is invoked. The <em>release_agent</em> program might remove the cgroup directory, or perhaps repopulate it with a process.</p>
+<p>The default value of the <em>release_agent</em> file is empty, meaning that no release agent is invoked.</p>
+<p>The content of the <em>release_agent</em> file can also be specified via a mount option when the cgroup filesystem is mounted:</p>
+<pre><code>mount -o release_agent=pathname ...</code></pre>
+<p>Whether or not the <em>release_agent</em> program is invoked when a particular cgroup becomes empty is determined by the value in the <em>notify_on_release</em> file in the corresponding cgroup directory. If this file contains the value 0, then the <em>release_agent</em> program is not invoked. If it contains the value 1, the <em>release_agent</em> program is invoked. The default value for this file in the root cgroup is 0. At the time when a new cgroup is created, the value in this file is inherited from the corresponding file in the parent cgroup.</p>
+<h2>Cgroup v1 named hierarchies</h2>
+<p>In cgroups v1, it is possible to mount a cgroup hierarchy that has no attached controllers:</p>
+<pre><code>mount -t cgroup -o none,name=somename none /some/mount/point</code></pre>
+<p>Multiple instances of such hierarchies can be mounted; each hierarchy must have a unique name. The only purpose of such hierarchies is to track processes. (See the discussion of release notification below.) An example of this is the <em>name=systemd</em> cgroup hierarchy that is used by <strong>systemd</strong>(1) to track services and user sessions.</p>
+<p>Since Linux 5.0, the <em>cgroup_no_v1</em> kernel boot option (described below) can be used to disable cgroup v1 named hierarchies, by specifying <em>cgroup_no_v1=named</em>.</p>
+<h1>CGROUPS VERSION 2</h1>
+<p>In cgroups v2, all mounted controllers reside in a single unified hierarchy. While (different) controllers may be simultaneously mounted under the v1 and v2 hierarchies, it is not possible to mount the same controller simultaneously under both the v1 and the v2 hierarchies.</p>
+<p>The new behaviors in cgroups v2 are summarized here, and in some cases elaborated in the following subsections.</p>
+<ol type="1">
+<li><p>Cgroups v2 provides a unified hierarchy against which all controllers are mounted.</p></li>
+<li><p>"Internal" processes are not permitted. With the exception of the root cgroup, processes may reside only in leaf nodes (cgroups that do not themselves contain child cgroups). The details are somewhat more subtle than this, and are described below.</p></li>
+<li><p>Active cgroups must be specified via the files <em>cgroup.controllers</em> and <em>cgroup.subtree_control</em>.</p></li>
+<li><p>The <em>tasks</em> file has been removed. In addition, the <em>cgroup.clone_children</em> file that is employed by the <em>cpuset</em> controller has been removed.</p></li>
+<li><p>An improved mechanism for notification of empty cgroups is provided by the <em>cgroup.events</em> file.</p></li>
+</ol>
+<p>For more changes, see the <em>Documentation/admin-guide/cgroup-v2.rst</em> file in the kernel source (or <em>Documentation/cgroup-v2.txt</em> in Linux 4.17 and earlier).</p>
+<p>Some of the new behaviors listed above saw subsequent modification with the addition in Linux 4.14 of "thread mode" (described below).</p>
+<h2>Cgroups v2 unified hierarchy</h2>
+<p>In cgroups v1, the ability to mount different controllers against different hierarchies was intended to allow great flexibility for application design. In practice, though, the flexibility turned out to be less useful than expected, and in many cases added complexity. Therefore, in cgroups v2, all available controllers are mounted against a single hierarchy. The available controllers are automatically mounted, meaning that it is not necessary (or possible) to specify the controllers when mounting the cgroup v2 filesystem using a command such as the following:</p>
+<pre><code>mount -t cgroup2 none /mnt/cgroup2</code></pre>
+<p>A cgroup v2 controller is available only if it is not currently in use via a mount against a cgroup v1 hierarchy. Or, to put things another way, it is not possible to employ the same controller against both a v1 hierarchy and the unified v2 hierarchy. This means that it may be necessary first to unmount a v1 controller (as described above) before that controller is available in v2. Since <strong>systemd</strong>(1) makes heavy use of some v1 controllers by default, it can in some cases be simpler to boot the system with selected v1 controllers disabled. To do this, specify the <em>cgroup_no_v1=list</em> option on the kernel boot command line; <em>list</em> is a comma-separated list of the names of the controllers to disable, or the word <em>all</em> to disable all v1 controllers. (This situation is correctly handled by <strong>systemd</strong>(1), which falls back to operating without the specified controllers.)</p>
+<p>Note that on many modern systems, <strong>systemd</strong>(1) automatically mounts the <em>cgroup2</em> filesystem at <em>/sys/fs/cgroup/unified</em> during the boot process.</p>
+<h2>Cgroups v2 mount options</h2>
+<p>The following options (<em>mount -o</em>) can be specified when mounting the group v2 filesystem:</p>
+<dl>
+<dt><em>nsdelegate</em> (since Linux 4.15)</dt>
+<dd><p>Treat cgroup namespaces as delegation boundaries. For details, see below.</p>
+</dd>
+<dt><em>memory_localevents</em> (since Linux 5.2)</dt>
+<dd><p>The <em>memory.events</em> should show statistics only for the cgroup itself, and not for any descendant cgroups. This was the behavior before Linux 5.2. Starting in Linux 5.2, the default behavior is to include statistics for descendant cgroups in <em>memory.events</em>, and this mount option can be used to revert to the legacy behavior. This option is system wide and can be set on mount or modified through remount only from the initial mount namespace; it is silently ignored in noninitial namespaces.</p>
+</dd>
+</dl>
+<h2>Cgroups v2 controllers</h2>
+<p>The following controllers, documented in the kernel source file <em>Documentation/admin-guide/cgroup-v2.rst</em> (or <em>Documentation/cgroup-v2.txt</em> in Linux 4.17 and earlier), are supported in cgroups version 2:</p>
+<dl>
+<dt><em>cpu</em> (since Linux 4.15)</dt>
+<dd><p>This is the successor to the version 1 <em>cpu</em> and <em>cpuacct</em> controllers.</p>
+</dd>
+<dt><em>cpuset</em> (since Linux 5.0)</dt>
+<dd><p>This is the successor of the version 1 <em>cpuset</em> controller.</p>
+</dd>
+<dt><em>freezer</em> (since Linux 5.2)</dt>
+<dd><p>This is the successor of the version 1 <em>freezer</em> controller.</p>
+</dd>
+<dt><em>hugetlb</em> (since Linux 5.6)</dt>
+<dd><p>This is the successor of the version 1 <em>hugetlb</em> controller.</p>
+</dd>
+<dt><em>io</em> (since Linux 4.5)</dt>
+<dd><p>This is the successor of the version 1 <em>blkio</em> controller.</p>
+</dd>
+<dt><em>memory</em> (since Linux 4.5)</dt>
+<dd><p>This is the successor of the version 1 <em>memory</em> controller.</p>
+</dd>
+<dt><em>perf_event</em> (since Linux 4.11)</dt>
+<dd><p>This is the same as the version 1 <em>perf_event</em> controller.</p>
+</dd>
+<dt><em>pids</em> (since Linux 4.5)</dt>
+<dd><p>This is the same as the version 1 <em>pids</em> controller.</p>
+</dd>
+<dt><em>rdma</em> (since Linux 4.11)</dt>
+<dd><p>This is the same as the version 1 <em>rdma</em> controller.</p>
+</dd>
+</dl>
+<p>There is no direct equivalent of the <em>net_cls</em> and <em>net_prio</em> controllers from cgroups version 1. Instead, support has been added to <strong>iptables</strong>(8) to allow eBPF filters that hook on cgroup v2 pathnames to make decisions about network traffic on a per-cgroup basis.</p>
+<p>The v2 <em>devices</em> controller provides no interface files; instead, device control is gated by attaching an eBPF (<strong>BPF_CGROUP_DEVICE</strong>) program to a v2 cgroup.</p>
+<h2>Cgroups v2 subtree control</h2>
+<p>Each cgroup in the v2 hierarchy contains the following two files:</p>
+<dl>
+<dt><em>cgroup.controllers</em></dt>
+<dd><p>This read-only file exposes a list of the controllers that are <em>available</em> in this cgroup. The contents of this file match the contents of the <em>cgroup.subtree_control</em> file in the parent cgroup.</p>
+</dd>
+<dt><em>cgroup.subtree_control</em></dt>
+<dd><p>This is a list of controllers that are <em>active</em> (<em>enabled</em>) in the cgroup. The set of controllers in this file is a subset of the set in the <em>cgroup.controllers</em> of this cgroup. The set of active controllers is modified by writing strings to this file containing space-delimited controller names, each preceded by '+' (to enable a controller) or '-' (to disable a controller), as in the following example:</p>
+<pre><code>echo &#39;+pids -memory&#39; &gt; x/y/cgroup.subtree_control</code></pre>
+<p>An attempt to enable a controller that is not present in <em>cgroup.controllers</em> leads to an <strong>ENOENT</strong> error when writing to the <em>cgroup.subtree_control</em> file.</p>
+</dd>
+</dl>
+<p>Because the list of controllers in <em>cgroup.subtree_control</em> is a subset of those <em>cgroup.controllers</em>, a controller that has been disabled in one cgroup in the hierarchy can never be re-enabled in the subtree below that cgroup.</p>
+<p>A cgroup's <em>cgroup.subtree_control</em> file determines the set of controllers that are exercised in the <em>child</em> cgroups. When a controller (e.g., <em>pids</em>) is present in the <em>cgroup.subtree_control</em> file of a parent cgroup, then the corresponding controller-interface files (e.g., <em>pids.max</em>) are automatically created in the children of that cgroup and can be used to exert resource control in the child cgroups.</p>
+<h2>Cgroups v2 "no internal processes" rule</h2>
+<p>Cgroups v2 enforces a so-called "no internal processes" rule. Roughly speaking, this rule means that, with the exception of the root cgroup, processes may reside only in leaf nodes (cgroups that do not themselves contain child cgroups). This avoids the need to decide how to partition resources between processes which are members of cgroup A and processes in child cgroups of A.</p>
+<p>For instance, if cgroup <em>/cg1/cg2</em> exists, then a process may reside in <em>/cg1/cg2</em>, but not in <em>/cg1</em>. This is to avoid an ambiguity in cgroups v1 with respect to the delegation of resources between processes in <em>/cg1</em> and its child cgroups. The recommended approach in cgroups v2 is to create a subdirectory called <em>leaf</em> for any nonleaf cgroup which should contain processes, but no child cgroups. Thus, processes which previously would have gone into <em>/cg1</em> would now go into <em>/cg1/leaf</em>. This has the advantage of making explicit the relationship between processes in <em>/cg1/leaf</em> and <em>/cg1</em>'s other children.</p>
+<p>The "no internal processes" rule is in fact more subtle than stated above. More precisely, the rule is that a (nonroot) cgroup can't both (1) have member processes, and (2) distribute resources into child cgroups—that is, have a nonempty <em>cgroup.subtree_control</em> file. Thus, it <em>is</em> possible for a cgroup to have both member processes and child cgroups, but before controllers can be enabled for that cgroup, the member processes must be moved out of the cgroup (e.g., perhaps into the child cgroups).</p>
+<p>With the Linux 4.14 addition of "thread mode" (described below), the "no internal processes" rule has been relaxed in some cases.</p>
+<h2>Cgroups v2 cgroup.events file</h2>
+<p>Each nonroot cgroup in the v2 hierarchy contains a read-only file, <em>cgroup.events</em>, whose contents are key-value pairs (delimited by newline characters, with the key and value separated by spaces) providing state information about the cgroup:</p>
+<pre><code>$ cat mygrp/cgroup.events
+populated 1
+frozen 0</code></pre>
+<p>The following keys may appear in this file:</p>
+<dl>
+<dt><em>populated</em></dt>
+<dd><p>The value of this key is either 1, if this cgroup or any of its descendants has member processes, or otherwise 0.</p>
+</dd>
+<dt><em>frozen</em> (since Linux 5.2)</dt>
+<dd><p>The value of this key is 1 if this cgroup is currently frozen, or 0 if it is not.</p>
+</dd>
+</dl>
+<p>The <em>cgroup.events</em> file can be monitored, in order to receive notification when the value of one of its keys changes. Such monitoring can be done using <strong>inotify</strong>(7), which notifies changes as <strong>IN_MODIFY</strong> events, or <strong>poll</strong>(2), which notifies changes by returning the <strong>POLLPRI</strong> and <strong>POLLERR</strong> bits in the <em>revents</em> field.</p>
+<h2>Cgroup v2 release notification</h2>
+<p>Cgroups v2 provides a new mechanism for obtaining notification when a cgroup becomes empty. The cgroups v1 <em>release_agent</em> and <em>notify_on_release</em> files are removed, and replaced by the <em>populated</em> key in the <em>cgroup.events</em> file. This key either has the value 0, meaning that the cgroup (and its descendants) contain no (nonzombie) member processes, or 1, meaning that the cgroup (or one of its descendants) contains member processes.</p>
+<p>The cgroups v2 release-notification mechanism offers the following advantages over the cgroups v1 <em>release_agent</em> mechanism:</p>
+<ul>
+<li><p>It allows for cheaper notification, since a single process can monitor multiple <em>cgroup.events</em> files (using the techniques described earlier). By contrast, the cgroups v1 mechanism requires the expense of creating a process for each notification.</p></li>
+<li><p>Notification for different cgroup subhierarchies can be delegated to different processes. By contrast, the cgroups v1 mechanism allows only one release agent for an entire hierarchy.</p></li>
+</ul>
+<h2>Cgroups v2 cgroup.stat file</h2>
+<p>Each cgroup in the v2 hierarchy contains a read-only <em>cgroup.stat</em> file (first introduced in Linux 4.14) that consists of lines containing key-value pairs. The following keys currently appear in this file:</p>
+<dl>
+<dt><em>nr_descendants</em></dt>
+<dd><p>This is the total number of visible (i.e., living) descendant cgroups underneath this cgroup.</p>
+</dd>
+<dt><em>nr_dying_descendants</em></dt>
+<dd><p>This is the total number of dying descendant cgroups underneath this cgroup. A cgroup enters the dying state after being deleted. It remains in that state for an undefined period (which will depend on system load) while resources are freed before the cgroup is destroyed. Note that the presence of some cgroups in the dying state is normal, and is not indicative of any problem.</p>
+<p>A process can't be made a member of a dying cgroup, and a dying cgroup can't be brought back to life.</p>
+</dd>
+</dl>
+<h2>Limiting the number of descendant cgroups</h2>
+<p>Each cgroup in the v2 hierarchy contains the following files, which can be used to view and set limits on the number of descendant cgroups under that cgroup:</p>
+<dl>
+<dt><em>cgroup.max.depth</em> (since Linux 4.14)</dt>
+<dd><p>This file defines a limit on the depth of nesting of descendant cgroups. A value of 0 in this file means that no descendant cgroups can be created. An attempt to create a descendant whose nesting level exceeds the limit fails (<em>mkdir</em>(2) fails with the error <strong>EAGAIN</strong>).</p>
+<p>Writing the string <em>"max"</em> to this file means that no limit is imposed. The default value in this file is <em>"max"</em>.</p>
+</dd>
+<dt><em>cgroup.max.descendants</em> (since Linux 4.14)</dt>
+<dd><p>This file defines a limit on the number of live descendant cgroups that this cgroup may have. An attempt to create more descendants than allowed by the limit fails (<em>mkdir</em>(2) fails with the error <strong>EAGAIN</strong>).</p>
+<p>Writing the string <em>"max"</em> to this file means that no limit is imposed. The default value in this file is <em>"max"</em>.</p>
+</dd>
+</dl>
+<h1>CGROUPS DELEGATION: DELEGATING A HIERARCHY TO A LESS PRIVILEGED USER</h1>
+<p>In the context of cgroups, delegation means passing management of some subtree of the cgroup hierarchy to a nonprivileged user. Cgroups v1 provides support for delegation based on file permissions in the cgroup hierarchy but with less strict containment rules than v2 (as noted below). Cgroups v2 supports delegation with containment by explicit design. The focus of the discussion in this section is on delegation in cgroups v2, with some differences for cgroups v1 noted along the way.</p>
+<p>Some terminology is required in order to describe delegation. A <em>delegater</em> is a privileged user (i.e., root) who owns a parent cgroup. A <em>delegatee</em> is a nonprivileged user who will be granted the permissions needed to manage some subhierarchy under that parent cgroup, known as the <em>delegated subtree</em>.</p>
+<p>To perform delegation, the delegater makes certain directories and files writable by the delegatee, typically by changing the ownership of the objects to be the user ID of the delegatee. Assuming that we want to delegate the hierarchy rooted at (say) <em>/dlgt_grp</em> and that there are not yet any child cgroups under that cgroup, the ownership of the following is changed to the user ID of the delegatee:</p>
+<dl>
+<dt><em>/dlgt_grp</em></dt>
+<dd><p>Changing the ownership of the root of the subtree means that any new cgroups created under the subtree (and the files they contain) will also be owned by the delegatee.</p>
+</dd>
+<dt><em>/dlgt_grp/cgroup.procs</em></dt>
+<dd><p>Changing the ownership of this file means that the delegatee can move processes into the root of the delegated subtree.</p>
+</dd>
+<dt><em>/dlgt_grp/cgroup.subtree_control</em> (cgroups v2 only)</dt>
+<dd><p>Changing the ownership of this file means that the delegatee can enable controllers (that are present in <em>/dlgt_grp/cgroup.controllers</em>) in order to further redistribute resources at lower levels in the subtree. (As an alternative to changing the ownership of this file, the delegater might instead add selected controllers to this file.)</p>
+</dd>
+<dt><em>/dlgt_grp/cgroup.threads</em> (cgroups v2 only)</dt>
+<dd><p>Changing the ownership of this file is necessary if a threaded subtree is being delegated (see the description of "thread mode", below). This permits the delegatee to write thread IDs to the file. (The ownership of this file can also be changed when delegating a domain subtree, but currently this serves no purpose, since, as described below, it is not possible to move a thread between domain cgroups by writing its thread ID to the <em>cgroup.threads</em> file.)</p>
+<p>In cgroups v1, the corresponding file that should instead be delegated is the <em>tasks</em> file.</p>
+</dd>
+</dl>
+<p>The delegater should <em>not</em> change the ownership of any of the controller interfaces files (e.g., <em>pids.max</em>, <em>memory.high</em>) in <em>dlgt_grp</em>. Those files are used from the next level above the delegated subtree in order to distribute resources into the subtree, and the delegatee should not have permission to change the resources that are distributed into the delegated subtree.</p>
+<p>See also the discussion of the <em>/sys/kernel/cgroup/delegate</em> file in NOTES for information about further delegatable files in cgroups v2.</p>
+<p>After the aforementioned steps have been performed, the delegatee can create child cgroups within the delegated subtree (the cgroup subdirectories and the files they contain will be owned by the delegatee) and move processes between cgroups in the subtree. If some controllers are present in <em>dlgt_grp/cgroup.subtree_control</em>, or the ownership of that file was passed to the delegatee, the delegatee can also control the further redistribution of the corresponding resources into the delegated subtree.</p>
+<h2>Cgroups v2 delegation: nsdelegate and cgroup namespaces</h2>
+<p>Starting with Linux 4.13, there is a second way to perform cgroup delegation in the cgroups v2 hierarchy. This is done by mounting or remounting the cgroup v2 filesystem with the <em>nsdelegate</em> mount option. For example, if the cgroup v2 filesystem has already been mounted, we can remount it with the <em>nsdelegate</em> option as follows:</p>
+<pre><code>mount -t cgroup2 -o remount,nsdelegate \
+                 none /sys/fs/cgroup/unified</code></pre>
+<p>The effect of this mount option is to cause cgroup namespaces to automatically become delegation boundaries. More specifically, the following restrictions apply for processes inside the cgroup namespace:</p>
+<ul>
+<li><p>Writes to controller interface files in the root directory of the namespace will fail with the error <strong>EPERM</strong>. Processes inside the cgroup namespace can still write to delegatable files in the root directory of the cgroup namespace such as <em>cgroup.procs</em> and <em>cgroup.subtree_control</em>, and can create subhierarchy underneath the root directory.</p></li>
+<li><p>Attempts to migrate processes across the namespace boundary are denied (with the error <strong>ENOENT</strong>). Processes inside the cgroup namespace can still (subject to the containment rules described below) move processes between cgroups <em>within</em> the subhierarchy under the namespace root.</p></li>
+</ul>
+<p>The ability to define cgroup namespaces as delegation boundaries makes cgroup namespaces more useful. To understand why, suppose that we already have one cgroup hierarchy that has been delegated to a nonprivileged user, <em>cecilia</em>, using the older delegation technique described above. Suppose further that <em>cecilia</em> wanted to further delegate a subhierarchy under the existing delegated hierarchy. (For example, the delegated hierarchy might be associated with an unprivileged container run by <em>cecilia</em>.) Even if a cgroup namespace was employed, because both hierarchies are owned by the unprivileged user <em>cecilia</em>, the following illegitimate actions could be performed:</p>
+<ul>
+<li><p>A process in the inferior hierarchy could change the resource controller settings in the root directory of that hierarchy. (These resource controller settings are intended to allow control to be exercised from the <em>parent</em> cgroup; a process inside the child cgroup should not be allowed to modify them.)</p></li>
+<li><p>A process inside the inferior hierarchy could move processes into and out of the inferior hierarchy if the cgroups in the superior hierarchy were somehow visible.</p></li>
+</ul>
+<p>Employing the <em>nsdelegate</em> mount option prevents both of these possibilities.</p>
+<p>The <em>nsdelegate</em> mount option only has an effect when performed in the initial mount namespace; in other mount namespaces, the option is silently ignored.</p>
+<p><em>Note</em>: On some systems, <strong>systemd</strong>(1) automatically mounts the cgroup v2 filesystem. In order to experiment with the <em>nsdelegate</em> operation, it may be useful to boot the kernel with the following command-line options:</p>
+<pre><code>cgroup_no_v1=all systemd.legacy_systemd_cgroup_controller</code></pre>
+<p>These options cause the kernel to boot with the cgroups v1 controllers disabled (meaning that the controllers are available in the v2 hierarchy), and tells <strong>systemd</strong>(1) not to mount and use the cgroup v2 hierarchy, so that the v2 hierarchy can be manually mounted with the desired options after boot-up.</p>
+<h2>Cgroup delegation containment rules</h2>
+<p>Some delegation <em>containment rules</em> ensure that the delegatee can move processes between cgroups within the delegated subtree, but can't move processes from outside the delegated subtree into the subtree or vice versa. A nonprivileged process (i.e., the delegatee) can write the PID of a "target" process into a <em>cgroup.procs</em> file only if all of the following are true:</p>
+<ul>
+<li><p>The writer has write permission on the <em>cgroup.procs</em> file in the destination cgroup.</p></li>
+<li><p>The writer has write permission on the <em>cgroup.procs</em> file in the nearest common ancestor of the source and destination cgroups. Note that in some cases, the nearest common ancestor may be the source or destination cgroup itself. This requirement is not enforced for cgroups v1 hierarchies, with the consequence that containment in v1 is less strict than in v2. (For example, in cgroups v1 the user that owns two distinct delegated subhierarchies can move a process between the hierarchies.)</p></li>
+<li><p>If the cgroup v2 filesystem was mounted with the <em>nsdelegate</em> option, the writer must be able to see the source and destination cgroups from its cgroup namespace.</p></li>
+<li><p>In cgroups v1: the effective UID of the writer (i.e., the delegatee) matches the real user ID or the saved set-user-ID of the target process. Before Linux 4.11, this requirement also applied in cgroups v2 (This was a historical requirement inherited from cgroups v1 that was later deemed unnecessary, since the other rules suffice for containment in cgroups v2.)</p></li>
+</ul>
+<p><em>Note</em>: one consequence of these delegation containment rules is that the unprivileged delegatee can't place the first process into the delegated subtree; instead, the delegater must place the first process (a process owned by the delegatee) into the delegated subtree.</p>
+<h1>CGROUPS VERSION 2 THREAD MODE</h1>
+<p>Among the restrictions imposed by cgroups v2 that were not present in cgroups v1 are the following:</p>
+<ul>
+<li><p><em>No thread-granularity control</em>: all of the threads of a process must be in the same cgroup.</p></li>
+<li><p><em>No internal processes</em>: a cgroup can't both have member processes and exercise controllers on child cgroups.</p></li>
+</ul>
+<p>Both of these restrictions were added because the lack of these restrictions had caused problems in cgroups v1. In particular, the cgroups v1 ability to allow thread-level granularity for cgroup membership made no sense for some controllers. (A notable example was the <em>memory</em> controller: since threads share an address space, it made no sense to split threads across different <em>memory</em> cgroups.)</p>
+<p>Notwithstanding the initial design decision in cgroups v2, there were use cases for certain controllers, notably the <em>cpu</em> controller, for which thread-level granularity of control was meaningful and useful. To accommodate such use cases, Linux 4.14 added <em>thread mode</em> for cgroups v2.</p>
+<p>Thread mode allows the following:</p>
+<ul>
+<li><p>The creation of <em>threaded subtrees</em> in which the threads of a process may be spread across cgroups inside the tree. (A threaded subtree may contain multiple multithreaded processes.)</p></li>
+<li><p>The concept of <em>threaded controllers</em>, which can distribute resources across the cgroups in a threaded subtree.</p></li>
+<li><p>A relaxation of the "no internal processes rule", so that, within a threaded subtree, a cgroup can both contain member threads and exercise resource control over child cgroups.</p></li>
+</ul>
+<p>With the addition of thread mode, each nonroot cgroup now contains a new file, <em>cgroup.type</em>, that exposes, and in some circumstances can be used to change, the "type" of a cgroup. This file contains one of the following type values:</p>
+<dl>
+<dt><em>domain</em></dt>
+<dd><p>This is a normal v2 cgroup that provides process-granularity control. If a process is a member of this cgroup, then all threads of the process are (by definition) in the same cgroup. This is the default cgroup type, and provides the same behavior that was provided for cgroups in the initial cgroups v2 implementation.</p>
+</dd>
+<dt><em>threaded</em></dt>
+<dd><p>This cgroup is a member of a threaded subtree. Threads can be added to this cgroup, and controllers can be enabled for the cgroup.</p>
+</dd>
+<dt><em>domain threaded</em></dt>
+<dd><p>This is a domain cgroup that serves as the root of a threaded subtree. This cgroup type is also known as "threaded root".</p>
+</dd>
+<dt><em>domain invalid</em></dt>
+<dd><p>This is a cgroup inside a threaded subtree that is in an "invalid" state. Processes can't be added to the cgroup, and controllers can't be enabled for the cgroup. The only thing that can be done with this cgroup (other than deleting it) is to convert it to a <em>threaded</em> cgroup by writing the string <em>"threaded"</em> to the <em>cgroup.type</em> file.</p>
+<p>The rationale for the existence of this "interim" type during the creation of a threaded subtree (rather than the kernel simply immediately converting all cgroups under the threaded root to the type <em>threaded</em>) is to allow for possible future extensions to the thread mode model</p>
+</dd>
+</dl>
+<h2>Threaded versus domain controllers</h2>
+<p>With the addition of threads mode, cgroups v2 now distinguishes two types of resource controllers:</p>
+<ul>
+<li><p><em>Threaded</em> controllers: these controllers support thread-granularity for resource control and can be enabled inside threaded subtrees, with the result that the corresponding controller-interface files appear inside the cgroups in the threaded subtree. As at Linux 4.19, the following controllers are threaded: <em>cpu</em>, <em>perf_event</em>, and <em>pids</em>.</p></li>
+<li><p><em>Domain</em> controllers: these controllers support only process granularity for resource control. From the perspective of a domain controller, all threads of a process are always in the same cgroup. Domain controllers can't be enabled inside a threaded subtree.</p></li>
+</ul>
+<h2>Creating a threaded subtree</h2>
+<p>There are two pathways that lead to the creation of a threaded subtree. The first pathway proceeds as follows:</p>
+<ol type="1">
+<li><p>We write the string <em>"threaded"</em> to the <em>cgroup.type</em> file of a cgroup <em>y/z</em> that currently has the type <em>domain</em>. This has the following effects:</p>
+<ul>
+<li><p>The type of the cgroup <em>y/z</em> becomes <em>threaded</em>.</p></li>
+<li><p>The type of the parent cgroup, <em>y</em>, becomes <em>domain threaded</em>. The parent cgroup is the root of a threaded subtree (also known as the "threaded root").</p></li>
+<li><p>All other cgroups under <em>y</em> that were not already of type <em>threaded</em> (because they were inside already existing threaded subtrees under the new threaded root) are converted to type <em>domain invalid</em>. Any subsequently created cgroups under <em>y</em> will also have the type <em>domain invalid</em>.</p></li>
+</ul></li>
+<li><p>We write the string <em>"threaded"</em> to each of the <em>domain invalid</em> cgroups under <em>y</em>, in order to convert them to the type <em>threaded</em>. As a consequence of this step, all threads under the threaded root now have the type <em>threaded</em> and the threaded subtree is now fully usable. The requirement to write <em>"threaded"</em> to each of these cgroups is somewhat cumbersome, but allows for possible future extensions to the thread-mode model.</p></li>
+</ol>
+<p>The second way of creating a threaded subtree is as follows:</p>
+<ol type="1">
+<li><p>In an existing cgroup, <em>z</em>, that currently has the type <em>domain</em>, we (1) enable one or more threaded controllers and (2) make a process a member of <em>z</em>. (These two steps can be done in either order.) This has the following consequences:</p>
+<ul>
+<li><p>The type of <em>z</em> becomes <em>domain threaded</em>.</p></li>
+<li><p>All of the descendant cgroups of <em>x</em> that were not already of type <em>threaded</em> are converted to type <em>domain invalid</em>.</p></li>
+</ul></li>
+<li><p>As before, we make the threaded subtree usable by writing the string <em>"threaded"</em> to each of the <em>domain invalid</em> cgroups under <em>y</em>, in order to convert them to the type <em>threaded</em>.</p></li>
+</ol>
+<p>One of the consequences of the above pathways to creating a threaded subtree is that the threaded root cgroup can be a parent only to <em>threaded</em> (and <em>domain invalid</em>) cgroups. The threaded root cgroup can't be a parent of a <em>domain</em> cgroups, and a <em>threaded</em> cgroup can't have a sibling that is a <em>domain</em> cgroup.</p>
+<h2>Using a threaded subtree</h2>
+<p>Within a threaded subtree, threaded controllers can be enabled in each subgroup whose type has been changed to <em>threaded</em>; upon doing so, the corresponding controller interface files appear in the children of that cgroup.</p>
+<p>A process can be moved into a threaded subtree by writing its PID to the <em>cgroup.procs</em> file in one of the cgroups inside the tree. This has the effect of making all of the threads in the process members of the corresponding cgroup and makes the process a member of the threaded subtree. The threads of the process can then be spread across the threaded subtree by writing their thread IDs (see <strong>gettid</strong>(2)) to the <em>cgroup.threads</em> files in different cgroups inside the subtree. The threads of a process must all reside in the same threaded subtree.</p>
+<p>As with writing to <em>cgroup.procs</em>, some containment rules apply when writing to the <em>cgroup.threads</em> file:</p>
+<ul>
+<li><p>The writer must have write permission on the cgroup.threads file in the destination cgroup.</p></li>
+<li><p>The writer must have write permission on the <em>cgroup.procs</em> file in the common ancestor of the source and destination cgroups. (In some cases, the common ancestor may be the source or destination cgroup itself.)</p></li>
+<li><p>The source and destination cgroups must be in the same threaded subtree. (Outside a threaded subtree, an attempt to move a thread by writing its thread ID to the <em>cgroup.threads</em> file in a different <em>domain</em> cgroup fails with the error <strong>EOPNOTSUPP</strong>.)</p></li>
+</ul>
+<p>The <em>cgroup.threads</em> file is present in each cgroup (including <em>domain</em> cgroups) and can be read in order to discover the set of threads that is present in the cgroup. The set of thread IDs obtained when reading this file is not guaranteed to be ordered or free of duplicates.</p>
+<p>The <em>cgroup.procs</em> file in the threaded root shows the PIDs of all processes that are members of the threaded subtree. The <em>cgroup.procs</em> files in the other cgroups in the subtree are not readable.</p>
+<p>Domain controllers can't be enabled in a threaded subtree; no controller-interface files appear inside the cgroups underneath the threaded root. From the point of view of a domain controller, threaded subtrees are invisible: a multithreaded process inside a threaded subtree appears to a domain controller as a process that resides in the threaded root cgroup.</p>
+<p>Within a threaded subtree, the "no internal processes" rule does not apply: a cgroup can both contain member processes (or thread) and exercise controllers on child cgroups.</p>
+<h2>Rules for writing to cgroup.type and creating threaded subtrees</h2>
+<p>A number of rules apply when writing to the <em>cgroup.type</em> file:</p>
+<ul>
+<li><p>Only the string <em>"threaded"</em> may be written. In other words, the only explicit transition that is possible is to convert a <em>domain</em> cgroup to type <em>threaded</em>.</p></li>
+<li><p>The effect of writing <em>"threaded"</em> depends on the current value in <em>cgroup.type</em>, as follows:</p>
+<ul>
+<li><p><em>domain</em> or <em>domain threaded</em>: start the creation of a threaded subtree (whose root is the parent of this cgroup) via the first of the pathways described above;</p></li>
+<li><p><em>domain invalid</em>: convert this cgroup (which is inside a threaded subtree) to a usable (i.e., <em>threaded</em>) state;</p></li>
+<li><p><em>threaded</em>: no effect (a "no-op").</p></li>
+</ul></li>
+<li><p>We can't write to a <em>cgroup.type</em> file if the parent's type is <em>domain invalid</em>. In other words, the cgroups of a threaded subtree must be converted to the <em>threaded</em> state in a top-down manner.</p></li>
+</ul>
+<p>There are also some constraints that must be satisfied in order to create a threaded subtree rooted at the cgroup <em>x</em>:</p>
+<ul>
+<li><p>There can be no member processes in the descendant cgroups of <em>x</em>. (The cgroup <em>x</em> can itself have member processes.)</p></li>
+<li><p>No domain controllers may be enabled in <em>x</em>'s <em>cgroup.subtree_control</em> file.</p></li>
+</ul>
+<p>If any of the above constraints is violated, then an attempt to write <em>"threaded"</em> to a <em>cgroup.type</em> file fails with the error <strong>ENOTSUP</strong>.</p>
+<h2>The "domain threaded" cgroup type</h2>
+<p>According to the pathways described above, the type of a cgroup can change to <em>domain threaded</em> in either of the following cases:</p>
+<ul>
+<li><p>The string <em>"threaded"</em> is written to a child cgroup.</p></li>
+<li><p>A threaded controller is enabled inside the cgroup and a process is made a member of the cgroup.</p></li>
+</ul>
+<p>A <em>domain threaded</em> cgroup, <em>x</em>, can revert to the type <em>domain</em> if the above conditions no longer hold true—that is, if all <em>threaded</em> child cgroups of <em>x</em> are removed and either <em>x</em> no longer has threaded controllers enabled or no longer has member processes.</p>
+<p>When a <em>domain threaded</em> cgroup <em>x</em> reverts to the type <em>domain</em>:</p>
+<ul>
+<li><p>All <em>domain invalid</em> descendants of <em>x</em> that are not in lower-level threaded subtrees revert to the type <em>domain</em>.</p></li>
+<li><p>The root cgroups in any lower-level threaded subtrees revert to the type <em>domain threaded</em>.</p></li>
+</ul>
+<h2>Exceptions for the root cgroup</h2>
+<p>The root cgroup of the v2 hierarchy is treated exceptionally: it can be the parent of both <em>domain</em> and <em>threaded</em> cgroups. If the string <em>"threaded"</em> is written to the <em>cgroup.type</em> file of one of the children of the root cgroup, then</p>
+<ul>
+<li><p>The type of that cgroup becomes <em>threaded</em>.</p></li>
+<li><p>The type of any descendants of that cgroup that are not part of lower-level threaded subtrees changes to <em>domain invalid</em>.</p></li>
+</ul>
+<p>Note that in this case, there is no cgroup whose type becomes <em>domain threaded</em>. (Notionally, the root cgroup can be considered as the threaded root for the cgroup whose type was changed to <em>threaded</em>.)</p>
+<p>The aim of this exceptional treatment for the root cgroup is to allow a threaded cgroup that employs the <em>cpu</em> controller to be placed as high as possible in the hierarchy, so as to minimize the (small) cost of traversing the cgroup hierarchy.</p>
+<h2>The cgroups v2 "cpu" controller and realtime threads</h2>
+<p>As at Linux 4.19, the cgroups v2 <em>cpu</em> controller does not support control of realtime threads (specifically threads scheduled under any of the policies <strong>SCHED_FIFO</strong>, <strong>SCHED_RR</strong>, described <strong>SCHED_DEADLINE</strong>; see <strong>sched</strong>(7)). Therefore, the <em>cpu</em> controller can be enabled in the root cgroup only if all realtime threads are in the root cgroup. (If there are realtime threads in nonroot cgroups, then a <strong>write</strong>(2) of the string <em>"+cpu"</em> to the <em>cgroup.subtree_control</em> file fails with the error <strong>EINVAL</strong>.)</p>
+<p>On some systems, <strong>systemd</strong>(1) places certain realtime threads in nonroot cgroups in the v2 hierarchy. On such systems, these threads must first be moved to the root cgroup before the <em>cpu</em> controller can be enabled.</p>
+<h1>ERRORS</h1>
+<p>The following errors can occur for <strong>mount</strong>(2):</p>
+<dl>
+<dt><strong>EBUSY</strong></dt>
+<dd><p>An attempt to mount a cgroup version 1 filesystem specified neither the <em>name=</em> option (to mount a named hierarchy) nor a controller name (or <em>all</em>).</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>A child process created via <strong>fork</strong>(2) inherits its parent's cgroup memberships. A process's cgroup memberships are preserved across <strong>execve</strong>(2).</p>
+<p>The <strong>clone3</strong>(2) <strong>CLONE_INTO_CGROUP</strong> flag can be used to create a child process that begins its life in a different version 2 cgroup from the parent process.</p>
+<h2>/proc files</h2>
+<dl>
+<dt><em>/proc/cgroups</em> (since Linux 2.6.24)</dt>
+<dd><p>This file contains information about the controllers that are compiled into the kernel. An example of the contents of this file (reformatted for readability) is the following:</p>
+<pre><code>#subsys_name    hierarchy      num_cgroups    enabled
+cpuset          4              1              1
+cpu             8              1              1
+cpuacct         8              1              1
+blkio           6              1              1
+memory          3              1              1
+devices         10             84             1
+freezer         7              1              1
+net_cls         9              1              1
+perf_event      5              1              1
+net_prio        9              1              1
+hugetlb         0              1              0
+pids            2              1              1</code></pre>
+<p>The fields in this file are, from left to right:</p>
+<ol type="1">
+<li><p>The name of the controller.</p></li>
+<li><p>The unique ID of the cgroup hierarchy on which this controller is mounted. If multiple cgroups v1 controllers are bound to the same hierarchy, then each will show the same hierarchy ID in this field. The value in this field will be 0 if:</p>
+<ol type="a">
+<li><p>the controller is not mounted on a cgroups v1 hierarchy;</p></li>
+<li><p>the controller is bound to the cgroups v2 single unified hierarchy; or</p></li>
+<li><p>the controller is disabled (see below).</p></li>
+</ol></li>
+<li><p>The number of control groups in this hierarchy using this controller.</p></li>
+<li><p>This field contains the value 1 if this controller is enabled, or 0 if it has been disabled (via the <em>cgroup_disable</em> kernel command-line boot parameter).</p></li>
+</ol>
+</dd>
+<dt><em>/proc/[pid]/cgroup</em> (since Linux 2.6.24)</dt>
+<dd><p>This file describes control groups to which the process with the corresponding PID belongs. The displayed information differs for cgroups version 1 and version 2 hierarchies.</p>
+<p>For each cgroup hierarchy of which the process is a member, there is one entry containing three colon-separated fields:</p>
+<pre><code>hierarchy-ID:controller-list:cgroup-path</code></pre>
+<p>For example:</p>
+<pre><code>5:cpuacct,cpu,cpuset:/daemons</code></pre>
+<p>The colon-separated fields are, from left to right:</p>
+<ol type="1">
+<li><p>For cgroups version 1 hierarchies, this field contains a unique hierarchy ID number that can be matched to a hierarchy ID in <em>/proc/cgroups</em>. For the cgroups version 2 hierarchy, this field contains the value 0.</p></li>
+<li><p>For cgroups version 1 hierarchies, this field contains a comma-separated list of the controllers bound to the hierarchy. For the cgroups version 2 hierarchy, this field is empty.</p></li>
+<li><p>This field contains the pathname of the control group in the hierarchy to which the process belongs. This pathname is relative to the mount point of the hierarchy.</p></li>
+</ol>
+</dd>
+</dl>
+<h2>/sys/kernel/cgroup files</h2>
+<dl>
+<dt><em>/sys/kernel/cgroup/delegate</em> (since Linux 4.15)</dt>
+<dd><p>This file exports a list of the cgroups v2 files (one per line) that are delegatable (i.e., whose ownership should be changed to the user ID of the delegatee). In the future, the set of delegatable files may change or grow, and this file provides a way for the kernel to inform user-space applications of which files must be delegated. As at Linux 4.15, one sees the following when inspecting this file:</p>
+<pre><code>$ cat /sys/kernel/cgroup/delegate
+cgroup.procs
+cgroup.subtree_control
+cgroup.threads</code></pre>
+</dd>
+<dt><em>/sys/kernel/cgroup/features</em> (since Linux 4.15)</dt>
+<dd><p>Over time, the set of cgroups v2 features that are provided by the kernel may change or grow, or some features may not be enabled by default. This file provides a way for user-space applications to discover what features the running kernel supports and has enabled. Features are listed one per line:</p>
+<pre><code>$ cat /sys/kernel/cgroup/features
+nsdelegate
+memory_localevents</code></pre>
+<p>The entries that can appear in this file are:</p>
+<dl>
+<dt><em>memory_localevents</em> (since Linux 5.2)</dt>
+<dd><p>The kernel supports the <em>memory_localevents</em> mount option.</p>
+</dd>
+<dt><em>nsdelegate</em> (since Linux 4.15)</dt>
+<dd><p>The kernel supports the <em>nsdelegate</em> mount option.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>prlimit</strong>(1), <strong>systemd</strong>(1), <strong>systemd-cgls</strong>(1), <strong>systemd-cgtop</strong>(1), <strong>clone</strong>(2), <strong>ioprio_set</strong>(2), <strong>perf_event_open</strong>(2), <strong>setrlimit</strong>(2), <strong>cgroup_namespaces</strong>(7), <strong>cpuset</strong>(7), <strong>namespaces</strong>(7), <strong>sched</strong>(7), <strong>user_namespaces</strong>(7)</p>
+<p>The kernel source file <em>Documentation/admin-guide/cgroup-v2.rst</em>.</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

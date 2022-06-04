@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command login_tty</title><meta name="description" content="Linux command login_tty terminal utility functions"><meta name="keywords" content="linux, command, login_tty, bsd, terminal utility functions"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>openpty, login_tty, forkpty - terminal utility functions</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;pty.h&gt;
+
+int openpty(int *amaster, int *aslave, char *name,
+ const struct termios *termp,
+ const struct winsize *winp);
+
+pid_t forkpty(int *amaster, char *name,
+ const struct termios *termp,
+ const struct winsize *winp);
+
+#include &lt;utmp.h&gt;
+
+int login_tty(int fd);
+
+Link with -lutil.</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>openpty</strong>() function finds an available pseudoterminal and returns file descriptors for the master and slave in <em>amaster</em> and <em>aslave</em>. If <em>name</em> is not NULL, the filename of the slave is returned in <em>name</em>. If <em>termp</em> is not NULL, the terminal parameters of the slave will be set to the values in <em>termp</em>. If <em>winp</em> is not NULL, the window size of the slave will be set to the values in <em>winp</em>.</p>
+<p>The <strong>login_tty</strong>() function prepares for a login on the terminal referred to by the file descriptor <em>fd</em> (which may be a real terminal device, or the slave of a pseudoterminal as returned by <strong>openpty</strong>()) by creating a new session, making <em>fd</em> the controlling terminal for the calling process, setting <em>fd</em> to be the standard input, output, and error streams of the current process, and closing <em>fd</em>.</p>
+<p>The <strong>forkpty</strong>() function combines <strong>openpty</strong>(), <strong>fork</strong>(2), and <strong>login_tty</strong>() to create a new process operating in a pseudoterminal. A file descriptor referring to master side of the pseudoterminal is returned in <em>amaster</em>. If <em>name</em> is not NULL, the buffer it points to is used to return the filename of the slave. The <em>termp</em> and <em>winp</em> arguments, if not NULL, will determine the terminal attributes and window size of the slave side of the pseudoterminal.</p>
+<h1>RETURN VALUE</h1>
+<p>If a call to <strong>openpty</strong>(), <strong>login_tty</strong>(), or <strong>forkpty</strong>() is not successful, -1 is returned and <em>errno</em> is set to indicate the error. Otherwise, <strong>openpty</strong>(), <strong>login_tty</strong>(), and the child process of <strong>forkpty</strong>() return 0, and the parent process of <strong>forkpty</strong>() returns the process ID of the child process.</p>
+<h1>ERRORS</h1>
+<p><strong>openpty</strong>() fails if:</p>
+<dl>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>There are no available terminals.</p>
+</dd>
+</dl>
+<p><strong>login_tty</strong>() fails if <strong>ioctl</strong>(2) fails to set <em>fd</em> to the controlling terminal of the calling process.</p>
+<p><strong>forkpty</strong>() fails if either <strong>openpty</strong>() or <strong>fork</strong>(2) fails.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>forkpty</strong>(), <strong>openpty</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>login_tty</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:ttyname</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>These are BSD functions, present in glibc. They are not standardized in POSIX.</p>
+<h1>NOTES</h1>
+<p>The <strong>const</strong> modifiers were added to the structure pointer arguments of <strong>openpty</strong>() and <strong>forkpty</strong>() in glibc 2.8.</p>
+<p>In versions of glibc before 2.0.92, <strong>openpty</strong>() returns file descriptors for a BSD pseudoterminal pair; since glibc 2.0.92, it first attempts to open a UNIX 98 pseudoterminal pair, and falls back to opening a BSD pseudoterminal pair if that fails.</p>
+<h1>BUGS</h1>
+<p>Nobody knows how much space should be reserved for <em>name</em>. So, calling <strong>openpty</strong>() or <strong>forkpty</strong>() with non-NULL <em>name</em> may not be secure.</p>
+<h1>SEE ALSO</h1>
+<p><strong>fork</strong>(2), <strong>ttyname</strong>(3), <strong>pty</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

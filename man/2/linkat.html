@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command linkat</title><meta name="description" content="Linux command linkat make a new name for a file"><meta name="keywords" content="linux, command, linkat, bsd, make a new name for a file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>link, linkat - make a new name for a file</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+
+int link(const char *oldpath, const char *newpath);
+
+#include &lt;fcntl.h&gt; /* Definition of AT_* constants */
+#include &lt;unistd.h&gt;
+
+int linkat(int olddirfd, const char *oldpath,
+ int newdirfd, const char *newpath, int flags);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>linkat</strong>():</p>
+<blockquote>
+<dl>
+<dt>Since glibc 2.10:</dt>
+<dd><p>_POSIX_C_SOURCE &gt;= 200809L</p>
+</dd>
+<dt>Before glibc 2.10:</dt>
+<dd><p>_ATFILE_SOURCE</p>
+</dd>
+</dl>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p><strong>link</strong>() creates a new link (also known as a hard link) to an existing file.</p>
+<p>If <em>newpath</em> exists, it will <em>not</em> be overwritten.</p>
+<p>This new name may be used exactly as the old one for any operation; both names refer to the same file (and so have the same permissions and ownership) and it is impossible to tell which name was the "original".</p>
+<h2>linkat()</h2>
+<p>The <strong>linkat</strong>() system call operates in exactly the same way as <strong>link</strong>(), except for the differences described here.</p>
+<p>If the pathname given in <em>oldpath</em> is relative, then it is interpreted relative to the directory referred to by the file descriptor <em>olddirfd</em> (rather than relative to the current working directory of the calling process, as is done by <strong>link</strong>() for a relative pathname).</p>
+<p>If <em>oldpath</em> is relative and <em>olddirfd</em> is the special value <strong>AT_FDCWD</strong>, then <em>oldpath</em> is interpreted relative to the current working directory of the calling process (like <strong>link</strong>()).</p>
+<p>If <em>oldpath</em> is absolute, then <em>olddirfd</em> is ignored.</p>
+<p>The interpretation of <em>newpath</em> is as for <em>oldpath</em>, except that a relative pathname is interpreted relative to the directory referred to by the file descriptor <em>newdirfd</em>.</p>
+<p>The following values can be bitwise ORed in <em>flags</em>:</p>
+<dl>
+<dt><strong>AT_EMPTY_PATH</strong> (since Linux 2.6.39)</dt>
+<dd><p>If <em>oldpath</em> is an empty string, create a link to the file referenced by <em>olddirfd</em> (which may have been obtained using the <strong>open</strong>(2) <strong>O_PATH</strong> flag). In this case, <em>olddirfd</em> can refer to any type of file except a directory. This will generally not work if the file has a link count of zero (files created with <strong>O_TMPFILE</strong> and without <strong>O_EXCL</strong> are an exception). The caller must have the <strong>CAP_DAC_READ_SEARCH</strong> capability in order to use this flag. This flag is Linux-specific; define <strong>_GNU_SOURCE</strong> to obtain its definition.</p>
+</dd>
+<dt><strong>AT_SYMLINK_FOLLOW</strong> (since Linux 2.6.18)</dt>
+<dd><p>By default, <strong>linkat</strong>(), does not dereference <em>oldpath</em> if it is a symbolic link (like <strong>link</strong>()). The flag <strong>AT_SYMLINK_FOLLOW</strong> can be specified in <em>flags</em> to cause <em>oldpath</em> to be dereferenced if it is a symbolic link. If procfs is mounted, this can be used as an alternative to <strong>AT_EMPTY_PATH</strong>, like this:</p>
+<pre><code>linkat(AT_FDCWD, &quot;/proc/self/fd/&lt;fd&gt;&quot;, newdirfd,
+       newname, AT_SYMLINK_FOLLOW);</code></pre>
+</dd>
+</dl>
+<p>Before kernel 2.6.18, the <em>flags</em> argument was unused, and had to be specified as 0.</p>
+<p>See <strong>openat</strong>(2) for an explanation of the need for <strong>linkat</strong>().</p>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>Write access to the directory containing <em>newpath</em> is denied, or search permission is denied for one of the directories in the path prefix of <em>oldpath</em> or <em>newpath</em>. (See also <strong>path_resolution</strong>(7).)</p>
+</dd>
+<dt><strong>EDQUOT</strong></dt>
+<dd><p>The user's quota of disk blocks on the filesystem has been exhausted.</p>
+</dd>
+<dt><strong>EEXIST</strong></dt>
+<dd><p><em>newpath</em> already exists.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>oldpath</em> or <em>newpath</em> points outside your accessible address space.</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>An I/O error occurred.</p>
+</dd>
+<dt><strong>ELOOP</strong></dt>
+<dd><p>Too many symbolic links were encountered in resolving <em>oldpath</em> or <em>newpath</em>.</p>
+</dd>
+<dt><strong>EMLINK</strong></dt>
+<dd><p>The file referred to by <em>oldpath</em> already has the maximum number of links to it. For example, on an <strong>ext4</strong>(5) filesystem that does not employ the <em>dir_index</em> feature, the limit on the number of hard links to a file is 65,000; on <strong>btrfs</strong>(5), the limit is 65,535 links.</p>
+</dd>
+<dt><strong>ENAMETOOLONG</strong></dt>
+<dd><p><em>oldpath</em> or <em>newpath</em> was too long.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>A directory component in <em>oldpath</em> or <em>newpath</em> does not exist or is a dangling symbolic link.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient kernel memory was available.</p>
+</dd>
+<dt><strong>ENOSPC</strong></dt>
+<dd><p>The device containing the file has no room for the new directory entry.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p>A component used as a directory in <em>oldpath</em> or <em>newpath</em> is not, in fact, a directory.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p><em>oldpath</em> is a directory.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The filesystem containing <em>oldpath</em> and <em>newpath</em> does not support the creation of hard links.</p>
+</dd>
+<dt><strong>EPERM</strong> (since Linux 3.6)</dt>
+<dd><p>The caller does not have permission to create a hard link to this file (see the description of <em>/proc/sys/fs/protected_hardlinks</em> in <strong>proc</strong>(5)).</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p><em>oldpath</em> is marked immutable or append-only. (See <strong>ioctl_iflags</strong>(2).)</p>
+</dd>
+<dt><strong>EROFS</strong></dt>
+<dd><p>The file is on a read-only filesystem.</p>
+</dd>
+<dt><strong>EXDEV</strong></dt>
+<dd><p><em>oldpath</em> and <em>newpath</em> are not on the same mounted filesystem. (Linux permits a filesystem to be mounted at multiple points, but <strong>link</strong>() does not work across different mount points, even if the same filesystem is mounted on both.)</p>
+</dd>
+</dl>
+<p>The following additional errors can occur for <strong>linkat</strong>():</p>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>olddirfd</em> or <em>newdirfd</em> is not a valid file descriptor.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>An invalid flag value was specified in <em>flags</em>.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p><strong>AT_EMPTY_PATH</strong> was specified in <em>flags</em>, but the caller did not have the <strong>CAP_DAC_READ_SEARCH</strong> capability.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>An attempt was made to link to the <em>/proc/self/fd/NN</em> file corresponding to a file descriptor created with</p>
+<pre><code>open(path, O_TMPFILE | O_EXCL, mode);</code></pre>
+<p>See <strong>open</strong>(2).</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>An attempt was made to link to a <em>/proc/self/fd/NN</em> file corresponding to a file that has been deleted.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p><em>oldpath</em> is a relative pathname and <em>olddirfd</em> refers to a directory that has been deleted, or <em>newpath</em> is a relative pathname and <em>newdirfd</em> refers to a directory that has been deleted.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p><em>oldpath</em> is relative and <em>olddirfd</em> is a file descriptor referring to a file other than a directory; or similar for <em>newpath</em> and <em>newdirfd</em></p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p><strong>AT_EMPTY_PATH</strong> was specified in <em>flags</em>, <em>oldpath</em> is an empty string, and <em>olddirfd</em> refers to a directory.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>linkat</strong>() was added to Linux in kernel 2.6.16; library support was added to glibc in version 2.4.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>link</strong>(): SVr4, 4.3BSD, POSIX.1-2001 (but see NOTES), POSIX.1-2008.</p>
+<p><strong>linkat</strong>(): POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>Hard links, as created by <strong>link</strong>(), cannot span filesystems. Use <strong>symlink</strong>(2) if this is required.</p>
+<p>POSIX.1-2001 says that <strong>link</strong>() should dereference <em>oldpath</em> if it is a symbolic link. However, since kernel 2.0, Linux does not do so: if <em>oldpath</em> is a symbolic link, then <em>newpath</em> is created as a (hard) link to the same symbolic link file (i.e., <em>newpath</em> becomes a symbolic link to the same file that <em>oldpath</em> refers to). Some other implementations behave in the same manner as Linux. POSIX.1-2008 changes the specification of <strong>link</strong>(), making it implementation-dependent whether or not <em>oldpath</em> is dereferenced if it is a symbolic link. For precise control over the treatment of symbolic links when creating a link, use <strong>linkat</strong>().</p>
+<h2>Glibc notes</h2>
+<p>On older kernels where <strong>linkat</strong>() is unavailable, the glibc wrapper function falls back to the use of <strong>link</strong>(), unless the <strong>AT_SYMLINK_FOLLOW</strong> is specified. When <em>oldpath</em> and <em>newpath</em> are relative pathnames, glibc constructs pathnames based on the symbolic links in <em>/proc/self/fd</em> that correspond to the <em>olddirfd</em> and <em>newdirfd</em> arguments.</p>
+<h1>BUGS</h1>
+<p>On NFS filesystems, the return code may be wrong in case the NFS server performs the link creation and dies before it can say so. Use <strong>stat</strong>(2) to find out if the link got created.</p>
+<h1>SEE ALSO</h1>
+<p><strong>ln</strong>(1), <strong>open</strong>(2), <strong>rename</strong>(2), <strong>stat</strong>(2), <strong>symlink</strong>(2), <strong>unlink</strong>(2), <strong>path_resolution</strong>(7), <strong>symlink</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

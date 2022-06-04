@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command Dpkg::Deps</title><meta name="description" content="Linux command Dpkg::Deps parse and manipulate dependencies of Debian packages"><meta name="keywords" content="linux, command, Dpkg::Deps, bsd, parse and manipulate dependencies of Debian packages"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>Dpkg::Deps - parse and manipulate dependencies of Debian packages</p>
+<h1>DESCRIPTION</h1>
+<p>The Dpkg::Deps module provides classes implementing various types of dependencies.</p>
+<p>The most important function is <strong>deps_parse()</strong>, it turns a dependency line in a set of Dpkg::Deps::{Simple,AND,OR,Union} objects depending on the case.</p>
+<h1>FUNCTIONS</h1>
+<p>All the deps_* functions are exported by default.</p>
+<ul>
+<li><p>($rel_p, <code>$v_p</code>) and ($rel_q, <code>$v_q</code>) express two dependencies as (relation, version). The relation variable can have the following values that are exported by Dpkg::Version: REL_EQ, REL_LT, REL_LE, REL_GT, REL_GT. This functions returns 1 if the p dependency implies the q dependency. It returns 0 if the p dependency implies that q is not satisfied. It returns undef when there's no implication. The <code>$v_p</code> and <code>$v_q</code> parameter should be Dpkg::Version objects.</p></li>
+<li><p>This function concatenates multiple dependency lines into a single line, joining them with , if appropriate, and always returning a valid string.</p></li>
+<li><p>This function parses the dependency line and returns an object, either a Dpkg::Deps::AND or a Dpkg::Deps::Union. Various options can alter the behaviour of that function.</p>
+<ul>
+<li><p>Take into account the architecture restriction part of the dependencies. Set to 0 to completely ignore that information.</p></li>
+<li><p>Define the host architecture. By default it uses <strong>Dpkg::Arch::get_host_arch()</strong> to identify the proper architecture.</p></li>
+<li><p>Define the build architecture. By default it uses <strong>Dpkg::Arch::get_build_arch()</strong> to identify the proper architecture.</p></li>
+<li><p>If set to 1, ignore dependencies that do not concern the current host architecture. This implicitly strips off the architecture restriction list so that the resulting dependencies are directly applicable to the current architecture.</p></li>
+<li><p>Take into account the profile restriction part of the dependencies. Set to 0 to completely ignore that information.</p></li>
+<li><p>Define the active build profiles. By default no profile is defined.</p></li>
+<li><p>If set to 1, ignore dependencies that do not concern the current build profile. This implicitly strips off the profile restriction formula so that the resulting dependencies are directly applicable to the current profiles.</p></li>
+<li><p>If set to 1, ignore dependencies that do not concern the current set of restrictions. This implicitly strips off any architecture restriction list or restriction formula so that the resulting dependencies are directly applicable to the current restriction. This currently implies <code>reduce_arch</code> and <code>reduce_profiles</code>, and overrides them if set.</p></li>
+<li><p>If set to 1, returns a Dpkg::Deps::Union instead of a Dpkg::Deps::AND. Use this when parsing non-dependency fields like Conflicts.</p></li>
+<li><p>If set to 1, allow only virtual package version relations, that is none, or “=”. This should be set whenever working with Provides fields.</p></li>
+<li><p>If set to 1, allow build-dep only arch qualifiers, that is “:native”. This should be set whenever working with build-deps.</p></li>
+<li><p>If set to 1, allow tests-specific package names in dependencies, that is @ and @builddeps@ (since dpkg 1.18.7). This should be set whenever working with dependency fields from <em>debian/tests/control</em>.</p></li>
+</ul></li>
+<li><p>This function visits all elements of the dependency object, calling the callback function for each element. The callback function is expected to return true when everything is fine, or false if something went wrong, in which case the iteration will stop. Return the same value as the callback function.</p></li>
+<li><p>Implements a comparison operator between two dependency objects. This function is mainly used to implement the <strong>sort()</strong> method.</p></li>
+</ul>
+<h1>CLASSES - Dpkg::Deps::*</h1>
+<p>There are several kind of dependencies. A Dpkg::Deps::Simple dependency represents a single dependency statement (it relates to one package only). Dpkg::Deps::Multiple dependencies are built on top of this class and combine several dependencies in different manners. Dpkg::Deps::AND represents the logical AND between dependencies while Dpkg::Deps::OR represents the logical OR. Dpkg::Deps::Multiple objects can contain Dpkg::Deps::Simple object as well as other Dpkg::Deps::Multiple objects.</p>
+<p>In practice, the code is only meant to handle the realistic cases which, given Debian's dependencies structure, imply those restrictions: AND can contain Simple or OR objects, OR can only contain Simple objects.</p>
+<p>Dpkg::Deps::KnownFacts is a special class that is used while evaluating dependencies and while trying to simplify them. It represents a set of installed packages along with the virtual packages that they might provide.</p>
+<h1>CHANGES</h1>
+<h2>Version 1.07 (dpkg 1.20.0)</h2>
+<p>New option: Add virtual option to <strong>Dpkg::Deps::deps_parse()</strong>.</p>
+<h2>Version 1.06 (dpkg 1.18.7; module version bumped on dpkg 1.18.24)</h2>
+<p>New option: Add tests_dep option to <strong>Dpkg::Deps::deps_parse()</strong>.</p>
+<h2>Version 1.05 (dpkg 1.17.14)</h2>
+<p>New function: <strong>Dpkg::Deps::deps_iterate()</strong>.</p>
+<h2>Version 1.04 (dpkg 1.17.10)</h2>
+<p>New options: Add use_profiles, build_profiles, reduce_profiles and reduce_restrictions to <strong>Dpkg::Deps::deps_parse()</strong>.</p>
+<h2>Version 1.03 (dpkg 1.17.0)</h2>
+<p>New option: Add build_arch option to <strong>Dpkg::Deps::deps_parse()</strong>.</p>
+<h2>Version 1.02 (dpkg 1.17.0)</h2>
+<p>New function: <strong>Dpkg::Deps::deps_concat()</strong></p>
+<h2>Version 1.01 (dpkg 1.16.1)</h2>
+<p>&lt;Used to document changes to Dpkg::Deps::* modules before they were split.&gt;</p>
+<h2>Version 1.00 (dpkg 1.15.6)</h2>
+<p>Mark the module as public.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

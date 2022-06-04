@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command getaliasbyname_r</title><meta name="description" content="Linux command getaliasbyname_r read an alias entry"><meta name="keywords" content="linux, command, getaliasbyname_r, bsd, read an alias entry"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>setaliasent, endaliasent, getaliasent, getaliasent_r, getaliasbyname, getaliasbyname_r - read an alias entry</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;aliases.h&gt;</strong></p>
+<p><strong>void setaliasent(void);</strong></p>
+<p><strong>void endaliasent(void);</strong></p>
+<p><strong>struct aliasent *getaliasent(void);</strong></p>
+<p><strong>int getaliasent_r(struct aliasent *</strong><em>result</em><strong>,</strong><br />
+<strong> char *</strong><em>buffer</em><strong>, size_t </strong><em>buflen</em><strong>, struct aliasent **</strong><em>res</em><strong>);</strong></p>
+<p><strong>struct aliasent *getaliasbyname(const char *</strong><em>name</em><strong>);</strong></p>
+<p><strong>int getaliasbyname_r(const char *</strong><em>name</em><strong>, struct aliasent *</strong><em>result</em><strong>,</strong><br />
+<strong> char *</strong><em>buffer</em><strong>, size_t </strong><em>buflen</em><strong>, struct aliasent **</strong><em>res</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>One of the databases available with the Name Service Switch (NSS) is the aliases database, that contains mail aliases. (To find out which databases are supported, try <em>getent --help</em>.) Six functions are provided to access the aliases database.</p>
+<p>The <strong>getaliasent</strong>() function returns a pointer to a structure containing the group information from the aliases database. The first time it is called it returns the first entry; thereafter, it returns successive entries.</p>
+<p>The <strong>setaliasent</strong>() function rewinds the file pointer to the beginning of the aliases database.</p>
+<p>The <strong>endaliasent</strong>() function closes the aliases database.</p>
+<p><strong>getaliasent_r</strong>() is the reentrant version of the previous function. The requested structure is stored via the first argument but the programmer needs to fill the other arguments also. Not providing enough space causes the function to fail.</p>
+<p>The function <strong>getaliasbyname</strong>() takes the name argument and searches the aliases database. The entry is returned as a pointer to a <em>struct aliasent</em>.</p>
+<p><strong>getaliasbyname_r</strong>() is the reentrant version of the previous function. The requested structure is stored via the second argument but the programmer needs to fill the other arguments also. Not providing enough space causes the function to fail.</p>
+<p>The <em>struct aliasent</em> is defined in <em>&lt;aliases.h&gt;</em>:</p>
+<pre><code>struct aliasent {
+    char    *alias_name;             /* alias name */
+    size_t   alias_members_len;
+    char   **alias_members;          /* alias name list */
+    int      alias_local;
+};</code></pre>
+<h1>RETURN VALUE</h1>
+<p>The functions <strong>getaliasent_r</strong>() and <strong>getaliasbyname_r</strong>() return a nonzero value on error.</p>
+<h1>FILES</h1>
+<p>The default alias database is the file <em>/etc/aliases</em>. This can be changed in the <em>/etc/nsswitch.conf</em> file.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>setaliasent</strong>(), <strong>endaliasent</strong>(), <strong>getaliasent_r</strong>(), <strong>getaliasbyname_r</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getaliasent</strong>(), <strong>getaliasbyname</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>These routines are glibc-specific. The NeXT system has similar routines:</p>
+<pre><code>#include &lt;aliasdb.h&gt;
+
+void alias_setent(void);
+void alias_endent(void);
+alias_ent *alias_getent(void);
+alias_ent *alias_getbyname(char *name);</code></pre>
+<h1>EXAMPLES</h1>
+<p>The following example compiles with <em>gcc example.c -o example</em>. It will dump all names in the alias database.</p>
+<pre><code>#include &lt;aliases.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;errno.h&gt;
+
+int
+main(void)
+{
+    struct aliasent *al;
+    setaliasent();
+    for (;;) {
+        al = getaliasent();
+        if (al == NULL)
+            break;
+        printf(&quot;Name: %s\n&quot;, al-&gt;alias_name);
+    }
+    if (errno) {
+        perror(&quot;reading alias&quot;);
+        exit(EXIT_FAILURE);
+    }
+    endaliasent();
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>getgrent</strong>(3), <strong>getpwent</strong>(3), <strong>getspent</strong>(3), <strong>aliases</strong>(5)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

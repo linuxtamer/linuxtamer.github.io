@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command vcsa</title><meta name="description" content="Linux command vcsa virtual console memory"><meta name="keywords" content="linux, command, vcsa, bsd, virtual console memory"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>vcs, vcsa - virtual console memory</p>
+<h1>DESCRIPTION</h1>
+<p><em>/dev/vcs0</em> is a character device with major number 7 and minor number 0, usually with mode 0644 and ownership root:tty. It refers to the memory of the currently displayed virtual console terminal.</p>
+<p><em>/dev/vcs[1-63]</em> are character devices for virtual console terminals, they have major number 7 and minor number 1 to 63, usually mode 0644 and ownership root:tty. <em>/dev/vcsa[0-63]</em> are the same, but using <em>unsigned short</em>s (in host byte order) that include attributes, and prefixed with four bytes giving the screen dimensions and cursor position: <em>lines</em>, <em>columns</em>, <em>x</em>, <em>y</em>. (<em>x</em> = <em>y</em> = 0 at the top left corner of the screen.)</p>
+<p>When a 512-character font is loaded, the 9th bit position can be fetched by applying the <strong>ioctl</strong>(2) <strong>VT_GETHIFONTMASK</strong> operation (available in Linux kernels 2.6.18 and above) on <em>/dev/tty[1-63]</em>; the value is returned in the <em>unsigned short</em> pointed to by the third <strong>ioctl</strong>(2) argument.</p>
+<p>These devices replace the screendump <strong>ioctl</strong>(2) operations of <strong>ioctl_console</strong>(2), so the system administrator can control access using filesystem permissions.</p>
+<p>The devices for the first eight virtual consoles may be created by:</p>
+<pre><code>for x in 0 1 2 3 4 5 6 7 8; do
+    mknod -m 644 /dev/vcs$x c 7 $x;
+    mknod -m 644 /dev/vcsa$x c 7 $[$x+128];
+done
+chown root:tty /dev/vcs*</code></pre>
+<p>No <strong>ioctl</strong>(2) requests are supported.</p>
+<h1>FILES</h1>
+<p><em>/dev/vcs[0-63]</em><br />
+<em>/dev/vcsa[0-63]</em></p>
+<h1>VERSIONS</h1>
+<p>Introduced with version 1.1.92 of the Linux kernel.</p>
+<h1>EXAMPLES</h1>
+<p>You may do a screendump on vt3 by switching to vt1 and typing</p>
+<pre><code>cat /dev/vcs3 &gt;foo</code></pre>
+<p>Note that the output does not contain newline characters, so some processing may be required, like in</p>
+<pre><code>fold -w 81 /dev/vcs3 | lpr</code></pre>
+<p>or (horrors)</p>
+<pre><code>setterm -dump 3 -file /proc/self/fd/1</code></pre>
+<p>The <em>/dev/vcsa0</em> device is used for Braille support.</p>
+<p>This program displays the character and screen attributes under the cursor of the second virtual console, then changes the background color there:</p>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;linux/vt.h&gt;
+
+int
+main(void)
+{
+    int fd;
+    char *device = &quot;/dev/vcsa2&quot;;
+    char *console = &quot;/dev/tty2&quot;;
+    struct {unsigned char lines, cols, x, y;} scrn;
+    unsigned short s;
+    unsigned short mask;
+    unsigned char attrib;
+    int ch;
+
+    fd = open(console, O_RDWR);
+    if (fd &lt; 0) {
+        perror(console);
+        exit(EXIT_FAILURE);
+    }
+    if (ioctl(fd, VT_GETHIFONTMASK, &amp;mask) &lt; 0) {
+        perror(&quot;VT_GETHIFONTMASK&quot;);
+        exit(EXIT_FAILURE);
+    }
+    (void) close(fd);
+    fd = open(device, O_RDWR);
+    if (fd &lt; 0) {
+        perror(device);
+        exit(EXIT_FAILURE);
+    }
+    (void) read(fd, &amp;scrn, 4);
+    (void) lseek(fd, 4 + 2*(scrn.y*scrn.cols + scrn.x), SEEK_SET);
+    (void) read(fd, &amp;s, 2);
+    ch = s &amp; 0xff;
+    if (s &amp; mask)
+        ch |= 0x100;
+    attrib = ((s &amp; ~mask) &gt;&gt; 8);
+    printf(&quot;ch=%#03x attrib=%#02x\n&quot;, ch, attrib);
+    s ^= 0x1000;
+    (void) lseek(fd, -2, SEEK_CUR);
+    (void) write(fd, &amp;s, 2);
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>ioctl_console</strong>(2), <strong>tty</strong>(4), <strong>ttyS</strong>(4), <strong>gpm</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

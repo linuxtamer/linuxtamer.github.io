@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command shmctl</title><meta name="description" content="Linux command shmctl System V shared memory control"><meta name="keywords" content="linux, command, shmctl, bsd, System V shared memory control"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>shmctl - System V shared memory control</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/ipc.h&gt;</strong><br />
+<strong>#include &lt;sys/shm.h&gt;</strong></p>
+<p><strong>int shmctl(int </strong><em>shmid</em><strong>, int </strong><em>cmd</em><strong>, struct shmid_ds *</strong><em>buf</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>shmctl</strong>() performs the control operation specified by <em>cmd</em> on the System V shared memory segment whose identifier is given in <em>shmid</em>.</p>
+<p>The <em>buf</em> argument is a pointer to a <em>shmid_ds</em> structure, defined in <em>&lt;sys/shm.h&gt;</em> as follows:</p>
+<pre><code>struct shmid_ds {
+    struct ipc_perm shm_perm;    /* Ownership and permissions */
+    size_t          shm_segsz;   /* Size of segment (bytes) */
+    time_t          shm_atime;   /* Last attach time */
+    time_t          shm_dtime;   /* Last detach time */
+    time_t          shm_ctime;   /* Creation time/time of last
+                                    modification via shmctl() */
+    pid_t           shm_cpid;    /* PID of creator */
+    pid_t           shm_lpid;    /* PID of last shmat(2)/shmdt(2) */
+    shmatt_t        shm_nattch;  /* No. of current attaches */
+    ...
+};</code></pre>
+<p>The fields of the <em>shmid_ds</em> structure are as follows:</p>
+<dl>
+<dt><em>shm_perm</em></dt>
+<dd><p>This is an <em>ipc_perm</em> structure (see below) that specifies the access permissions on the shared memory segment.</p>
+</dd>
+<dt><em>shm_segsz</em></dt>
+<dd><p>Size in bytes of the shared memory segment.</p>
+</dd>
+<dt><em>shm_atime</em></dt>
+<dd><p>Time of the last <strong>shmat</strong>(2) system call that attached this segment.</p>
+</dd>
+<dt><em>shm_dtime</em></dt>
+<dd><p>Time of the last <strong>shmdt</strong>(2) system call that detached tgis segment.</p>
+</dd>
+<dt><em>shm_ctime</em></dt>
+<dd><p>Time of creation of segment or time of the last <strong>shmctl</strong>() <strong>IPC_SET</strong> operation.</p>
+</dd>
+<dt><em>shm_cpid</em></dt>
+<dd><p>ID of the process that created the shared memory segment.</p>
+</dd>
+<dt><em>shm_lpid</em></dt>
+<dd><p>ID of the last process that executed a <strong>shmat</strong>(2) or <strong>shmdt</strong>(2) system call on this segment.</p>
+</dd>
+<dt><em>shm_nattch</em></dt>
+<dd><p>Number of processes that have this segment attached.</p>
+</dd>
+</dl>
+<p>The <em>ipc_perm</em> structure is defined as follows (the highlighted fields are settable using <strong>IPC_SET</strong>):</p>
+<pre><code>struct ipc_perm {
+    key_t          __key;    /* Key supplied to shmget(2) */
+    uid_t          uid;      /* Effective UID of owner */
+    gid_t          gid;      /* Effective GID of owner */
+    uid_t          cuid;     /* Effective UID of creator */
+    gid_t          cgid;     /* Effective GID of creator */
+    unsigned short mode;     /* Permissions + SHM_DEST and
+                                SHM_LOCKED flags */
+    unsigned short __seq;    /* Sequence number */
+};</code></pre>
+<p>The least significant 9 bits of the <em>mode</em> field of the <em>ipc_perm</em> structure define the access permissions for the shared memory segment. The permission bits are as follows:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">0400</td>
+<td style="text-align: left;">Read by user</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">0200</td>
+<td style="text-align: left;">Write by user</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">0040</td>
+<td style="text-align: left;">Read by group</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">0020</td>
+<td style="text-align: left;">Write by group</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">0004</td>
+<td style="text-align: left;">Read by others</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">0002</td>
+<td style="text-align: left;">Write by others</td>
+</tr>
+</tbody>
+</table>
+<p>Bits 0100, 0010, and 0001 (the execute bits) are unused by the system. (It is not necessary to have execute permission on a segment in order to perform a <strong>shmat</strong>(2) call with the <strong>SHM_EXEC</strong> flag.)</p>
+<p>Valid values for <em>cmd</em> are:</p>
+<dl>
+<dt><strong>IPC_STAT</strong></dt>
+<dd><p>Copy information from the kernel data structure associated with <em>shmid</em> into the <em>shmid_ds</em> structure pointed to by <em>buf</em>. The caller must have read permission on the shared memory segment.</p>
+</dd>
+<dt><strong>IPC_SET</strong></dt>
+<dd><p>Write the values of some members of the <em>shmid_ds</em> structure pointed to by <em>buf</em> to the kernel data structure associated with this shared memory segment, updating also its <em>shm_ctime</em> member.</p>
+<p>The following fields are updated: <em>shm_perm.uid</em>, <em>shm_perm.gid</em>, and (the least significant 9 bits of) <em>shm_perm.mode</em>.</p>
+<p>The effective UID of the calling process must match the owner (<em>shm_perm.uid</em>) or creator (<em>shm_perm.cuid</em>) of the shared memory segment, or the caller must be privileged.</p>
+</dd>
+<dt><strong>IPC_RMID</strong></dt>
+<dd><p>Mark the segment to be destroyed. The segment will actually be destroyed only after the last process detaches it (i.e., when the <em>shm_nattch</em> member of the associated structure <em>shmid_ds</em> is zero). The caller must be the owner or creator of the segment, or be privileged. The <em>buf</em> argument is ignored.</p>
+<p>If a segment has been marked for destruction, then the (nonstandard) <strong>SHM_DEST</strong> flag of the <em>shm_perm.mode</em> field in the associated data structure retrieved by <strong>IPC_STAT</strong> will be set.</p>
+<p>The caller <em>must</em> ensure that a segment is eventually destroyed; otherwise its pages that were faulted in will remain in memory or swap.</p>
+<p>See also the description of <em>/proc/sys/kernel/shm_rmid_forced</em> in <strong>proc</strong>(5).</p>
+</dd>
+<dt><strong>IPC_INFO</strong> (Linux-specific)</dt>
+<dd><p>Return information about system-wide shared memory limits and parameters in the structure pointed to by <em>buf</em>. This structure is of type <em>shminfo</em> (thus, a cast is required), defined in <em>&lt;sys/shm.h&gt;</em> if the <strong>_GNU_SOURCE</strong> feature test macro is defined:</p>
+<pre><code>struct shminfo {
+    unsigned long shmmax; /* Maximum segment size */
+    unsigned long shmmin; /* Minimum segment size;
+                             always 1 */
+    unsigned long shmmni; /* Maximum number of segments */
+    unsigned long shmseg; /* Maximum number of segments
+                             that a process can attach;
+                             unused within kernel */
+    unsigned long shmall; /* Maximum number of pages of
+                             shared memory, system-wide */
+};</code></pre>
+<p>The <em>shmmni</em>, <em>shmmax</em>, and <em>shmall</em> settings can be changed via <em>/proc</em> files of the same name; see <strong>proc</strong>(5) for details.</p>
+</dd>
+<dt><strong>SHM_INFO</strong> (Linux-specific)</dt>
+<dd><p>Return a <em>shm_info</em> structure whose fields contain information about system resources consumed by shared memory. This structure is defined in <em>&lt;sys/shm.h&gt;</em> if the <strong>_GNU_SOURCE</strong> feature test macro is defined:</p>
+<pre><code>struct shm_info {
+    int           used_ids; /* # of currently existing
+                               segments */
+    unsigned long shm_tot;  /* Total number of shared
+                               memory pages */
+    unsigned long shm_rss;  /* # of resident shared
+                               memory pages */
+    unsigned long shm_swp;  /* # of swapped shared
+                               memory pages */
+    unsigned long swap_attempts;
+                            /* Unused since Linux 2.4 */
+    unsigned long swap_successes;
+                            /* Unused since Linux 2.4 */
+};</code></pre>
+</dd>
+<dt><strong>SHM_STAT</strong> (Linux-specific)</dt>
+<dd><p>Return a <em>shmid_ds</em> structure as for <strong>IPC_STAT</strong>. However, the <em>shmid</em> argument is not a segment identifier, but instead an index into the kernel's internal array that maintains information about all shared memory segments on the system.</p>
+</dd>
+<dt><strong>SHM_STAT_ANY</strong> (Linux-specific, since Linux 4.17)</dt>
+<dd><p>Return a <em>shmid_ds</em> structure as for <strong>SHM_STAT</strong>. However, <em>shm_perm.mode</em> is not checked for read access for <em>shmid</em>, meaning that any user can employ this operation (just as any user may read <em>/proc/sysvipc/shm</em> to obtain the same information).</p>
+</dd>
+</dl>
+<p>The caller can prevent or allow swapping of a shared memory segment with the following <em>cmd</em> values:</p>
+<dl>
+<dt><strong>SHM_LOCK</strong> (Linux-specific)</dt>
+<dd><p>Prevent swapping of the shared memory segment. The caller must fault in any pages that are required to be present after locking is enabled. If a segment has been locked, then the (nonstandard) <strong>SHM_LOCKED</strong> flag of the <em>shm_perm.mode</em> field in the associated data structure retrieved by <strong>IPC_STAT</strong> will be set.</p>
+</dd>
+<dt><strong>SHM_UNLOCK</strong> (Linux-specific)</dt>
+<dd><p>Unlock the segment, allowing it to be swapped out.</p>
+</dd>
+</dl>
+<p>In kernels before 2.6.10, only a privileged process could employ <strong>SHM_LOCK</strong> and <strong>SHM_UNLOCK</strong>. Since kernel 2.6.10, an unprivileged process can employ these operations if its effective UID matches the owner or creator UID of the segment, and (for <strong>SHM_LOCK</strong>) the amount of memory to be locked falls within the <strong>RLIMIT_MEMLOCK</strong> resource limit (see <strong>setrlimit</strong>(2)).</p>
+<h1>RETURN VALUE</h1>
+<p>A successful <strong>IPC_INFO</strong> or <strong>SHM_INFO</strong> operation returns the index of the highest used entry in the kernel's internal array recording information about all shared memory segments. (This information can be used with repeated <strong>SHM_STAT</strong> or <strong>SHM_STAT_ANY</strong> operations to obtain information about all shared memory segments on the system.) A successful <strong>SHM_STAT</strong> operation returns the identifier of the shared memory segment whose index was given in <em>shmid</em>. Other operations return 0 on success.</p>
+<p>On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p><strong>IPC_STAT</strong> or <strong>SHM_STAT</strong> is requested and <em>shm_perm.mode</em> does not allow read access for <em>shmid</em>, and the calling process does not have the <strong>CAP_IPC_OWNER</strong> capability in the user namespace that governs its IPC namespace.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>The argument <em>cmd</em> has value <strong>IPC_SET</strong> or <strong>IPC_STAT</strong> but the address pointed to by <em>buf</em> isn't accessible.</p>
+</dd>
+<dt><strong>EIDRM</strong></dt>
+<dd><p><em>shmid</em> points to a removed identifier.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>shmid</em> is not a valid identifier, or <em>cmd</em> is not a valid command. Or: for a <strong>SHM_STAT</strong> or <strong>SHM_STAT_ANY</strong> operation, the index value specified in <em>shmid</em> referred to an array slot that is currently unused.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>(In kernels since 2.6.9), <strong>SHM_LOCK</strong> was specified and the size of the to-be-locked segment would mean that the total bytes in locked shared memory segments would exceed the limit for the real user ID of the calling process. This limit is defined by the <strong>RLIMIT_MEMLOCK</strong> soft resource limit (see <strong>setrlimit</strong>(2)).</p>
+</dd>
+<dt><strong>EOVERFLOW</strong></dt>
+<dd><p><strong>IPC_STAT</strong> is attempted, and the GID or UID value is too large to be stored in the structure pointed to by <em>buf</em>.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p><strong>IPC_SET</strong> or <strong>IPC_RMID</strong> is attempted, and the effective user ID of the calling process is not that of the creator (found in <em>shm_perm.cuid</em>), or the owner (found in <em>shm_perm.uid</em>), and the process was not privileged (Linux: did not have the <strong>CAP_SYS_ADMIN</strong> capability).</p>
+<p>Or (in kernels before 2.6.9), <strong>SHM_LOCK</strong> or <strong>SHM_UNLOCK</strong> was specified, but the process was not privileged (Linux: did not have the <strong>CAP_IPC_LOCK</strong> capability). (Since Linux 2.6.9, this error can also occur if the <strong>RLIMIT_MEMLOCK</strong> is 0 and the caller is not privileged.)</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4.</p>
+<h1>NOTES</h1>
+<p>The inclusion of <em>&lt;sys/types.h&gt;</em> and <em>&lt;sys/ipc.h&gt;</em> isn't required on Linux or by any version of POSIX. However, some old implementations required the inclusion of these header files, and the SVID also documented their inclusion. Applications intended to be portable to such old systems may need to include these header files.</p>
+<p>The <strong>IPC_INFO</strong>, <strong>SHM_STAT</strong>, and <strong>SHM_INFO</strong> operations are used by the <strong>ipcs</strong>(1) program to provide information on allocated resources. In the future, these may modified or moved to a <em>/proc</em> filesystem interface.</p>
+<p>Linux permits a process to attach (<strong>shmat</strong>(2)) a shared memory segment that has already been marked for deletion using <em>shmctl(IPC_RMID)</em>. This feature is not available on other UNIX implementations; portable applications should avoid relying on it.</p>
+<p>Various fields in a <em>struct shmid_ds</em> were typed as <em>short</em> under Linux 2.2 and have become <em>long</em> under Linux 2.4. To take advantage of this, a recompilation under glibc-2.1.91 or later should suffice. (The kernel distinguishes old and new calls by an <strong>IPC_64</strong> flag in <em>cmd</em>.)</p>
+<h1>SEE ALSO</h1>
+<p><strong>mlock</strong>(2), <strong>setrlimit</strong>(2), <strong>shmget</strong>(2), <strong>shmop</strong>(2), <strong>capabilities</strong>(7), <strong>sysvipc</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command dpkg</title><meta name="description" content="Linux command dpkg package manager for Debian"><meta name="keywords" content="linux, command, dpkg, bsd, package manager for Debian"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>dpkg - package manager for Debian</p>
+<h1>SYNOPSIS</h1>
+<p><strong>dpkg</strong> [<em>option</em>...] <em>action</em></p>
+<h1>WARNING</h1>
+<p>This manual is intended for users wishing to understand <strong>dpkg</strong>'s command line options and package states in more detail than that provided by <strong>dpkg --help</strong>.</p>
+<p>It should <em>not</em> be used by package maintainers wishing to understand how <strong>dpkg</strong> will install their packages. The descriptions of what <strong>dpkg</strong> does when installing and removing packages are particularly inadequate.</p>
+<h1>DESCRIPTION</h1>
+<p><strong>dpkg</strong> is a tool to install, build, remove and manage Debian packages. The primary and more user-friendly front-end for <strong>dpkg</strong> is <strong>aptitude</strong>(8). <strong>dpkg</strong> itself is controlled entirely via command line parameters, which consist of exactly one action and zero or more options. The action-parameter tells <strong>dpkg</strong> what to do and options control the behavior of the action in some way.</p>
+<p><strong>dpkg</strong> can also be used as a front-end to <strong>dpkg-deb</strong>(1) and <strong>dpkg-query</strong>(1). The list of supported actions can be found later on in the <strong>ACTIONS</strong> section. If any such action is encountered <strong>dpkg</strong> just runs <strong>dpkg-deb</strong> or <strong>dpkg-query</strong> with the parameters given to it, but no specific options are currently passed to them, to use any such option the back-ends need to be called directly.</p>
+<h1>INFORMATION ABOUT PACKAGES</h1>
+<p><strong>dpkg</strong> maintains some usable information about available packages. The information is divided in three classes: <strong>states</strong>, <strong>selection states</strong> and <strong>flags</strong>. These values are intended to be changed mainly with <strong>dselect</strong>.</p>
+<h2>Package states</h2>
+<ul>
+<li><p>The package is not installed on your system.</p></li>
+<li><p>Only the configuration files or the <strong>postrm</strong> script and the data it needs to remove of the package exist on the system.</p></li>
+<li><p>The installation of the package has been started, but not completed for some reason.</p></li>
+<li><p>The package is unpacked, but not configured.</p></li>
+<li><p>The package is unpacked and configuration has been started, but not yet completed for some reason.</p></li>
+<li><p>The package awaits trigger processing by another package.</p></li>
+<li><p>The package has been triggered.</p></li>
+<li><p>The package is correctly unpacked and configured.</p></li>
+</ul>
+<h2>Package selection states</h2>
+<ul>
+<li><p>The package is selected for installation.</p></li>
+<li><p>A package marked to be on <strong>hold</strong> is kept on the same version, that is, no automatic new installs, upgrades or removals will be performed on them, unless these actions are requested explicitly, or are permitted to be done automatically with the <strong>--force-hold</strong> option.</p></li>
+<li><p>The package is selected for deinstallation (i.e. we want to remove all files, except configuration files).</p></li>
+<li><p>The package is selected to be purged (i.e. we want to remove everything from system directories, even configuration files).</p></li>
+<li><p>The package selection is unknown. A package that is also in a <strong>not-installed</strong> state, and with an <strong>ok</strong> flag will be forgotten in the next database store.</p></li>
+</ul>
+<h2>Package flags</h2>
+<ul>
+<li><p>A package marked <strong>ok</strong> is in a known state, but might need further processing.</p></li>
+<li><p>A package marked <strong>reinstreq</strong> is broken and requires reinstallation. These packages cannot be removed, unless forced with option <strong>--force-remove-reinstreq</strong>.</p></li>
+</ul>
+<h1>ACTIONS</h1>
+<ul>
+<li><p>Install the package. If <strong>--recursive</strong> or <strong>-R</strong> option is specified, <em>package-file</em> must refer to a directory instead. Installation consists of the following steps: <strong>1.</strong> Extract the control files of the new package. <strong>2.</strong> If another version of the same package was installed before the new installation, execute <em>prerm</em> script of the old package. <strong>3.</strong> Run <em>preinst</em> script, if provided by the package. <strong>4.</strong> Unpack the new files, and at the same time back up the old files, so that if something goes wrong, they can be restored. <strong>5.</strong> If another version of the same package was installed before the new installation, execute the <em>postrm</em> script of the old package. Note that this script is executed after the <em>preinst</em> script of the new package, because new files are written at the same time old files are removed. <strong>6.</strong> Configure the package. See <strong>--configure</strong> for detailed information about how this is done.</p></li>
+<li><p>Unpack the package, but don't configure it. If <strong>--recursive</strong> or <strong>-R</strong> option is specified, <em>package-file</em> must refer to a directory instead.</p></li>
+<li><p>Configure a package which has been unpacked but not yet configured. If <strong>-a</strong> or <strong>--pending</strong> is given instead of <em>package</em>, all unpacked but unconfigured packages are configured. To reconfigure a package which has already been configured, try the <strong>dpkg-reconfigure</strong>(8) command instead. Configuring consists of the following steps: <strong>1.</strong> Unpack the conffiles, and at the same time back up the old conffiles, so that they can be restored if something goes wrong. <strong>2.</strong> Run <em>postinst</em> script, if provided by the package.</p></li>
+<li><p>Processes only triggers (since dpkg 1.14.17). All pending triggers will be processed. If package names are supplied only those packages' triggers will be processed, exactly once each where necessary. Use of this option may leave packages in the improper <strong>triggers-awaited</strong> and <strong>triggers-pending</strong> states. This can be fixed later by running: <strong>dpkg --configure --pending</strong>.</p></li>
+<li><p>Remove an installed package. This removes everything except conffiles and other data cleaned up by the <em>postrm</em> script, which may avoid having to reconfigure the package if it is reinstalled later (conffiles are configuration files that are listed in the <em>DEBIAN/conffiles</em> control file). If there is no <em>DEBIAN/conffiles</em> control file nor <em>DEBIAN/postrm</em> script, this command is equivalent to calling <strong>--purge</strong>. If <strong>-a</strong> or <strong>--pending</strong> is given instead of a package name, then all packages unpacked, but marked to be removed in file <em>/var/lib/dpkg/status</em>, are removed. Removing of a package consists of the following steps: <strong>1.</strong> Run <em>prerm</em> script <strong>2.</strong> Remove the installed files <strong>3.</strong> Run <em>postrm</em> script</p></li>
+<li><p>Purge an installed or already removed package. This removes everything, including conffiles, and anything else cleaned up from <em>postrm</em>. If <strong>-a</strong> or <strong>--pending</strong> is given instead of a package name, then all packages unpacked or removed, but marked to be purged in file <em>/var/lib/dpkg/status</em>, are purged. <strong>Note:</strong> Some configuration files might be unknown to <strong>dpkg</strong> because they are created and handled separately through the configuration scripts. In that case, <strong>dpkg</strong> won't remove them by itself, but the package's <em>postrm</em> script (which is called by <strong>dpkg</strong>), has to take care of their removal during purge. Of course, this only applies to files in system directories, not configuration files written to individual users' home directories. Purging of a package consists of the following steps: <strong>1.</strong> Remove the package, if not already removed. See <strong>--remove</strong> for detailed information about how this is done. <strong>2.</strong> Run <em>postrm</em> script.</p></li>
+<li><p>Verifies the integrity of <em>package-name</em> or all packages if omitted, by comparing information from the files installed by a package with the files metadata information stored in the <strong>dpkg</strong> database (since dpkg 1.17.2). The origin of the files metadata information in the database is the binary packages themselves. That metadata gets collected at package unpack time during the installation process. Currently the only functional check performed is an md5sum verification of the file contents against the stored value in the files database. It will only get checked if the database contains the file md5sum. To check for any missing metadata in the database, the <strong>--audit</strong> command can be used. The output format is selectable with the <strong>--verify-format</strong> option, which by default uses the <strong>rpm</strong> format, but that might change in the future, and as such, programs parsing this command output should be explicit about the format they expect.</p></li>
+<li><p>Performs database sanity and consistency checks for <em>package-name</em> or all packages if omitted (per package checks since dpkg 1.17.10). For example, searches for packages that have been installed only partially on your system or that have missing, wrong or obsolete control data or files. <strong>dpkg</strong> will suggest what to do with them to get them fixed.</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Update <strong>dpkg</strong>'s and <strong>dselect</strong>'s idea of which packages are available. With action <strong>--merge-avail</strong>, old information is combined with information from <em>Packages-file</em>. With action <strong>--update-avail</strong>, old information is replaced with the information in the <em>Packages-file</em>. The <em>Packages-file</em> distributed with Debian is simply named «<em>Packages</em>». If the <em>Packages-file</em> argument is missing or named «<strong>-</strong>» then it will be read from standard input (since dpkg 1.17.7). <strong>dpkg</strong> keeps its record of available packages in <em>/var/lib/dpkg/available</em>. A simpler one-shot command to retrieve and update the <em>available</em> file is <strong>dselect update</strong>. Note that this file is mostly useless if you don't use <strong>dselect</strong> but an APT-based frontend: APT has its own system to keep track of available packages.</p>
+<ul>
+<li><p>Update <strong>dpkg</strong> and <strong>dselect</strong>'s idea of which packages are available with information from the package <em>package-file</em>. If <strong>--recursive</strong> or <strong>-R</strong> option is specified, <em>package-file</em> must refer to a directory instead.</p></li>
+<li><p>Now <strong>obsolete</strong> and a no-op as <strong>dpkg</strong> will automatically forget uninstalled unavailable packages (since dpkg 1.15.4), but only those that do not contain user information such as package selections.</p></li>
+<li><p>Erase the existing information about what packages are available.</p></li>
+<li><p>Get list of package selections, and write it to stdout. Without a pattern, non-installed packages (i.e. those which have been previously purged) will not be shown.</p></li>
+<li><p>Set package selections using file read from stdin. This file should be in the format “<em>package</em> <em>state</em>”, where state is one of <strong>install</strong>, <strong>hold</strong>, <strong>deinstall</strong> or <strong>purge</strong>. Blank lines and comment lines beginning with ‘<strong>#</strong>’ are also permitted. The <em>available</em> file needs to be up-to-date for this command to be useful, otherwise unknown packages will be ignored with a warning. See the <strong>--update-avail</strong> and <strong>--merge-avail</strong> commands for more information.</p></li>
+<li><p>Set the requested state of every non-essential package to deinstall (since dpkg 1.13.18). This is intended to be used immediately before <strong>--set-selections</strong>, to deinstall any packages not in list given to <strong>--set-selections</strong>.</p></li>
+<li><p>Searches for packages selected for installation, but which for some reason still haven't been installed. <strong>Note:</strong> This command makes use of both the available file and the package selections.</p></li>
+<li><p>Print a single package which is the target of one or more relevant pre-dependencies and has itself no unsatisfied pre-dependencies. If such a package is present, output it as a Packages file entry, which can be massaged as appropriate. <strong>Note:</strong> This command makes use of both the available file and the package selections. Returns 0 when a package is printed, 1 when no suitable package is available and 2 on error.</p></li>
+<li><p>Add <em>architecture</em> to the list of architectures for which packages can be installed without using <strong>--force-architecture</strong> (since dpkg 1.16.2). The architecture <strong>dpkg</strong> is built for (i.e. the output of <strong>--print-architecture</strong>) is always part of that list.</p></li>
+<li><p>Remove <em>architecture</em> from the list of architectures for which packages can be installed without using <strong>--force-architecture</strong> (since dpkg 1.16.2). If the architecture is currently in use in the database then the operation will be refused, except if <strong>--force-architecture</strong> is specified. The architecture <strong>dpkg</strong> is built for (i.e. the output of <strong>--print-architecture</strong>) can never be removed from that list.</p></li>
+<li><p>Print architecture of packages <strong>dpkg</strong> installs (for example, “i386”).</p></li>
+<li><p>Print a newline-separated list of the extra architectures <strong>dpkg</strong> is configured to allow packages to be installed for (since dpkg 1.16.2).</p></li>
+<li><p>Asserts that <strong>dpkg</strong> supports the requested feature. Returns 0 if the feature is fully supported, 1 if the feature is known but <strong>dpkg</strong> cannot provide support for it yet, and 2 if the feature is unknown. The current list of assertable features is:</p>
+<ul>
+<li><p>Supports the <strong>Pre-Depends</strong> field (since dpkg 1.1.0).</p></li>
+<li><p>Supports epochs in version strings (since dpkg 1.4.0.7).</p></li>
+<li><p>Supports long filenames in <strong>deb</strong>(5) archives (since dpkg 1.4.1.17).</p></li>
+<li><p>Supports multiple <strong>Conflicts</strong> and <strong>Replaces</strong> (since dpkg 1.4.1.19).</p></li>
+<li><p>Supports multi-arch fields and semantics (since dpkg 1.16.2).</p></li>
+<li><p>Supports versioned <strong>Provides</strong> (since dpkg 1.17.11).</p></li>
+<li><p>Supports the <strong>Protected</strong> field (since dpkg 1.20.1).</p></li>
+</ul></li>
+<li><p>Validate that the <em>thing</em> <em>string</em> has a correct syntax (since dpkg 1.18.16). Returns 0 if the <em>string</em> is valid, 1 if the <em>string</em> is invalid but might be accepted in lax contexts, and 2 if the <em>string</em> is invalid. The current list of validatable <em>thing</em>s is:</p>
+<ul>
+<li><p>Validates the given package name (since dpkg 1.18.16).</p></li>
+<li><p>Validates the given trigger name (since dpkg 1.18.16).</p></li>
+<li><p>Validates the given architecture name (since dpkg 1.18.16).</p></li>
+<li><p>Validates the given version (since dpkg 1.18.16).</p></li>
+</ul></li>
+<li><p>Compare version numbers, where <em>op</em> is a binary operator. <strong>dpkg</strong> returns true (<strong>0</strong>) if the specified condition is satisfied, and false (<strong>1</strong>) otherwise. There are two groups of operators, which differ in how they treat an empty <em>ver1</em> or <em>ver2</em>. These treat an empty version as earlier than any version: <strong>lt le eq ne ge gt</strong>. These treat an empty version as later than any version: <strong>lt-nl le-nl ge-nl gt-nl</strong>. These are provided only for compatibility with control file syntax: <strong>&lt; &lt;&lt; &lt;= = &gt;= &gt;&gt;</strong> &gt;. The <strong>&lt;</strong> and <strong>&gt;</strong> operators are obsolete and should <strong>not</strong> be used, due to confusing semantics. To illustrate: <strong>0.1 &lt; 0.1</strong> evaluates to true.</p></li>
+<li><p>Display a brief help message.</p></li>
+<li><p>Give help about the <strong>--force-</strong><em>thing</em> options.</p></li>
+<li><p>Give help about debugging options.</p></li>
+<li><p>Display <strong>dpkg</strong> version information. When used with <strong>--robot</strong>, the output will be the program version number in a dotted numerical format, with no newline.</p></li>
+<li><p>See <strong>dpkg-deb</strong>(1) for more information about the following actions, and other actions and options not exposed by the <strong>dpkg</strong> front-end.</p>
+<ul>
+<li><p>Build a deb package.</p></li>
+<li><p>List contents of a deb package.</p></li>
+<li><p>Extract control-information from a package.</p></li>
+<li><p>Extract the files contained by package.</p></li>
+<li><p>Extract and display the filenames contained by a package.</p></li>
+<li><p>Display control field(s) of a package.</p></li>
+<li><p>Output the control tar-file contained in a Debian package.</p></li>
+<li><p>Output the filesystem tar-file contained by a Debian package.</p></li>
+<li><p>Show information about a package.</p></li>
+</ul></li>
+<li><p>See <strong>dpkg-query</strong>(1) for more information about the following actions, and other actions and options not exposed by the <strong>dpkg</strong> front-end.</p>
+<ul>
+<li><p>List packages matching given pattern.</p></li>
+<li><p>Report status of specified package.</p></li>
+<li><p>List files installed to your system from <em>package-name</em>.</p></li>
+<li><p>Search for a filename from installed packages.</p></li>
+<li><p>Display details about <em>package-name</em>, as found in <em>/var/lib/dpkg/available</em>. Users of APT-based frontends should use <strong>apt show</strong> <em>package-name</em> instead.</p></li>
+</ul></li>
+</ul>
+<h1>OPTIONS</h1>
+<p>All options can be specified both on the command line and in the <strong>dpkg</strong> configuration file <em>/etc/dpkg/dpkg.cfg</em> or fragment files (with names matching this shell pattern '[0-9a-zA-Z_-]*') on the configuration directory <em>/etc/dpkg/dpkg.cfg.d/</em>. Each line in the configuration file is either an option (exactly the same as the command line option but without leading hyphens) or a comment (if it starts with a ‘<strong>#</strong>’).</p>
+<ul>
+<li><p>Change after how many errors <strong>dpkg</strong> will abort. The default is 50.</p></li>
+<li><p>When a package is removed, there is a possibility that another installed package depended on the removed package. Specifying this option will cause automatic deconfiguration of the package which depended on the removed package.</p></li>
+<li><p>Switch debugging on. <em>octal</em> is formed by bitwise-ORing desired values together from the list below (note that these values may change in future releases). <strong>-Dh</strong> or <strong>--debug=help</strong> display these debugging values. Number Description 1 Generally helpful progress information 2 Invocation and status of maintainer scripts 10 Output for each file processed 100 Lots of output for each file processed 20 Output for each configuration file 200 Lots of output for each configuration file 40 Dependencies and conflicts 400 Lots of dependencies/conflicts output 10000 Trigger activation and processing 20000 Lots of output regarding triggers 40000 Silly amounts of output regarding triggers 1000 Lots of drivel about e.g. the dpkg/info dir 2000 Insane amounts of drivel</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Force or refuse (<strong>no-force</strong> and <strong>refuse</strong> mean the same thing) to do some things. <em>things</em> is a comma separated list of things specified below. <strong>--force-help</strong> displays a message describing them. Things marked with (*) are forced by default. <em>Warning: These options are mostly intended to be used by experts</em> only. Using them without fully understanding their effects may break your whole system. <strong>all</strong>: Turns on (or off) all force options. <strong>downgrade</strong>(*): Install a package, even if newer version of it is already installed. <em>Warning: At present</em> <strong>dpkg</strong> <em>does not do any dependency</em> checking on downgrades and therefore will not warn you if the downgrade breaks the dependency of some other package. This can have serious side effects, downgrading essential system components can even make your whole system unusable. Use with care. <strong>configure-any</strong>: Configure also any unpacked but unconfigured packages on which the current package depends. <strong>hold</strong>: Allow automatic installs, upgrades or removals of packages even when marked to be on “hold”. <strong>Note:</strong> This does not prevent these actions when requested explicitly. <strong>remove-reinstreq</strong>: Remove a package, even if it's broken and marked to require reinstallation. This may, for example, cause parts of the package to remain on the system, which will then be forgotten by <strong>dpkg</strong>. <strong>remove-protected</strong>: Remove, even if the package is considered protected (since dpkg 1.20.1). Protected packages contain mostly important system boot infrastructure. Removing them might cause the whole system to be unable to boot, so use with caution. <strong>remove-essential</strong>: Remove, even if the package is considered essential. Essential packages contain mostly very basic Unix commands. Removing them might cause the whole system to stop working, so use with caution. <strong>depends</strong>: Turn all dependency problems into warnings. This affects the <strong>Pre-Depends</strong> and <strong>Depends</strong> fields. <strong>depends-version</strong>: Don't care about versions when checking dependencies. This affects the <strong>Pre-Depends</strong> and <strong>Depends</strong> fields. <strong>breaks</strong>: Install, even if this would break another package (since dpkg 1.14.6). This affects the <strong>Breaks</strong> field. <strong>conflicts</strong>: Install, even if it conflicts with another package. This is dangerous, for it will usually cause overwriting of some files. This affects the <strong>Conflicts</strong> field. <strong>confmiss</strong>: Always install the missing conffile without prompting. This is dangerous, since it means not preserving a change (removing) made to the file. <strong>confnew</strong>: If a conffile has been modified and the version in the package did change, always install the new version without prompting, unless the <strong>--force-confdef</strong> is also specified, in which case the default action is preferred. <strong>confold</strong>: If a conffile has been modified and the version in the package did change, always keep the old version without prompting, unless the <strong>--force-confdef</strong> is also specified, in which case the default action is preferred. <strong>confdef</strong>: If a conffile has been modified and the version in the package did change, always choose the default action without prompting. If there is no default action it will stop to ask the user unless <strong>--force-confnew</strong> or <strong>--force-confold</strong> is also been given, in which case it will use that to decide the final action. <strong>confask</strong>: If a conffile has been modified always offer to replace it with the version in the package, even if the version in the package did not change (since dpkg 1.15.8). If any of <strong>--force-confnew</strong>, <strong>--force-confold</strong>, or <strong>--force-confdef</strong> is also given, it will be used to decide the final action. <strong>overwrite</strong>: Overwrite one package's file with another's file. <strong>overwrite-dir</strong>: Overwrite one package's directory with another's file. <strong>overwrite-diverted</strong>: Overwrite a diverted file with an undiverted version. <strong>statoverride-add</strong>: Overwrite an existing stat override when adding it (since dpkg 1.19.5). <strong>statoverride-remove</strong>: Ignore a missing stat override when removing it (since dpkg 1.19.5). <strong>security-mac</strong>(*): Use platform-specific Mandatory Access Controls (MAC) based security when installing files into the filesystem (since dpkg 1.19.5). On Linux systems the implementation uses SELinux. <strong>unsafe-io</strong>: Do not perform safe I/O operations when unpacking (since dpkg 1.15.8.6). Currently this implies not performing file system syncs before file renames, which is known to cause substantial performance degradation on some file systems, unfortunately the ones that require the safe I/O on the first place due to their unreliable behaviour causing zero-length files on abrupt system crashes. <em>Note</em>: For ext4, the main offender, consider using instead the mount option <strong>nodelalloc</strong>, which will fix both the performance degradation and the data safety issues, the latter by making the file system not produce zero-length files on abrupt system crashes with any software not doing syncs before atomic renames. <em>Warning: Using this option might improve performance at the cost of</em> losing data, use with care. <strong>script-chrootless</strong>: Run maintainer scripts without <strong>chroot</strong>(2)ing into <strong>instdir</strong> even if the package does not support this mode of operation (since dpkg 1.18.5). <em>Warning: This can destroy your host system, use with extreme care.</em> <strong>architecture</strong>: Process even packages with wrong or no architecture. <strong>bad-version</strong>: Process even packages with wrong versions (since dpkg 1.16.1). <strong>bad-path</strong>: <strong>PATH</strong> is missing important programs, so problems are likely. <strong>not-root</strong>: Try to (de)install things even when not root. <strong>bad-verify</strong>: Install a package even if it fails authenticity check.</p>
+<ul>
+<li><p>Ignore dependency-checking for specified packages (actually, checking is performed, but only warnings about conflicts are given, nothing else). This affects the <strong>Pre-Depends</strong>, <strong>Depends</strong> and <strong>Breaks</strong> fields.</p></li>
+<li><p>Do everything which is supposed to be done, but don't write any changes. This is used to see what would happen with the specified action, without actually modifying anything. Be sure to give <strong>--no-act</strong> before the action-parameter, or you might end up with undesirable results. (e.g. <strong>dpkg --purge foo --no-act</strong> will first purge package “foo” and then try to purge package ”--no-act”, even though you probably expected it to actually do nothing).</p></li>
+<li><p>Recursively handle all regular files matching pattern <strong>*.deb</strong> found at specified directories and all of its subdirectories. This can be used with <strong>-i</strong>, <strong>-A</strong>, <strong>--install</strong>, <strong>--unpack</strong> and <strong>--record-avail</strong> actions.</p></li>
+<li><p>Don't install a package if a newer version of the same package is already installed. This is an alias of <strong>--refuse-downgrade</strong>.</p></li>
+<li><p>Set the administrative directory to <em>directory</em>. This directory contains many files that give information about status of installed or uninstalled packages, etc. Defaults to «<em>/var/lib/dpkg</em>».</p></li>
+<li><p>Set the installation directory, which refers to the directory where packages are to be installed. <strong>instdir</strong> is also the directory passed to <strong>chroot</strong>(2) before running package's installation scripts, which means that the scripts see <strong>instdir</strong> as a root directory. Defaults to «<em>/</em>».</p></li>
+<li><p>Set the root directory to <strong>directory</strong>, which sets the installation directory to «<em>dir</em>» and the administrative directory to «<em>dir</em><strong>/var/lib/dpkg</strong>».</p></li>
+<li><p>Only process the packages that are selected for installation. The actual marking is done with <strong>dselect</strong> or by <strong>dpkg</strong>, when it handles packages. For example, when a package is removed, it will be marked selected for deinstallation.</p></li>
+<li><p>Don't install the package if the same version of the package is already installed.</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Set an invoke hook <em>command</em> to be run via “sh -c” before or after the <strong>dpkg</strong> run for the <em>unpack</em>, <em>configure</em>, <em>install</em>, <em>triggers-only</em>, <em>remove</em>, <em>purge</em>, <em>add-architecture</em> and <em>remove-architecture</em> <strong>dpkg</strong> actions (since dpkg 1.15.4; <em>add-architecture</em> and <em>remove-architecture</em> actions since dpkg 1.17.19). This option can be specified multiple times. The order the options are specified is preserved, with the ones from the configuration files taking precedence. The environment variable <strong>DPKG_HOOK_ACTION</strong> is set for the hooks to the current <strong>dpkg</strong> action. <strong>Note:</strong> Front-ends might call <strong>dpkg</strong> several times per invocation, which might run the hooks more times than expected.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Set <em>glob-pattern</em> as a path filter, either by excluding or re-including previously excluded paths matching the specified patterns during install (since dpkg 1.15.8). <em>Warning: Take into account that depending on the excluded paths you</em> might completely break your system, use with caution. The glob patterns use the same wildcards used in the shell, were ‘*’ matches any sequence of characters, including the empty string and also ‘/’. For example, «<em>/usr/*/READ*</em>» matches «<em>/usr/share/doc/package/README</em>». As usual, ‘?’ matches any single character (again, including ‘/’). And ‘[’ starts a character class, which can contain a list of characters, ranges and complementations. See <strong>glob</strong>(7) for detailed information about globbing. <strong>Note:</strong> The current implementation might re-include more directories and symlinks than needed, to be on the safe side and avoid possible unpack failures; future work might fix this. This can be used to remove all paths except some particular ones; a typical case is: --path-exclude=/usr/share/doc/* --path-include=/usr/share/doc/*/copyright to remove all documentation files except the copyright files. These two options can be specified multiple times, and interleaved with each other. Both are processed in the given order, with the last rule that matches a file name making the decision. The filters are applied when unpacking the binary packages, and as such only have knowledge of the type of object currently being filtered (e.g. a normal file or a directory) and have not visibility of what objects will come next. Because these filters have side effects (in contrast to <strong>find</strong>(1) filters), excluding an exact pathname that happens to be a directory object like <em>/usr/share/doc</em> will not have the desired result, and only that pathname will be excluded (which could be automatically reincluded if the code sees the need). Any subsequent files contained within that directory will fail to unpack. Hint: make sure the globs are not expanded by your shell.</p>
+<ul>
+<li><p>Sets the output format for the <strong>--verify</strong> command (since dpkg 1.17.2). The only currently supported output format is <strong>rpm</strong>, which consists of a line for every path that failed any check. The lines start with 9 characters to report each specific check result, a ‘<strong>?</strong>’ implies the check could not be done (lack of support, file permissions, etc), ‘<strong>.</strong>’ implies the check passed, and an alphanumeric character implies a specific check failed; the md5sum verification failure (the file contents have changed) is denoted with a ‘<strong>5</strong>’ on the third character. The line is followed by a space and an attribute character (currently ‘<strong>c</strong>’ for conffiles), another space and the pathname.</p></li>
+<li><p>Send machine-readable package status and progress information to file descriptor <em>n</em>. This option can be specified multiple times. The information is generally one record per line, in one of the following forms:</p>
+<ul>
+<li><p>Package status changed; <em>status</em> is as in the status file.</p></li>
+<li><p>An error occurred. Any possible newlines in <em>extended-error-message</em> will be converted to spaces before output.</p></li>
+<li><p>User is being asked a conffile question.</p></li>
+<li><p>Sent just before a processing stage starts. <em>stage</em> is one of <strong>upgrade</strong>, <strong>install</strong> (both sent before unpacking), <strong>configure</strong>, <strong>trigproc</strong>, <strong>disappear</strong>, <strong>remove</strong>, <strong>purge</strong>.</p></li>
+</ul></li>
+<li><p>Send machine-readable package status and progress information to the shell <em>command</em>'s standard input, to be run via “sh -c” (since dpkg 1.16.0). This option can be specified multiple times. The output format used is the same as in <strong>--status-fd</strong>.</p></li>
+<li><p>Log status change updates and actions to <em>filename</em>, instead of the default <em>/var/log/dpkg.log</em>. If this option is given multiple times, the last filename is used. Log messages are of the form:</p>
+<ul>
+<li><p>For each dpkg invocation where <em>type</em> is <strong>archives</strong> (with a <em>command</em> of <strong>unpack</strong> or <strong>install</strong>) or <strong>packages</strong> (with a <em>command</em> of <strong>configure</strong>, <strong>triggers-only</strong>, <strong>remove</strong> or <strong>purge</strong>).</p></li>
+<li><p>For status change updates.</p></li>
+<li><p>For actions where <em>action</em> is one of <strong>install</strong>, <strong>upgrade</strong>, <strong>configure</strong>, <strong>trigproc</strong>, <strong>disappear</strong>, <strong>remove</strong> or <strong>purge</strong>.</p></li>
+<li><p>For conffile changes where <em>decision</em> is either <strong>install</strong> or <strong>keep</strong>.</p></li>
+</ul></li>
+<li><p>Use a machine-readable output format. This provides an interface for programs that need to parse the output of some of the commands that do not otherwise emit a machine-readable output format. No localization will be used, and the output will be modified to make it easier to parse. The only currently supported command is <strong>--version</strong>.</p></li>
+<li><p>Disables the use of any pager when showing information (since dpkg 1.19.2).</p></li>
+<li><p>Do not try to verify package signatures.</p></li>
+<li><p>Do not run any triggers in this run (since dpkg 1.14.17), but activations will still be recorded. If used with <strong>--configure</strong> <em>package</em> or <strong>--triggers-only</strong> <em>package</em> then the named package postinst will still be run even if only a triggers run is needed. Use of this option may leave packages in the improper <strong>triggers-awaited</strong> and <strong>triggers-pending</strong> states. This can be fixed later by running: <strong>dpkg --configure --pending</strong>.</p></li>
+<li><p>Cancels a previous <strong>--no-triggers</strong> (since dpkg 1.14.17).</p></li>
+</ul>
+<h1>EXIT STATUS</h1>
+<ol start="0" type="1">
+<li><p>The requested action was successfully performed. Or a check or assertion command returned true.</p></li>
+<li><p>A check or assertion command returned false.</p></li>
+<li><p>Fatal or unrecoverable error due to invalid command-line usage, or interactions with the system, such as accesses to the database, memory allocations, etc.</p></li>
+</ol>
+<h1>ENVIRONMENT</h1>
+<h2>External environment</h2>
+<ul>
+<li><p>This variable is expected to be defined in the environment and point to the system paths where several required programs are to be found. If it's not set or the programs are not found, <strong>dpkg</strong> will abort.</p></li>
+<li><p>If set, <strong>dpkg</strong> will use it as the directory from which to read the user specific configuration file.</p></li>
+<li><p>If set, <strong>dpkg</strong> will use it as the directory in which to create temporary files and directories.</p></li>
+<li><p>The program <strong>dpkg</strong> will execute when starting a new interactive shell, or when spawning a command via a shell.</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>The program <strong>dpkg</strong> will execute when running a pager, which will be executed with «<strong><code>$SHELL</code> -c</strong>», for example when displaying the conffile differences. If <strong>SHELL</strong> is not set, «<strong>sh</strong>» will be used instead. The <strong>DPKG_PAGER</strong> overrides the <strong>PAGER</strong> environment variable (since dpkg 1.19.2).</p>
+<ul>
+<li><p>Sets the color mode (since dpkg 1.18.5). The currently accepted values are: <strong>auto</strong> (default), <strong>always</strong> and <strong>never</strong>.</p></li>
+<li><p>Sets the force flags (since dpkg 1.19.5). When this variable is present, no built-in force defaults will be applied. If the variable is present but empty, all force flags will be disabled.</p></li>
+<li><p>If set and the <strong>--admindir</strong> or <strong>--root</strong> options have not been specified, it will be used as the <strong>dpkg</strong> administrative directory (since dpkg 1.20.0).</p></li>
+<li><p>Set by a package manager frontend to notify dpkg that it should not acquire the frontend lock (since dpkg 1.19.1).</p></li>
+</ul>
+<h2>Internal environment</h2>
+<ul>
+<li><p>Defined by <strong>dpkg</strong> to “<strong>-FRSXMQ</strong>”, if not already set, when spawning a pager (since dpkg 1.19.2). To change the default behavior, this variable can be preset to some other value including an empty string, or the <strong>PAGER</strong> or <strong>DPKG_PAGER</strong> variables can be set to disable specific options with «<strong>-+</strong>», for example <strong>DPKG_PAGER=less -+F</strong>.</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the maintainer script environment to indicate which installation to act on (since dpkg 1.18.5). The value is intended to be prepended to any path maintainer scripts operate on. During normal operation, this variable is empty. When installing packages into a different <strong>instdir</strong>, <strong>dpkg</strong> normally invokes maintainer scripts using <strong>chroot</strong>(2) and leaves this variable empty, but if <strong>--force-script-chrootless</strong> is specified then the <strong>chroot</strong>(2) call is skipped and <strong>instdir</strong> is non-empty.</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the maintainer script environment to indicate the <strong>dpkg</strong> administrative directory to use (since dpkg 1.16.0). This variable is always set to the current <strong>--admindir</strong> value.</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the subprocesses environment to all the currently enabled force option names separated by commas (since dpkg 1.19.5).</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the shell spawned on the conffile prompt to examine the situation (since dpkg 1.15.6). Current valid value: <strong>conffile-prompt</strong>.</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the shell spawned on the conffile prompt to examine the situation (since dpkg 1.15.6). Contains the path to the old conffile.</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the shell spawned on the conffile prompt to examine the situation (since dpkg 1.15.6). Contains the path to the new conffile.</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the shell spawned when executing a hook action (since dpkg 1.15.4). Contains the current <strong>dpkg</strong> action.</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the maintainer script environment to the version of the currently running <strong>dpkg</strong> instance (since dpkg 1.14.17).</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the maintainer script environment to the (non-arch-qualified) package name being handled (since dpkg 1.14.17).</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the maintainer script environment to the package reference count, i.e. the number of package instances with a state greater than <strong>not-installed</strong> (since dpkg 1.17.2).</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the maintainer script environment to the architecture the package got built for (since dpkg 1.15.4).</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the maintainer script environment to the name of the script running, one of <strong>preinst</strong>, <strong>postinst</strong>, <strong>prerm</strong> or <strong>postrm</strong> (since dpkg 1.15.7).</p></li>
+<li><p>Defined by <strong>dpkg</strong> on the maintainer script environment to a value (‘<strong>0</strong>’ or ‘<strong>1</strong>’) noting whether debugging has been requested (with the <strong>--debug</strong> option) for the maintainer scripts (since dpkg 1.18.4).</p></li>
+</ul>
+<h1>FILES</h1>
+<ul>
+<li><p>Configuration fragment files (since dpkg 1.15.4).</p></li>
+<li><p>Configuration file with default options.</p></li>
+<li><p>Default log file (see <em>/etc/dpkg/dpkg.cfg</em> and option <strong>--log</strong>).</p></li>
+</ul>
+<p>The other files listed below are in their default directories, see option <strong>--admindir</strong> to see how to change locations of these files.</p>
+<ul>
+<li><p>List of available packages.</p></li>
+<li><p>Statuses of available packages. This file contains information about whether a package is marked for removing or not, whether it is installed or not, etc. See section <strong>INFORMATION ABOUT PACKAGES</strong> for more info. The status file is backed up daily in <em>/var/backups</em>. It can be useful if it's lost or corrupted due to filesystems troubles.</p></li>
+</ul>
+<p>The format and contents of a binary package are described in <strong>deb</strong>(5).</p>
+<h1>BUGS</h1>
+<p><strong>--no-act</strong> usually gives less information than might be helpful.</p>
+<h1>EXAMPLES</h1>
+<p>To list installed packages related to the editor <strong>vi</strong>(1) (note that <strong>dpkg-query</strong> does not load the <em>available</em> file anymore by default, and the <strong>dpkg-query</strong> <strong>--load-avail</strong> option should be used instead for that): dpkg -l *vi*</p>
+<p>To see the entries in <em>/var/lib/dpkg/available</em> of two packages: dpkg --print-avail elvis vim | less</p>
+<p>To search the listing of packages yourself: less /var/lib/dpkg/available</p>
+<p>To remove an installed elvis package: dpkg -r elvis</p>
+<p>To install a package, you first need to find it in an archive or CDROM. The <em>available</em> file shows that the vim package is in section <strong>editors</strong>: cd /media/cdrom/pool/main/v/vim dpkg -i vim_4.5-3.deb</p>
+<p>To make a local copy of the package selection states: dpkg --get-selections&gt; myselections</p>
+<p>You might transfer this file to another computer, and after having updated the <em>available</em> file there with your package manager frontend of choice (see &lt;https://wiki.debian.org/Teams/Dpkg/FAQ&gt; for more details), for example: apt-cache dumpavail | dpkg --merge-avail</p>
+<p>or with dpkg 1.17.6 and earlier: avail=$(mktemp) apt-cache dumpavail&gt; "$avail" dpkg --merge-avail "$avail" rm "$avail"</p>
+<p>you can install it with: dpkg --clear-selections dpkg --set-selections &lt;myselections</p>
+<p>Note that this will not actually install or remove anything, but just set the selection state on the requested packages. You will need some other application to actually download and install the requested packages. For example, run <strong>apt-get dselect-upgrade</strong>.</p>
+<p>Ordinarily, you will find that <strong>dselect</strong>(1) provides a more convenient way to modify the package selection states.</p>
+<h1>ADDITIONAL FUNCTIONALITY</h1>
+<p>Additional functionality can be gained by installing any of the following packages: <strong>apt</strong>, <strong>aptitude</strong> and <strong>debsums</strong>.</p>
+<h1>SEE ALSO</h1>
+<p><strong>aptitude</strong>(8), <strong>apt</strong>(8), <strong>dselect</strong>(1), <strong>dpkg-deb</strong>(1), <strong>dpkg-query</strong>(1), <strong>deb</strong>(5), <strong>deb-control</strong>(5), <strong>dpkg.cfg</strong>(5), and <strong>dpkg-reconfigure</strong>(8).</p>
+<h1>AUTHORS</h1>
+<p>See <em>/usr/share/doc/dpkg/THANKS</em> for the list of people who have contributed to <strong>dpkg</strong>.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

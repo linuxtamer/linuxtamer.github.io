@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command hcreate</title><meta name="description" content="Linux command hcreate hash table management"><meta name="keywords" content="linux, command, hcreate, bsd, hash table management"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>hcreate, hdestroy, hsearch, hcreate_r, hdestroy_r, hsearch_r - hash table management</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;search.h&gt;
+
+int hcreate(size_t nel);
+
+ENTRY *hsearch(ENTRY item, ACTION action);
+
+void hdestroy(void);
+
+#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;search.h&gt;
+
+int hcreate_r(size_t nel, struct hsearch_data *htab);
+
+int hsearch_r(ENTRY item, ACTION action, ENTRY **retval,
+ struct hsearch_data *htab);
+
+void hdestroy_r(struct hsearch_data *htab);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The three functions <strong>hcreate</strong>(), <strong>hsearch</strong>(), and <strong>hdestroy</strong>() allow the caller to create and manage a hash search table containing entries consisting of a key (a string) and associated data. Using these functions, only one hash table can be used at a time.</p>
+<p>The three functions <strong>hcreate_r</strong>(), <strong>hsearch_r</strong>(), <strong>hdestroy_r</strong>() are reentrant versions that allow a program to use more than one hash search table at the same time. The last argument, <em>htab</em>, points to a structure that describes the table on which the function is to operate. The programmer should treat this structure as opaque (i.e., do not attempt to directly access or modify the fields in this structure).</p>
+<p>First a hash table must be created using <strong>hcreate</strong>(). The argument <em>nel</em> specifies the maximum number of entries in the table. (This maximum cannot be changed later, so choose it wisely.) The implementation may adjust this value upward to improve the performance of the resulting hash table.</p>
+<p>The <strong>hcreate_r</strong>() function performs the same task as <strong>hcreate</strong>(), but for the table described by the structure <em>*htab</em>. The structure pointed to by <em>htab</em> must be zeroed before the first call to <strong>hcreate_r</strong>().</p>
+<p>The function <strong>hdestroy</strong>() frees the memory occupied by the hash table that was created by <strong>hcreate</strong>(). After calling <strong>hdestroy</strong>(), a new hash table can be created using <strong>hcreate</strong>(). The <strong>hdestroy_r</strong>() function performs the analogous task for a hash table described by <em>*htab</em>, which was previously created using <strong>hcreate_r</strong>().</p>
+<p>The <strong>hsearch</strong>() function searches the hash table for an item with the same key as <em>item</em> (where "the same" is determined using <strong>strcmp</strong>(3)), and if successful returns a pointer to it.</p>
+<p>The argument <em>item</em> is of type <em>ENTRY</em>, which is defined in <em>&lt;search.h&gt;</em> as follows:</p>
+<pre><code>typedef struct entry {
+    char *key;
+    void *data;
+} ENTRY;</code></pre>
+<p>The field <em>key</em> points to a null-terminated string which is the search key. The field <em>data</em> points to data that is associated with that key.</p>
+<p>The argument <em>action</em> determines what <strong>hsearch</strong>() does after an unsuccessful search. This argument must either have the value <strong>ENTER</strong>, meaning insert a copy of <em>item</em> (and return a pointer to the new hash table entry as the function result), or the value <strong>FIND</strong>, meaning that NULL should be returned. (If <em>action</em> is <strong>FIND</strong>, then <em>data</em> is ignored.)</p>
+<p>The <strong>hsearch_r</strong>() function is like <strong>hsearch</strong>() but operates on the hash table described by <em>*htab</em>. The <strong>hsearch_r</strong>() function differs from <strong>hsearch</strong>() in that a pointer to the found item is returned in <em>*retval</em>, rather than as the function result.</p>
+<h1>RETURN VALUE</h1>
+<p><strong>hcreate</strong>() and <strong>hcreate_r</strong>() return nonzero on success. They return 0 on error, with <em>errno</em> set to indicate the cause of the error.</p>
+<p>On success, <strong>hsearch</strong>() returns a pointer to an entry in the hash table. <strong>hsearch</strong>() returns NULL on error, that is, if <em>action</em> is <strong>ENTER</strong> and the hash table is full, or <em>action</em> is <strong>FIND</strong> and <em>item</em> cannot be found in the hash table. <strong>hsearch_r</strong>() returns nonzero on success, and 0 on error. In the event of an error, these two functions set <em>errno</em> to indicate the cause of the error.</p>
+<h1>ERRORS</h1>
+<p><strong>hcreate_r</strong>() and <strong>hdestroy_r</strong>() can fail for the following reasons:</p>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>htab</em> is NULL.</p>
+</dd>
+</dl>
+<p><strong>hsearch</strong>() and <strong>hsearch_r</strong>() can fail for the following reasons:</p>
+<dl>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p><em>action</em> was <strong>ENTER</strong>, <em>key</em> was not found in the table, and there was no room in the table to add a new entry.</p>
+</dd>
+<dt><strong>ESRCH</strong></dt>
+<dd><p><em>action</em> was <strong>FIND</strong>, and <em>key</em> was not found in the table.</p>
+</dd>
+</dl>
+<p>POSIX.1 specifies only the <strong>ENOMEM</strong> error.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>hcreate</strong>(), <strong>hsearch</strong>(),<br />
+<strong>hdestroy</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:hsearch</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>hcreate_r</strong>(), <strong>hsearch_r</strong>(),<br />
+<strong>hdestroy_r</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe race:htab</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>The functions <strong>hcreate</strong>(), <strong>hsearch</strong>(), and <strong>hdestroy</strong>() are from SVr4, and are described in POSIX.1-2001 and POSIX.1-2008.</p>
+<p>The functions <strong>hcreate_r</strong>(), <strong>hsearch_r</strong>(), and <strong>hdestroy_r</strong>() are GNU extensions.</p>
+<h1>NOTES</h1>
+<p>Hash table implementations are usually more efficient when the table contains enough free space to minimize collisions. Typically, this means that <em>nel</em> should be at least 25% larger than the maximum number of elements that the caller expects to store in the table.</p>
+<p>The <strong>hdestroy</strong>() and <strong>hdestroy_r</strong>() functions do not free the buffers pointed to by the <em>key</em> and <em>data</em> elements of the hash table entries. (It can't do this because it doesn't know whether these buffers were allocated dynamically.) If these buffers need to be freed (perhaps because the program is repeatedly creating and destroying hash tables, rather than creating a single table whose lifetime matches that of the program), then the program must maintain bookkeeping data structures that allow it to free them.</p>
+<h1>BUGS</h1>
+<p>SVr4 and POSIX.1-2001 specify that <em>action</em> is significant only for unsuccessful searches, so that an <strong>ENTER</strong> should not do anything for a successful search. In libc and glibc (before version 2.3), the implementation violates the specification, updating the <em>data</em> for the given <em>key</em> in this case.</p>
+<p>Individual hash table entries can be added, but not deleted.</p>
+<h1>EXAMPLES</h1>
+<p>The following program inserts 24 items into a hash table, then prints some of them.</p>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;search.h&gt;
+
+static char *data[] = { &quot;alpha&quot;, &quot;bravo&quot;, &quot;charlie&quot;, &quot;delta&quot;,
+     &quot;echo&quot;, &quot;foxtrot&quot;, &quot;golf&quot;, &quot;hotel&quot;, &quot;india&quot;, &quot;juliet&quot;,
+     &quot;kilo&quot;, &quot;lima&quot;, &quot;mike&quot;, &quot;november&quot;, &quot;oscar&quot;, &quot;papa&quot;,
+     &quot;quebec&quot;, &quot;romeo&quot;, &quot;sierra&quot;, &quot;tango&quot;, &quot;uniform&quot;,
+     &quot;victor&quot;, &quot;whisky&quot;, &quot;x-ray&quot;, &quot;yankee&quot;, &quot;zulu&quot;
+};
+
+int
+main(void)
+{
+    ENTRY e;
+    ENTRY *ep;
+
+    hcreate(30);
+
+    for (int i = 0; i &lt; 24; i++) {
+        e.key = data[i];
+        /* data is just an integer, instead of a
+           pointer to something */
+        e.data = (void *) i;
+        ep = hsearch(e, ENTER);
+        /* there should be no failures */
+        if (ep == NULL) {
+            fprintf(stderr, &quot;entry failed\n&quot;);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    for (int i = 22; i &lt; 26; i++) {
+        /* print two entries from the table, and
+           show that two are not in the table */
+        e.key = data[i];
+        ep = hsearch(e, FIND);
+        printf(&quot;%9.9s -&gt; %9.9s:%d\n&quot;, e.key,
+               ep ? ep-&gt;key : &quot;NULL&quot;, ep ? (int)(ep-&gt;data) : 0);
+    }
+    hdestroy();
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>bsearch</strong>(3), <strong>lsearch</strong>(3), <strong>malloc</strong>(3), <strong>tsearch</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

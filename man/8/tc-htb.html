@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-htb</title><meta name="description" content="Linux command tc-htb Hierarchy Token Bucket"><meta name="keywords" content="linux, command, tc-htb, bsd, Hierarchy Token Bucket"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>HTB - Hierarchy Token Bucket</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc qdisc ... dev</strong> dev <strong>( parent</strong> classid <strong>| root) [ handle</strong> major: <strong>] htb [ default</strong> minor-id <strong>] [ r2q</strong> divisor <strong>]</strong></p>
+<p><strong>tc class ... dev</strong> dev <strong>parent</strong> major:[minor] <strong>[ classid</strong> major:minor <strong>] htb rate</strong> rate <strong>[ ceil</strong> rate <strong>] burst</strong> bytes <strong>[ cburst</strong> bytes <strong>] [ prio</strong> priority <strong>] [ quantum</strong> bytes <strong>]</strong></p>
+<h1>DESCRIPTION</h1>
+<p>HTB is meant as a more understandable and intuitive replacement for the CBQ qdisc in Linux. Both CBQ and HTB help you to control the use of the outbound bandwidth on a given link. Both allow you to use one physical link to simulate several slower links and to send different kinds of traffic on different simulated links. In both cases, you have to specify how to divide the physical link into simulated links and how to decide which simulated link to use for a given packet to be sent.</p>
+<p>Unlike CBQ, HTB shapes traffic based on the Token Bucket Filter algorithm which does not depend on interface characteristics and so does not need to know the underlying bandwidth of the outgoing interface.</p>
+<h1>SHAPING ALGORITHM</h1>
+<p>Shaping works as documented in <strong>tc-tbf (8).</strong></p>
+<h1>CLASSIFICATION</h1>
+<p>Within the one HTB instance many classes may exist. Each of these classes contains another qdisc, by default <strong>tc-pfifo</strong>(8).</p>
+<p>When enqueueing a packet, HTB starts at the root and uses various methods to determine which class should receive the data.</p>
+<p>In the absence of uncommon configuration options, the process is rather easy. At each node we look for an instruction, and then go to the class the instruction refers us to. If the class found is a barren leaf-node (without children), we enqueue the packet there. If it is not yet a leaf node, we do the whole thing over again starting from that node.</p>
+<p>The following actions are performed, in order at each node we visit, until one sends us to another node, or terminates the process.</p>
+<dl>
+<dt>(i)</dt>
+<dd><p>Consult filters attached to the class. If sent to a leafnode, we are done. Otherwise, restart.</p>
+</dd>
+<dt>(ii)</dt>
+<dd><p>If none of the above returned with an instruction, enqueue at this node.</p>
+</dd>
+</dl>
+<p>This algorithm makes sure that a packet always ends up somewhere, even while you are busy building your configuration.</p>
+<h1>LINK SHARING ALGORITHM</h1>
+<p>FIXME</p>
+<h1>QDISC</h1>
+<p>The root of a HTB qdisc class tree has the following parameters:</p>
+<dl>
+<dt>parent major:minor | root</dt>
+<dd><p>This mandatory parameter determines the place of the HTB instance, either at the <strong>root</strong> of an interface or within an existing class.</p>
+</dd>
+<dt>handle major:</dt>
+<dd><p>Like all other qdiscs, the HTB can be assigned a handle. Should consist only of a major number, followed by a colon. Optional, but very useful if classes will be generated within this qdisc.</p>
+</dd>
+<dt>default minor-id</dt>
+<dd><p>Unclassified traffic gets sent to the class with this minor-id.</p>
+</dd>
+<dt>r2q divisor</dt>
+<dd><p>Divisor used to calculate <strong>quantum</strong> values for classes. Classes divide <strong>rate</strong> by this number. Default value is 10.</p>
+</dd>
+</dl>
+<h1>CLASSES</h1>
+<p>Classes have a host of parameters to configure their operation.</p>
+<dl>
+<dt>parent major:minor</dt>
+<dd><p>Place of this class within the hierarchy. If attached directly to a qdisc and not to another class, minor can be omitted. Mandatory.</p>
+</dd>
+<dt>classid major:minor</dt>
+<dd><p>Like qdiscs, classes can be named. The major number must be equal to the major number of the qdisc to which it belongs. Optional, but needed if this class is going to have children.</p>
+</dd>
+<dt>prio priority</dt>
+<dd><p>In the round-robin process, classes with the lowest priority field are tried for packets first.</p>
+</dd>
+</dl>
+<dl>
+<dt>rate rate</dt>
+<dd><p>Maximum rate this class and all its children are guaranteed. Mandatory.</p>
+</dd>
+</dl>
+<dl>
+<dt>ceil rate</dt>
+<dd><p>Maximum rate at which a class can send, if its parent has bandwidth to spare. Defaults to the configured rate, which implies no borrowing</p>
+</dd>
+</dl>
+<dl>
+<dt>burst bytes</dt>
+<dd><p>Amount of bytes that can be burst at <strong>ceil</strong> speed, in excess of the configured <strong>rate.</strong> Should be at least as high as the highest burst of all children.</p>
+</dd>
+</dl>
+<dl>
+<dt>cburst bytes</dt>
+<dd><p>Amount of bytes that can be burst at 'infinite' speed, in other words, as fast as the interface can transmit them. For perfect evening out, should be equal to at most one average packet. Should be at least as high as the highest cburst of all children.</p>
+</dd>
+</dl>
+<dl>
+<dt>quantum bytes</dt>
+<dd><p>Number of bytes to serve from this class before the scheduler moves to the next class. Default value is <strong>rate</strong> divided by the qdisc <strong>r2q</strong> parameter. If specified, <strong>r2q</strong> is ignored.</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>Due to Unix timing constraints, the maximum ceil rate is not infinite and may in fact be quite low. On Intel, there are 100 timer events per second, the maximum rate is that rate at which 'burst' bytes are sent each timer tick. From this, the minimum burst size for a specified rate can be calculated. For i386, a 10mbit rate requires a 12 kilobyte burst as 100*12kb*8 equals 10mbit.</p>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8)</p>
+<p>HTB website: http://luxik.cdi.cz/~devik/qos/htb/</p>
+<h1>AUTHOR</h1>
+<p>Martin Devera &lt;devik@cdi.cz&gt;. This manpage maintained by bert hubert &lt;ahu@ds9a.nl&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

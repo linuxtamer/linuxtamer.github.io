@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command symlinkat</title><meta name="description" content="Linux command symlinkat make a new name for a file"><meta name="keywords" content="linux, command, symlinkat, bsd, make a new name for a file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>symlink, symlinkat - make a new name for a file</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+
+int symlink(const char *target, const char *linkpath);
+
+#include &lt;fcntl.h&gt; /* Definition of AT_* constants */
+#include &lt;unistd.h&gt;
+
+int symlinkat(const char *target, int newdirfd&quot;,constchar*&quot;linkpath);
+</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>symlink</strong>():</p>
+<blockquote>
+<p>_XOPEN_SOURCE &gt;= 500 || _POSIX_C_SOURCE &gt;= 200112L || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE</p>
+</blockquote>
+<p><strong>symlinkat</strong>():</p>
+<blockquote>
+<dl>
+<dt>Since glibc 2.10:</dt>
+<dd><p>_POSIX_C_SOURCE &gt;= 200809L</p>
+</dd>
+<dt>Before glibc 2.10:</dt>
+<dd><p>_ATFILE_SOURCE</p>
+</dd>
+</dl>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p><strong>symlink</strong>() creates a symbolic link named <em>linkpath</em> which contains the string <em>target</em>.</p>
+<p>Symbolic links are interpreted at run time as if the contents of the link had been substituted into the path being followed to find a file or directory.</p>
+<p>Symbolic links may contain <em>..</em> path components, which (if used at the start of the link) refer to the parent directories of that in which the link resides.</p>
+<p>A symbolic link (also known as a soft link) may point to an existing file or to a nonexistent one; the latter case is known as a dangling link.</p>
+<p>The permissions of a symbolic link are irrelevant; the ownership is ignored when following the link, but is checked when removal or renaming of the link is requested and the link is in a directory with the sticky bit (<strong>S_ISVTX</strong>) set.</p>
+<p>If <em>linkpath</em> exists, it will <em>not</em> be overwritten.</p>
+<h2>symlinkat()</h2>
+<p>The <strong>symlinkat</strong>() system call operates in exactly the same way as <strong>symlink</strong>(), except for the differences described here.</p>
+<p>If the pathname given in <em>linkpath</em> is relative, then it is interpreted relative to the directory referred to by the file descriptor <em>newdirfd</em> (rather than relative to the current working directory of the calling process, as is done by <strong>symlink</strong>() for a relative pathname).</p>
+<p>If <em>linkpath</em> is relative and <em>newdirfd</em> is the special value <strong>AT_FDCWD</strong>, then <em>linkpath</em> is interpreted relative to the current working directory of the calling process (like <strong>symlink</strong>()).</p>
+<p>If <em>linkpath</em> is absolute, then <em>newdirfd</em> is ignored.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>Write access to the directory containing <em>linkpath</em> is denied, or one of the directories in the path prefix of <em>linkpath</em> did not allow search permission. (See also <strong>path_resolution</strong>(7).)</p>
+</dd>
+<dt><strong>EDQUOT</strong></dt>
+<dd><p>The user's quota of resources on the filesystem has been exhausted. The resources could be inodes or disk blocks, depending on the filesystem implementation.</p>
+</dd>
+<dt><strong>EEXIST</strong></dt>
+<dd><p><em>linkpath</em> already exists.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>target</em> or <em>linkpath</em> points outside your accessible address space.</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>An I/O error occurred.</p>
+</dd>
+<dt><strong>ELOOP</strong></dt>
+<dd><p>Too many symbolic links were encountered in resolving <em>linkpath</em>.</p>
+</dd>
+<dt><strong>ENAMETOOLONG</strong></dt>
+<dd><p><em>target</em> or <em>linkpath</em> was too long.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>A directory component in <em>linkpath</em> does not exist or is a dangling symbolic link, or <em>target</em> or <em>linkpath</em> is an empty string.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient kernel memory was available.</p>
+</dd>
+<dt><strong>ENOSPC</strong></dt>
+<dd><p>The device containing the file has no room for the new directory entry.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p>A component used as a directory in <em>linkpath</em> is not, in fact, a directory.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The filesystem containing <em>linkpath</em> does not support the creation of symbolic links.</p>
+</dd>
+<dt><strong>EROFS</strong></dt>
+<dd><p><em>linkpath</em> is on a read-only filesystem.</p>
+</dd>
+</dl>
+<p>The following additional errors can occur for <strong>symlinkat</strong>():</p>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>newdirfd</em> is not a valid file descriptor.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p><em>linkpath</em> is a relative pathname and <em>newdirfd</em> refers to a directory that has been deleted.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p><em>linkpath</em> is relative and <em>newdirfd</em> is a file descriptor referring to a file other than a directory.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>symlinkat</strong>() was added to Linux in kernel 2.6.16; library support was added to glibc in version 2.4.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>symlink</strong>(): SVr4, 4.3BSD, POSIX.1-2001, POSIX.1-2008.</p>
+<p><strong>symlinkat</strong>(): POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>No checking of <em>target</em> is done.</p>
+<p>Deleting the name referred to by a symbolic link will actually delete the file (unless it also has other hard links). If this behavior is not desired, use <strong>link</strong>(2).</p>
+<h2>Glibc notes</h2>
+<p>On older kernels where <strong>symlinkat</strong>() is unavailable, the glibc wrapper function falls back to the use of <strong>symlink</strong>(). When <em>linkpath</em> is a relative pathname, glibc constructs a pathname based on the symbolic link in <em>/proc/self/fd</em> that corresponds to the <em>newdirfd</em> argument.</p>
+<h1>SEE ALSO</h1>
+<p><strong>ln</strong>(1), <strong>namei</strong>(1), <strong>lchown</strong>(2), <strong>link</strong>(2), <strong>lstat</strong>(2), <strong>open</strong>(2), <strong>readlink</strong>(2), <strong>rename</strong>(2), <strong>unlink</strong>(2), <strong>path_resolution</strong>(7), <strong>symlink</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

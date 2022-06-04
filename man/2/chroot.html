@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command chroot</title><meta name="description" content="Linux command chroot change root directory"><meta name="keywords" content="linux, command, chroot, bsd, change root directory"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>chroot - change root directory</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;unistd.h&gt;</strong></p>
+<p><strong>int chroot(const char *</strong><em>path</em><strong>);</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>chroot</strong>():</p>
+<blockquote>
+<dl>
+<dt>Since glibc 2.2.2:</dt>
+<dd>
+</dd>
+</dl>
+<pre><code>_XOPEN_SOURCE &amp;&amp; ! (_POSIX_C_SOURCE &gt;= 200112L)
+    || /* Since glibc 2.20: */ _DEFAULT_SOURCE
+    || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE</code></pre>
+<dl>
+<dt>Before glibc 2.2.2: none</dt>
+<dd>
+</dd>
+</dl>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p><strong>chroot</strong>() changes the root directory of the calling process to that specified in <em>path</em>. This directory will be used for pathnames beginning with <em>/</em>. The root directory is inherited by all children of the calling process.</p>
+<p>Only a privileged process (Linux: one with the <strong>CAP_SYS_CHROOT</strong> capability in its user namespace) may call <strong>chroot</strong>().</p>
+<p>This call changes an ingredient in the pathname resolution process and does nothing else. In particular, it is not intended to be used for any kind of security purpose, neither to fully sandbox a process nor to restrict filesystem system calls. In the past, <strong>chroot</strong>() has been used by daemons to restrict themselves prior to passing paths supplied by untrusted users to system calls such as <strong>open</strong>(2). However, if a folder is moved out of the chroot directory, an attacker can exploit that to get out of the chroot directory as well. The easiest way to do that is to <strong>chdir</strong>(2) to the to-be-moved directory, wait for it to be moved out, then open a path like ../../../etc/passwd.</p>
+<p>A slightly trickier variation also works under some circumstances if <strong>chdir</strong>(2) is not permitted. If a daemon allows a "chroot directory" to be specified, that usually means that if you want to prevent remote users from accessing files outside the chroot directory, you must ensure that folders are never moved out of it.</p>
+<p>This call does not change the current working directory, so that after the call '<em>.</em>' can be outside the tree rooted at '<em>/</em>'. In particular, the superuser can escape from a "chroot jail" by doing:</p>
+<pre><code>mkdir foo; chroot foo; cd ..</code></pre>
+<p>This call does not close open file descriptors, and such file descriptors may allow access to files outside the chroot tree.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<p>Depending on the filesystem, other errors can be returned. The more general errors are listed below:</p>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>Search permission is denied on a component of the path prefix. (See also <strong>path_resolution</strong>(7).)</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>path</em> points outside your accessible address space.</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>An I/O error occurred.</p>
+</dd>
+<dt><strong>ELOOP</strong></dt>
+<dd><p>Too many symbolic links were encountered in resolving <em>path</em>.</p>
+</dd>
+<dt><strong>ENAMETOOLONG</strong></dt>
+<dd><p><em>path</em> is too long.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>The file does not exist.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient kernel memory was available.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p>A component of <em>path</em> is not a directory.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The caller has insufficient privilege.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>SVr4, 4.4BSD, SUSv2 (marked LEGACY). This function is not part of POSIX.1-2001.</p>
+<h1>NOTES</h1>
+<p>A child process created via <strong>fork</strong>(2) inherits its parent's root directory. The root directory is left unchanged by <strong>execve</strong>(2).</p>
+<p>The magic symbolic link, <em>/proc/[pid]/root</em>, can be used to discover a process's root directory; see <strong>proc</strong>(5) for details.</p>
+<p>FreeBSD has a stronger <strong>jail</strong>() system call.</p>
+<h1>SEE ALSO</h1>
+<p><strong>chroot</strong>(1), <strong>chdir</strong>(2), <strong>pivot_root</strong>(2), <strong>path_resolution</strong>(7), <strong>switch_root</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

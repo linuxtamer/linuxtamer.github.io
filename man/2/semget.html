@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command semget</title><meta name="description" content="Linux command semget get a System V semaphore set identifier"><meta name="keywords" content="linux, command, semget, bsd, get a System V semaphore set identifier"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>semget - get a System V semaphore set identifier</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/ipc.h&gt;
+#include &lt;sys/sem.h&gt;</code></pre>
+<p><strong>int semget(key_t </strong><em>key</em><strong>,</strong> <strong>int </strong><em>nsems</em><strong>,</strong> <strong>int </strong><em>semflg</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>semget</strong>() system call returns the System V semaphore set identifier associated with the argument <em>key</em>. It may be used either to obtain the identifier of a previously created semaphore set (when <em>semflg</em> is zero and <em>key</em> does not have the value <strong>IPC_PRIVATE</strong>), or to create a new set.</p>
+<p>A new set of <em>nsems</em> semaphores is created if <em>key</em> has the value <strong>IPC_PRIVATE</strong> or if no existing semaphore set is associated with <em>key</em> and <strong>IPC_CREAT</strong> is specified in <em>semflg</em>.</p>
+<p>If <em>semflg</em> specifies both <strong>IPC_CREAT</strong> and <strong>IPC_EXCL</strong> and a semaphore set already exists for <em>key</em>, then <strong>semget</strong>() fails with <em>errno</em> set to <strong>EEXIST</strong>. (This is analogous to the effect of the combination <strong>O_CREAT | O_EXCL</strong> for <strong>open</strong>(2).)</p>
+<p>Upon creation, the least significant 9 bits of the argument <em>semflg</em> define the permissions (for owner, group and others) for the semaphore set. These bits have the same format, and the same meaning, as the <em>mode</em> argument of <strong>open</strong>(2) (though the execute permissions are not meaningful for semaphores, and write permissions mean permission to alter semaphore values).</p>
+<p>When creating a new semaphore set, <strong>semget</strong>() initializes the set's associated data structure, <em>semid_ds</em> (see <strong>semctl</strong>(2)), as follows:</p>
+<ul>
+<li><p><em>sem_perm.cuid</em> and <em>sem_perm.uid</em> are set to the effective user ID of the calling process.</p></li>
+<li><p><em>sem_perm.cgid</em> and <em>sem_perm.gid</em> are set to the effective group ID of the calling process.</p></li>
+<li><p>The least significant 9 bits of <em>sem_perm.mode</em> are set to the least significant 9 bits of <em>semflg</em>.</p></li>
+<li><p><em>sem_nsems</em> is set to the value of <em>nsems</em>.</p></li>
+<li><p><em>sem_otime</em> is set to 0.</p></li>
+<li><p><em>sem_ctime</em> is set to the current time.</p></li>
+</ul>
+<p>The argument <em>nsems</em> can be 0 (a don't care) when a semaphore set is not being created. Otherwise, <em>nsems</em> must be greater than 0 and less than or equal to the maximum number of semaphores per semaphore set (<strong>SEMMSL</strong>).</p>
+<p>If the semaphore set already exists, the permissions are verified.</p>
+<h1>RETURN VALUE</h1>
+<p>If successful, the return value will be the semaphore set identifier (a nonnegative integer), otherwise, -1 is returned, with <em>errno</em> indicating the error.</p>
+<h1>ERRORS</h1>
+<p>On failure, <em>errno</em> will be set to one of the following:</p>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>A semaphore set exists for <em>key</em>, but the calling process does not have permission to access the set, and does not have the <strong>CAP_IPC_OWNER</strong> capability in the user namespace that governs its IPC namespace.</p>
+</dd>
+<dt><strong>EEXIST</strong></dt>
+<dd><p><strong>IPC_CREAT</strong> and <strong>IPC_EXCL</strong> were specified in <em>semflg</em>, but a semaphore set already exists for <em>key</em>.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>nsems</em> is less than 0 or greater than the limit on the number of semaphores per semaphore set (<strong>SEMMSL</strong>).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>A semaphore set corresponding to <em>key</em> already exists, but <em>nsems</em> is larger than the number of semaphores in that set.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>No semaphore set exists for <em>key</em> and <em>semflg</em> did not specify <strong>IPC_CREAT</strong>.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>A semaphore set has to be created but the system does not have enough memory for the new data structure.</p>
+</dd>
+<dt><strong>ENOSPC</strong></dt>
+<dd><p>A semaphore set has to be created but the system limit for the maximum number of semaphore sets (<strong>SEMMNI</strong>), or the system wide maximum number of semaphores (<strong>SEMMNS</strong>), would be exceeded.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>SVr4, POSIX.1-2001.</p>
+<h1>NOTES</h1>
+<p>The inclusion of <em>&lt;sys/types.h&gt;</em> and <em>&lt;sys/ipc.h&gt;</em> isn't required on Linux or by any version of POSIX. However, some old implementations required the inclusion of these header files, and the SVID also documented their inclusion. Applications intended to be portable to such old systems may need to include these header files.</p>
+<p><strong>IPC_PRIVATE</strong> isn't a flag field but a <em>key_t</em> type. If this special value is used for <em>key</em>, the system call ignores all but the least significant 9 bits of <em>semflg</em> and creates a new semaphore set (on success).</p>
+<h2>Semaphore initialization</h2>
+<p>The values of the semaphores in a newly created set are indeterminate. (POSIX.1-2001 and POSIX.1-2008 are explicit on this point, although POSIX.1-2008 notes that a future version of the standard may require an implementation to initialize the semaphores to 0.) Although Linux, like many other implementations, initializes the semaphore values to 0, a portable application cannot rely on this: it should explicitly initialize the semaphores to the desired values.</p>
+<p>Initialization can be done using <strong>semctl</strong>(2) <strong>SETVAL</strong> or <strong>SETALL</strong> operation. Where multiple peers do not know who will be the first to initialize the set, checking for a nonzero <em>sem_otime</em> in the associated data structure retrieved by a <strong>semctl</strong>(2) <strong>IPC_STAT</strong> operation can be used to avoid races.</p>
+<h2>Semaphore limits</h2>
+<p>The following limits on semaphore set resources affect the <strong>semget</strong>() call:</p>
+<dl>
+<dt><strong>SEMMNI</strong></dt>
+<dd><p>System-wide limit on the number of semaphore sets. On Linux systems before version 3.19, the default value for this limit was 128. Since Linux 3.19, the default value is 32,000. On Linux, this limit can be read and modified via the fourth field of <em>/proc/sys/kernel/sem</em>.</p>
+</dd>
+<dt><strong>SEMMSL</strong></dt>
+<dd><p>Maximum number of semaphores per semaphore ID. On Linux systems before version 3.19, the default value for this limit was 250. Since Linux 3.19, the default value is 32,000. On Linux, this limit can be read and modified via the first field of <em>/proc/sys/kernel/sem</em>.</p>
+</dd>
+<dt><strong>SEMMNS</strong></dt>
+<dd><p>System-wide limit on the number of semaphores: policy dependent (on Linux, this limit can be read and modified via the second field of <em>/proc/sys/kernel/sem</em>). Note that the number of semaphores system-wide is also limited by the product of <strong>SEMMSL</strong> and <strong>SEMMNI</strong>.</p>
+</dd>
+</dl>
+<h1>BUGS</h1>
+<p>The name choice <strong>IPC_PRIVATE</strong> was perhaps unfortunate, <strong>IPC_NEW</strong> would more clearly show its function.</p>
+<h1>EXAMPLES</h1>
+<p>The program shown below uses <strong>semget</strong>() to create a new semaphore set or retrieve the ID of an existing set. It generates the <em>key</em> for <strong>semget</strong>() using <strong>ftok</strong>(3). The first two command-line arguments are used as the <em>pathname</em> and <em>proj_id</em> arguments for <strong>ftok</strong>(3). The third command-line argument is an integer that specifies the <em>nsems</em> argument for <strong>semget</strong>(). Command-line options can be used to specify the <strong>IPC_CREAT</strong> (<em>-c</em>) and <strong>IPC_EXCL</strong> (<em>-x</em>) flags for the call to <strong>semget</strong>(). The usage of this program is demonstrated below.</p>
+<p>We first create two files that will be used to generate keys using <strong>ftok</strong>(3), create two semaphore sets using those files, and then list the sets using <strong>ipcs</strong>(1):</p>
+<pre><code>$ touch mykey mykey2
+$ ./t_semget -c mykey p 1
+ID = 9
+$ ./t_semget -c mykey2 p 2
+ID = 10
+$ ipcs -s
+
+------ Semaphore Arrays --------
+key        semid      owner      perms      nsems
+0x7004136d 9          mtk        600        1
+0x70041368 10         mtk        600        2</code></pre>
+<p>Next, we demonstrate that when <strong>semctl</strong>(2) is given the same <em>key</em> (as generated by the same arguments to <strong>ftok</strong>(3)), it returns the ID of the already existing semaphore set:</p>
+<pre><code>$ ./t_semget -c mykey p 1
+ID = 9</code></pre>
+<p>Finally, we demonstrate the kind of collision that can occur when <strong>ftok</strong>(3) is given different <em>pathname</em> arguments that have the same inode number:</p>
+<pre><code>$ ln mykey link
+$ ls -i1 link mykey
+2233197 link
+2233197 mykey
+$ ./t_semget link p 1       # Generates same key as &#39;mykey&#39;
+ID = 9</code></pre>
+<h2>Program source</h2>
+<pre><code>/* t_semget.c
+
+   Licensed under GNU General Public License v2 or later.
+*/
+#include &lt;sys/types.h&gt;
+#include &lt;sys/ipc.h&gt;
+#include &lt;sys/sem.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+static void
+usage(const char *pname)
+{
+    fprintf(stderr, &quot;Usage: %s [-cx] pathname proj-id num-sems\n&quot;,
+            pname);
+    fprintf(stderr, &quot;    -c           Use IPC_CREAT flag\n&quot;);
+    fprintf(stderr, &quot;    -x           Use IPC_EXCL flag\n&quot;);
+    exit(EXIT_FAILURE);
+}
+
+int
+main(int argc, char *argv[])
+{
+    int semid, nsems, flags, opt;
+    key_t key;
+
+    flags = 0;
+    while ((opt = getopt(argc, argv, &quot;cx&quot;)) != -1) {
+        switch (opt) {
+        case &#39;c&#39;: flags |= IPC_CREAT;   break;
+        case &#39;x&#39;: flags |= IPC_EXCL;    break;
+        default:  usage(argv[0]);
+        }
+    }
+
+    if (argc != optind + 3)
+        usage(argv[0]);
+
+    key = ftok(argv[optind], argv[optind + 1][0]);
+    if (key == -1) {
+        perror(&quot;ftok&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    nsems = atoi(argv[optind + 2]);
+
+    semid = semget(key, nsems, flags | 0600);
+    if (semid == -1) {
+        perror(&quot;semget&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    printf(&quot;ID = %d\n&quot;, semid);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>semctl</strong>(2), <strong>semop</strong>(2), <strong>ftok</strong>(3), <strong>capabilities</strong>(7), <strong>sem_overview</strong>(7), <strong>sysvipc</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

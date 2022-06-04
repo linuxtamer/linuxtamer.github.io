@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sudoedit</title><meta name="description" content="Linux command sudoedit execute a command as another user"><meta name="keywords" content="linux, command, sudoedit, bsd, execute a command as another user"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<p>allows a permitted user to execute a</p>
+<p>as the superuser or another user, as specified by the security policy. The invoking user's real</p>
+<p>user-ID is used to determine the user name with which to query the security policy.</p>
+<p>supports a plugin architecture for security policies and input/output logging. Third parties can develop and distribute their own policy and I/O logging plugins to work seamlessly with the</p>
+<p>front end. The default security policy is</p>
+<p>which is configured via the file</p>
+<p>or via LDAP. See the</p>
+<p>section for more information.</p>
+<p>The security policy determines what privileges, if any, a user has to run</p>
+<p>The policy may require that users authenticate themselves with a password or another authentication mechanism. If authentication is required,</p>
+<p>will exit if the user's password is not entered within a configurable time limit. This limit is policy-specific; the default password prompt timeout for the</p>
+<p>security policy is</p>
+<p>minutes.</p>
+<p>Security policies may support credential caching to allow the user to run</p>
+<p>again for a period of time without requiring authentication. By default, the</p>
+<p>policy caches credentials on a per-terminal basis for</p>
+<p>minutes. See the</p>
+<p>and</p>
+<p>options in</p>
+<p>for more information. By running</p>
+<p>with the</p>
+<p>option, a user can update the cached credentials without running a</p>
+<p>On systems where</p>
+<p>is the primary method of gaining superuser privileges, it is imperative to avoid syntax errors in the security policy configuration files. For the default security policy,</p>
+<p>changes to the configuration files should be made using the</p>
+<p>utility which will ensure that no syntax errors are introduced.</p>
+<p>When invoked as</p>
+<p>the</p>
+<p>option (described below), is implied.</p>
+<p>Security policies may log successful and failed attempts to use</p>
+<p>If an I/O plugin is configured, the running command's input and output may be logged as well.</p>
+<p>The options are as follows:</p>
+<p>Normally, if</p>
+<p>requires a password, it will read it from the user's terminal. If the</p>
+<p>option is specified, a (possibly graphical) helper program is executed to read the user's password and output the password to the standard output. If the</p>
+<p>environment variable is set, it specifies the path to the helper program. Otherwise, if</p>
+<p>contains a line specifying the askpass program, that value will be used. For example:</p>
+<p># Path to askpass helper program Path askpass /usr/X11R6/bin/ssh-askpass</p>
+<p>If no askpass program is available,</p>
+<p>will exit with an error.</p>
+<p>Ring the bell as part of the password promp when a terminal is present. This option has no effect if an askpass program is used.</p>
+<p>Run the given command in the background. Note that it is not possible to use shell job control to manipulate background processes started by</p>
+<p>Most interactive commands will fail to work properly in background mode.</p>
+<p>Close all file descriptors greater than or equal to</p>
+<p>before executing a command. Values less than three are not permitted. By default,</p>
+<p>will close all open file descriptors other than standard input, standard output and standard error when executing a command. The security policy may restrict the user's ability to use this option. The</p>
+<p>policy only permits use of the</p>
+<p>option when the administrator has enabled the</p>
+<p>option.</p>
+<p>Run the command in the specified</p>
+<p>instead of the current working directory. The security policy may return an error if the user does not have permission to specify the working directory.</p>
+<p>Indicates to the security policy that the user wishes to preserve their existing environment variables. The security policy may return an error if the user does not have permission to preserve the environment.</p>
+<p>Indicates to the security policy that the user wishes to add the comma-separated list of environment variables to those preserved from the user's environment. The security policy may return an error if the user does not have permission to preserve the environment. This option may be specified multiple times.</p>
+<p>Edit one or more files instead of running a command. In lieu of a path name, the string "sudoedit" is used when consulting the security policy. If the user is authorized by the policy, the following steps are taken:</p>
+<p>Temporary copies are made of the files to be edited with the owner set to the invoking user.</p>
+<p>The editor specified by the policy is run to edit the temporary files. The</p>
+<p>policy uses the</p>
+<p>and</p>
+<p>environment variables (in that order). If none of</p>
+<p>or</p>
+<p>are set, the first program listed in the</p>
+<p>option is used.</p>
+<p>If they have been modified, the temporary files are copied back to their original location and the temporary versions are removed.</p>
+<p>To help prevent the editing of unauthorized files, the following restrictions are enforced unless explicitly allowed by the security policy:</p>
+<p>Symbolic links may not be edited (version 1.8.15 and higher).</p>
+<p>Symbolic links along the path to be edited are not followed when the parent directory is writable by the invoking user unless that user is root (version 1.8.16 and higher).</p>
+<p>Files located in a directory that is writable by the invoking user may not be edited unless that user is root (version 1.8.16 and higher).</p>
+<p>Users are never allowed to edit device special files.</p>
+<p>If the specified file does not exist, it will be created. Note that unlike most commands run by</p>
+<p>the editor is run with the invoking user's environment unmodified. If the temporary file becomes empty after editing, the user will be prompted before it is installed. If, for some reason,</p>
+<p>is unable to update a file with its edited version, the user will receive a warning and the edited copy will remain in a temporary file.</p>
+<p>Run the command with the primary group set to</p>
+<p>instead of the primary group specified by the target user's password database entry. The</p>
+<p>may be either a group name or a numeric group-ID</p>
+<p>prefixed with the</p>
+<p>character (e.g.,</p>
+<p>for GID 0). When running a command as a GID, many shells require that the</p>
+<p>be escaped with a backslash</p>
+<p>If no</p>
+<p>option is specified, the command will be run as the invoking user. In either case, the primary group will be set to</p>
+<p>The</p>
+<p>policy permits any of the target user's groups to be specified via the</p>
+<p>option as long as the</p>
+<p>option is not in use.</p>
+<p>Request that the security policy set the</p>
+<p>environment variable to the home directory specified by the target user's password database entry. Depending on the policy, this may be the default behavior.</p>
+<p>Display a short help message to the standard output and exit.</p>
+<p>Run the command on the specified</p>
+<p>if the security policy plugin supports remote commands. Note that the</p>
+<p>plugin does not currently support running remote commands. This may also be used in conjunction with the</p>
+<p>option to list a user's privileges for the remote host.</p>
+<p>Run the shell specified by the target user's password database entry as a login shell. This means that login-specific resource files such as</p>
+<p>or</p>
+<p>will be read by the shell. If a command is specified, it is passed to the shell for execution via the shell's</p>
+<p>option. If no command is specified, an interactive shell is executed.</p>
+<p>attempts to change to that user's home directory before running the shell. The command is run with an environment similar to the one a user would receive at log in. Note that most shells behave differently when a command is specified as compared to an interactive session; consult the shell's manual for details. The</p>
+<p>section in the</p>
+<p>manual documents how the</p>
+<p>option affects the environment in which a command is run when the</p>
+<p>policy is in use.</p>
+<p>Similar to the</p>
+<p>option, except that it removes the user's cached credentials entirely and may not be used in conjunction with a command or other option. This option does not require a password. Not all security policies support credential caching.</p>
+<p>When used without a command, invalidates the user's cached credentials. In other words, the next time</p>
+<p>is run a password will be required. This option does not require a password and was added to allow a user to revoke</p>
+<p>permissions from a</p>
+<p>file.</p>
+<p>When used in conjunction with a command or an option that may require a password, this option will cause</p>
+<p>to ignore the user's cached credentials. As a result,</p>
+<p>will prompt for a password (if one is required by the security policy) and will not update the user's cached credentials.</p>
+<p>Not all security policies support credential caching.</p>
+<p>If no</p>
+<p>is specified, list the allowed (and forbidden) commands for the invoking user (or the user specified by the</p>
+<p>option) on the current host. A longer list format is used if this option is specified multiple times and the security policy supports a verbose output format.</p>
+<p>If a</p>
+<p>is specified and is permitted by the security policy, the fully-qualified path to the command is displayed along with any command line arguments. If a</p>
+<p>is specified but not allowed by the policy,</p>
+<p>will exit with a status value of 1.</p>
+<p>Avoid prompting the user for input of any kind. If a password is required for the command to run,</p>
+<p>will display an error message and exit.</p>
+<p>Preserve the invoking user's group vector unaltered. By default, the</p>
+<p>policy will initialize the group vector to the list of groups the target user is a member of. The real and effective group-IDs, however, are still set to match the target user.</p>
+<p>Use a custom password prompt with optional escape sequences. The following percent</p>
+<p>escape sequences are supported by the</p>
+<p>policy:</p>
+<p>expanded to the host name including the domain name (on if the machine's host name is fully qualified or the</p>
+<p>option is set in</p>
+<p>expanded to the local host name without the domain name</p>
+<p>expanded to the name of the user whose password is being requested (respects the</p>
+<p>and</p>
+<p>flags in</p>
+<p>expanded to the login name of the user the command will be run as (defaults to root unless the</p>
+<p>option is also specified)</p>
+<p>expanded to the invoking user's login name</p>
+<p>two consecutive</p>
+<p>characters are collapsed into a single</p>
+<p>character</p>
+<p>The custom prompt will override the default prompt specified by either the security policy or the</p>
+<p>environment variable. On systems that use PAM, the custom prompt will also override the prompt specified by a PAM module unless the</p>
+<p>flag is disabled in</p>
+<p>Change to the specified root</p>
+<p>(see</p>
+<p>before running the command. The security policy may return an error if the user does not have permission to specify the root directory.</p>
+<p>Write the prompt to the standard error and read the password from the standard input instead of using the terminal device.</p>
+<p>Run the shell specified by the</p>
+<p>environment variable if it is set or the shell specified by the invoking user's password database entry. If a command is specified, it is passed to the shell for execution via the shell's</p>
+<p>option. If no command is specified, an interactive shell is executed. Note that most shells behave differently when a command is specified as compared to an interactive session; consult the shell's manual for details.</p>
+<p>Used in conjunction with the</p>
+<p>option to list the privileges for</p>
+<p>instead of for the invoking user. The security policy may restrict listing other users' privileges. The</p>
+<p>policy only allows root or a user with the</p>
+<p>privilege on the current host to use this option.</p>
+<p>Used to set a timeout for the command. If the timeout expires before the command has exited, the command will be terminated. The security policy may restrict the ability to set command timeouts. The</p>
+<p>policy requires that user-specified timeouts be explicitly enabled.</p>
+<p>Run the command as a user other than the default target user (usually</p>
+<p>The</p>
+<p>may be either a user name or a numeric user-ID</p>
+<p>prefixed with the</p>
+<p>character (e.g.,</p>
+<p>for UID 0). When running commands as a UID, many shells require that the</p>
+<p>be escaped with a backslash</p>
+<p>Some security policies may restrict UIDs to those listed in the password database. The</p>
+<p>policy allows UIDs that are not in the password database as long as the</p>
+<p>option is not set. Other security policies may not support this.</p>
+<p>Print the</p>
+<p>version string as well as the version string of the security policy plugin and any I/O plugins. If the invoking user is already root the</p>
+<p>option will display the arguments passed to configure when</p>
+<p>was built and plugins may display more verbose information such as default options.</p>
+<p>Update the user's cached credentials, authenticating the user if necessary. For the</p>
+<p>plugin, this extends the</p>
+<p>timeout for another</p>
+<p>minutes by default, but does not run a command. Not all security policies support cached credentials.</p>
+<p>The</p>
+<p>option indicates that</p>
+<p>should stop processing command line arguments.</p>
+<p>Options that take a value may only be specified once unless otherwise indicated in the description. This is to help guard against problems caused by poorly written scripts that invoke</p>
+<p>with user-controlled input.</p>
+<p>Environment variables to be set for the command may also be passed on the command line in the form of</p>
+<p>e.g.,</p>
+<p>Variables passed on the command line are subject to restrictions imposed by the security policy plugin. The</p>
+<p>policy subjects variables passed on the command line to the same restrictions as normal environment variables with one important exception. If the</p>
+<p>option is set in</p>
+<p>the command to be run has the</p>
+<p>tag set or the command matched is</p>
+<p>the user may set variables that would otherwise be forbidden. See</p>
+<p>for more information.</p>
+<p>When</p>
+<p>executes a command, the security policy specifies the execution environment for the command. Typically, the real and effective user and group and IDs are set to match those of the target user, as specified in the password database, and the group vector is initialized based on the group database (unless the</p>
+<p>option was specified).</p>
+<p>The following parameters may be specified by security policy:</p>
+<p>real and effective user-ID</p>
+<p>real and effective group-ID</p>
+<p>supplementary group-IDs</p>
+<p>the environment list</p>
+<p>current working directory</p>
+<p>file creation mode mask (umask)</p>
+<p>scheduling priority (aka nice value)</p>
+<p>There are two distinct ways</p>
+<p>can run a command.</p>
+<p>If an I/O logging plugin is configured or if the security policy explicitly requests it, a new pseudo-terminal</p>
+<p>is allocated and</p>
+<p>is used to create a second</p>
+<p>process, referred to as the</p>
+<p>The</p>
+<p>creates a new terminal session with itself as the leader and the pty as its controlling terminal, calls</p>
+<p>sets up the execution environment as described above, and then uses the</p>
+<p>system call to run the command in the child process. The</p>
+<p>exists to relay job control signals between the user's existing terminal and the pty the command is being run in. This makes it possible to suspend and resume the command. Without the monitor, the command would be in what POSIX terms an</p>
+<p>and it would not receive any job control signals from the kernel. When the command exits or is terminated by a signal, the</p>
+<p>passes the command's exit status to the main</p>
+<p>process and exits. After receiving the command's exit status, the main</p>
+<p>passes the command's exit status to the security policy's close function and exits.</p>
+<p>If no pty is used,</p>
+<p>calls</p>
+<p>sets up the execution environment as described above, and uses the</p>
+<p>system call to run the command in the child process. The main</p>
+<p>process waits until the command has completed, then passes the command's exit status to the security policy's close function and exits. As a special case, if the policy plugin does not define a close function,</p>
+<p>will execute the command directly instead of calling</p>
+<p>first. The</p>
+<p>policy plugin will only define a close function when I/O logging is enabled, a pty is required, or the</p>
+<p>or</p>
+<p>options are enabled. Note that</p>
+<p>and</p>
+<p>are enabled by default on systems using PAM.</p>
+<p>On systems that use PAM, the security policy's close function is responsible for closing the PAM session. It may also log the command's exit status.</p>
+<p>When the command is run as a child of the</p>
+<p>process,</p>
+<p>will relay signals it receives to the command. The</p>
+<p>and</p>
+<p>signals are only relayed when the command is being run in a new pty or when the signal was sent by a user process, not the kernel. This prevents the command from receiving</p>
+<p>twice each time the user enters control-C. Some signals, such as</p>
+<p>and</p>
+<p>cannot be caught and thus will not be relayed to the command. As a general rule,</p>
+<p>should be used instead of</p>
+<p>when you wish to suspend a command being run by</p>
+<p>As a special case,</p>
+<p>will not relay signals that were sent by the command it is running. This prevents the command from accidentally killing itself. On some systems, the</p>
+<p>command sends</p>
+<p>to all non-system processes other than itself before rebooting the system. This prevents</p>
+<p>from relaying the</p>
+<p>signal it received back to</p>
+<p>which might then exit before the system was actually rebooted, leaving it in a half-dead state similar to single user mode. Note, however, that this check only applies to the command run by</p>
+<p>and not any other processes that the command may create. As a result, running a script that calls</p>
+<p>or</p>
+<p>via</p>
+<p>may cause the system to end up in this undefined state unless the</p>
+<p>or</p>
+<p>are run using the</p>
+<p>family of functions instead of</p>
+<p>(which interposes a shell between the command and the calling process).</p>
+<p>If no I/O logging plugins are loaded and the policy plugin has not defined a</p>
+<p>function, set a command timeout or required that the command be run in a new pty,</p>
+<p>may execute the command directly instead of running it as a child process.</p>
+<p>Plugins may be specified via</p>
+<p>directives in the</p>
+<p>file. They may be loaded as dynamic shared objects (on systems that support them), or compiled directly into the</p>
+<p>binary. If no</p>
+<p>file is present, or if it doesn't contain any</p>
+<p>lines,</p>
+<p>will use</p>
+<p>for the policy, auditing and I/O logging plugins. See the</p>
+<p>manual for details of the</p>
+<p>file and the</p>
+<p>manual for more information about the</p>
+<p>plugin architecture.</p>
+<p>Upon successful execution of a command, the exit status from</p>
+<p>will be the exit status of the program that was executed. If the command terminated due to receipt of a signal,</p>
+<p>will send itself the same signal that terminated the command.</p>
+<p>If the</p>
+<p>option was specified without a command,</p>
+<p>will exit with a value of 0 if the user is allowed to run</p>
+<p>and they authenticated successfully (as required by the security policy). If a command is specified with the</p>
+<p>option, the exit value will only be 0 if the command is permitted by the security policy, otherwise it will be 1.</p>
+<p>If there is an authentication failure, a configuration/permission problem or if the given command cannot be executed,</p>
+<p>exits with a value of 1. In the latter case, the error string is printed to the standard error. If</p>
+<p>cannot</p>
+<p>one or more entries in the user's</p>
+<p>an error is printed to the standard error. (If the directory does not exist or if it is not really a directory, the entry is ignored and no error is printed.) This should not happen under normal circumstances. The most common reason for</p>
+<p>to return</p>
+<p>is if you are running an automounter and one of the directories in your</p>
+<p>is on a machine that is currently unreachable.</p>
+<p>tries to be safe when executing external commands.</p>
+<p>To prevent command spoofing,</p>
+<p>checks "." and "" (both denoting current directory) last when searching for a command in the user's</p>
+<p>(if one or both are in the</p>
+<p>Note, however, that the actual</p>
+<p>environment variable is</p>
+<p>modified and is passed unchanged to the program that</p>
+<p>executes.</p>
+<p>Users should</p>
+<p>be granted</p>
+<p>privileges to execute files that are writable by the user or that reside in a directory that is writable by the user. If the user can modify or replace the command there is no way to limit what additional commands they can run.</p>
+<p>Please note that</p>
+<p>will normally only log the command it explicitly runs. If a user runs a command such as</p>
+<p>or</p>
+<p>subsequent commands run from that shell are not subject to</p>
+<p>security policy. The same is true for commands that offer shell escapes (including most editors). If I/O logging is enabled, subsequent commands will have their input and/or output logged, but there will not be traditional logs for those commands. Because of this, care must be taken when giving users access to commands via</p>
+<p>to verify that the command does not inadvertently give the user an effective root shell. For more information, please see the</p>
+<p>section in</p>
+<p>To prevent the disclosure of potentially sensitive information,</p>
+<p>disables core dumps by default while it is executing (they are re-enabled for the command that is run). This historical practice dates from a time when most operating systems allowed set-user-ID processes to dump core by default. To aid in debugging</p>
+<p>crashes, you may wish to re-enable core dumps by setting</p>
+<p>to false in the</p>
+<p>file as follows:</p>
+<p>Set disable_coredump false</p>
+<p>See the</p>
+<p>manual for more information.</p>
+<p>utilizes the following environment variables. The security policy has control over the actual content of the command's environment.</p>
+<p>Default editor to use in</p>
+<p>(sudoedit) mode if neither</p>
+<p>nor</p>
+<p>is set.</p>
+<p>Set to the mail spool of the target user when the</p>
+<p>option is specified or when</p>
+<p>is enabled in</p>
+<p>(unless</p>
+<p>is present in the</p>
+<p>list).</p>
+<p>Set to the home directory of the target user when the</p>
+<p>or</p>
+<p>options are specified, when the</p>
+<p>option is specified and</p>
+<p>is set in</p>
+<p>when</p>
+<p>is enabled in</p>
+<p>or when</p>
+<p>is enabled in</p>
+<p>and</p>
+<p>is not present in the</p>
+<p>list.</p>
+<p>Set to the login name of the target user when the</p>
+<p>option is specified, when the</p>
+<p>option is enabled in</p>
+<p>or when the</p>
+<p>option is enabled in</p>
+<p>(unless</p>
+<p>is present in the</p>
+<p>list).</p>
+<p>May be overridden by the security policy.</p>
+<p>Used to determine shell to run with</p>
+<p>option.</p>
+<p>Specifies the path to a helper program used to read the password if no terminal is available or if the</p>
+<p>option is specified.</p>
+<p>Set to the command run by sudo, including command line arguments. The command line arguments are truncated at 4096 characters to prevent a potential execution error.</p>
+<p>Default editor to use in</p>
+<p>(sudoedit) mode.</p>
+<p>Set to the group-ID of the user who invoked sudo.</p>
+<p>Used as the default password prompt unless the</p>
+<p>option was specified.</p>
+<p>If set,</p>
+<p>will be set to its value for the program being run.</p>
+<p>Set to the user-ID of the user who invoked sudo.</p>
+<p>Set to the login name of the user who invoked sudo.</p>
+<p>Set to the same value as</p>
+<p>described above.</p>
+<p>Default editor to use in</p>
+<p>(sudoedit) mode if</p>
+<p>is not set.</p>
+<p>front end configuration</p>
+<p>Note: the following examples assume a properly configured security policy.</p>
+<p>To get a file listing of an unreadable directory:</p>
+<p>$ sudo ls /usr/local/protected</p>
+<p>To list the home directory of user yaz on a machine where the file system holding ~yaz is not exported as root:</p>
+<p>$ sudo -u yaz ls ~yaz</p>
+<p>To edit the</p>
+<p>file as user www:</p>
+<p>$ sudoedit -u www ~www/htdocs/index.html</p>
+<p>To view system logs only accessible to root and users in the adm group:</p>
+<p>$ sudo -g adm more /var/log/syslog</p>
+<p>To run an editor as jim with a different primary group:</p>
+<p>$ sudoedit -u jim -g audio ~jim/sound.txt</p>
+<p>To shut down a machine:</p>
+<p>$ sudo shutdown -r +15 "quick reboot"</p>
+<p>To make a usage listing of the directories in the /home partition. Note that this runs the commands in a sub-shell to make the</p>
+<p>and file redirection work.</p>
+<p>$ sudo sh -c "cd /home ; du -s * | sort -rn &gt; USAGE"</p>
+<p>Error messages produced by</p>
+<p>include:</p>
+<p>By default,</p>
+<p>does not permit editing a file when any of the parent directories are writable by the invoking user. This avoids a race condition that could allow the user to overwrite an arbitrary file. See the</p>
+<p>option in</p>
+<p>for more information.</p>
+<p>By default,</p>
+<p>does not follow symbolic links when opening files. See the</p>
+<p>option in</p>
+<p>for more information.</p>
+<p>was not run with root privileges. The</p>
+<p>binary must be owned by the root user and have the set-user-ID bit set. Also, it must not be located on a file system mounted with the</p>
+<p>option or on an NFS file system that maps uid 0 to an unprivileged uid.</p>
+<p>was not run with root privileges. The</p>
+<p>binary has the proper owner and permissions but it still did not run with root privileges. The most common reason for this is that the file system the</p>
+<p>binary is located on is mounted with the</p>
+<p>option or it is an NFS file system that maps uid 0 to an unprivileged uid.</p>
+<p>An error occurred while loading or initializing the plugins specified in</p>
+<p>One or more environment variable names specified via the</p>
+<p>option contained an equal sign</p>
+<p>The arguments to the</p>
+<p>option should be environment variable names without an associated value.</p>
+<p>When</p>
+<p>tried to read the password, it did not receive any characters. This may happen if no terminal is available (or the</p>
+<p>option is specified) and the standard input has been redirected from</p>
+<p>needs to read the password but there is no mechanism available for it to do so. A terminal is not present to read the password from,</p>
+<p>has not been configured to read from the standard input, the</p>
+<p>option was not used, and no askpass helper has been specified either via the</p>
+<p>file or the</p>
+<p>environment variable.</p>
+<p>was unable to find a usable temporary directory in which to store its intermediate files.</p>
+<p>was not run with root privileges. The</p>
+<p>binary does not have the correct owner or permissions. It must be owned by the root user and have the set-user-ID bit set.</p>
+<p>It is only possible to run</p>
+<p>on systems that support setting the effective user-ID.</p>
+<p>The user did not enter a password before the password timeout (5 minutes by default) expired.</p>
+<p>Your user-ID does not appear in the system passwd database.</p>
+<p>It is only possible to specify environment variables when running a command. When editing a file, the editor is run with the user's environment unmodified.</p>
+<p>See the HISTORY file in the</p>
+<p>distribution (https://www.sudo.ws/history.html) for a brief history of sudo.</p>
+<p>Many people have worked on</p>
+<p>over the years; this version consists of code written primarily by:</p>
+<p>See the CONTRIBUTORS file in the</p>
+<p>distribution (https://www.sudo.ws/contributors.html) for an exhaustive list of people who have contributed to</p>
+<p>There is no easy way to prevent a user from gaining a root shell if that user is allowed to run arbitrary commands via</p>
+<p>Also, many programs (such as editors) allow the user to run commands via shell escapes, thus avoiding</p>
+<p>checks. However, on most systems it is possible to prevent shell escapes with the</p>
+<p>plugin's</p>
+<p>functionality.</p>
+<p>It is not meaningful to run the</p>
+<p>command directly via sudo, e.g.,</p>
+<p>$ sudo cd /usr/local/protected</p>
+<p>since when the command exits the parent process (your shell) will still be the same. Please see the</p>
+<p>section for more information.</p>
+<p>Running shell scripts via</p>
+<p>can expose the same kernel bugs that make set-user-ID shell scripts unsafe on some operating systems (if your OS has a /dev/fd/ directory, set-user-ID shell scripts are generally safe).</p>
+<p>If you feel you have found a bug in</p>
+<p>please submit a bug report at https://bugzilla.sudo.ws/</p>
+<p>Limited free support is available via the sudo-users mailing list, see https://www.sudo.ws/mailman/listinfo/sudo-users to subscribe or search the archives.</p>
+<p>is provided</p>
+<p>and any express or implied warranties, including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose are disclaimed. See the LICENSE file distributed with</p>
+<p>or https://www.sudo.ws/license.html for complete details.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

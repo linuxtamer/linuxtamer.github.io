@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pig2vcd</title><meta name="description" content="Linux command pig2vcd A utility to convert pigpio notifications to VCD."><meta name="keywords" content="linux, command, pig2vcd, bsd, A utility to convert pigpio notifications to VCD."><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pig2vd - A utility to convert pigpio notifications to VCD.</p>
+<h1>SYNOPSIS</h1>
+<p>pig2vcd &lt;/dev/pigpioXX &gt;file.VCD</p>
+<h1>DESCRIPTION</h1>
+<p>pig2vcd is a utility which reads notifications on stdin and writes the output as a Value Change Dump (VCD) file on stdout.</p>
+<p><br />
+</p>
+<p><br />
+The VCD file can be viewed using GTKWave.</p>
+<p><br />
+</p>
+<p><br />
+</p>
+<h2>Notifications</h2>
+<p><br />
+</p>
+<p><br />
+Notifications consist of 12 bytes with the following binary format.</p>
+<p><br />
+</p>
+<p><br />
+</p>
+<pre><code>typedef struct
+
+
+{
+
+
+   uint16_t seqno;
+
+
+   uint16_t flags;
+
+
+   uint32_t tick;
+
+
+   uint32_t level;
+
+
+} gpioReport_t;
+
+
+</code></pre>
+<p><br />
+</p>
+<p><br />
+seqno: starts at 0 each time the handle is opened and then increments by one for each report.</p>
+<p><br />
+</p>
+<p><br />
+flags: two flags are defined, PI_NTFY_FLAGS_WDOG and PI_NTFY_FLAGS_ALIVE. If bit 5 is set (PI_NTFY_FLAGS_WDOG) then bits 0-4 of the flags indicate a gpio which has had a watchdog timeout; if bit 6 is set (PI_NTFY_FLAGS_ALIVE) this indicates a keep alive signal on the pipe/socket and is sent once a minute in the absence of other notification activity.</p>
+<p><br />
+</p>
+<p><br />
+tick: the number of microseconds since system boot. It wraps around after 1h12m.</p>
+<p><br />
+</p>
+<p><br />
+level: indicates the level of each gpio. If bit 1&lt;&lt;x is set then gpio x is high. pig2vcd takes these notifications and outputs a text format VCD.</p>
+<p><br />
+</p>
+<p><br />
+</p>
+<h2>VCD format</h2>
+<p><br />
+</p>
+<p><br />
+The VCD starts with a header.</p>
+<p><br />
+</p>
+<p><br />
+</p>
+<pre><code>$date 2013-05-31 18:49:36 $end
+
+
+$version pig2vcd V1 $end
+
+
+$timescale 1 us $end
+
+
+$scope module top $end
+
+
+$var wire 1 A 0 $end
+
+
+$var wire 1 B 1 $end
+
+
+$var wire 1 C 2 $end
+
+
+$var wire 1 D 3 $end
+
+
+$var wire 1 E 4 $end
+
+
+$var wire 1 F 5 $end
+
+
+$var wire 1 G 6 $end
+
+
+$var wire 1 H 7 $end
+
+
+$var wire 1 I 8 $end
+
+
+$var wire 1 J 9 $end
+
+
+$var wire 1 K 10 $end
+
+
+$var wire 1 L 11 $end
+
+
+$var wire 1 M 12 $end
+
+
+$var wire 1 N 13 $end
+
+
+$var wire 1 O 14 $end
+
+
+$var wire 1 P 15 $end
+
+
+$var wire 1 Q 16 $end
+
+
+$var wire 1 R 17 $end
+
+
+$var wire 1 S 18 $end
+
+
+$var wire 1 T 19 $end
+
+
+$var wire 1 U 20 $end
+
+
+$var wire 1 V 21 $end
+
+
+$var wire 1 W 22 $end
+
+
+$var wire 1 X 23 $end
+
+
+$var wire 1 Y 24 $end
+
+
+$var wire 1 Z 25 $end
+
+
+$var wire 1 a 26 $end
+
+
+$var wire 1 b 27 $end
+
+
+$var wire 1 c 28 $end
+
+
+$var wire 1 d 29 $end
+
+
+$var wire 1 e 30 $end
+
+
+$var wire 1 f 31 $end
+
+
+$upscope $end
+
+
+$enddefinitions $end
+
+
+</code></pre>
+<p><br />
+</p>
+<p><br />
+The header defines gpio identifiers and their name. Each gpio identifier must be unique. pig2vcd arbitrarily uses 'A' through 'Z' for gpios 0 through 25, and 'a' through 'f' for gpios 26 through 31. The corresponding names are 0 through 31.<br />
+</p>
+<p><br />
+</p>
+<p><br />
+The VCD file may be edited to give a frendlier name, e.g. 8 could be changed to ENCODER_A if an encoder switch A is connected to gpio 8.</p>
+<p><br />
+</p>
+<p><br />
+Following the header pig2vcd takes notifications and outputs a timestamp followed by a list of one or more gpios which have changed state. The timestamp consists of a '#' followed by the microsecond tick. The state lines contain the new state followed by the gpio identifier.</p>
+<p><br />
+</p>
+<p><br />
+</p>
+<pre><code>#1058747
+
+
+0H
+
+
+0I
+
+
+#1059012
+
+
+1H
+
+
+#1079777
+
+
+1I
+
+
+#1079782
+
+
+0I
+
+
+#1079852
+
+
+1I
+
+
+#1079857
+
+
+0I
+
+
+0H
+
+
+#1165113
+
+
+1H
+
+
+#1165118
+
+
+0H
+
+
+#1165153
+
+
+1H
+
+
+</code></pre>
+<h1>SEE ALSO</h1>
+<p>pigpiod(1), pigs(1), pigpio(3), pigpiod_if(3), pigpiod_if2(3)</p>
+<h1>AUTHOR</h1>
+<p>joan@abyz.me.uk</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

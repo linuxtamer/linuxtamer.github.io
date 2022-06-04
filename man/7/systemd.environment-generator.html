@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd.environment-generator</title><meta name="description" content="Linux command systemd.environment-generator systemd environment file generators"><meta name="keywords" content="linux, command, systemd.environment-generator, bsd, systemd environment file generators"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd.environment-generator - systemd environment file generators</p>
+<h1>SYNOPSIS</h1>
+<p><strong>/lib/systemd/system-environment-generators/some-generator</strong></p>
+<p><strong>/usr/lib/systemd/user-environment-generators/some-generator</strong></p>
+<pre><code>/run/systemd/system-environment-generators/*
+/etc/systemd/system-environment-generators/*
+/usr/local/lib/systemd/system-environment-generators/*
+/lib/systemd/system-environment-generators/*</code></pre>
+<pre><code>/run/systemd/user-environment-generators/*
+/etc/systemd/user-environment-generators/*
+/usr/local/lib/systemd/user-environment-generators/*
+/usr/lib/systemd/user-environment-generators/*</code></pre>
+<h1>DESCRIPTION</h1>
+<p>Generators are small executables that live in /lib/systemd/system-environment-generators/ and other directories listed above. <strong>systemd</strong>(1) will execute those binaries very early at the startup of each manager and at configuration reload time, before running the generators described in <strong>systemd.generator</strong>(7) and before starting any units. Environment generators can override the environment that the manager exports to services and other processes.</p>
+<p>Generators are loaded from a set of paths determined during compilation, as listed above. System and user environment generators are loaded from directories with names ending in system-environment-generators/ and user-environment-generators/, respectively. Generators found in directories listed earlier override the ones with the same name in directories lower in the list. A symlink to /dev/null or an empty file can be used to mask a generator, thereby preventing it from running. Please note that the order of the two directories with the highest priority is reversed with respect to the unit load path, and generators in /run/ overwrite those in /etc/.</p>
+<p>After installing new generators or updating the configuration, <strong>systemctl daemon-reload</strong> may be executed. This will re-run all generators, updating environment configuration. It will be used for any services that are started subsequently.</p>
+<p>Environment file generators are executed similarly to unit file generators described in <strong>systemd.generator</strong>(7), with the following differences:</p>
+<blockquote>
+<p>·</p>
+<p>Generators are executed sequentially in the alphanumerical order of the final component of their name. The output of each generator output is immediately parsed and used to update the environment for generators that run after that. Thus, later generators can use and/or modify the output of earlier generators.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Generators are run by every manager instance, their output can be different for each user.</p>
+</blockquote>
+<p>It is recommended to use numerical prefixes for generator names to simplify ordering.</p>
+<h1>EXAMPLES</h1>
+<p><strong>Example 1. A simple generator that extends an environment variable if a directory exists in the file system</strong></p>
+<blockquote>
+<pre><code># 50-xdg-data-dirs.sh
+
+#!/bin/bash
+
+# set the default value
+XDG_DATA_DIRS=&quot;${XDG_DATA_DIRS:-/usr/local/share/:/usr/share}&quot;
+
+# add a directory if it exists
+if [[ -d /opt/foo/share ]]; then
+    XDG_DATA_DIRS=/opt/foo/share:${XDG_DATA_DIRS}
+fi
+
+# write our output
+echo XDG_DATA_DIRS=$XDG_DATA_DIRS</code></pre>
+</blockquote>
+<p><strong>Example 2. A more complicated generator which reads existing configuration and mutates one variable</strong></p>
+<blockquote>
+<pre><code># 90-rearrange-path.py
+
+#!/usr/bin/env python3
+
+&quot;&quot;&quot;
+
+Proof-of-concept systemd environment generator that makes sure that bin dirs
+are always after matching sbin dirs in the path.
+(Changes /sbin:/bin:/foo/bar to /bin:/sbin:/foo/bar.)
+
+This generator shows how to override the configuration possibly created by
+earlier generators. It would be easier to write in bash, but lets have it
+in Python just to prove that we can, and to serve as a template for more
+interesting generators.
+
+&quot;&quot;&quot;
+
+import os
+import pathlib
+
+def rearrange_bin_sbin(path):
+    &quot;&quot;&quot;Make sure any pair of .../bin, .../sbin directories is in this order
+
+    &gt;&gt;&gt; rearrange_bin_sbin(/bin:/sbin:/usr/sbin:/usr/bin)
+    /bin:/sbin:/usr/bin:/usr/sbin
+    &quot;&quot;&quot;
+    items = [pathlib.Path(p) for p in path.split(:)]
+    for i in range(len(items)):
+        if sbin in items[i].parts:
+            ind = items[i].parts.index(sbin)
+            bin = pathlib.Path(*items[i].parts[:ind], bin, *items[i].parts[ind+1:])
+            if bin in items[i+1:]:
+                j = i + 1 + items[i+1:].index(bin)
+                items[i], items[j] = items[j], items[i]
+    return :.join(p.as_posix() for p in items)
+
+if __name__ == __main__:
+    path = os.environ[PATH] # This should be always set.
+                              # If its not, well just crash, we is OK too.
+    new = rearrange_bin_sbin(path)
+    if new != path:
+        print(PATH={}.format(new))</code></pre>
+</blockquote>
+<p><strong>Example 3. Debugging a generator</strong></p>
+<blockquote>
+<pre><code>SYSTEMD_LOG_LEVEL=debug VAR_A=something VAR_B=&quot;something else&quot; \
+/lib/systemd/system-environment-generators/path-to-generator</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd-environment-d-generator</strong>(8), <strong>systemd.generator</strong>(7), <strong>systemd</strong>(1), <strong>systemctl</strong>(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

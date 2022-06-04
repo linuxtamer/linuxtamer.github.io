@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-ematch</title><meta name="description" content="Linux command tc-ematch extended matches for use with "basic", "cgroup" or "flow" filters"><meta name="keywords" content="linux, command, tc-ematch, bsd, extended matches for use with "basic", "cgroup" or "flow" filters"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>ematch - extended matches for use with "basic", "cgroup" or "flow" filters</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc filter add .. basic match</strong> EXPR <strong>.. flowid ..</strong></p>
+<p><em>EXPR</em> := <em>TERM</em> [ { <strong>and | or</strong> } <em>EXPR</em> ]</p>
+<p><em>TERM</em> := [ <em><strong>not</strong></em> ] { <em>MATCH</em> | '(' <em>EXPR</em> ')' }</p>
+<p><em>MATCH</em> := <em>module</em> '(' <em>ARGS</em> ')'</p>
+<p><em>ARGS</em> := <em>ARG1</em> <em>ARG2</em>"<em>..</em></p>
+<h1>MATCHES</h1>
+<h2>cmp</h2>
+<p>Simple comparison ematch: arithmetic compare of packet data to a given value.</p>
+<p><em>cmp</em>( <em>ALIGN</em> at <em>OFFSET</em> [ <em>ATTRS</em> ] { <em>eq</em> | <em>lt</em> | <em>gt</em> } <em>VALUE</em>"<em>)</em></p>
+<p><em>ALIGN</em> := { <em>u8</em> | <em>u16</em> | <em>u32</em> }</p>
+<p><em>ATTRS</em> := [ layer <em>LAYER</em> ] [ mask <em>MASK</em>"<em>]</em>[<em>trans</em>]</p>
+<p><em>LAYER</em> := { <em>link</em> | <em>network</em> | <em>transport</em> | <em>0..2</em>"<em>}</em></p>
+<h2>meta</h2>
+<p>Metadata ematch</p>
+<p><em>meta</em>( <em>OBJECT</em> { <em>eq</em> | <em>lt</em> |<em>gt</em> } <em>OBJECT</em>"<em>)</em></p>
+<p><em>OBJECT</em> := { <em>META_ID</em> | <em>VALUE</em>"<em>}</em></p>
+<p><em>META_ID</em> := <em>id</em> [ shift <em>SHIFT</em> ] [ mask <em>MASK</em>"<em>]</em></p>
+<dl>
+<dt>meta attributes:</dt>
+<dd>
+</dd>
+</dl>
+<p><strong>random 32 bit random value</strong></p>
+<p><strong>loadavg_1 Load average in last 5 minutes</strong></p>
+<p><strong>nf_mark Netfilter mark</strong></p>
+<p><strong>vlan Vlan tag</strong></p>
+<p><strong>sk_rcvbuf Receive buffer size</strong></p>
+<p><strong>sk_snd_queue Send queue length</strong></p>
+<p>A full list of meta attributes can be obtained via</p>
+<p># tc filter add dev eth1 basic match 'meta(list)'</p>
+<h2>nbyte</h2>
+<p>match packet data byte sequence</p>
+<p><em>nbyte</em>( <em>NEEDLE</em> at <em>OFFSET</em> [ layer <em>LAYER</em>"<em>]</em>)</p>
+<p><em>NEEDLE</em> := { <em>string</em> | <em>c-escape-sequence</em> }</p>
+<p><em>OFFSET</em> := <em>int</em></p>
+<p><em>LAYER</em> := { <em>link</em> | <em>network</em> | <em>transport</em> | <em>0..2</em>"<em>}</em></p>
+<h2>u32</h2>
+<p>u32 ematch</p>
+<p><em>u32</em>( <em>ALIGN</em> <em>VALUE</em> <em>MASK</em> at [ nexthdr+ ] <em>OFFSET</em>"<em>)</em></p>
+<p><em>ALIGN</em> := { <em>u8</em> | <em>u16</em> | <em>u32</em>"<em>}</em></p>
+<h2>ipset</h2>
+<p>test packet against ipset membership</p>
+<p><em>ipset</em>( <em>SETNAME</em> <em>FLAGS</em>"<em>)</em></p>
+<p><em>SETNAME</em> := <em>string</em></p>
+<p><em>FLAGS</em> := { <em>FLAG</em> [, <em>FLAGS</em>"]<em>}</em></p>
+<p>The flag options are the same as those used by the iptables "set" match.</p>
+<p>When using the ipset ematch with the "ip_set_hash:net,iface" set type, the interface can be queried using "src,dst (source ip address, outgoing interface) or "src,src" (source ip address, incoming interface) syntax.</p>
+<h2>ipt</h2>
+<p>test packet against xtables matches</p>
+<p><em>ipt</em>( <em>[-6]</em> <em>-m</em> <em>MATCH_NAME</em> <em>FLAGS</em>"<em>)</em></p>
+<p><em>MATCH_NAME</em> := <em>string</em></p>
+<p><em>FLAGS</em> := { <em>FLAG</em> [, <em>FLAGS</em>"]<em>}</em></p>
+<p>The flag options are the same as those used by the xtable match used.</p>
+<h2>canid</h2>
+<p>ematch rule to match CAN frames</p>
+<p><em>canid</em>( <em>IDLIST</em>"<em>)</em></p>
+<p><em>IDLIST</em> := <em>IDSPEC</em>[<em>IDLIST</em>]</p>
+<p><em>IDSPEC</em> := { ’sff’ <em>CANID</em> | ’eff’ <em>CANID</em>"<em>}</em></p>
+<p><em>CANID</em> := <em>ID</em>[<em>:MASK</em>]</p>
+<p><em>ID</em>, <em>MASK</em>"<em>:=</em>hexadecimal<em>number</em>(i.e.<em>0x123)</em></p>
+<h1>CAVEATS</h1>
+<p>The ematch syntax uses '(' and ')' to group expressions. All braces need to be escaped properly to prevent shell commandline from interpreting these directly.</p>
+<p>When using the ipset ematch with the "ifb" device, the outgoing device will be the ifb device itself, e.g. "ifb0". The original interface (i.e. the device the packet arrived on) is treated as the incoming interface.</p>
+<h1>EXAMPLE &amp; USAGE</h1>
+<p># tc filter add .. basic match ...</p>
+<p># 'cmp(u16 at 3 layer 2 mask 0xff00 gt 20)'</p>
+<p># 'meta(nfmark gt 24)' and 'meta(tcindex mask 0xf0 eq 0xf0)'</p>
+<p># 'nbyte("ababa" at 12 layer 1)'</p>
+<p># 'u32(u16 0x1122 0xffff at nexthdr+4)'</p>
+<p>Check if packet source ip address is member of set named <strong>bulk:</strong></p>
+<p># 'ipset(bulk src)'</p>
+<p>Check if packet source ip and the interface the packet arrived on is member of "hash:net,iface" set named <strong>interactive:</strong></p>
+<p># 'ipset(interactive src,src)'</p>
+<p>Check if packet matches an IPSec state with reqid 1:</p>
+<p># 'ipt(-m policy --dir in --pol ipsec --reqid 1)'</p>
+<h1>AUTHOR</h1>
+<p>The extended match infrastructure was added by Thomas Graf.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

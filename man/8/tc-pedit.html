@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-pedit</title><meta name="description" content="Linux command tc-pedit generic packet editor action"><meta name="keywords" content="linux, command, tc-pedit, bsd, generic packet editor action"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pedit - generic packet editor action</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc</strong> ... <strong>action pedit [ex] munge </strong>{ <em>RAW_OP</em> | <em>LAYERED_OP</em> | <em>EXTENDED_LAYERED_OP</em> } [ <em>CONTROL</em> ]</p>
+<p><em>RAW_OP</em> := <strong>offset</strong><em> OFFSET</em> { <strong>u8</strong> | <strong>u16</strong> | <strong>u32</strong> } [ <em>AT_SPEC</em> ] <em>CMD_SPEC</em></p>
+<p><em>AT_SPEC</em> := <strong>at</strong><em> AT </em><strong>offmask</strong><em> MASK </em><strong>shift</strong><em> SHIFT</em></p>
+<p><em>LAYERED_OP</em> := { <strong>ip</strong><em> IPHDR_FIELD</em> | <strong>ip</strong><em> BEYOND_IPHDR_FIELD</em> }<em> CMD_SPEC</em></p>
+<p><em>EXTENDED_LAYERED_OP</em> := { <strong>eth</strong><em> ETHHDR_FIELD</em> | <strong>ip</strong><em> IPHDR_FIELD</em> | <strong>ip</strong><em> EX_IPHDR_FIELD</em> | <strong>ip6</strong><em> IP6HDR_FIELD</em> | <strong>tcp</strong><em> TCPHDR_FIELD</em> | <strong>udp</strong><em> UDPHDR_FIELD</em> }<em> CMD_SPEC</em></p>
+<p><em>ETHHDR_FIELD</em> := { <strong>src</strong> | <strong>dst</strong> | <strong>type</strong> }</p>
+<p><em>IPHDR_FIELD</em> := { <strong>src</strong> | <strong>dst</strong> | <strong>tos</strong> | <strong>dsfield</strong> | <strong>ihl</strong> | <strong>protocol</strong> | <strong>precedence</strong> | <strong>nofrag</strong> | <strong>firstfrag</strong> | <strong>ce</strong> | <strong>df</strong> }</p>
+<p><em>BEYOND_IPHDR_FIELD</em> := { <strong>dport</strong> | <strong>sport</strong> | <strong>icmp_type</strong> | <strong>icmp_code</strong> }</p>
+<p><em>EX_IPHDR_FIELD</em> := { <strong>ttl</strong> }</p>
+<p><em>IP6HDR_FIELD</em> := { <strong>src</strong> | <strong>dst</strong> | <strong>traffic_class</strong> | <strong>flow_lbl</strong> | <strong>payload_len</strong> | <strong>nexthdr</strong> | <strong>hoplimit</strong> }</p>
+<p><em>TCPHDR_FIELD</em> := { <strong>sport</strong> | <strong>dport</strong> | <strong>flags</strong> }</p>
+<p><em>UDPHDR_FIELD</em> := { <strong>sport</strong> | <strong>dport</strong> }</p>
+<p><em>CMD_SPEC</em> := { <strong>clear</strong> | <strong>invert</strong> | <strong>set</strong> <em>VAL</em> | <strong>add</strong> <em>VAL</em> | <strong>preserve</strong> } [ <strong>retain</strong> <em>RVAL</em> ]</p>
+<p><em>CONTROL</em> := { <strong>reclassify</strong> | <strong>pipe</strong> | <strong>drop</strong> | <strong>shot</strong> | <strong>continue</strong> | <strong>pass</strong> | <strong>goto</strong> <strong>chain</strong> <strong>CHAIN_INDEX</strong> }</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>pedit</strong> action can be used to change arbitrary packet data. The location of data to change can either be specified by giving an offset and size as in <em>RAW_OP</em>, or for header values by naming the header and field to edit the size is then chosen automatically based on the header field size.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>ex</strong></dt>
+<dd><p>Use extended pedit. <em>EXTENDED_LAYERED_OP</em> and the add <em>CMD_SPEC</em> are allowed only in this mode.</p>
+</dd>
+<dt><strong>offset</strong><em> OFFSET </em><strong>{ <strong>u32 </strong>| <strong>u16 </strong>| <strong>u8 </strong>}</strong></dt>
+<dd><p>Specify the offset at which to change data. <em>OFFSET</em> is a signed integer, it's base is automatically chosen (e.g. hex if prefixed by <strong>0x</strong> or octal if prefixed by <strong>0</strong>). The second argument specifies the length of data to change, that is four bytes (<strong>u32</strong>), two bytes (<strong>u16</strong>) or a single byte (<strong>u8</strong>).</p>
+</dd>
+<dt><strong>at</strong><em> AT </em><strong>offmask</strong><em> MASK </em><strong>shift</strong><em> SHIFT</em></dt>
+<dd><p>This is an optional part of <em>RAW_OP</em> which allows to have a variable <em>OFFSET</em> depending on packet data at offset <em>AT</em>, which is binary ANDed with <em>MASK</em> and right-shifted by <em>SHIFT</em> before adding it to <em>OFFSET</em>.</p>
+</dd>
+<dt><strong>eth</strong><em> ETHHDR_FIELD</em></dt>
+<dd><p>Change an ETH header field. The supported keywords for <em>ETHHDR_FIELD</em> are:</p>
+<dl>
+<dt><strong>src</strong><br />
+<strong>dst</strong></dt>
+<dd><p>Source or destination MAC address in the standard format: XX:XX:XX:XX:XX:XX</p>
+</dd>
+<dt><strong>type</strong></dt>
+<dd><p>Ether-type in numeric value</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>ip</strong><em> IPHDR_FIELD</em></dt>
+<dd><p>Change an IPv4 header field. The supported keywords for <em>IPHDR_FIELD</em> are:</p>
+<dl>
+<dt><strong>src</strong><br />
+<strong>dst</strong></dt>
+<dd><p>Source or destination IP address, a four-byte value.</p>
+</dd>
+<dt><strong>tos</strong><br />
+<strong>dsfield</strong><br />
+<strong>precedence</strong></dt>
+<dd><p>Type Of Service field, an eight-bit value.</p>
+</dd>
+<dt><strong>ihl</strong></dt>
+<dd><p>Change the IP Header Length field, a four-bit value.</p>
+</dd>
+<dt><strong>protocol</strong></dt>
+<dd><p>Next-layer Protocol field, an eight-bit value.</p>
+</dd>
+<dt><strong>nofrag</strong><br />
+<strong>firstfrag</strong><br />
+<strong>ce</strong><br />
+<strong>df</strong><br />
+<strong>mf</strong></dt>
+<dd><p>Change IP header flags. Note that the value to pass to the <strong>set</strong> command is not just a bit value, but the full byte including the flags field. Though only the relevant bits of that value are respected, the rest ignored.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>ip</strong><em> BEYOND_IPHDR_FIELD</em></dt>
+<dd><p>Supported only for non-extended layered op. It is passed to the kernel as offsets relative to the beginning of the IP header and assumes the IP header is of minimum size (20 bytes). The supported keywords for <em>BEYOND_IPHDR_FIELD</em> are:</p>
+<dl>
+<dt><strong>dport</strong><br />
+<strong>sport</strong></dt>
+<dd><p>Destination or source port numbers, a 16-bit value. Indeed, IPv4 headers don't contain this information. Instead, this will set an offset which suits at least TCP and UDP if the IP header is of minimum size (20 bytes). If not, this will do unexpected things.</p>
+</dd>
+<dt><strong>icmp_type</strong><br />
+<strong>icmp_code</strong></dt>
+<dd><p>Again, this allows to change data past the actual IP header itself. It assumes an ICMP header is present immediately following the (minimal sized) IP header. If it is not or the latter is bigger than the minimum of 20 bytes, this will do unexpected things. These fields are eight-bit values.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>ip</strong><em> EX_IPHDR_FIELD</em></dt>
+<dd><p>Supported only when <em>ex</em> is used. The supported keywords for <em>EX_IPHDR_FIELD</em> are:</p>
+<dl>
+<dt><strong>ttl</strong></dt>
+<dd>
+</dd>
+</dl>
+</dd>
+<dt><strong>ip6</strong><em> IP6HDR_FIELD</em></dt>
+<dd><p>The supported keywords for <em>IP6HDR_FIELD</em> are:</p>
+<dl>
+<dt><strong>src</strong><br />
+<strong>dst</strong><br />
+<strong>traffic_class</strong><br />
+<strong>flow_lbl</strong><br />
+<strong>payload_len</strong><br />
+<strong>nexthdr</strong><br />
+<strong>hoplimit</strong></dt>
+<dd>
+</dd>
+</dl>
+</dd>
+<dt><strong>tcp</strong><em> TCPHDR_FIELD</em></dt>
+<dd><p>The supported keywords for <em>TCPHDR_FIELD</em> are:</p>
+<dl>
+<dt><strong>sport</strong><br />
+<strong>dport</strong></dt>
+<dd><p>Source or destination TCP port number, a 16-bit value.</p>
+</dd>
+<dt><strong>flags</strong></dt>
+<dd>
+</dd>
+</dl>
+</dd>
+<dt><strong>udp</strong><em> UDPHDR_FIELD</em></dt>
+<dd><p>The supported keywords for <em>UDPHDR_FIELD</em> are:</p>
+<dl>
+<dt><strong>sport</strong><br />
+<strong>dport</strong></dt>
+<dd><p>Source or destination TCP port number, a 16-bit value.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>clear</strong></dt>
+<dd><p>Clear the addressed data (i.e., set it to zero).</p>
+</dd>
+<dt><strong>invert</strong></dt>
+<dd><p>Swap every bit in the addressed data.</p>
+</dd>
+<dt><strong>set</strong><em> VAL</em></dt>
+<dd><p>Set the addressed data to a specific value. The size of <em>VAL</em> is defined by either one of the <strong>u32</strong>, <strong>u16</strong> or <strong>u8</strong> keywords in <em>RAW_OP</em>, or the size of the addressed header field in <em>LAYERED_OP</em>.</p>
+</dd>
+<dt><strong>add</strong><em> VAL</em></dt>
+<dd><p>Add the addressed data by a specific value. The size of <em>VAL</em> is defined by the size of the addressed header field in <em>EXTENDED_LAYERED_OP</em>. This operation is supported only for extended layered op.</p>
+</dd>
+<dt><strong>preserve</strong></dt>
+<dd><p>Keep the addressed data as is.</p>
+</dd>
+<dt><strong>retain</strong><em> RVAL</em></dt>
+<dd><p>This optional extra part of <em>CMD_SPEC</em> allows to exclude bits from being changed. Supported only for 32 bits fields or smaller.</p>
+</dd>
+<dt><em>CONTROL</em></dt>
+<dd><p>The following keywords allow to control how the tree of qdisc, classes, filters and actions is further traversed after this action.</p>
+<dl>
+<dt><strong>reclassify</strong></dt>
+<dd><p>Restart with the first filter in the current list.</p>
+</dd>
+<dt><strong>pipe</strong></dt>
+<dd><p>Continue with the next action attached to the same filter.</p>
+</dd>
+<dt><strong>drop</strong><br />
+<strong>shot</strong></dt>
+<dd><p>Drop the packet.</p>
+</dd>
+<dt><strong>continue</strong></dt>
+<dd><p>Continue classification with the next filter in line.</p>
+</dd>
+<dt><strong>pass</strong></dt>
+<dd><p>Finish classification process and return to calling qdisc for further packet processing. This is the default.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<p>Being able to edit packet data, one could do all kinds of things, such as e.g. implementing port redirection. Certainly not the most useful application, but as an example it should do:</p>
+<p>First, qdiscs need to be set up to attach filters to. For the receive path, a simple <strong>ingress</strong> qdisc will do, for transmit path a classful qdisc (<strong>HTB</strong> in this case) is necessary:</p>
+<blockquote>
+<pre><code>tc qdisc replace dev eth0 root handle 1: htb
+tc qdisc add dev eth0 ingress handle ffff:</code></pre>
+</blockquote>
+<p>Finally, a filter with <strong>pedit</strong> action can be added for each direction. In this case, <strong>u32</strong> is used matching on the port number to redirect from, while <strong>pedit</strong> then does the actual rewriting:</p>
+<blockquote>
+<pre><code>tc filter add dev eth0 parent 1: u32 \
+	match ip dport 23 0xffff \
+	action pedit pedit munge ip dport set 22
+tc filter add dev eth0 parent ffff: u32 \
+	match ip sport 22 0xffff \
+	action pedit pedit munge ip sport set 23
+tc filter add dev eth0 parent ffff: u32 \
+	match ip sport 22 0xffff \
+	action pedit ex munge ip dst set 192.168.1.199
+tc filter add dev eth0 parent ffff: u32 \
+	match ip sport 22 0xffff \
+	action pedit ex munge ip6 dst set fe80::dacb:8aff:fec7:320e
+tc filter add dev eth0 parent ffff: u32 \
+	match ip sport 22 0xffff \
+	action pedit ex munge eth dst set 11:22:33:44:55:66
+tc filter add dev eth0 parent ffff: u32 \
+	match ip dport 23 0xffff \
+	action pedit ex munge tcp dport set 22</code></pre>
+</blockquote>
+<p>To rewrite just part of a field, use the <strong>retain</strong> directive. E.g. to overwrite the DSCP part of a dsfield with $DSCP, without touching ECN:</p>
+<blockquote>
+<pre><code>tc filter add dev eth0 ingress flower ... \
+	action pedit ex munge ip dsfield set $((DSCP &lt;&lt; 2)) retain 0xfc</code></pre>
+</blockquote>
+<p>And vice versa, to set ECN to e.g. 1 without impacting DSCP:</p>
+<blockquote>
+<pre><code>tc filter add dev eth0 ingress flower ... \
+	action pedit ex munge ip dsfield set 1 retain 0x3</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8), <strong>tc-htb</strong>(8), <strong>tc-u32</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

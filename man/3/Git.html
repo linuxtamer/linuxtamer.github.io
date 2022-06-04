@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command Git</title><meta name="description" content="Linux command Git Perl interface to the Git version control system"><meta name="keywords" content="linux, command, Git, bsd, Perl interface to the Git version control system"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>Git - Perl interface to the Git version control system</p>
+<h1>SYNOPSIS</h1>
+<p>use Git; my $version = Git::command_oneline(version); git_cmd_try { Git::command_noisy(update-server-info) } %s failed w/ code %d; my $repo = Git-&gt;repository (Directory =&gt; /srv/git/cogito.git); my @revs = $repo-&gt;command(rev-list, --since=last monday, --all); my ($fh, $c) = $repo-&gt;command_output_pipe(rev-list, --since=last monday, --all); my $lastrev = &lt;$fh&gt;; chomp $lastrev; $repo-&gt;command_close_pipe($fh, $c); my $lastrev = $repo-&gt;command_oneline( [ rev-list, --all ], STDERR =&gt; 0 ); my $sha1 = $repo-&gt;hash_and_insert_object(file.txt); my $tempfile = tempfile(); my $size = $repo-&gt;cat_blob($sha1, $tempfile);</p>
+<h1>DESCRIPTION</h1>
+<p>This module provides Perl scripts easy way to interface the Git version control system. The modules have an easy and well-tested way to call arbitrary Git commands; in the future, the interface will also provide specialized methods for doing easily operations which are not totally trivial to do over the generic command interface.</p>
+<p>While some commands can be executed outside of any context (e.g. 'version' or 'init'), most operations require a repository context, which in practice means getting an instance of the Git object using the <strong>repository()</strong> constructor. (In the future, we will also get a <strong>new_repository()</strong> constructor.) All commands called as methods of the object are then executed in the context of the repository.</p>
+<p>Part of the repository state is also information about path to the attached working copy (unless you work with a bare repository). You can also navigate inside of the working copy using the <code>wc_chdir()</code> method. (Note that the repository object is self-contained and will not change working directory of your process.)</p>
+<p>TODO: In the future, we might also do</p>
+<p>my $remoterepo = $repo-&gt;remote_repository (Name =&gt; cogito, Branch =&gt; master); $remoterepo ||= Git-&gt;remote_repository (http://git.or.cz/cogito.git/); my @refs = $remoterepo-&gt;refs();</p>
+<p>Currently, the module merely wraps calls to external Git tools. In the future, it will provide a much faster way to interact with Git by linking directly to libgit. This should be completely opaque to the user, though (performance increase notwithstanding).</p>
+<h1>CONSTRUCTORS</h1>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+<li></li>
+</ul>
+<p>Construct a new repository object. <code>OPTIONS</code> are passed in a hash like fashion, using key and value pairs. Possible options are: <strong>Repository</strong> - Path to the Git repository. <strong>WorkingCopy</strong> - Path to the associated working copy; not strictly required as many commands will happily crunch on a bare repository. <strong>WorkingSubdir</strong> - Subdirectory in the working copy to work inside. Just left undefined if you do not want to limit the scope of operations. <strong>Directory</strong> - Path to the Git working directory in its usual setup. The <code>.git</code> directory is searched in the directory and all the parent directories; if found, <code>WorkingCopy</code> is set to the directory containing it and <code>Repository</code> to the <code>.git</code> directory itself. If no <code>.git</code> directory was found, the <code>Directory</code> is assumed to be a bare repository, <code>Repository</code> is set to point at it and <code>WorkingCopy</code> is left undefined. If the <code>$GIT_DIR</code> environment variable is set, things behave as expected as well. You should not use both <code>Directory</code> and either of <code>Repository</code> and <code>WorkingCopy</code> - the results of that are undefined. Alternatively, a directory path may be passed as a single scalar argument to the constructor; it is equivalent to setting only the <code>Directory</code> option field. Calling the constructor with no options whatsoever is equivalent to calling it with <code>Directory =&gt; .</code>. In general, if you are building a standard porcelain command, simply doing <code>Git-&gt;repository()</code> should do the right thing and setup the object to reflect exactly where the user is right now.</p>
+<h1>METHODS</h1>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Execute the given Git <code>COMMAND</code> (specify it without the 'git-' prefix), optionally with the specified extra <code>ARGUMENTS</code>. The second more elaborate form can be used if you want to further adjust the command execution. Currently, only one option is supported: <strong>STDERR</strong> - How to deal with the command's error output. By default (<code>undef</code>) it is delivered to the caller's <code>STDERR</code>. A false value (0 or '') will cause it to be thrown away. If you want to process it, you can get it in a filehandle you specify, but you must be extremely careful; if the error output is not very short and you want to read it in the same process as where you called <code>command()</code>, you are set up for a nice deadlock! The method can be called without any instance or on a specified Git repository (in that case the command will be run in the repository context). In scalar context, it returns all the command output in a single string (verbatim). In array context, it returns an array containing lines printed to the command's stdout (without trailing newlines). In both cases, the command's stdin and stderr are the same as the caller's.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Execute the given <code>COMMAND</code> in the same way as <strong>command()</strong> does but always return a scalar string containing the first line of the command's standard output.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Execute the given <code>COMMAND</code> in the same way as <strong>command()</strong> does but return a pipe filehandle from which the command output can be read. The function can return <code>($pipe, $ctx)</code> in array context. See <code>command_close_pipe()</code> for details.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Execute the given <code>COMMAND</code> in the same way as <strong>command_output_pipe()</strong> does but return an input pipe filehandle instead; the command output is not captured. The function can return <code>($pipe, $ctx)</code> in array context. See <code>command_close_pipe()</code> for details.</p>
+<ul>
+<li><p>Close the <code>PIPE</code> as returned from <code>command_*_pipe()</code>, checking whether the command finished successfully. The optional <code>CTX</code> argument is required if you want to see the command name in the error message, and it is the second value returned by <code>command_*_pipe()</code> when called in array context. The call idiom is: my ($fh, $ctx) = $r-&gt;command_output_pipe(status); while (&lt;$fh&gt;) { ... } $r-&gt;command_close_pipe($fh, $ctx); Note that you should not rely on whatever actually is in <code>CTX</code>; currently it is simply the command name but in future the context might have more complicated structure.</p></li>
+<li><p>Execute the given <code>COMMAND</code> in the same way as <strong>command_output_pipe()</strong> does but return both an input pipe filehandle and an output pipe filehandle. The function will return <code>($pid, $pipe_in, $pipe_out, $ctx)</code>. See <code>command_close_bidi_pipe()</code> for details.</p></li>
+<li><p>Close the <code>PIPE_IN</code> and <code>PIPE_OUT</code> as returned from <code>command_bidi_pipe()</code>, checking whether the command finished successfully. The optional <code>CTX</code> argument is required if you want to see the command name in the error message, and it is the fourth value returned by <code>command_bidi_pipe()</code>. The call idiom is: my ($pid, $in, $out, $ctx) = $r-&gt;command_bidi_pipe(cat-file --batch-check); print $out "000000000\n"; while (&lt;$in&gt;) { ... } $r-&gt;command_close_bidi_pipe($pid, $in, $out, $ctx); Note that you should not rely on whatever actually is in <code>CTX</code>; currently it is simply the command name but in future the context might have more complicated structure. <code>PIPE_IN</code> and <code>PIPE_OUT</code> may be <code>undef</code> if they have been closed prior to calling this function. This may be useful in a query-response type of commands where caller first writes a query and later reads response, eg: my ($pid, $in, $out, $ctx) = $r-&gt;command_bidi_pipe(cat-file --batch-check); print $out "000000000\n"; close $out; while (&lt;$in&gt;) { ... } $r-&gt;command_close_bidi_pipe($pid, $in, undef, $ctx); This idiom may prevent potential dead locks caused by data sent to the output pipe not being flushed and thus not reaching the executed command.</p></li>
+<li><p>Execute the given <code>COMMAND</code> in the same way as <strong>command()</strong> does but do not capture the command output - the standard output is not redirected and goes to the standard output of the caller application. While the method is called <strong>command_noisy()</strong>, you might want to as well use it for the most silent Git commands which you know will never pollute your stdout but you want to avoid the overhead of the pipe setup when calling them. The function returns only after the command has finished running.</p></li>
+<li><p>Return the Git version in use.</p></li>
+<li><p>Return path to the Git sub-command executables (the same as <code>git --exec-path</code>). Useful mostly only internally.</p></li>
+<li><p>Return path to the Git html documentation (the same as <code>git --html-path</code>). Useful mostly only internally.</p></li>
+<li><p>Return the time zone offset from GMT in the form +/-HHMM where HH is the number of hours from GMT and MM is the number of minutes. This is the equivalent of what strftime(%z, ...) would provide on a GNU platform. If TIME is not supplied, the current local time is used.</p></li>
+<li><p>Read one record from FILEHANDLE delimited by INPUT_RECORD_SEPARATOR, removing any trailing INPUT_RECORD_SEPARATOR.</p></li>
+<li><p>Query user <code>PROMPT</code> and return answer from user. Honours GIT_ASKPASS and SSH_ASKPASS environment variables for querying the user. If no *_ASKPASS variable is set or an error occurred, the terminal is tried as a fallback. If <code>ISPASSWORD</code> is set and true, the terminal disables echo.</p></li>
+<li><p>Return path to the git repository. Must be called on a repository instance.</p></li>
+<li><p>Return path to the working copy. Must be called on a repository instance.</p></li>
+<li><p>Return path to the subdirectory inside of a working copy. Must be called on a repository instance.</p></li>
+<li><p>Change the working copy subdirectory to work within. The <code>SUBDIR</code> is relative to the working copy root directory (not the current subdirectory). Must be called on a repository instance attached to a working copy and the directory must exist.</p></li>
+<li><p>Retrieve the configuration <code>VARIABLE</code> in the same manner as <code>config</code> does. In scalar context requires the variable to be set only one time (exception is thrown otherwise), in array context returns allows the variable to be set multiple times and returns all the values.</p></li>
+<li><p>Retrieve the bool configuration <code>VARIABLE</code>. The return value is usable as a boolean in perl (and <code>undef</code> if it's not defined, of course).</p></li>
+<li><p>Retrieve the path configuration <code>VARIABLE</code>. The return value is an expanded path or <code>undef</code> if it's not defined.</p></li>
+<li><p>Retrieve the integer configuration <code>VARIABLE</code>. The return value is simple decimal number. An optional value suffix of 'k', 'm', or 'g' in the config file will cause the value to be multiplied by 1024, 1048576 (1024^2), or 1073741824 (1024^3) prior to output. It would return <code>undef</code> if configuration variable is not defined.</p></li>
+<li><p>Retrieve the list of configuration key names matching the regular expression <code>RE</code>. The return value is a list of strings matching this regex.</p></li>
+<li><p>Finds if color should be used for NAMEd operation from the configuration, and returns boolean (true for use color, false for do not use color).</p></li>
+<li><p>Finds color for SLOT from the configuration, while defaulting to COLOR, and returns the ANSI color escape sequence: print $repo-&gt;get_color("color.interactive.prompt", "underline blue white"); print "some text"; print $repo-&gt;get_color("", "normal");</p></li>
+<li><p>This function returns a hashref of refs stored in a given remote repository. The hash is in the format <code>refname =\</code> hash&gt;. For tags, the <code>refname</code> entry contains the tag object while a <code>refname^{}</code> entry gives the tagged objects. <code>REPOSITORY</code> has the same meaning as the appropriate <code>git-ls-remote</code> argument; either a URL or a remote name (if called on a repository instance). <code>GROUPS</code> is an optional arrayref that can contain 'tags' to return all the tags and/or 'heads' to return all the heads. <code>REFGLOB</code> is an optional array of strings containing a shell-like glob to further limit the refs returned in the hash; the meaning is again the same as the appropriate <code>git-ls-remote</code> argument. This function may or may not be called on a repository instance. In the former case, remote names as defined in the repository are recognized as repository specifiers.</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>This suite of functions retrieves and parses ident information, as stored in the commit and tag objects or produced by <code>var GIT_type_IDENT</code> (thus <code>TYPE</code> can be either <em>author</em> or <em>committer</em>; case is insignificant). The <code>ident</code> method retrieves the ident information from <code>git var</code> and either returns it as a scalar string or as an array with the fields parsed. Alternatively, it can take a prepared ident string (e.g. from the commit object) and just parse it. <code>ident_person</code> returns the person part of the ident - name and email; it can take the same arguments as <code>ident</code> or the array returned by <code>ident</code>. The synopsis is like: my ($name, $email, $time_tz) = ident(author); "$name &lt;$email&gt;" eq ident_person(author); "$name &lt;$email&gt;" eq ident_person($name); $time_tz =~ /^\d+ [+-]\d{4}$/;</p>
+<ul>
+<li><p>Compute the SHA1 object id of the given <code>FILENAME</code> considering it is of the <code>TYPE</code> object type (<code>blob</code>, <code>commit</code>, <code>tree</code>). The method can be called without any instance or on a specified Git repository, it makes zero difference. The function returns the SHA1 hash.</p></li>
+<li><p>Compute the SHA1 object id of the given <code>FILENAME</code> and add the object to the object database. The function returns the SHA1 hash.</p></li>
+<li><p>Prints the contents of the blob identified by <code>SHA1</code> to <code>FILEHANDLE</code> and returns the number of bytes printed.</p></li>
+<li><p>Reads credential key-value pairs from <code>FILEHANDLE</code>. Reading stops at EOF or when an empty line is encountered. Each line must be of the form <code>key=value</code> with a non-empty key. Function returns hash with all read values. Any white space (other than new-line character) is preserved.</p></li>
+<li><p>Writes credential key-value pairs from hash referenced by <code>CREDENTIAL_HASHREF</code> to <code>FILEHANDLE</code>. Keys and values cannot contain new-lines or NUL bytes characters, and key cannot contain equal signs nor be empty (if they do Error::Simple is thrown). Any white space is preserved. If value for a key is <code>undef</code>, it will be skipped. If <code>url</code> key exists it will be written first. (All the other key-value pairs are written in sorted order but you should not depend on that). Once all lines are written, an empty line is printed.</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Executes <code>git credential</code> for a given set of credentials and specified operation. In both forms <code>CREDENTIAL_HASHREF</code> needs to be a reference to a hash which stores credentials. Under certain conditions the hash can change. In the first form, <code>OPERATION</code> can be <code>fill</code>, <code>approve</code> or <code>reject</code>, and function will execute corresponding <code>git credential</code> sub-command. If it's omitted <code>fill</code> is assumed. In case of <code>fill</code> the values stored in <code>CREDENTIAL_HASHREF</code> will be changed to the ones returned by the <code>git</code> credential fill command. The usual usage would look something like: my %cred = ( protocol =&gt; https, host =&gt; example.com, username =&gt; bob ); Git::credential \%cred; if (try_to_authenticate($cred{username}, $cred{password})) { Git::credential \%cred, approve; ... do more stuff ... } else { Git::credential \%cred, reject; } In the second form, <code>CODE</code> needs to be a reference to a subroutine. The function will execute <code>git credential fill</code> to fill the provided credential hash, then call <code>CODE</code> with <code>CREDENTIAL_HASHREF</code> as the sole argument. If <code>CODE</code>'s return value is defined, the function will execute <code>git credential</code> approve (if return value yields true) or <code>git credential reject</code> (if return value is false). If the return value is undef, nothing at all is executed; this is useful, for example, if the credential could neither be verified nor rejected due to an unrelated network error. The return value is the same as what <code>CODE</code> returns. With this form, the usage might look as follows: if (Git::credential { protocol =&gt; https, host =&gt; example.com, username =&gt; bob }, sub { my $cred = shift; return !!try_to_authenticate($cred-&gt;{username}, $cred-&gt;{password}); }) { ... do more stuff ... }</p>
+<ul>
+<li><p>Attempts to retrieve the temporary file mapped to the string <code>NAME</code>. If an associated temp file has not been created this session or was closed, it is created, cached, and set for autoflush and binmode. Internally locks the file mapped to <code>NAME</code>. This lock must be released with <code>temp_release()</code> when the temp file is no longer needed. Subsequent attempts to retrieve temporary files mapped to the same <code>NAME</code> while still locked will cause an error. This locking mechanism provides a weak guarantee and is not threadsafe. It does provide some error checking to help prevent temp file refs writing over one another. In general, the File::Handle returned should not be closed by consumers as it defeats the purpose of this caching mechanism. If you need to close the temp file handle, then you should use File::Temp or another temp file faculty directly. If a handle is closed and then requested again, then a warning will issue.</p></li>
+<li><p>Returns true if the internal lock created by a previous <code>temp_acquire()</code> call with <code>NAME</code> is still in effect. When temp_acquire is called on a <code>NAME</code>, it internally locks the temporary file mapped to <code>NAME</code>. That lock will not be released until <code>temp_release()</code> is called with either the original <code>NAME</code> or the File::Handle that was returned from the original call to temp_acquire. Subsequent attempts to call <code>temp_acquire()</code> with the same <code>NAME</code> will fail unless there has been an intervening <code>temp_release()</code> call for that <code>NAME</code> (or its corresponding File::Handle that was returned by the original <code>temp_acquire()</code> call). If true is returned by <code>temp_is_locked()</code> for a <code>NAME</code>, an attempt to <code>temp_acquire()</code> the same <code>NAME</code> will cause an error unless <code>temp_release</code> is first called on that <code>NAME</code> (or its corresponding File::Handle that was returned by the original <code>temp_acquire()</code> call).</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Releases a lock acquired through <code>temp_acquire()</code>. Can be called either with the <code>NAME</code> mapping used when acquiring the temp file or with the <code>FILEHANDLE</code> referencing a locked temp file. Warns if an attempt is made to release a file that is not locked. The temp file will be truncated before being released. This can help to reduce disk I/O where the system is smart enough to detect the truncation while data is in the output buffers. Beware that after the temp file is released and truncated, any operations on that file may fail miserably until it is re-acquired. All contents are lost between each release and acquire mapped to the same string.</p>
+<ul>
+<li><p>Truncates and resets the position of the <code>FILEHANDLE</code>.</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Returns the filename associated with the given tempfile.</p>
+<ul>
+<li><p>Prefixes lines in <code>STRING</code> with <code>PREFIX</code>.</p></li>
+<li><p>Unquote a quoted path containing c-escapes as returned by ls-files etc. when not using -z or when parsing the output of diff -u.</p></li>
+<li><p>Gets the core.commentchar configuration value. The value falls-back to '#' if core.commentchar is set to 'auto'.</p></li>
+<li><p>Comments lines following core.commentchar configuration.</p></li>
+</ul>
+<h1>ERROR HANDLING</h1>
+<p>All functions are supposed to throw Perl exceptions in case of errors. See the Error module on how to catch those. Most exceptions are mere Error::Simple instances.</p>
+<p>However, the <code>command()</code>, <code>command_oneline()</code> and <code>command_noisy()</code> functions suite can throw <code>Git::Error::Command</code> exceptions as well: those are thrown when the external command returns an error code and contain the error code as well as access to the captured command's output. The exception class provides the usual <code>stringify</code> and <code>value</code> (command's exit code) methods and in addition also a <code>cmd_output</code> method that returns either an array or a string with the captured command output (depending on the original function call context; <code>command_noisy()</code> returns <code>undef</code>) and $&lt;cmdline&gt; which returns the command and its arguments (but without proper quoting).</p>
+<p>Note that the <code>command_*_pipe()</code> functions cannot throw this exception since it has no idea whether the command failed or not. You will only find out at the time you <code>close</code> the pipe; if you want to have that automated, use <code>command_close_pipe()</code>, which can throw the exception.</p>
+<ul>
+<li><p>This magical statement will automatically catch any <code>Git::Error::Command</code> exceptions thrown by <code>CODE</code> and make your program die with <code>ERRMSG</code> on its lips; the message will have <code>%s</code> substituted for the command line and <code>%d</code> for the exit status. This statement is useful mostly for producing more user-friendly error messages. In case of no exception caught the statement returns <code>CODE</code>'s return value. Note that this is the only auto-exported function.</p></li>
+</ul>
+<h1>COPYRIGHT</h1>
+<p>Copyright 2006 by Petr Baudis &lt;pasky@suse.cz&gt;.</p>
+<p>This module is free software; it may be used, copied, modified and distributed under the terms of the GNU General Public Licence, either version 2, or (at your option) any later version.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

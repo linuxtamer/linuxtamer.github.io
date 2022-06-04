@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command dlinfo</title><meta name="description" content="Linux command dlinfo obtain information about a dynamically loaded object"><meta name="keywords" content="linux, command, dlinfo, bsd, obtain information about a dynamically loaded object"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>dlinfo - obtain information about a dynamically loaded object</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE
+#include &lt;link.h&gt;
+#include &lt;dlfcn.h&gt;
+
+int dlinfo(void *handle, int request, void *info);
+
+Link with -ldl.</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>dlinfo</strong>() function obtains information about the dynamically loaded object referred to by <em>handle</em> (typically obtained by an earlier call to <strong>dlopen</strong>(3) or <strong>dlmopen</strong>(3)). The <em>request</em> argument specifies which information is to be returned. The <em>info</em> argument is a pointer to a buffer used to store information returned by the call; the type of this argument depends on <em>request</em>.</p>
+<p>The following values are supported for <em>request</em> (with the corresponding type for <em>info</em> shown in parentheses):</p>
+<dl>
+<dt><strong>RTLD_DI_LMID</strong> (<em>Lmid_t *</em>)</dt>
+<dd><p>Obtain the ID of the link-map list (namespace) in which <em>handle</em> is loaded.</p>
+</dd>
+<dt><strong>RTLD_DI_LINKMAP</strong> (<em>struct link_map **</em>)</dt>
+<dd><p>Obtain a pointer to the <em>link_map</em> structure corresponding to <em>handle</em>. The <em>info</em> argument points to a pointer to a <em>link_map</em> structure, defined in <em>&lt;link.h&gt;</em> as:</p>
+<pre><code>struct link_map {
+    ElfW(Addr) l_addr;  /* Difference between the
+                           address in the ELF file and
+                           the address in memory */
+    char      *l_name;  /* Absolute pathname where
+                           object was found */
+    ElfW(Dyn) *l_ld;    /* Dynamic section of the
+                           shared object */
+    struct link_map *l_next, *l_prev;
+                        /* Chain of loaded objects */
+
+    /* Plus additional fields private to the
+       implementation */
+};</code></pre>
+</dd>
+<dt><strong>RTLD_DI_ORIGIN</strong> (<em>char *</em>)</dt>
+<dd><p>Copy the pathname of the origin of the shared object corresponding to <em>handle</em> to the location pointed to by <em>info</em>.</p>
+</dd>
+<dt><strong>RTLD_DI_SERINFO</strong> (<em>Dl_serinfo *</em>)</dt>
+<dd><p>Obtain the library search paths for the shared object referred to by <em>handle</em>. The <em>info</em> argument is a pointer to a <em>Dl_serinfo</em> that contains the search paths. Because the number of search paths may vary, the size of the structure pointed to by <em>info</em> can vary. The <strong>RTLD_DI_SERINFOSIZE</strong> request described below allows applications to size the buffer suitably. The caller must perform the following steps:</p>
+<ol type="1">
+<li><p>Use a <strong>RTLD_DI_SERINFOSIZE</strong> request to populate a <em>Dl_serinfo</em> structure with the size (<em>dls_size</em>) of the structure needed for the subsequent <strong>RTLD_DI_SERINFO</strong> request.</p></li>
+<li><p>Allocate a <em>Dl_serinfo</em> buffer of the correct size (<em>dls_size</em>).</p></li>
+<li><p>Use a further <strong>RTLD_DI_SERINFOSIZE</strong> request to populate the <em>dls_size</em> and <em>dls_cnt</em> fields of the buffer allocated in the previous step.</p></li>
+<li><p>Use a <strong>RTLD_DI_SERINFO</strong> to obtain the library search paths.</p></li>
+</ol>
+<p>The <em>Dl_serinfo</em> structure is defined as follows:</p>
+<pre><code>typedef struct {
+    size_t dls_size;           /* Size in bytes of
+                                  the whole buffer */
+    unsigned int dls_cnt;      /* Number of elements
+                                  in &#39;dls_serpath&#39; */
+    Dl_serpath dls_serpath[1]; /* Actually longer,
+                                  &#39;dls_cnt&#39; elements */
+} Dl_serinfo;</code></pre>
+<p>Each of the <em>dls_serpath</em> elements in the above structure is a structure of the following form:</p>
+<pre><code>typedef struct {
+    char *dls_name;            /* Name of library search
+                                  path directory */
+    unsigned int dls_flags;    /* Indicates where this
+                                  directory came from */
+} Dl_serpath;</code></pre>
+<p>The <em>dls_flags</em> field is currently unused, and always contains zero.</p>
+</dd>
+<dt><strong>RTLD_DI_SERINFOSIZE</strong> (<em>Dl_serinfo *</em>)</dt>
+<dd><p>Populate the <em>dls_size</em> and <em>dls_cnt</em> fields of the <em>Dl_serinfo</em> structure pointed to by <em>info</em> with values suitable for allocating a buffer for use in a subsequent <strong>RTLD_DI_SERINFO</strong> request.</p>
+</dd>
+<dt><strong>RTLD_DI_TLS_MODID</strong> (<em>size_t *</em>, since glibc 2.4)</dt>
+<dd><p>Obtain the module ID of this shared object's TLS (thread-local storage) segment, as used in TLS relocations. If this object does not define a TLS segment, zero is placed in <em>*info</em>.</p>
+</dd>
+<dt><strong>RTLD_DI_TLS_DATA</strong> (<em>void **</em>, since glibc 2.4)</dt>
+<dd><p>Obtain a pointer to the calling thread's TLS block corresponding to this shared object's TLS segment. If this object does not define a PT_TLS segment, or if the calling thread has not allocated a block for it, NULL is placed in <em>*info</em>.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>dlinfo</strong>() returns 0. On failure, it returns -1; the cause of the error can be diagnosed using <strong>dlerror</strong>(3).</p>
+<h1>VERSIONS</h1>
+<p><strong>dlinfo</strong>() first appeared in glibc 2.3.3.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>dlinfo</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>This function is a nonstandard GNU extension.</p>
+<h1>NOTES</h1>
+<p>This function derives from the Solaris function of the same name and also appears on some other systems. The sets of requests supported by the various implementations overlaps only partially.</p>
+<h1>EXAMPLES</h1>
+<p>The program below opens a shared objects using <strong>dlopen</strong>(3) and then uses the <strong>RTLD_DI_SERINFOSIZE</strong> and <strong>RTLD_DI_SERINFO</strong> requests to obtain the library search path list for the library. Here is an example of what we might see when running the program:</p>
+<pre><code>$ ./a.out /lib64/libm.so.6
+dls_serpath[0].dls_name = /lib64
+dls_serpath[1].dls_name = /usr/lib64</code></pre>
+<h2>Program source</h2>
+<pre><code>#define _GNU_SOURCE
+#include &lt;dlfcn.h&gt;
+#include &lt;link.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    void *handle;
+    Dl_serinfo serinfo;
+    Dl_serinfo *sip;
+
+    if (argc != 2) {
+        fprintf(stderr, &quot;Usage: %s &lt;libpath&gt;\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Obtain a handle for shared object specified on command line */
+
+    handle = dlopen(argv[1], RTLD_NOW);
+    if (handle == NULL) {
+        fprintf(stderr, &quot;dlopen() failed: %s\n&quot;, dlerror());
+        exit(EXIT_FAILURE);
+    }
+
+    /* Discover the size of the buffer that we must pass to
+       RTLD_DI_SERINFO */
+
+    if (dlinfo(handle, RTLD_DI_SERINFOSIZE, &amp;serinfo) == -1) {
+        fprintf(stderr, &quot;RTLD_DI_SERINFOSIZE failed: %s\n&quot;, dlerror());
+        exit(EXIT_FAILURE);
+    }
+
+    /* Allocate the buffer for use with RTLD_DI_SERINFO */
+
+    sip = malloc(serinfo.dls_size);
+    if (sip == NULL) {
+        perror(&quot;malloc&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Initialize the &#39;dls_size&#39; and &#39;dls_cnt&#39; fields in the newly
+       allocated buffer */
+
+    if (dlinfo(handle, RTLD_DI_SERINFOSIZE, sip) == -1) {
+        fprintf(stderr, &quot;RTLD_DI_SERINFOSIZE failed: %s\n&quot;, dlerror());
+        exit(EXIT_FAILURE);
+    }
+
+    /* Fetch and print library search list */
+
+    if (dlinfo(handle, RTLD_DI_SERINFO, sip) == -1) {
+        fprintf(stderr, &quot;RTLD_DI_SERINFO failed: %s\n&quot;, dlerror());
+        exit(EXIT_FAILURE);
+    }
+
+    for (int j = 0; j &lt; serinfo.dls_cnt; j++)
+        printf(&quot;dls_serpath[%d].dls_name = %s\n&quot;,
+                j, sip-&gt;dls_serpath[j].dls_name);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>dl_iterate_phdr</strong>(3), <strong>dladdr</strong>(3), <strong>dlerror</strong>(3), <strong>dlopen</strong>(3), <strong>dlsym</strong>(3), <strong>ld.so</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command regerror</title><meta name="description" content="Linux command regerror POSIX regex functions"><meta name="keywords" content="linux, command, regerror, bsd, POSIX regex functions"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>regcomp, regexec, regerror, regfree - POSIX regex functions</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;regex.h&gt;
+
+int regcomp(regex_t *preg, const char *regex, int cflags);
+
+int regexec(const regex_t *preg, const char *string&quot;,size_t&quot;nmatch,
+ regmatch_t pmatch[], int eflags);
+
+size_t regerror(int errcode, const regex_t *preg, char *errbuf,
+ size_t errbuf_size);
+
+void regfree(regex_t *preg);</code></pre>
+<h1>DESCRIPTION</h1>
+<h2>POSIX regex compiling</h2>
+<p><strong>regcomp</strong>() is used to compile a regular expression into a form that is suitable for subsequent <strong>regexec</strong>() searches.</p>
+<p><strong>regcomp</strong>() is supplied with <em>preg</em>, a pointer to a pattern buffer storage area; <em>regex</em>, a pointer to the null-terminated string and <em>cflags</em>, flags used to determine the type of compilation.</p>
+<p>All regular expression searching must be done via a compiled pattern buffer, thus <strong>regexec</strong>() must always be supplied with the address of a <strong>regcomp</strong>() initialized pattern buffer.</p>
+<p><em>cflags</em> is the bitwise-<strong>or</strong> of zero or more of the following:</p>
+<dl>
+<dt><strong>REG_EXTENDED</strong></dt>
+<dd><p>Use <strong>POSIX</strong> Extended Regular Expression syntax when interpreting <em>regex</em>. If not set, <strong>POSIX</strong> Basic Regular Expression syntax is used.</p>
+</dd>
+<dt><strong>REG_ICASE</strong></dt>
+<dd><p>Do not differentiate case. Subsequent <strong>regexec</strong>() searches using this pattern buffer will be case insensitive.</p>
+</dd>
+<dt><strong>REG_NOSUB</strong></dt>
+<dd><p>Do not report position of matches. The <em>nmatch</em> and <em>pmatch</em> arguments to <strong>regexec</strong>() are ignored if the pattern buffer supplied was compiled with this flag set.</p>
+</dd>
+<dt><strong>REG_NEWLINE</strong></dt>
+<dd><p>Match-any-character operators don't match a newline.</p>
+<p>A nonmatching list (<strong>[^...]</strong>) not containing a newline does not match a newline.</p>
+<p>Match-beginning-of-line operator (<strong>^</strong>) matches the empty string immediately after a newline, regardless of whether <em>eflags</em>, the execution flags of <strong>regexec</strong>(), contains <strong>REG_NOTBOL</strong>.</p>
+<p>Match-end-of-line operator (<strong>$</strong>) matches the empty string immediately before a newline, regardless of whether <em>eflags</em> contains <strong>REG_NOTEOL</strong>.</p>
+</dd>
+</dl>
+<h2>POSIX regex matching</h2>
+<p><strong>regexec</strong>() is used to match a null-terminated string against the precompiled pattern buffer, <em>preg</em>. <em>nmatch</em> and <em>pmatch</em> are used to provide information regarding the location of any matches. <em>eflags</em> is the bitwise-<strong>or</strong> of zero or more of the following flags:</p>
+<dl>
+<dt><strong>REG_NOTBOL</strong></dt>
+<dd><p>The match-beginning-of-line operator always fails to match (but see the compilation flag <strong>REG_NEWLINE</strong> above). This flag may be used when different portions of a string are passed to <strong>regexec</strong>() and the beginning of the string should not be interpreted as the beginning of the line.</p>
+</dd>
+<dt><strong>REG_NOTEOL</strong></dt>
+<dd><p>The match-end-of-line operator always fails to match (but see the compilation flag <strong>REG_NEWLINE</strong> above).</p>
+</dd>
+<dt><strong>REG_STARTEND</strong></dt>
+<dd><p>Use <em>pmatch[0]</em> on the input string, starting at byte <em>pmatch[0].rm_so</em> and ending before byte <em>pmatch[0].rm_eo</em>. This allows matching embedded NUL bytes and avoids a <strong>strlen</strong>(3) on large strings. It does not use <em>nmatch</em> on input, and does not change <strong>REG_NOTBOL</strong> or <strong>REG_NEWLINE</strong> processing. This flag is a BSD extension, not present in POSIX.</p>
+</dd>
+</dl>
+<h2>Byte offsets</h2>
+<p>Unless <strong>REG_NOSUB</strong> was set for the compilation of the pattern buffer, it is possible to obtain match addressing information. <em>pmatch</em> must be dimensioned to have at least <em>nmatch</em> elements. These are filled in by <strong>regexec</strong>() with substring match addresses. The offsets of the subexpression starting at the <em>i</em>th open parenthesis are stored in <em>pmatch[i]</em>. The entire regular expression's match addresses are stored in <em>pmatch[0]</em>. (Note that to return the offsets of <em>N</em> subexpression matches, <em>nmatch</em> must be at least <em>N+1</em>.) Any unused structure elements will contain the value -1.</p>
+<p>The <em>regmatch_t</em> structure which is the type of <em>pmatch</em> is defined in <em>&lt;regex.h&gt;</em>.</p>
+<pre><code>typedef struct {
+    regoff_t rm_so;
+    regoff_t rm_eo;
+} regmatch_t;</code></pre>
+<p>Each <em>rm_so</em> element that is not -1 indicates the start offset of the next largest substring match within the string. The relative <em>rm_eo</em> element indicates the end offset of the match, which is the offset of the first character after the matching text.</p>
+<h2>POSIX error reporting</h2>
+<p><strong>regerror</strong>() is used to turn the error codes that can be returned by both <strong>regcomp</strong>() and <strong>regexec</strong>() into error message strings.</p>
+<p><strong>regerror</strong>() is passed the error code, <em>errcode</em>, the pattern buffer, <em>preg</em>, a pointer to a character string buffer, <em>errbuf</em>, and the size of the string buffer, <em>errbuf_size</em>. It returns the size of the <em>errbuf</em> required to contain the null-terminated error message string. If both <em>errbuf</em> and <em>errbuf_size</em> are nonzero, <em>errbuf</em> is filled in with the first <em>errbuf_size - 1</em> characters of the error message and a terminating null byte ('\0').</p>
+<h2>POSIX pattern buffer freeing</h2>
+<p>Supplying <strong>regfree</strong>() with a precompiled pattern buffer, <em>preg</em> will free the memory allocated to the pattern buffer by the compiling process, <strong>regcomp</strong>().</p>
+<h1>RETURN VALUE</h1>
+<p><strong>regcomp</strong>() returns zero for a successful compilation or an error code for failure.</p>
+<p><strong>regexec</strong>() returns zero for a successful match or <strong>REG_NOMATCH</strong> for failure.</p>
+<h1>ERRORS</h1>
+<p>The following errors can be returned by <strong>regcomp</strong>():</p>
+<dl>
+<dt><strong>REG_BADBR</strong></dt>
+<dd><p>Invalid use of back reference operator.</p>
+</dd>
+<dt><strong>REG_BADPAT</strong></dt>
+<dd><p>Invalid use of pattern operators such as group or list.</p>
+</dd>
+<dt><strong>REG_BADRPT</strong></dt>
+<dd><p>Invalid use of repetition operators such as using '*' as the first character.</p>
+</dd>
+<dt><strong>REG_EBRACE</strong></dt>
+<dd><p>Un-matched brace interval operators.</p>
+</dd>
+<dt><strong>REG_EBRACK</strong></dt>
+<dd><p>Un-matched bracket list operators.</p>
+</dd>
+<dt><strong>REG_ECOLLATE</strong></dt>
+<dd><p>Invalid collating element.</p>
+</dd>
+<dt><strong>REG_ECTYPE</strong></dt>
+<dd><p>Unknown character class name.</p>
+</dd>
+<dt><strong>REG_EEND</strong></dt>
+<dd><p>Nonspecific error. This is not defined by POSIX.2.</p>
+</dd>
+<dt><strong>REG_EESCAPE</strong></dt>
+<dd><p>Trailing backslash.</p>
+</dd>
+<dt><strong>REG_EPAREN</strong></dt>
+<dd><p>Un-matched parenthesis group operators.</p>
+</dd>
+<dt><strong>REG_ERANGE</strong></dt>
+<dd><p>Invalid use of the range operator; for example, the ending point of the range occurs prior to the starting point.</p>
+</dd>
+<dt><strong>REG_ESIZE</strong></dt>
+<dd><p>Compiled regular expression requires a pattern buffer larger than 64 kB. This is not defined by POSIX.2.</p>
+</dd>
+<dt><strong>REG_ESPACE</strong></dt>
+<dd><p>The regex routines ran out of memory.</p>
+</dd>
+<dt><strong>REG_ESUBREG</strong></dt>
+<dd><p>Invalid back reference to a subexpression.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>regcomp</strong>(), <strong>regexec</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>regerror</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe env</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>regfree</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>EXAMPLES</h1>
+<pre><code>#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;regex.h&gt;
+
+#define ARRAY_SIZE(arr) (sizeof((arr)) / sizeof((arr)[0]))
+
+static const char *const str =
+        &quot;1) John Driverhacker;\n2) John Doe;\n3) John Foo;\n&quot;;
+static const char *const re = &quot;John.*o&quot;;
+
+int main(void)
+{
+    static const char *s = str;
+    regex_t     regex;
+    regmatch_t  pmatch[1];
+    regoff_t    off, len;
+
+    if (regcomp(&amp;regex, re, REG_NEWLINE))
+        exit(EXIT_FAILURE);
+
+    printf(&quot;String = \&quot;%s\&quot;\n&quot;, str);
+    printf(&quot;Matches:\n&quot;);
+
+    for (int i = 0; ; i++) {
+        if (regexec(&amp;regex, s, ARRAY_SIZE(pmatch), pmatch, 0))
+            break;
+
+        off = pmatch[0].rm_so + (s - str);
+        len = pmatch[0].rm_eo - pmatch[0].rm_so;
+        printf(&quot;#%d:\n&quot;, i);
+        printf(&quot;offset = %jd; length = %jd\n&quot;, (intmax_t) off,
+                (intmax_t) len);
+        printf(&quot;substring = \&quot;%.*s\&quot;\n&quot;, len, s + pmatch[0].rm_so);
+
+        s += pmatch[0].rm_eo;
+    }
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>grep</strong>(1), <strong>regex</strong>(7)</p>
+<p>The glibc manual section, <em>Regular Expressions</em></p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

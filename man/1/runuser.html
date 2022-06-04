@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command runuser</title><meta name="description" content="Linux command runuser run a command with substitute user and group ID"><meta name="keywords" content="linux, command, runuser, bsd, run a command with substitute user and group ID"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>runuser - run a command with substitute user and group ID</p>
+<h1>SYNOPSIS</h1>
+<p><strong>runuser</strong> [options] <strong>-u</strong> <em>user</em> [[--] <em>command</em> [<em>argument</em>...]]</p>
+<p><strong>runuser</strong> [options] [<strong>-</strong>] [<em>user</em> [<em>argument</em>...]]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>runuser</strong> can be used to run commands with a substitute user and group ID. If the option <strong>-u</strong> is not given, <strong>runuser</strong> falls back to <strong>su</strong>-compatible semantics and a shell is executed. The difference between the commands <strong>runuser</strong> and <strong>su</strong> is that <strong>runuser</strong> does not ask for a password (because it may be executed by the root user only) and it uses a different PAM configuration. The command <strong>runuser</strong> does not have to be installed with set-user-ID permissions.</p>
+<p>If the PAM session is not required, then the recommended solution is to use the <strong>setpriv</strong>(1) command.</p>
+<p>When called without arguments, <strong>runuser</strong> defaults to running an interactive shell as <em>root</em>.</p>
+<p>For backward compatibility, <strong>runuser</strong> defaults to not changing the current directory and to setting only the environment variables <strong>HOME</strong> and <strong>SHELL</strong> (plus <strong>USER</strong> and <strong>LOGNAME</strong> if the target <em>user</em> is not root). This version of <strong>runuser</strong> uses PAM for session management.</p>
+<p>Note that <strong>runuser</strong> in all cases use PAM (pam_getenvlist()) to do the final environment modification. Command-line options such as <strong>--login</strong> and <strong>--preserve-environment</strong> affect the environment before it is modified by PAM.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-c</strong>,<strong> --command</strong>=<strong><em>command</em></strong></dt>
+<dd><p>Pass <em>command</em> to the shell with the <strong>-c</strong> option.</p>
+</dd>
+<dt><strong>-f</strong>,<strong> --fast</strong></dt>
+<dd><p>Pass <strong>-f</strong> to the shell, which may or may not be useful, depending on the shell.</p>
+</dd>
+<dt><strong>-g</strong>,<strong> --group</strong>=<strong><em>group</em></strong></dt>
+<dd><p>The primary group to be used. This option is allowed for the root user only.</p>
+</dd>
+<dt><strong>-G</strong>,<strong> --supp-group</strong>=<strong><em>group</em></strong></dt>
+<dd><p>Specify a supplementary group. This option is available to the root user only. The first specified supplementary group is also used as a primary group if the option <strong>--group</strong> is not specified.</p>
+</dd>
+<dt><strong>-</strong>,<strong> -l</strong>,<strong> --login</strong></dt>
+<dd><p>Start the shell as a login shell with an environment similar to a real login:</p>
+<ul>
+<li><p>clears all the environment variables except for <strong>TERM</strong> and variables specified by <strong>--whitelist-environment</strong></p></li>
+<li><p>initializes the environment variables <strong>HOME</strong>, <strong>SHELL</strong>, <strong>USER</strong>, <strong>LOGNAME</strong>, and <strong>PATH</strong></p></li>
+<li><p>changes to the target user's home directory</p></li>
+<li><p>sets argv[0] of the shell to '<strong>-</strong>' in order to make the shell a login shell</p></li>
+</ul>
+</dd>
+<dt><strong>-P</strong>,<strong> --pty</strong></dt>
+<dd><p>Create a pseudo-terminal for the session. The independent terminal provides better security as the user does not share a terminal with the original session. This can be used to avoid TIOCSTI ioctl terminal injection and other security attacks against terminal file descriptors. The entire session can also be moved to the background (e.g., "runuser --pty -u username -- command &amp;"). If the pseudo-terminal is enabled, then <strong>runuser</strong> works as a proxy between the sessions (copy stdin and stdout).</p>
+<p>This feature is mostly designed for interactive sessions. If the standard input is not a terminal, but for example a pipe (e.g., echo "date" | runuser --pty -u user), then the ECHO flag for the pseudo-terminal is disabled to avoid messy output.</p>
+</dd>
+<dt><strong>-m</strong>,<strong> -p</strong>,<strong> --preserve-environment</strong></dt>
+<dd><p>Preserve the entire environment, i.e., do not set <strong>HOME</strong>, <strong>SHELL</strong>, <strong>USER</strong> or <strong>LOGNAME</strong>. The option is ignored if the option <strong>--login</strong> is specified.</p>
+</dd>
+<dt><strong>-s</strong>,<strong> --shell</strong>=<strong><em>shell</em></strong></dt>
+<dd><p>Run the specified <em>shell</em> instead of the default. The shell to run is selected according to the following rules, in order:</p>
+<ul>
+<li><p>the shell specified with <strong>--shell</strong></p></li>
+<li><p>the shell specified in the environment variable <strong>SHELL</strong> if the <strong>--preserve-environment</strong> option is used</p></li>
+<li><p>the shell listed in the passwd entry of the target user</p></li>
+<li><p>/bin/sh</p></li>
+</ul>
+<p>If the target user has a restricted shell (i.e., not listed in /etc/shells), then the <strong>--shell</strong> option and the <strong>SHELL</strong> environment variables are ignored unless the calling user is root.</p>
+</dd>
+<dt><strong>--session-command=</strong><em>command</em></dt>
+<dd><p>Same as <strong>-c</strong>, but do not create a new session. (Discouraged.)</p>
+</dd>
+<dt><strong>-w</strong>,<strong> --whitelist-environment</strong>=<strong><em>list</em></strong></dt>
+<dd><p>Don't reset the environment variables specified in the comma-separated <em>list</em> when clearing the environment for <strong>--login</strong>. The whitelist is ignored for the environment variables <strong>HOME</strong>, <strong>SHELL</strong>, <strong>USER</strong>, <strong>LOGNAME</strong>, and <strong>PATH</strong>.</p>
+</dd>
+<dt><strong>-V</strong>,<strong> --version</strong></dt>
+<dd><p>Display version information and exit.</p>
+</dd>
+<dt><strong>-h</strong>,<strong> --help</strong></dt>
+<dd><p>Display help text and exit.</p>
+</dd>
+</dl>
+<h1>CONFIG FILES</h1>
+<p><strong>runuser</strong> reads the <em>/etc/default/runuser</em> and <em>/etc/login.defs</em> configuration files. The following configuration items are relevant for <strong>runuser</strong>:</p>
+<p><strong>ENV_PATH</strong> (string)</p>
+<blockquote>
+<p>Defines the PATH environment variable for a regular user. The default value is <em>/usr/local/bin:/bin:/usr/bin</em>.</p>
+</blockquote>
+<p><strong>ENV_ROOTPATH</strong> (string)<br />
+<strong>ENV_SUPATH</strong> (string)</p>
+<blockquote>
+<p>Defines the <strong>PATH</strong> environment variable for root. <strong>ENV_SUPATH</strong> takes precedence. The default value is <em>/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin</em>.</p>
+</blockquote>
+<p><strong>ALWAYS_SET_PATH</strong> (boolean)</p>
+<blockquote>
+<p>If set to <em>yes</em> and --login and --preserve-environment were not specified <strong>runuser</strong> initializes <strong>PATH</strong>.</p>
+</blockquote>
+<p>The environment variable <strong>PATH</strong> may be different on systems where <em>/bin</em> and <em>/sbin</em> are merged into <em>/usr</em>; this variable is also affected by the <strong>--login</strong> command-line option and the PAM system setting (e.g., <strong>pam_env</strong>(8)).</p>
+<h1>EXIT STATUS</h1>
+<p><strong>runuser</strong> normally returns the exit status of the command it executed. If the command was killed by a signal, <strong>runuser</strong> returns the number of the signal plus 128.</p>
+<p>Exit status generated by <strong>runuser</strong> itself:</p>
+<blockquote>
+<dl>
+<dt>1</dt>
+<dd><p>Generic error before executing the requested command</p>
+</dd>
+<dt>126</dt>
+<dd><p>The requested command could not be executed</p>
+</dd>
+<dt>127</dt>
+<dd><p>The requested command was not found</p>
+</dd>
+</dl>
+</blockquote>
+<h1>FILES</h1>
+<dl>
+<dt>/etc/pam.d/runuser</dt>
+<dd><p>default PAM configuration file</p>
+</dd>
+<dt>/etc/pam.d/runuser-l</dt>
+<dd><p>PAM configuration file if --login is specified</p>
+</dd>
+<dt>/etc/default/runuser</dt>
+<dd><p>runuser specific logindef config file</p>
+</dd>
+<dt>/etc/login.defs</dt>
+<dd><p>global logindef config file</p>
+</dd>
+</dl>
+<h1>HISTORY</h1>
+<p>This <strong> runuser</strong> command was derived from coreutils' <strong>su</strong>, which was based on an implementation by David MacKenzie, and the Fedora <strong>runuser</strong> command by Dan Walsh.</p>
+<h1>SEE ALSO</h1>
+<p><strong>setpriv</strong>(1), <strong>su</strong>(1), <strong>login.defs</strong>(5), <strong>shells</strong>(5), <strong>pam</strong>(8)</p>
+<h1>AVAILABILITY</h1>
+<p>The runuser command is part of the util-linux package and is available from <a href="https://www.kernel.org/pub/linux/utils/util-linux/">Linux Kernel Archive</a>.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

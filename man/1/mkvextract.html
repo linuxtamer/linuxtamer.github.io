@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mkvextract</title><meta name="description" content="Linux command mkvextract extract tracks from Matroska files into other files"><meta name="keywords" content="linux, command, mkvextract, bsd, extract tracks from Matroska files into other files"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mkvextract - extract tracks from Matroska files into other files</p>
+<h1>SYNOPSIS</h1>
+<p><strong>mkvextract</strong> {source-filename} {mode1} [options] [extraction-spec1] [mode2] [options] [extraction-spec2] [...]</p>
+<h1>DESCRIPTION</h1>
+<p>This program extracts specific parts from a Matroska file to other useful formats. The first argument is the name of the source file which must be a Matroska file.</p>
+<p>All other arguments either switch to a certain extraction mode, change options for the currently active mode or specify what to extract into which file. Multiple modes can be used in the same invocation of mkvextract allowing the extraction of multiple things in a single pass. Most options can only be used in certain modes with a few options applying to all modes.</p>
+<p>Currently supported is the extraction of tracks, tags, attachments, chapters, CUE sheets, timestamps and cues.</p>
+<h2>Common options</h2>
+<p>The following options are available in all modes and only described once in this section.</p>
+<p><strong>-f</strong>, <strong>--parse-fully</strong></p>
+<blockquote>
+<p>Sets the parse mode to full. The default mode does not parse the whole file but uses the meta seek elements for locating the required elements of a source file. In 99% of all cases this is enough. But for files that do not contain meta seek elements or which are damaged the user might have to use this mode. A full scan of a file can take a couple of minutes while a fast scan only takes seconds.</p>
+</blockquote>
+<p><strong>--command-line-charset</strong> <em>character-set</em></p>
+<blockquote>
+<p>Sets the character set to convert strings given on the command line from. It defaults to the character set given by systems current locale.</p>
+</blockquote>
+<p><strong>--output-charset</strong> <em>character-set</em></p>
+<blockquote>
+<p>Sets the character set to which strings are converted that are to be output. It defaults to the character set given by systems current locale.</p>
+</blockquote>
+<p><strong>-r</strong>, <strong>--redirect-output</strong> <em>file-name</em></p>
+<blockquote>
+<p>Writes all messages to the file <em>file-name</em> instead of to the console. While this can be done easily with output redirection there are cases in which this option is needed: when the terminal reinterprets the output before writing it to a file. The character set set with <strong>--output-charset</strong> is honored.</p>
+</blockquote>
+<p><strong>--flush-on-close</strong></p>
+<blockquote>
+<p>Tells the program to flush all data cached in memory to storage when closing files opened for writing. This can be used to prevent data loss on power outages or to circumvent certain problems in the operating system or drivers. The downside is that multiplexing will take longer as mkvmerge will wait until all data has been written to the storage before exiting. See issues #2469 and #2480 on the MKVToolNix bug tracker for in-depth discussions on the pros and cons.</p>
+</blockquote>
+<p><strong>--ui-language</strong> <em>code</em></p>
+<blockquote>
+<p>Forces the translations for the language <em>code</em> to be used (e.g. de_DE for the German translations). Entering list as the <em>code</em> will cause the program to output a list of available translations.</p>
+</blockquote>
+<p><strong>--abort-on-warnings</strong></p>
+<blockquote>
+<p>Tells the program to abort after the first warning is emitted. The programs exit code will be 1.</p>
+</blockquote>
+<p><strong>--debug</strong> <em>topic</em></p>
+<blockquote>
+<p>Turn on debugging for a specific feature. This option is only useful for developers.</p>
+</blockquote>
+<p><strong>--engage</strong> <em>feature</em></p>
+<blockquote>
+<p>Turn on experimental features. A list of available features can be requested with <strong>mkvextract --engage list</strong>. These features are not meant to be used in normal situations.</p>
+</blockquote>
+<p><strong>--gui-mode</strong></p>
+<blockquote>
+<p>Turns on GUI mode. In this mode specially-formatted lines may be output that can tell a controlling GUI whats happening. These messages follow the format #GUI#message. The message may be followed by key/value pairs as in #GUI#message#key1=value1#key2=value2.... Neither the messages nor the keys are ever translated and always output in English.</p>
+</blockquote>
+<p><strong>-v</strong>, <strong>--verbose</strong></p>
+<blockquote>
+<p>Be verbose and show all the important Matroska elements as theyre read.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Show usage information and exit.</p>
+</blockquote>
+<p><strong>-V</strong>, <strong>--version</strong></p>
+<blockquote>
+<p>Show version information and exit.</p>
+</blockquote>
+<p><strong>@</strong><em>options-file.json</em></p>
+<blockquote>
+<p>Reads additional command line arguments from the file <em>options-file</em>. For a full explanation on the supported formats for such files see the section called "Option files" in the <strong>mkvmerge</strong>(1) man page.</p>
+</blockquote>
+<h2>Track extraction mode</h2>
+<p>Syntax: <strong>mkvextract </strong><em>source-filename</em><strong> tracks [</strong><em>options</em>]<strong> </strong><em>TID1:dest-filename1</em><strong> [</strong><em>TID2:dest-filename2</em> ...]</p>
+<p>The following command line options are available for each track in the tracks extraction mode. They have to appear in front of the track specification (see below) they should be applied to.</p>
+<p><strong>-c</strong> <em>character-set</em></p>
+<blockquote>
+<p>Sets the character set to convert the next text subtitle track to. Only valid if the next track ID targets a text subtitle track. It defaults to UTF-8.</p>
+</blockquote>
+<p><strong>--blockadd</strong> <em>level</em></p>
+<blockquote>
+<p>Keep only the BlockAdditions up to this level. The default is to keep all levels. This option only affects certain kinds of codecs like WAVPACK4.</p>
+</blockquote>
+<p><strong>--cuesheet</strong></p>
+<blockquote>
+<p>Causes <strong>mkvextract</strong>(1) to extract a CUE sheet from the chapter information and tag data for the following track into a file whose name is the tracks output name with .cue appended to it.</p>
+</blockquote>
+<p><strong>--raw</strong></p>
+<blockquote>
+<p>Extracts the raw data into a file without any container data around it. Unlike the <strong>--fullraw</strong> flag this flag does not cause the contents of the CodecPrivate element to be written to the file. This mode works with all CodecIDs, even the ones that <strong>mkvextract</strong>(1) doesnt support otherwise, but the resulting files might not be usable.</p>
+</blockquote>
+<p><strong>--fullraw</strong></p>
+<blockquote>
+<p>Extracts the raw data into a file without any container data around it. The contents of the CodecPrivate element will be written to the file first if the track contains such a header element. This mode works with all CodecIDs, even the ones that <strong>mkvextract</strong>(1) doesnt support otherwise, but the resulting files might not be usable.</p>
+</blockquote>
+<p><em>TID:outname</em></p>
+<blockquote>
+<p>Causes extraction of the track with the ID <em>TID</em> into the file <em>outname</em> if such a track exists in the source file. This option can be given multiple times. The track IDs are the same as the ones output by <strong>mkvmerge</strong>(1)s <strong>--identify</strong> option.</p>
+<p>Each output name should be used only once. The exception are RealAudio and RealVideo tracks. If you use the same name for different tracks then those tracks will be saved in the same file. Example:</p>
+<blockquote>
+<pre><code>$ mkvextract input.mkv tracks 0:video.h264 2:output-two-vobsub-tracks.idx 3:output-two-vobsub-tracks.idx</code></pre>
+</blockquote>
+</blockquote>
+<h2>Attachments extraction mode</h2>
+<p>Syntax: <strong>mkvextract </strong><em>source-filename</em><strong> attachments [</strong><em>options</em>]<strong> </strong><em>AID1:outname1</em><strong> [</strong><em>AID2:outname2</em> ...]</p>
+<p><em>AID</em>:<em>outname</em></p>
+<blockquote>
+<p>Causes extraction of the attachment with the ID <em>AID</em> into the file <em>outname</em> if such an attachment exists in the source file. If the <em>outname</em> is left empty then the name of the attachment inside the source Matroska file is used instead. This option can be given multiple times. The attachment IDs are the same as the ones output by <strong>mkvmerge</strong>(1)s <strong>--identify</strong> option.</p>
+</blockquote>
+<h2>Chapters extraction mode</h2>
+<p>Syntax: <strong>mkvextract </strong><em>source-filename</em><strong> chapters [</strong><em>options</em>]<strong> </strong><em>output-filename.xml</em></p>
+<p><strong>-s</strong>, <strong>--simple</strong></p>
+<blockquote>
+<p>Exports the chapter information in the simple format used in the OGM tools (CHAPTER01=..., CHAPTER01NAME=...). In this mode some information has to be discarded. Default is to output the chapters in XML format.</p>
+</blockquote>
+<p><strong>--simple-language</strong> <em>language</em></p>
+<blockquote>
+<p>If the simple format is enabled then <strong>mkvextract</strong>(1) will only output a single entry for each chapter atom encountered even if a chapter atom contains more than one chapter name. By default <strong>mkvextract</strong>(1) will use the first chapter name found for each atom regardless of its language.</p>
+<p>Using this option allows the user to determine which chapter names are output if atoms contain more than one chapter name. The <em>language</em> parameter must be an ISO 639-1 or ISO 639-2 code.</p>
+</blockquote>
+<p>The chapters are written to specified output file. By default the XML format understood by <strong>mkvmerge</strong>(1) is used. If no chapters are found in the file, the output file is not created.</p>
+<h2>Tags extraction mode</h2>
+<p>Syntax: <strong>mkvextract </strong><em>source-filename</em><strong> tags [</strong><em>options</em>]<strong> </strong><em>output-filename.xml</em></p>
+<p>The tags are written to specified output file in the XML format understood by <strong>mkvmerge</strong>(1). If no tags are found in the file, the output file is not created.</p>
+<h2>Cue sheet extraction mode</h2>
+<p>Syntax: <strong>mkvextract </strong><em>source-filename</em><strong> cuesheet [</strong><em>options</em>]<strong> </strong><em>output-filename.cue</em></p>
+<p>The cue sheet is written to specified output file. If no chapters or tags are found in the file, the output file is not created.</p>
+<h2>Timestamp extraction mode</h2>
+<p>Syntax: <strong>mkvextract </strong><em>source-filename</em><strong> timestamps_v2 [</strong><em>options</em>]<strong> </strong><em>TID1:dest-filename1</em><strong> [</strong><em>TID2:dest-filename2</em> ...]</p>
+<p><em>TID:outname</em></p>
+<blockquote>
+<p>Causes extraction of the timestamps for the track with the ID <em>TID</em> into the file <em>outname</em> if such a track exists in the source file. This option can be given multiple times. The track IDs are the same as the ones output by <strong>mkvmerge</strong>(1)s <strong>--identify</strong> option.</p>
+<p>Example:</p>
+<blockquote>
+<pre><code>$ mkvextract input.mkv timestamps_v2 1:ts-track1.txt 2:ts-track2.txt</code></pre>
+</blockquote>
+</blockquote>
+<h2>Cues extraction mode</h2>
+<p>Syntax: <strong>mkvextract </strong><em>source-filename</em><strong> cues [</strong><em>options</em>]<strong> </strong><em>TID1:dest-filename1</em><strong> [</strong><em>TID2:dest-filename2</em> ...]</p>
+<p><em>TID:dest-filename</em></p>
+<blockquote>
+<p>Causes extraction of the cues for the track with the ID <em>TID</em> into the file <em>outname</em> if such a track exists in the source file. This option can be given multiple times. The track IDs are the same as the ones output by <strong>mkvmerge</strong>(1)s <strong>--identify</strong> option and not the numbers contained in the CueTrack element.</p>
+</blockquote>
+<p>The format output is a simple text format: one line per CuePoint element with key=value pairs. If an optional element is not present in a CuePoint (e.g. CueDuration) then a dash will be output as the value.</p>
+<p>Example:</p>
+<blockquote>
+<pre><code>timestamp=00:00:13.305000000 duration=- cluster_position=757741 relative_position=11</code></pre>
+</blockquote>
+<p>The possible keys are:</p>
+<p>timestamp</p>
+<blockquote>
+<p>The cue points timestamp with nanosecond precision. The format is HH:MM:SS.nnnnnnnnn. This element is always set.</p>
+</blockquote>
+<p>duration</p>
+<blockquote>
+<p>The cue points duration with nanosecond precision. The format is HH:MM:SS.nnnnnnnnn.</p>
+</blockquote>
+<p>cluster_position</p>
+<blockquote>
+<p>The absolute position in bytes inside the Matroska file where the cluster containing the referenced element starts.</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+Inside the Matroska file the CueClusterPosition is relative to the segments data start offset. The value output by <strong>mkvextract</strong>(1)s cue extraction mode, however, contains that offset already and is an absolute offset from the beginning of the file.</p>
+</blockquote>
+</blockquote>
+<p>relative_position</p>
+<blockquote>
+<p>The relative position in bytes inside the cluster where the BlockGroup or SimpleBlock element the cue point refers to starts.</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+Inside the Matroska file the CueRelativePosition is relative to the clusters data start offset. The value output by <strong>mkvextract</strong>(1)s cue extraction mode, however, is relative to the clusters ID. The absolute position inside the file can be calculated by adding cluster_position and relative_position.</p>
+</blockquote>
+</blockquote>
+<p>Example:</p>
+<blockquote>
+<pre><code>$ mkvextract input.mkv cues 1:cues-track1.txt 2:cues-track2.txt</code></pre>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>Extracting both chapters and tags in their respective XML formats at the same time:</p>
+<blockquote>
+<pre><code>$ mkvextract movie.mkv chapters movie-chapters.xml tags movie-tags.xml</code></pre>
+</blockquote>
+<p>Extracting a couple of tracks and their respective timestamps at the same time:</p>
+<blockquote>
+<pre><code>$ mkvextract &quot;Another Movie.mkv&quot; tracks 0:video.h265 &quot;1:main audio.aac&quot; &quot;2:directors comments.aac&quot; timestamps_v2 &quot;0:timestamps video.txt&quot; &quot;1:timestamps main audio.txt&quot; &quot;2:timestamps directors comments.txt&quot;</code></pre>
+</blockquote>
+<p>Extracting chapters in the Ogg/OGM format and re-encoding a text subtitle track to another character set:</p>
+<blockquote>
+<pre><code>$ mkvextract &quot;My Movie.mkv&quot; chapters --simple &quot;My Chapters.txt&quot; tracks -c MS-ANSI &quot;2:My Subtitles.srt&quot;</code></pre>
+</blockquote>
+<h1>TEXT FILES AND CHARACTER SET CONVERSIONS</h1>
+<p>For an in-depth discussion about how all tools in the MKVToolNix suite handle character set conversions, input/output encoding, command line encoding and console encoding please see the identically-named section in the <strong>mkvmerge</strong>(1) man page.</p>
+<h1>OUTPUT FILE FORMATS</h1>
+<p>The decision about the output format is based on the track type, not on the extension used for the output file name. The following track types are supported at the moment:</p>
+<p>A_AAC/MPEG2/*, A_AAC/MPEG4/*, A_AAC</p>
+<blockquote>
+<p>All AAC files will be written into an AAC file with ADTS headers before each packet. The ADTS headers will not contain the deprecated emphasis field.</p>
+</blockquote>
+<p>A_AC3, A_EAC3</p>
+<blockquote>
+<p>These will be extracted to raw AC-3 files.</p>
+</blockquote>
+<p>A_ALAC</p>
+<blockquote>
+<p>ALAC tracks are written to CAF files.</p>
+</blockquote>
+<p>A_DTS</p>
+<blockquote>
+<p>These will be extracted to raw DTS files.</p>
+</blockquote>
+<p>A_FLAC</p>
+<blockquote>
+<p>FLAC tracks are written to raw FLAC files.</p>
+</blockquote>
+<p>A_MPEG/L2</p>
+<blockquote>
+<p>MPEG-1 Audio Layer II streams will be extracted to raw MP2 files.</p>
+</blockquote>
+<p>A_MPEG/L3</p>
+<blockquote>
+<p>These will be extracted to raw MP3 files.</p>
+</blockquote>
+<p>A_OPUS</p>
+<blockquote>
+<p>Opus tracks are written to OggOpus files.</p>
+</blockquote>
+<p>A_PCM/INT/LIT, A_PCM/INT/BIG</p>
+<blockquote>
+<p>Raw PCM data will be written to a WAV file. Big-endian integer data will be converted to little-endian data in the process.</p>
+</blockquote>
+<p>A_REAL/*</p>
+<blockquote>
+<p>RealAudio tracks are written to RealMedia files.</p>
+</blockquote>
+<p>A_TRUEHD, A_MLP</p>
+<blockquote>
+<p>These will be extracted to raw TrueHD/MLP files.</p>
+</blockquote>
+<p>A_TTA1</p>
+<blockquote>
+<p>TrueAudio tracks are written to TTA files. Please note that due to Matroskas limited timestamp precision the extracted files header will be different regarding two fields: <em>data_length</em> (the total number of samples in the file) and the CRC.</p>
+</blockquote>
+<p>A_VORBIS</p>
+<blockquote>
+<p>Vorbis audio will be written into an OggVorbis file.</p>
+</blockquote>
+<p>A_WAVPACK4</p>
+<blockquote>
+<p>WavPack tracks are written to WV files.</p>
+</blockquote>
+<p>S_HDMV/PGS</p>
+<blockquote>
+<p>PGS subtitles will be written as SUP files.</p>
+</blockquote>
+<p>S_HDMV/TEXTST</p>
+<blockquote>
+<p>TextST subtitles will be written as a special file format invented for <strong>mkvmerge</strong>(1) and <strong>mkvextract</strong>(1).</p>
+</blockquote>
+<p>S_KATE</p>
+<blockquote>
+<p>Kate streams will be written within an Ogg container.</p>
+</blockquote>
+<p>S_TEXT/SSA, S_TEXT/ASS, S_SSA, S_ASS</p>
+<blockquote>
+<p>SSA and ASS text subtitles will be written as SSA/ASS files respectively.</p>
+</blockquote>
+<p>S_TEXT/UTF8, S_TEXT/ASCII</p>
+<blockquote>
+<p>Simple text subtitles will be written as SRT files.</p>
+</blockquote>
+<p>S_VOBSUB</p>
+<blockquote>
+<p>VobSub subtitles will be written as SUB files along with the respective index files, as IDX files.</p>
+</blockquote>
+<p>S_TEXT/USF</p>
+<blockquote>
+<p>USF text subtitles will be written as USF files.</p>
+</blockquote>
+<p>S_TEXT/WEBVTT</p>
+<blockquote>
+<p>WebVTT text subtitles will be written as WebVTT files.</p>
+</blockquote>
+<p>V_MPEG1, V_MPEG2</p>
+<blockquote>
+<p>MPEG-1 and MPEG-2 video tracks will be written as MPEG elementary streams.</p>
+</blockquote>
+<p>V_MPEG4/ISO/AVC</p>
+<blockquote>
+<p>H.264 / AVC video tracks are written to H.264 elementary streams which can be processed further with e.g. MP4Box from the GPAC package.</p>
+</blockquote>
+<p>V_MPEG4/ISO/HEVC</p>
+<blockquote>
+<p>H.265 / HEVC video tracks are written to H.265 elementary streams which can be processed further with e.g. MP4Box from the GPAC package.</p>
+</blockquote>
+<p>V_MS/VFW/FOURCC</p>
+<blockquote>
+<p>Fixed FPS video tracks with this CodecID are written to AVI files.</p>
+</blockquote>
+<p>V_REAL/*</p>
+<blockquote>
+<p>RealVideo tracks are written to RealMedia files.</p>
+</blockquote>
+<p>V_THEORA</p>
+<blockquote>
+<p>Theora streams will be written within an Ogg container</p>
+</blockquote>
+<p>V_VP8, V_VP9</p>
+<blockquote>
+<p>VP8 / VP9 tracks are written to IVF files.</p>
+</blockquote>
+<p>Tags</p>
+<blockquote>
+<p>Tags are converted to a XML format. This format is the same that <strong>mkvmerge</strong>(1) supports for reading tags.</p>
+</blockquote>
+<p>Attachments</p>
+<blockquote>
+<p>Attachments are written to the output file as they are. No conversion whatsoever is done.</p>
+</blockquote>
+<p>Chapters</p>
+<blockquote>
+<p>Chapters are converted to a XML format. This format is the same that <strong>mkvmerge</strong>(1) supports for reading chapters. Alternatively a stripped-down version can be output in the simple OGM style format.</p>
+</blockquote>
+<p>Timestamps</p>
+<blockquote>
+<p>Timestamps are first sorted and then output as a timestamp v2 format compliant file ready to be fed to <strong>mkvmerge</strong>(1). The extraction to other formats (v1, v3 and v4) is not supported.</p>
+</blockquote>
+<h1>EXIT CODES</h1>
+<p><strong>mkvextract</strong>(1) exits with one of three exit codes:</p>
+<blockquote>
+<p>·</p>
+<p><strong>0</strong> -- This exit code means that extraction has completed successfully.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>1</strong> -- In this case <strong>mkvextract</strong>(1) has output at least one warning, but extraction did continue. A warning is prefixed with the text Warning:. Depending on the issues involved the resulting files might be ok or not. The user is urged to check both the warning and the resulting files.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>2</strong> -- This exit code is used after an error occurred. <strong>mkvextract</strong>(1) aborts right after outputting the error message. Error messages range from wrong command line arguments over read/write errors to broken files.</p>
+</blockquote>
+<h1>ENVIRONMENT VARIABLES</h1>
+<p><strong>mkvextract</strong>(1) uses the default variables that determine the systems locale (e.g. <em>LANG</em> and the <em>LC_*</em> family). Additional variables:</p>
+<p><em>MKVEXTRACT_DEBUG</em>, <em>MKVTOOLNIX_DEBUG</em> and its short form <em>MTX_DEBUG</em></p>
+<blockquote>
+<p>The content is treated as if it had been passed via the <strong>--debug</strong> option.</p>
+</blockquote>
+<p><em>MKVEXTRACT_ENGAGE</em>, <em>MKVTOOLNIX_ENGAGE</em> and its short form <em>MTX_ENGAGE</em></p>
+<blockquote>
+<p>The content is treated as if it had been passed via the <strong>--engage</strong> option.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>mkvmerge</strong>(1), <strong>mkvinfo</strong>(1), <strong>mkvpropedit</strong>(1), <strong>mkvtoolnix-gui</strong>(1)</p>
+<h1>WWW</h1>
+<p>The latest version can always be found at <strong>the MKVToolNix homepage</strong>[1].</p>
+<h1>AUTHOR</h1>
+<p><strong>Moritz Bunkus</strong> &lt;moritz@bunkus.org&gt;</p>
+<blockquote>
+<p>Developer</p>
+</blockquote>
+<h1>NOTES</h1>
+<ul>
+<li><p>the MKVToolNix homepage</p>
+<p>https://mkvtoolnix.download/</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

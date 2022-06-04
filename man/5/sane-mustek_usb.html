@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sane-mustek_usb</title><meta name="description" content="Linux command sane-mustek_usb SANE backend for Mustek USB flatbed scanners"><meta name="keywords" content="linux, command, sane-mustek_usb, bsd, SANE backend for Mustek USB flatbed scanners"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sane-mustek_usb - SANE backend for Mustek USB flatbed scanners</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sane-mustek_usb</strong> library implements a SANE (Scanner Access Now Easy) backend that provides access to Mustek USB flatbed scanners (including a clone from Trust). At present, the following scanners are known to work more or less with this backend:</p>
+<blockquote>
+<p>Mustek 600 CU<br />
+Mustek 1200 UB<br />
+Mustek 1200 CU<br />
+Mustek 1200 CU Plus<br />
+Trust Compact Scan USB 19200<br />
+</p>
+</blockquote>
+<p>More details can be found on the Mustek USB backend homepage <em>http://www.meier-geinitz.de/sane/mustek_usb-backend/</em>.</p>
+<p>The Mustek BearPaw 1200 and 2400 scanners are supported by the plustek backend. See <strong>sane-plustek</strong>(5) for details. The Mustek BearPaw 1200F is supported by the MA-1509 backend. See <strong>sane-ma1509</strong>(5) for details. Other Mustek USB scanners are supported by the gt68xx backend, see <strong>sane-gt68xx</strong>(5).</p>
+<p>This backend can only work with scanners that are already detected by the operating system. See <strong>sane-usb</strong>(5) for details.</p>
+<p>If you own a Mustek (or Trust) scanner other than the ones listed above that works with this backend, please let me know this by sending the scanner's exact model name and the USB vendor and device ids (e.g. from <em>/proc/bus/usb/devices</em> or syslog) to me.</p>
+<h1>DEVICE NAMES</h1>
+<p>This backend expects device names of the form:</p>
+<blockquote>
+<p><em>special</em></p>
+</blockquote>
+<p>Where <em>special</em> is a path-name for the special device that corresponds to a USB scanner. With Linux, such a device name could be <em>/dev/usb/scanner0</em> or <em>/dev/usbscanner1</em>, for example.</p>
+<p>For FreeBSD use <em>/dev/uscanner0</em>.</p>
+<h1>CONFIGURATION</h1>
+<p>The contents of the <em>mustek_usb.conf</em> file is a list of options and device names that correspond to Mustek USB scanners. Empty lines and lines starting with a hash mark (#) are ignored. If a device name is placed in <em>mustek_usb.conf</em>, it must be followed by a line containing the keyword <strong>option</strong> and an option specifying the scanner type. The following options can be used: <strong>600cu</strong>, <strong>1200cu</strong>, <strong>1200cu_plus</strong>, <strong>1200ub</strong>. For the Trust Compact Scan USB 19200 use `option 1200ub'.</p>
+<p>Instead of using the device name, the scanner can be autodetected by <strong>usb vendor_id product_id</strong> statements which are already included into <em>mustek_usb.conf</em>. This is only supported with Linux 2.4.8 and higher and all systems that support libsub. "vendor_id" and "product_id" are hexadecimal numbers that identify the scanner. If this doesn't work, a device name and the option specifying the scanner type must be placed in <em>mustek_usb.conf</em> as described above.</p>
+<p>The global <strong>option max_block_size</strong> can be used to limit the amount of data acquired in one turn from the USB system. It may be worth trying, if USB errors occur.</p>
+<p>A sample configuration file is shown below:</p>
+<blockquote>
+<p># Comment<br />
+option max_block_size 1024<br />
+usb 0x055f 0x0001<br />
+/dev/usb/scanner0<br />
+option 600cu</p>
+</blockquote>
+<p>The first line is ignored. The second line sets the buffer size to a maximum of 1024 bytes. The third line tries to autodetect a scanner with vendor id 0x055f and product id 0x0001 (Mustek 1200 CU). The fourth line tells the backend to attach to <em>/dev/usb/scanner0</em> and the fifth line specifies that <em>/dev/usb/scanner0</em> is a Mustek 600 CU.</p>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/sane.d/mustek_usb.conf</em></dt>
+<dd><p>The backend configuration file (see also description of <strong>SANE_CONFIG_DIR</strong> below).</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-mustek_usb.a</em></dt>
+<dd><p>The static library implementing this backend.</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-mustek_usb.so</em></dt>
+<dd><p>The shared library implementing this backend (present on systems that support dynamic loading).</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>SANE_CONFIG_DIR</strong></dt>
+<dd><p>This environment variable specifies the list of directories that may contain the configuration file. Under UNIX, the directories are separated by a colon (`:'), under OS/2, they are separated by a semi-colon (`;'). If this variable is not set, the configuration file is searched in two default directories: first, the current working directory (".") and then in /etc/sane.d. If the value of the environment variable ends with the directory separator character, then the default directories are searched after the explicitly specified directories. For example, setting <strong>SANE_CONFIG_DIR</strong> to "/tmp/config:" would result in directories "tmp/config", ".", and "/etc/sane.d" being searched (in this order).</p>
+</dd>
+<dt><strong>SANE_DEBUG_MUSTEK_USB</strong></dt>
+<dd><p>If the library was compiled with debug support enabled, this environment variable controls the debug level for this backend. Higher debug levels increase the verbosity of the output.</p>
+</dd>
+</dl>
+<pre><code>Value  Description
+0      no output
+1      print fatal errors
+2      print important messages
+3      print non-fatal errors and less important messages
+4      print all but debugging messages
+5      print high level debugging messages
+6      print medium level debugging messages
+7      print low level debugging messages</code></pre>
+<p>Example: export SANE_DEBUG_MUSTEK_USB=4</p>
+<h1>SEE ALSO</h1>
+<p><strong>sane</strong>(7), <strong>sane-usb</strong>(5), <strong>sane-mustek</strong>(5), <strong>sane-mustek_pp</strong>(5), <strong>sane-plustek</strong>(5), <strong>sane-gt68xx</strong>(5), <strong>sane-ma1509</strong>(5)<br />
+<em>/usr/share/doc/libsane/mustek_usb/mustek_usb.CHANGES</em>,<br />
+<em>/usr/share/doc/libsane/mustek_usb/mustek_usb.TODO</em><br />
+<em>http://www.meier-geinitz.de/sane/mustek_usb-backend/</em></p>
+<h1>AUTHOR</h1>
+<p>Henning Meier-Geinitz &lt;henning@meier-geinitz.de&gt;<br />
+This backend is based on the Mustek 1200ub backend from Mustek, maintained by Tom Wang.</p>
+<h1>BUGS</h1>
+<p>These devices have a hardware bug: Once data is written to them, they can't be reset (toggle = DATA0). That means, any operation that tries to reset the device will result in running into timeouts.</p>
+<p>In earlier versions this backend failed when it was loaded the second time in some configurations. The only choice was to replug the scanner in this case. The backend uses a workaround for that bug now but it's only tested on Linux. Reports for other operating systems are appreciated.</p>
+<p>More detailed bug information is available at the Mustek backend homepage <em>http://www.meier-geinitz.de/sane/mustek_usb-backend/</em>.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

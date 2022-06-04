@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command libnetlink</title><meta name="description" content="Linux command libnetlink A library for accessing the netlink service"><meta name="keywords" content="linux, command, libnetlink, bsd, A library for accessing the netlink service"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>libnetlink - A library for accessing the netlink service</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;asm/types.h&gt;
+
+
+#include &lt;libnetlink.h&gt;
+
+
+#include &lt;linux/netlink.h&gt;
+
+
+#include &lt;linux/rtnetlink.h&gt;
+
+int rtnl_open(struct rtnl_handle *rth, unsigned subscriptions)
+
+int rtnl_wilddump_request(struct rtnl_handle *rth, int family, int type)
+
+int rtnl_send(struct rtnl_handle *rth, char *buf, int len)
+
+int rtnl_dump_request(struct rtnl_handle *rth, int type, void *req, int len)
+
+int rtnl_dump_filter(struct rtnl_handle *rth,
+		     int (*filter)(struct sockaddr_nl *, struct nlmsghdr *n, void *),
+		     void *arg1,
+		     int (*junk)(struct sockaddr_nl *,struct nlmsghdr *n, void *),
+		     void *arg2)
+
+int rtnl_talk(struct rtnl_handle *rtnl, struct nlmsghdr *n, pid_t peer,
+	      unsigned groups, struct nlmsghdr *answer,
+
+
+	      int (*junk)(struct sockaddr_nl *,struct nlmsghdr *n, void *),
+
+
+	      void *jarg)
+
+int rtnl_listen(struct rtnl_handle *rtnl,
+	      int (*handler)(struct sockaddr_nl *, struct rtnl_ctrl_data *,
+			     struct nlmsghdr *n, void *),
+	      void *jarg)
+
+int rtnl_from_file(FILE *rtnl,
+	      int (*handler)(struct sockaddr_nl *,struct nlmsghdr *n, void *),
+	      void *jarg)
+
+int addattr32(struct nlmsghdr *n, int maxlen, int type, __u32 data)
+
+int addattr_l(struct nlmsghdr *n, int maxlen, int type, void *data, int alen)
+
+int rta_addattr32(struct rtattr *rta, int maxlen, int type, __u32 data)
+
+int rta_addattr_l(struct rtattr *rta, int maxlen, int type, void *data, int alen)</code></pre>
+<h1>DESCRIPTION</h1>
+<p>libnetlink provides a higher level interface to <strong>rtnetlink</strong>(7). The read functions return 0 on success and a negative errno on failure. The send functions return the amount of data sent, or -1 on error.</p>
+<dl>
+<dt>rtnl_open</dt>
+<dd><p>Open a rtnetlink socket and save the state into the <strong>rth</strong> handle. This handle is passed to all subsequent calls. <strong>subscriptions</strong> is a bitmap of the rtnetlink multicast groups the socket will be a member of.</p>
+</dd>
+</dl>
+<dl>
+<dt>rtnl_wilddump_request</dt>
+<dd><p>Request a full dump of the <strong>type</strong> database for <strong>family</strong> addresses. <strong>type</strong> is a rtnetlink message type.</p>
+</dd>
+</dl>
+<dl>
+<dt>rtnl_dump_request</dt>
+<dd><p>Request a full dump of the <strong>type</strong> data buffer into <strong>buf</strong> with maximum length of <strong>len.</strong> <strong>type</strong> is a rtnetlink message type.</p>
+</dd>
+</dl>
+<dl>
+<dt>rtnl_dump_filter</dt>
+<dd><p>Receive netlink data after a request and filter it. The <strong>filter</strong> callback checks if the received message is wanted. It gets the source address of the message, the message itself and <strong>arg1</strong> as arguments. 0 as return means that the filter passed, a negative value is returned by <em>rtnl_dump_filter</em> in case of error. NULL for <em>filter</em> means to not use a filter. <strong>junk</strong> is used to filter messages not destined to the local socket. Only one message bundle is received. If there is a message pending, this function does not block.</p>
+</dd>
+</dl>
+<dl>
+<dt>rtnl_listen</dt>
+<dd><p>Receive netlink data after a request and pass it to <em>handler.</em> <strong>handler</strong> is a callback that gets the message source address, anscillary data, the message itself, and the <strong>jarg</strong> cookie as arguments. It will get called for all received messages. Only one message bundle is received. If there is a message pending this function does not block.</p>
+</dd>
+</dl>
+<dl>
+<dt>rtnl_from_file</dt>
+<dd><p>Works like <em>rtnl_listen,</em> but reads a netlink message bundle from the file <strong>file</strong> and passes the messages to <strong>handler</strong> for parsing. The file should contain raw data as received from a rtnetlink socket.</p>
+</dd>
+</dl>
+<p>The following functions are useful to construct custom rtnetlink messages. For simple database dumping with filtering it is better to use the higher level functions above. See <strong>rtnetlink</strong>(3) and <strong>netlink</strong>(3) on how to generate a rtnetlink message. The following utility functions require a continuous buffer that already contains a netlink message header and a rtnetlink request.</p>
+<dl>
+<dt>rtnl_send</dt>
+<dd><p>Send the rtnetlink message in <strong>buf</strong> of length <strong>len</strong> to handle <strong>rth.</strong></p>
+</dd>
+</dl>
+<dl>
+<dt>addattr32</dt>
+<dd><p>Add a __u32 attribute of type <strong>type</strong> and with value <strong>data</strong> to netlink message <strong>n,</strong> which is part of a buffer of length <strong>maxlen.</strong></p>
+</dd>
+</dl>
+<dl>
+<dt>addattr_l</dt>
+<dd><p>Add a variable length attribute of type <strong>type</strong> and with value <strong>data</strong> and <strong>alen</strong> length to netlink message <strong>n,</strong> which is part of a buffer of length <strong>maxlen.</strong> <strong>data</strong> is copied.</p>
+</dd>
+</dl>
+<dl>
+<dt>rta_addattr32</dt>
+<dd><p>Initialize the rtnetlink attribute <strong>rta</strong> with a __u32 data value.</p>
+</dd>
+</dl>
+<dl>
+<dt>rta_addattr32</dt>
+<dd><p>Initialize the rtnetlink attribute <strong>rta</strong> with a variable length data value.</p>
+</dd>
+</dl>
+<h1>BUGS</h1>
+<p>This library is meant for internal use, use libmnl for new programs.</p>
+<p>The functions sometimes use fprintf and exit when a fatal error occurs. This library should be named librtnetlink.</p>
+<h1>AUTHORS</h1>
+<p>netlink/rtnetlink was designed and written by Alexey Kuznetsov. Andi Kleen wrote the man page.</p>
+<h1>SEE ALSO</h1>
+<p><strong>netlink</strong>(7), <strong>rtnetlink</strong>(7)<br />
+/usr/include/linux/rtnetlink.h</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command gpg-wks-client</title><meta name="description" content="Linux command gpg-wks-client Client for the Web Key Service"><meta name="keywords" content="linux, command, gpg-wks-client, bsd, Client for the Web Key Service"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p><strong>gpg-wks-client</strong> - Client for the Web Key Service</p>
+<h1>SYNOPSIS</h1>
+<p><strong>gpg-wks-client</strong> [<em>options</em>] <strong>--supported</strong> <em>user-id</em><br />
+<strong>gpg-wks-client</strong> [<em>options</em>] <strong>--check</strong> <em>user-id</em><br />
+<strong>gpg-wks-client</strong> [<em>options</em>] <strong>--create</strong> <em>fingerprint</em> <em>user-id</em><br />
+<strong>gpg-wks-client</strong> [<em>options</em>] <strong>--receive</strong><br />
+<strong>gpg-wks-client</strong> [<em>options</em>] <strong>--read</strong></p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>gpg-wks-client</strong> is used to send requests to a Web Key Service provider. This is usuallay done to upload a key into a Web Key Directory.</p>
+<p>With the <strong>--supported</strong> command the caller can test whether a site supports the Web Key Service. The argument is an arbitrary address in the to be tested domain. For example ‘<em>foo@example.net</em>’. The command returns success if the Web Key Service is supported. The operation is silent; to get diagnostic output use the option <strong>--verbose</strong>. See option <strong>--with-colons</strong> for a variant of this command.</p>
+<p>With the <strong>--check</strong> command the caller can test whether a key exists for a supplied mail address. The command returns success if a key is available.</p>
+<p>The <strong>--create</strong> command is used to send a request for publication in the Web Key Directory. The arguments are the fingerprint of the key and the user id to publish. The output from the command is a properly formatted mail with all standard headers. This mail can be fed to <strong>sendmail(8)</strong> or any other tool to actually send that mail. If <strong>sendmail(8)</strong> is installed the option <strong>--send</strong> can be used to directly send the created request. If the provider request a 'mailbox-only' user id and no such user id is found, <strong>gpg-wks-client</strong> will try an additional user id.</p>
+<p>The <strong>--receive</strong> and <strong>--read</strong> commands are used to process confirmation mails as send from the service provider. The former expects an encrypted MIME messages, the latter an already decrypted MIME message. The result of these commands are another mail which can be send in the same way as the mail created with <strong>--create</strong>.</p>
+<p>The command <strong>--install-key</strong> manually installs a key into a local directory (see option <strong>-C</strong>) reflecting the structure of a WKD. The arguments are a file with the keyblock and the user-id to install. If the first argument resembles a fingerprint the key is taken from the current keyring; to force the use of a file, prefix the first argument with "./". If no arguments are given the parameters are read from stdin; the expected format are lines with the fingerprint and the mailbox separated by a space. The command <strong>--remove-key</strong> removes a key from that directory, its only argument is a user-id.</p>
+<p>The command <strong>--print-wkd-hash</strong> prints the WKD user-id identifiers and the corresponding mailboxes from the user-ids given on the command line or via stdin (one user-id per line).</p>
+<p>The command <strong>--print-wkd-url</strong> prints the URLs used to fetch the key for the given user-ids from WKD. The meanwhile preferred format with sub-domains is used here.</p>
+<p><strong>gpg-wks-client</strong> is not commonly invoked directly and thus it is not installed in the bin directory. Here is an example how it can be invoked manually to check for a Web Key Directory entry for ‘<em>foo@example.org</em>’:</p>
+<blockquote>
+<pre><code>$(gpgconf --list-dirs libexecdir)/gpg-wks-client --check foo@example.net</code></pre>
+</blockquote>
+<h1>OPTIONS</h1>
+<p><strong>gpg-wks-client</strong> understands these options:</p>
+<dl>
+<dt><strong>--send</strong></dt>
+<dd><p>Directly send created mails using the <strong>sendmail</strong> command. Requires installation of that command.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--with-colons</strong></dt>
+<dd><p>This option has currently only an effect on the <strong>--supported</strong> command. If it is used all arguments on the command line are taken as domain names and tested for WKD support. The output format is one line per domain with colon delimited fields. The currently specified fields are (future versions may specify additional fields):</p>
+</dd>
+</dl>
+<blockquote>
+<dl>
+<dt><strong>1 - domain</strong></dt>
+<dd><p>This is the domain name. Although quoting is not required for valid domain names this field is specified to be quoted in standard C manner.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>2 - WKD</strong></dt>
+<dd><p>If the value is true the domain supports the Web Key Directory.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>3 - WKS</strong></dt>
+<dd><p>If the value is true the domain supports the Web Key Service protocol to upload keys to the directory.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>4 - error-code</strong></dt>
+<dd><p>This may contain an gpg-error code to describe certain failures. Use ‘gpg-error CODE’ to explain the code.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>5 - protocol-version</strong></dt>
+<dd><p>The minimum protocol version supported by the server.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>6 - auth-submit</strong></dt>
+<dd><p>The auth-submit flag from the policy file of the server.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>7 - mailbox-only</strong></dt>
+<dd><p>The mailbox-only flag from the policy file of the server.</p>
+</dd>
+</dl>
+</blockquote>
+<dl>
+<dt><strong>--output <em>file</em></strong><br />
+<strong>-o</strong></dt>
+<dd><p>Write the created mail to <em>file</em> instead of stdout. Note that the value <strong>-</strong> for <em>file</em> is the same as writing to stdout.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--status-fd <em>n</em></strong></dt>
+<dd><p>Write special status strings to the file descriptor <em>n</em>. This program returns only the status messages SUCCESS or FAILURE which are helpful when the caller uses a double fork approach and can't easily get the return code of the process.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-C <em>dir</em></strong><br />
+<strong>--directory <em>dir</em></strong></dt>
+<dd><p>Use <em>dir</em> as top level directory for the commands <strong>--install-key</strong> and <strong>--remove-key</strong>. The default is ‘<em>openpgpkey</em>’.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--verbose</strong></dt>
+<dd><p>Enable extra informational output.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--quiet</strong></dt>
+<dd><p>Disable almost all informational output.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--version</strong></dt>
+<dd><p>Print version of the program and exit.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--help</strong></dt>
+<dd><p>Display a brief help page and exit.</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>gpg-wks-server</strong>(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

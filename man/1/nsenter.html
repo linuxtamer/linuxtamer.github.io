@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command nsenter</title><meta name="description" content="Linux command nsenter run program in different namespaces"><meta name="keywords" content="linux, command, nsenter, bsd, run program in different namespaces"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>nsenter - run program in different namespaces</p>
+<h1>SYNOPSIS</h1>
+<p><strong>nsenter</strong> [options] [<em>program</em> [<em>arguments</em>]]</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>nsenter</strong> command executes <em>program</em> in the namespace(s) that are specified in the command-line options (described below). If <em>program</em> is not given, then ``${SHELL}'' is run (default: /bin/sh).</p>
+<p>Enterable namespaces are:</p>
+<dl>
+<dt><strong>mount namespace</strong></dt>
+<dd><p>Mounting and unmounting filesystems will not affect the rest of the system, except for filesystems which are explicitly marked as shared (with <strong>mount --make-shared</strong>; see <em>/proc/self/mountinfo</em> for the <strong>shared</strong> flag). For further details, see <strong>mount_namespaces</strong>(7) and the discussion of the <strong>CLONE_NEWNS</strong> flag in <strong>clone</strong>(2).</p>
+</dd>
+<dt><strong>UTS namespace</strong></dt>
+<dd><p>Setting hostname or domainname will not affect the rest of the system. For further details, see <strong>uts_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>IPC namespace</strong></dt>
+<dd><p>The process will have an independent namespace for POSIX message queues as well as System V message queues, semaphore sets and shared memory segments. For further details, see <strong>ipc_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>network namespace</strong></dt>
+<dd><p>The process will have independent IPv4 and IPv6 stacks, IP routing tables, firewall rules, the <em>/proc/net</em> and <em>/sys/class/net</em> directory trees, sockets, etc. For further details, see <strong>network_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>PID namespace</strong></dt>
+<dd><p>Children will have a set of PID to process mappings separate from the <strong>nsenter</strong> process. <strong>nsenter</strong> will fork by default if changing the PID namespace, so that the new program and its children share the same PID namespace and are visible to each other. If <strong>--no-fork</strong> is used, the new program will be exec'ed without forking. For further details, see <strong>pid_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>user namespace</strong></dt>
+<dd><p>The process will have a distinct set of UIDs, GIDs and capabilities. For further details, see <strong>user_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>cgroup namespace</strong></dt>
+<dd><p>The process will have a virtualized view of <em>/proc/self/cgroup</em>, and new cgroup mounts will be rooted at the namespace cgroup root. For further details, see <strong>cgroup_namespaces</strong>(7).</p>
+</dd>
+<dt><strong>time namespace</strong></dt>
+<dd><p>The process can have a distinct view of <strong>CLOCK_MONOTONIC</strong> and/or <strong>CLOCK_BOOTTIME</strong> which can be changed using <em>/proc/self/timens_offsets</em>. For further details, see <strong>time_namespaces</strong>(7).</p>
+</dd>
+</dl>
+<h1>OPTIONS</h1>
+<p>Various of the options below that relate to namespaces take an optional <em>file</em> argument. This should be one of the <em>/proc/[pid]/ns/*</em> files described in <strong>namespaces</strong>(7), or the pathname of a bind mount that was created on one of those files.</p>
+<dl>
+<dt><strong>-a</strong>, <strong>--all</strong></dt>
+<dd><p>Enter all namespaces of the target process by the default <em>/proc/[pid]/ns/*</em> namespace paths. The default paths to the target process namespaces may be overwritten by namespace specific options (e.g., --all --mount=[path]).</p>
+</dd>
+</dl>
+<p>The user namespace will be ignored if the same as the caller's current user namespace. It prevents a caller that has dropped capabilities from regaining those capabilities via a call to setns(). See <strong>setns</strong>(2) for more details.</p>
+<dl>
+<dt><strong>-t</strong>, <strong>--target</strong> <em>pid</em></dt>
+<dd><p>Specify a target process to get contexts from. The paths to the contexts specified by <em>pid</em> are:</p>
+<ul>
+<li></li>
+</ul>
+<dl>
+<dt>/proc/<em>pid</em>/ns/mnt</dt>
+<dd><p>the mount namespace</p>
+</dd>
+<dt>/proc/<em>pid</em>/ns/uts</dt>
+<dd><p>the UTS namespace</p>
+</dd>
+<dt>/proc/<em>pid</em>/ns/ipc</dt>
+<dd><p>the IPC namespace</p>
+</dd>
+<dt>/proc/<em>pid</em>/ns/net</dt>
+<dd><p>the network namespace</p>
+</dd>
+<dt>/proc/<em>pid</em>/ns/pid</dt>
+<dd><p>the PID namespace</p>
+</dd>
+<dt>/proc/<em>pid</em>/ns/user</dt>
+<dd><p>the user namespace</p>
+</dd>
+<dt>/proc/<em>pid</em>/ns/cgroup</dt>
+<dd><p>the cgroup namespace</p>
+</dd>
+<dt>/proc/<em>pid</em>/ns/time</dt>
+<dd><p>the time namespace</p>
+</dd>
+<dt>/proc/<em>pid</em>/root</dt>
+<dd><p>the root directory</p>
+</dd>
+<dt>/proc/<em>pid</em>/cwd</dt>
+<dd><p>the working directory respectively</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>-m</strong>, <strong>--mount</strong>[=<em>file</em>]</dt>
+<dd><p>Enter the mount namespace. If no file is specified, enter the mount namespace of the target process. If <em>file</em> is specified, enter the mount namespace specified by <em>file</em>.</p>
+</dd>
+<dt><strong>-u</strong>, <strong>--uts</strong>[=<em>file</em>]</dt>
+<dd><p>Enter the UTS namespace. If no file is specified, enter the UTS namespace of the target process. If <em>file</em> is specified, enter the UTS namespace specified by <em>file</em>.</p>
+</dd>
+<dt><strong>-i</strong>, <strong>--ipc</strong>[=<em>file</em>]</dt>
+<dd><p>Enter the IPC namespace. If no file is specified, enter the IPC namespace of the target process. If <em>file</em> is specified, enter the IPC namespace specified by <em>file</em>.</p>
+</dd>
+<dt><strong>-n</strong>, <strong>--net</strong>[=<em>file</em>]</dt>
+<dd><p>Enter the network namespace. If no file is specified, enter the network namespace of the target process. If <em>file</em> is specified, enter the network namespace specified by <em>file</em>.</p>
+</dd>
+<dt><strong>-p</strong>, <strong>--pid</strong>[=<em>file</em>]</dt>
+<dd><p>Enter the PID namespace. If no file is specified, enter the PID namespace of the target process. If <em>file</em> is specified, enter the PID namespace specified by <em>file</em>.</p>
+</dd>
+<dt><strong>-U</strong>, <strong>--user</strong>[=<em>file</em>]</dt>
+<dd><p>Enter the user namespace. If no file is specified, enter the user namespace of the target process. If <em>file</em> is specified, enter the user namespace specified by <em>file</em>. See also the <strong>--setuid</strong> and <strong>--setgid</strong> options.</p>
+</dd>
+<dt><strong>-C</strong>, <strong>--cgroup</strong>[=<em>file</em>]</dt>
+<dd><p>Enter the cgroup namespace. If no file is specified, enter the cgroup namespace of the target process. If <em>file</em> is specified, enter the cgroup namespace specified by <em>file</em>.</p>
+</dd>
+<dt><strong>-T</strong>, <strong>--time</strong>[=<em>file</em>]</dt>
+<dd><p>Enter the time namespace. If no file is specified, enter the time namespace of the target process. If <em>file</em> is specified, enter the time namespace specified by <em>file</em>.</p>
+</dd>
+<dt><strong>-G</strong>, <strong>--setgid</strong> <em>gid</em></dt>
+<dd><p>Set the group ID which will be used in the entered namespace and drop supplementary groups. <strong>nsenter</strong>(1) always sets GID for user namespaces, the default is 0.</p>
+</dd>
+<dt><strong>-S</strong>, <strong>--setuid</strong> <em>uid</em></dt>
+<dd><p>Set the user ID which will be used in the entered namespace. <strong>nsenter</strong>(1) always sets UID for user namespaces, the default is 0.</p>
+</dd>
+<dt><strong>--preserve-credentials</strong></dt>
+<dd><p>Don't modify UID and GID when enter user namespace. The default is to drops supplementary groups and sets GID and UID to 0.</p>
+</dd>
+<dt><strong>-r</strong>, <strong>--root</strong>[=<em>directory</em>]</dt>
+<dd><p>Set the root directory. If no directory is specified, set the root directory to the root directory of the target process. If directory is specified, set the root directory to the specified directory.</p>
+</dd>
+<dt><strong>-w</strong>, <strong>--wd</strong>[=<em>directory</em>]</dt>
+<dd><p>Set the working directory. If no directory is specified, set the working directory to the working directory of the target process. If directory is specified, set the working directory to the specified directory.</p>
+</dd>
+<dt><strong>-F</strong>, <strong>--no-fork</strong></dt>
+<dd><p>Do not fork before exec'ing the specified program. By default, when entering a PID namespace, <strong>nsenter</strong> calls <strong>fork</strong> before calling <strong>exec</strong> so that any children will also be in the newly entered PID namespace.</p>
+</dd>
+<dt><strong>-Z</strong>, <strong>--follow-context</strong></dt>
+<dd><p>Set the SELinux security context used for executing a new process according to already running process specified by <strong>--target</strong> PID. (The util-linux has to be compiled with SELinux support otherwise the option is unavailable.)</p>
+</dd>
+<dt><strong>-V</strong>, <strong>--version</strong></dt>
+<dd><p>Display version information and exit.</p>
+</dd>
+<dt><strong>-h</strong>, <strong>--help</strong></dt>
+<dd><p>Display help text and exit.</p>
+</dd>
+</dl>
+<h1>AUTHORS</h1>
+<p><a href="biederm@xmission.com">Eric Biederman</a><br />
+<a href="kzak@redhat.com">Karel Zak</a></p>
+<h1>SEE ALSO</h1>
+<p><strong>clone</strong>(2), <strong>setns</strong>(2), <strong>namespaces</strong>(7)</p>
+<h1>AVAILABILITY</h1>
+<p>The nsenter command is part of the util-linux package and is available from <a href="https://www.kernel.org/pub/linux/utils/util-linux/">Linux Kernel Archive</a>.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

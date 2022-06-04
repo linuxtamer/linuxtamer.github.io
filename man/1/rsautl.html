@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command rsautl</title><meta name="description" content="Linux command rsautl RSA utility"><meta name="keywords" content="linux, command, rsautl, bsd, RSA utility"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>openssl-rsautl, rsautl - RSA utility</p>
+<h1>SYNOPSIS</h1>
+<p><strong>openssl</strong> <strong>rsautl</strong> [<strong>-help</strong>] [<strong>-in file</strong>] [<strong>-out file</strong>] [<strong>-inkey file</strong>] [<strong>-keyform PEM|DER|ENGINE</strong>] [<strong>-pubin</strong>] [<strong>-certin</strong>] [<strong>-sign</strong>] [<strong>-verify</strong>] [<strong>-encrypt</strong>] [<strong>-decrypt</strong>] [<strong>-rand file...</strong>] [<strong>-writerand file</strong>] [<strong>-pkcs</strong>] [<strong>-ssl</strong>] [<strong>-raw</strong>] [<strong>-hexdump</strong>] [<strong>-asn1parse</strong>]</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>rsautl</strong> command can be used to sign, verify, encrypt and decrypt data using the RSA algorithm.</p>
+<h1>OPTIONS</h1>
+<ul>
+<li><p>Print out a usage message.</p></li>
+<li><p>This specifies the input filename to read data from or standard input if this option is not specified.</p></li>
+<li><p>Specifies the output filename to write to or standard output by default.</p></li>
+<li><p>The input key file, by default it should be an RSA private key.</p></li>
+<li><p>The key format PEM, DER or ENGINE.</p></li>
+<li><p>The input file is an RSA public key.</p></li>
+<li><p>The input is a certificate containing an RSA public key.</p></li>
+<li><p>Sign the input data and output the signed result. This requires an RSA private key.</p></li>
+<li><p>Verify the input data and output the recovered data.</p></li>
+<li><p>Encrypt the input data using an RSA public key.</p></li>
+<li><p>Decrypt the input data using an RSA private key.</p></li>
+<li><p>A file or files containing random data used to seed the random number generator. Multiple files can be specified separated by an OS-dependent character. The separator is <strong>;</strong> for MS-Windows, <strong>,</strong> for OpenVMS, and <strong>:</strong> for all others.</p></li>
+<li><p>Writes random data to the specified <em>file</em> upon exit. This can be used with a subsequent <strong>-rand</strong> flag.</p></li>
+<li><p>The padding to use: PKCS#1 v1.5 (the default), PKCS#1 OAEP, special padding used in SSL v2 backwards compatible handshakes, or no padding, respectively. For signatures, only <strong>-pkcs</strong> and <strong>-raw</strong> can be used.</p></li>
+<li><p>Hex dump the output data.</p></li>
+<li><p>Parse the ASN.1 output data, this is useful when combined with the <strong>-verify</strong> option.</p></li>
+</ul>
+<h1>NOTES</h1>
+<p><strong>rsautl</strong> because it uses the RSA algorithm directly can only be used to sign or verify small pieces of data.</p>
+<h1>EXAMPLES</h1>
+<p>Sign some data using a private key:</p>
+<p>openssl rsautl -sign -in file -inkey key.pem -out sig</p>
+<p>Recover the signed data</p>
+<p>openssl rsautl -verify -in sig -inkey key.pem</p>
+<p>Examine the raw signed data:</p>
+<p>openssl rsautl -verify -in sig -inkey key.pem -raw -hexdump 0000 - 00 01 ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................ 0010 - ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................ 0020 - ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................ 0030 - ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................ 0040 - ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................ 0050 - ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................ 0060 - ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................ 0070 - ff ff ff ff 00 68 65 6c-6c 6f 20 77 6f 72 6c 64 .....hello world</p>
+<p>The PKCS#1 block formatting is evident from this. If this was done using encrypt and decrypt the block would have been of type 2 (the second byte) and random padding data visible instead of the 0xff bytes.</p>
+<p>It is possible to analyse the signature of certificates using this utility in conjunction with <strong>asn1parse</strong>. Consider the self signed example in certs/pca-cert.pem . Running <strong>asn1parse</strong> as follows yields:</p>
+<p>openssl asn1parse -in pca-cert.pem 0:d=0 hl=4 l= 742 cons: SEQUENCE 4:d=1 hl=4 l= 591 cons: SEQUENCE 8:d=2 hl=2 l= 3 cons: cont [ 0 ] 10:d=3 hl=2 l= 1 prim: INTEGER :02 13:d=2 hl=2 l= 1 prim: INTEGER :00 16:d=2 hl=2 l= 13 cons: SEQUENCE 18:d=3 hl=2 l= 9 prim: OBJECT :md5WithRSAEncryption 29:d=3 hl=2 l= 0 prim: NULL 31:d=2 hl=2 l= 92 cons: SEQUENCE 33:d=3 hl=2 l= 11 cons: SET 35:d=4 hl=2 l= 9 cons: SEQUENCE 37:d=5 hl=2 l= 3 prim: OBJECT :countryName 42:d=5 hl=2 l= 2 prim: PRINTABLESTRING :AU .... 599:d=1 hl=2 l= 13 cons: SEQUENCE 601:d=2 hl=2 l= 9 prim: OBJECT :md5WithRSAEncryption 612:d=2 hl=2 l= 0 prim: NULL 614:d=1 hl=3 l= 129 prim: BIT STRING</p>
+<p>The final BIT STRING contains the actual signature. It can be extracted with:</p>
+<p>openssl asn1parse -in pca-cert.pem -out sig -noout -strparse 614</p>
+<p>The certificate public key can be extracted with:</p>
+<p>openssl x509 -in test/testx509.pem -pubkey -noout &gt;pubkey.pem</p>
+<p>The signature can be analysed with:</p>
+<p>openssl rsautl -in sig -verify -asn1parse -inkey pubkey.pem -pubin 0:d=0 hl=2 l= 32 cons: SEQUENCE 2:d=1 hl=2 l= 12 cons: SEQUENCE 4:d=2 hl=2 l= 8 prim: OBJECT :md5 14:d=2 hl=2 l= 0 prim: NULL 16:d=1 hl=2 l= 16 prim: OCTET STRING 0000 - f3 46 9e aa 1a 4a 73 c9-37 ea 93 00 48 25 08 b5 .F...Js.7...H%..</p>
+<p>This is the parsed version of an ASN1 DigestInfo structure. It can be seen that the digest used was md5. The actual part of the certificate that was signed can be extracted with:</p>
+<p>openssl asn1parse -in pca-cert.pem -out tbs -noout -strparse 4</p>
+<p>and its digest computed with:</p>
+<p>openssl md5 -c tbs MD5(tbs)= f3:46:9e:aa:1a:4a:73:c9:37:ea:93:00:48:25:08:b5</p>
+<p>which it can be seen agrees with the recovered value above.</p>
+<h1>SEE ALSO</h1>
+<p><strong>dgst</strong> (1), <strong>rsa</strong> (1), <strong>genrsa</strong> (1)</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright 2000-2017 The OpenSSL Project Authors. All Rights Reserved.</p>
+<p>Licensed under the OpenSSL license (the License). You may not use this file except in compliance with the License. You can obtain a copy in the file LICENSE in the source distribution or at &lt;https://www.openssl.org/source/license.html&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

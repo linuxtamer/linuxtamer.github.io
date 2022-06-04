@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pam_succeed_if</title><meta name="description" content="Linux command pam_succeed_if test account characteristics"><meta name="keywords" content="linux, command, pam_succeed_if, bsd, test account characteristics"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pam_succeed_if - test account characteristics</p>
+<h1>SYNOPSIS</h1>
+<p><strong>pam_succeed_if.so</strong> [<em>flag</em>...] [<em>condition</em>...]</p>
+<h1>DESCRIPTION</h1>
+<p>pam_succeed_if.so is designed to succeed or fail authentication based on characteristics of the account belonging to the user being authenticated or values of other PAM items. One use is to select whether to load other modules based on this test.</p>
+<p>The module should be given one or more conditions as module arguments, and authentication will succeed only if all of the conditions are met.</p>
+<h1>OPTIONS</h1>
+<p>The following <em>flag</em>s are supported:</p>
+<p><strong>debug</strong></p>
+<blockquote>
+<p>Turns on debugging messages sent to syslog.</p>
+</blockquote>
+<p><strong>use_uid</strong></p>
+<blockquote>
+<p>Evaluate conditions using the account of the user whose UID the application is running under instead of the user being authenticated.</p>
+</blockquote>
+<p><strong>quiet</strong></p>
+<blockquote>
+<p>Dont log failure or success to the system log.</p>
+</blockquote>
+<p><strong>quiet_fail</strong></p>
+<blockquote>
+<p>Dont log failure to the system log.</p>
+</blockquote>
+<p><strong>quiet_success</strong></p>
+<blockquote>
+<p>Dont log success to the system log.</p>
+</blockquote>
+<p><strong>audit</strong></p>
+<blockquote>
+<p>Log unknown users to the system log.</p>
+</blockquote>
+<p><em>Condition</em>s are three words: a field, a test, and a value to test for.</p>
+<p>Available fields are <em>user</em>, <em>uid</em>, <em>gid</em>, <em>shell</em>, <em>home</em>, <em>ruser</em>, <em>rhost</em>, <em>tty</em> and <em>service</em>:</p>
+<p><strong>field &lt; number</strong></p>
+<blockquote>
+<p>Field has a value numerically less than number.</p>
+</blockquote>
+<p><strong>field &lt;= number</strong></p>
+<blockquote>
+<p>Field has a value numerically less than or equal to number.</p>
+</blockquote>
+<p><strong>field eq number</strong></p>
+<blockquote>
+<p>Field has a value numerically equal to number.</p>
+</blockquote>
+<p><strong>field &gt;= number</strong></p>
+<blockquote>
+<p>Field has a value numerically greater than or equal to number.</p>
+</blockquote>
+<p><strong>field &gt; number</strong></p>
+<blockquote>
+<p>Field has a value numerically greater than number.</p>
+</blockquote>
+<p><strong>field ne number</strong></p>
+<blockquote>
+<p>Field has a value numerically different from number.</p>
+</blockquote>
+<p><strong>field = string</strong></p>
+<blockquote>
+<p>Field exactly matches the given string.</p>
+</blockquote>
+<p><strong>field != string</strong></p>
+<blockquote>
+<p>Field does not match the given string.</p>
+</blockquote>
+<p><strong>field =~ glob</strong></p>
+<blockquote>
+<p>Field matches the given glob.</p>
+</blockquote>
+<p><strong>field !~ glob</strong></p>
+<blockquote>
+<p>Field does not match the given glob.</p>
+</blockquote>
+<p><strong>field in item:item:...</strong></p>
+<blockquote>
+<p>Field is contained in the list of items separated by colons.</p>
+</blockquote>
+<p><strong>field notin item:item:...</strong></p>
+<blockquote>
+<p>Field is not contained in the list of items separated by colons.</p>
+</blockquote>
+<p><strong>user ingroup group[:group:....]</strong></p>
+<blockquote>
+<p>User is in given group(s).</p>
+</blockquote>
+<p><strong>user notingroup group[:group:....]</strong></p>
+<blockquote>
+<p>User is not in given group(s).</p>
+</blockquote>
+<p><strong>user innetgr netgroup</strong></p>
+<blockquote>
+<p>(user,host) is in given netgroup.</p>
+</blockquote>
+<p><strong>user notinnetgr group</strong></p>
+<blockquote>
+<p>(user,host) is not in given netgroup.</p>
+</blockquote>
+<h1>MODULE TYPES PROVIDED</h1>
+<p>All module types (<strong>account</strong>, <strong>auth</strong>, <strong>password</strong> and <strong>session</strong>) are provided.</p>
+<h1>RETURN VALUES</h1>
+<p>PAM_SUCCESS</p>
+<blockquote>
+<p>The condition was true.</p>
+</blockquote>
+<p>PAM_AUTH_ERR</p>
+<blockquote>
+<p>The condition was false.</p>
+</blockquote>
+<p>PAM_SERVICE_ERR</p>
+<blockquote>
+<p>A service error occurred or the arguments cant be parsed correctly.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>To emulate the behaviour of <em>pam_wheel</em>, except there is no fallback to group 0 being only approximated by checking also the root group membership:</p>
+<blockquote>
+<pre><code>auth required pam_succeed_if.so quiet user ingroup wheel:root
+    </code></pre>
+</blockquote>
+<p>Given that the type matches, only loads the othermodule rule if the UID is over 500. Adjust the number after default to skip several rules.</p>
+<blockquote>
+<pre><code>type [default=1 success=ignore] pam_succeed_if.so quiet uid &gt; 500
+type required othermodule.so arguments...
+    </code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>glob</strong>(7), <strong>pam</strong>(7)</p>
+<h1>AUTHOR</h1>
+<p>Nalin Dahyabhai &lt;nalin@redhat.com&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

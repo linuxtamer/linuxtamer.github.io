@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command preconv</title><meta name="description" content="Linux command preconv convert encoding of input files to something GNU troff understands"><meta name="keywords" content="linux, command, preconv, bsd, convert encoding of input files to something GNU troff understands"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>preconv - convert encoding of input files to something GNU troff understands</p>
+<h1>SYNOPSIS</h1>
+<p><strong>preconv</strong> [ <strong>-dr</strong> ] [ <strong>-D</strong> default_encoding ] [ <strong>-e</strong> encoding ] [<em>file</em> . . .] <strong>preconv</strong> <strong>-h</strong> <strong>preconv</strong> <strong>--help</strong> <strong>preconv</strong> <strong>-v</strong> <strong>preconv</strong> <strong>--version</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>preconv</strong> reads <em>files</em> and converts its encoding(s) to a form GNU <strong>troff</strong>(1) can process, sending the data to standard output. Currently, this means ASCII characters and ‘\[uXXXX]’ entities, where ‘XXXX’ is a hexadecimal number with four to six digits, representing a Unicode input code. Normally, <strong>preconv</strong> should be invoked with the <strong>-k</strong> and <strong>-K</strong> options of <strong>groff</strong>.</p>
+<h1>OPTIONS</h1>
+<p>Whitespace is permitted between a command-line option and its argument.</p>
+<dl>
+<dt><strong>-d</strong></dt>
+<dd><p>Emit debugging messages to standard error (mainly the used encoding).</p>
+</dd>
+<dt><strong>-D</strong><em>encoding</em></dt>
+<dd><p>Specify default encoding if everything fails (see below).</p>
+</dd>
+<dt><strong>-e</strong><em>encoding</em></dt>
+<dd><p>Specify input encoding explicitly, overriding all other methods. This corresponds to <strong>groff</strong>'s <strong>-K</strong><em>encoding</em> option. Without this switch, <strong>preconv</strong> uses the algorithm described below to select the input encoding.</p>
+</dd>
+<dt><strong>--help</strong><br />
+<strong>-h</strong></dt>
+<dd><p>Print a help message and exit.</p>
+</dd>
+<dt><strong>-r</strong></dt>
+<dd><p>Do not add .lf requests.</p>
+</dd>
+<dt><strong>--version</strong><br />
+<strong>-v</strong></dt>
+<dd><p>Print the version number and exit.</p>
+</dd>
+</dl>
+<h1>USAGE</h1>
+<p><strong>preconv</strong> tries to find the input encoding with the following algorithm.</p>
+<ol type="1">
+<li><p>If the input encoding has been explicitly specified with option <strong>-e</strong>, use it.</p></li>
+<li><p>Otherwise, check whether the input starts with a <em>Byte Order Mark</em> (BOM, see below). If found, use it.</p></li>
+<li><p>Otherwise, check whether there is a known <em>coding tag</em> (see below) in either the first or second input line. If found, use it.</p></li>
+</ol>
+<ol start="4" type="1">
+<li><p>Finally, if the <strong>uchardet</strong> library (an encoding detector library available on most major distributions) is available on the system, use it to try to detect the encoding of the file.</p></li>
+</ol>
+<ol start="5" type="1">
+<li><p>If everything fails, use a default encoding as given with option <strong>-D</strong>, by the current locale, or ‘latin1’ if the locale is set to ‘C’, ‘POSIX’, or empty (in that order).</p></li>
+</ol>
+<p>Note that the <strong>groff</strong> program supports a <em>GROFF_ENCODING</em> environment variable which is eventually expanded to option <strong>-k</strong>.</p>
+<h2>Byte Order Mark</h2>
+<p>The Unicode Standard defines character U+FEFF as the Byte Order Mark (BOM). On the other hand, value U+FFFE is guaranteed not be a Unicode character at all. This allows detection of the byte order within the data stream (either big-endian or little-endian), and the MIME encodings ‘UTF-16’ and ‘UTF-32’ mandate that the data stream starts with U+FEFF. Similarly, the data stream encoded as ‘UTF-8’ might start with a BOM (to ease the conversion from and to UTF-16 and UTF-32). In all cases, the byte order mark is <em>not</em> part of the data but part of the encoding protocol; in other words, <strong>preconv</strong>'s output doesn't contain it.</p>
+<p>Note that U+FEFF not at the start of the input data actually is emitted; it has then the meaning of a ‘zero width no-break space’ character – something not needed normally in <strong>groff</strong>.</p>
+<h2>Coding Tags</h2>
+<p>Editors which support more than a single character encoding need tags within the input files to mark the file's encoding. While it is possible to guess the right input encoding with the help of heuristic algorithms for data which represents a greater amount of a natural language, it is still just a guess. Additionally, all algorithms fail easily for input which is either too short or doesn't represent a natural language.</p>
+<p>For these reasons, <strong>preconv</strong> supports the coding tag convention (with some restrictions) as used by <strong>GNU Emacs</strong> and <strong>XEmacs</strong> (and probably other programs too).</p>
+<p>Coding tags in <strong>GNU Emacs</strong> and <strong>XEmacs</strong> are stored in so-called <em>File Variables</em>. <strong>preconv</strong> recognizes the following syntax form which must be put into a troff comment in the first or second line.</p>
+<blockquote>
+<p>-*- <em>tag1</em>: <em>value1</em>; <em>tag2</em>: <em>value2</em>; . . . -*-</p>
+</blockquote>
+<p>The only relevant tag for <strong>preconv</strong> is ‘coding’ which can take the values listed below. Here an example line which tells <strong>Emacs</strong> to edit a file in troff mode, and to use latin2 as its encoding.</p>
+<blockquote>
+<pre><code>.\&quot; -*- mode: troff; coding: latin-2 -*-</code></pre>
+</blockquote>
+<p>The following list gives all MIME coding tags (either lowercase or uppercase) supported by <strong>preconv</strong>; this list is hard-coded in the source.</p>
+<blockquote>
+<p>big5, cp1047, euc-jp, euc-kr, gb2312, iso-8859-1, iso-8859-2, iso-8859-5, iso-8859-7, iso-8859-9, iso-8859-13, iso-8859-15, koi8-r, us-ascii, utf-8, utf-16, utf-16be, utf-16le</p>
+</blockquote>
+<p>In addition, the following hard-coded list of other tags is recognized which eventually map to values from the list above.</p>
+<blockquote>
+<p>ascii, chinese-big5, chinese-euc, chinese-iso-8bit, cn-big5, cn-gb, cn-gb-2312, cp878, csascii, csisolatin1, cyrillic-iso-8bit, cyrillic-koi8, euc-china, euc-cn, euc-japan, euc-japan-1990, euc-korea, greek-iso-8bit, iso-10646/utf8, iso-10646/utf-8, iso-latin-1, iso-latin-2, iso-latin-5, iso-latin-7, iso-latin-9, japanese-euc, japanese-iso-8bit, jis8, koi8, korean-euc, korean-iso-8bit, latin-0, latin1, latin-1, latin-2, latin-5, latin-7, latin-9, mule-utf-8, mule-utf-16, mule-utf-16be, mule-utf-16-be, mule-utf-16be-with-signature, mule-utf-16le, mule-utf-16-le, mule-utf-16le-with-signature, utf8, utf-16-be, utf-16-be-with-signature, utf-16be-with-signature, utf-16-le, utf-16-le-with-signature, utf-16le-with-signature</p>
+</blockquote>
+<p>Those tags are taken from <strong>GNU Emacs</strong> and <strong>XEmacs</strong>, together with some aliases. Trailing ‘-dos’, ‘-unix’, and ‘-mac’ suffixes of coding tags (which give the end-of-line convention used in the file) are stripped off before the comparison with the above tags happens.</p>
+<h2>Iconv Issues</h2>
+<p><strong>preconv</strong> by itself only supports three encodings: latin-1, cp1047, and UTF-8; all other encodings are passed to the <strong>iconv</strong> library functions. At compile time it is searched and checked for a valid <strong>iconv</strong> implementation; a call to ‘preconv --version’ shows whether <strong>iconv</strong> is used.</p>
+<h1>BUGS</h1>
+<p><strong>preconv</strong> doesn't support <em>local variable lists</em> yet. This is a different syntax form to specify local variables at the end of a file.</p>
+<h1>SEE ALSO</h1>
+<p><strong>groff</strong>(1)<br />
+the <strong>GNU Emacs</strong> and <strong>XEmacs</strong> info pages</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

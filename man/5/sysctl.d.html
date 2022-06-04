@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sysctl.d</title><meta name="description" content="Linux command sysctl.d Configure kernel parameters at boot"><meta name="keywords" content="linux, command, sysctl.d, bsd, Configure kernel parameters at boot"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sysctl.d - Configure kernel parameters at boot</p>
+<h1>SYNOPSIS</h1>
+<p>/etc/sysctl.d/*.conf</p>
+<p>/run/sysctl.d/*.conf</p>
+<p>/usr/lib/sysctl.d/*.conf</p>
+<pre><code>key.name.under.proc.sys = some value
+key/name/under/proc/sys = some value
+key/middle.part.with.dots/foo = 123
+key.middle/part/with/dots.foo = 123
+-key.that.will.not.fail = value
+key.pattern.*.with.glob = whatever
+-key.pattern.excluded.with.glob
+key.pattern.overridden.with.glob = custom</code></pre>
+<h1>DESCRIPTION</h1>
+<p>At boot, <strong>systemd-sysctl.service</strong>(8) reads configuration files from the above directories to configure <strong>sysctl</strong>(8) kernel parameters.</p>
+<h1>CONFIGURATION FORMAT</h1>
+<p>The configuration files contain a list of variable assignments, separated by newlines. Empty lines and lines whose first non-whitespace character is "#" or ";" are ignored.</p>
+<p>Note that either "/" or "." may be used as separators within sysctl variable names. If the first separator is a slash, remaining slashes and dots are left intact. If the first separator is a dot, dots and slashes are interchanged. "kernel.domainname=foo" and "kernel/domainname=foo" are equivalent and will cause "foo" to be written to /proc/sys/kernel/domainname. Either "net.ipv4.conf.enp3s0/200.forwarding" or "net/ipv4/conf/enp3s0.200/forwarding" may be used to refer to /proc/sys/net/ipv4/conf/enp3s0.200/forwarding. A glob <strong>glob</strong>(7) pattern may be used to write the same value to all matching keys. Keys for which an explicit pattern exists will be excluded from any glob matching. In addition, a key may be explicitly excluded from being set by any matching glob patterns by specifying the key name prefixed with a "-" character and not followed by "=", see SYNOPSIS.</p>
+<p>Any access permission errors and attempts to write variables not present on the local system are logged at debug level and do not cause the service to fail. Other types of errors when setting variables are logged with higher priority and cause the service to return failure at the end (after processing other variables). As an exception, if a variable assignment is prefixed with a single "-" character, failure to set the variable for any reason will be logged at debug level and will not cause the service to fail.</p>
+<p>The settings configured with sysctl.d files will be applied early on boot. The network interface-specific options will also be applied individually for each network interface as it shows up in the system. (More specifically, net.ipv4.conf.*, net.ipv6.conf.*, net.ipv4.neigh.* and net.ipv6.neigh.*).</p>
+<p>Many sysctl parameters only become available when certain kernel modules are loaded. Modules are usually loaded on demand, e.g. when certain hardware is plugged in or network brought up. This means that <strong>systemd-sysctl.service</strong>(8) which runs during early boot will not configure such parameters if they become available after it has run. To set such parameters, it is recommended to add an <strong>udev</strong>(7) rule to set those parameters when they become available. Alternatively, a slightly simpler and less efficient option is to add the module to <strong>modules-load.d</strong>(5), causing it to be loaded statically before sysctl settings are applied (see example below).</p>
+<h1>CONFIGURATION DIRECTORIES AND PRECEDENCE</h1>
+<p>Configuration files are read from directories in /etc/, /run/, /usr/local/lib/, and /lib/, in order of precedence, as listed in the SYNOPSIS section above. Files must have the ".conf" extension. Files in /etc/ override files with the same name in /run/, /usr/local/lib/, and /lib/. Files in /run/ override files with the same name under /usr/.</p>
+<p>All configuration files are sorted by their filename in lexicographic order, regardless of which of the directories they reside in. If multiple files specify the same option, the entry in the file with the lexicographically latest name will take precedence. Thus, the configuration in a certain file may either be replaced completely (by placing a file with the same name in a directory with higher priority), or individual settings might be changed (by specifying additional settings in a file with a different name that is ordered later).</p>
+<p>Packages should install their configuration files in /usr/lib/ (distribution packages) or /usr/local/lib/ (local installs). Files in /etc/ are reserved for the local administrator, who may use this logic to override the configuration files installed by vendor packages. It is recommended to prefix all filenames with a two-digit number and a dash, to simplify the ordering of the files.</p>
+<p>If the administrator wants to disable a configuration file supplied by the vendor, the recommended way is to place a symlink to /dev/null in the configuration directory in /etc/, with the same filename as the vendor configuration file. If the vendor configuration file is included in the initrd image, the image has to be regenerated.</p>
+<h1>EXAMPLES</h1>
+<p><strong>Example 1. Set kernel YP domain name</strong></p>
+<p>/etc/sysctl.d/domain-name.conf:</p>
+<blockquote>
+<pre><code>kernel.domainname=example.com</code></pre>
+</blockquote>
+<p><strong>Example 2. Apply settings available only when a certain module is loaded (method one)</strong></p>
+<p>/etc/udev/rules.d/99-bridge.rules:</p>
+<blockquote>
+<pre><code>ACTION==&quot;add&quot;, SUBSYSTEM==&quot;module&quot;, KERNEL==&quot;br_netfilter&quot;, \
+      RUN+=&quot;/lib/systemd/systemd-sysctl --prefix=/net/bridge&quot;</code></pre>
+</blockquote>
+<p>/etc/sysctl.d/bridge.conf:</p>
+<blockquote>
+<pre><code>net.bridge.bridge-nf-call-ip6tables = 0
+net.bridge.bridge-nf-call-iptables = 0
+net.bridge.bridge-nf-call-arptables = 0</code></pre>
+</blockquote>
+<p>This method applies settings when the module is loaded. Please note that, unless the br_netfilter module is loaded, bridged packets will not be filtered by Netfilter (starting with kernel 3.18), so simply not loading the module is sufficient to avoid filtering.</p>
+<p><strong>Example 3. Apply settings available only when a certain module is loaded (method two)</strong></p>
+<p>/etc/modules-load.d/bridge.conf:</p>
+<blockquote>
+<pre><code>br_netfilter</code></pre>
+</blockquote>
+<p>/etc/sysctl.d/bridge.conf:</p>
+<blockquote>
+<pre><code>net.bridge.bridge-nf-call-ip6tables = 0
+net.bridge.bridge-nf-call-iptables = 0
+net.bridge.bridge-nf-call-arptables = 0</code></pre>
+</blockquote>
+<p>This method forces the module to be always loaded. Please note that, unless the br_netfilter module is loaded, bridged packets will not be filtered with Netfilter (starting with kernel 3.18), so simply not loading the module is sufficient to avoid filtering.</p>
+<p><strong>Example 4. Set network routing properties for all interfaces</strong></p>
+<p>/etc/sysctl.d/20-rp_filter.conf:</p>
+<blockquote>
+<pre><code>net.ipv4.conf.default.rp_filter = 2
+net.ipv4.conf.*.rp_filter = 2
+-net.ipv4.conf.all.rp_filter
+net.ipv4.conf.hub0.rp_filter = 1</code></pre>
+</blockquote>
+<p>The <strong>rp_filter</strong> key will be set to "2" for all interfaces, except "hub0". We set net.ipv4.conf.default.rp_filter first, so any interfaces which are added <em>later</em> will get this value (this also covers any interfaces detected while were running). The glob matches any interfaces which were detected <em>earlier</em>. The glob will also match net.ipv4.conf.all.rp_filter, which we dont want to set at all, so it is explicitly excluded. And "hub0" is excluded from the glob because it has an explicit setting.</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemd-sysctl.service</strong>(8), <strong>systemd-delta</strong>(1), <strong>sysctl</strong>(8), <strong>sysctl.conf</strong>(5), <strong>modprobe</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

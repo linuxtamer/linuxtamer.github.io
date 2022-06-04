@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command timer_getoverrun</title><meta name="description" content="Linux command timer_getoverrun get overrun count for a POSIX per-process timer"><meta name="keywords" content="linux, command, timer_getoverrun, bsd, get overrun count for a POSIX per-process timer"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>timer_getoverrun - get overrun count for a POSIX per-process timer</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;time.h&gt;
+
+int timer_getoverrun(timer_t timerid);</code></pre>
+<p>Link with <em>-lrt</em>.</p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>timer_getoverrun</strong>(): _POSIX_C_SOURCE &gt;= 199309L</p>
+<h1>DESCRIPTION</h1>
+<p><strong>timer_getoverrun</strong>() returns the "overrun count" for the timer referred to by <em>timerid</em>. An application can use the overrun count to accurately calculate the number of timer expirations that would have occurred over a given time interval. Timer overruns can occur both when receiving expiration notifications via signals (<strong>SIGEV_SIGNAL</strong>), and via threads (<strong>SIGEV_THREAD</strong>).</p>
+<p>When expiration notifications are delivered via a signal, overruns can occur as follows. Regardless of whether or not a real-time signal is used for timer notifications, the system queues at most one signal per timer. (This is the behavior specified by POSIX.1. The alternative, queuing one signal for each timer expiration, could easily result in overflowing the allowed limits for queued signals on the system.) Because of system scheduling delays, or because the signal may be temporarily blocked, there can be a delay between the time when the notification signal is generated and the time when it is delivered (e.g., caught by a signal handler) or accepted (e.g., using <strong>sigwaitinfo</strong>(2)). In this interval, further timer expirations may occur. The timer overrun count is the number of additional timer expirations that occurred between the time when the signal was generated and when it was delivered or accepted.</p>
+<p>Timer overruns can also occur when expiration notifications are delivered via invocation of a thread, since there may be an arbitrary delay between an expiration of the timer and the invocation of the notification thread, and in that delay interval, additional timer expirations may occur.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>timer_getoverrun</strong>() returns the overrun count of the specified timer; this count may be 0 if no overruns have occurred. On failure, -1 is returned, and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>timerid</em> is not a valid timer ID.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>This system call is available since Linux 2.6.</p>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>When timer notifications are delivered via signals (<strong>SIGEV_SIGNAL</strong>), on Linux it is also possible to obtain the overrun count via the <em>si_overrun</em> field of the <em>siginfo_t</em> structure (see <strong>sigaction</strong>(2)). This allows an application to avoid the overhead of making a system call to obtain the overrun count, but is a nonportable extension to POSIX.1.</p>
+<p>POSIX.1 discusses timer overruns only in the context of timer notifications using signals.</p>
+<h1>BUGS</h1>
+<p>POSIX.1 specifies that if the timer overrun count is equal to or greater than an implementation-defined maximum, <strong>DELAYTIMER_MAX</strong>, then <strong>timer_getoverrun</strong>() should return <strong>DELAYTIMER_MAX</strong>. However, before Linux 4.19, if the timer overrun value exceeds the maximum representable integer, the counter cycles, starting once more from low values. Since Linux 4.19, <strong>timer_getoverrun</strong>() returns <strong>DELAYTIMER_MAX</strong> (defined as <strong>INT_MAX</strong> in <em>&lt;limits.h&gt;</em>) in this case (and the overrun value is reset to 0).</p>
+<h1>EXAMPLES</h1>
+<p>See <strong>timer_create</strong>(2).</p>
+<h1>SEE ALSO</h1>
+<p><strong>clock_gettime</strong>(2), <strong>sigaction</strong>(2), <strong>signalfd</strong>(2), <strong>sigwaitinfo</strong>(2), <strong>timer_create</strong>(2), <strong>timer_delete</strong>(2), <strong>timer_settime</strong>(2), <strong>signal</strong>(7), <strong>time</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

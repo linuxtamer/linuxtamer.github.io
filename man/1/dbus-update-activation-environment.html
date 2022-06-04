@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command dbus-update-activation-environment</title><meta name="description" content="Linux command dbus-update-activation-environment update environment used for D-Bus session services"><meta name="keywords" content="linux, command, dbus-update-activation-environment, bsd, update environment used for D-Bus session services"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>dbus-update-activation-environment - update environment used for D-Bus session services</p>
+<h1>SYNOPSIS</h1>
+<p><strong>dbus-update-activation-environment</strong> [--systemd] [--verbose] --all | <em>VAR</em>... | <em>VAR</em>=<em>VAL</em>...</p>
+<h1>DESCRIPTION</h1>
+<p><strong>dbus-update-activation-environment</strong> updates the list of environment variables used by <strong>dbus-daemon --session</strong> when it activates session services without using <strong>systemd</strong>.</p>
+<p>With the <strong>--systemd</strong> option, if an instance of <strong>systemd --user</strong> is available on D-Bus, it also updates the list of environment variables used by <strong>systemd --user</strong> when it activates user services, including D-Bus session services for which <strong>dbus-daemon</strong> has been configured to delegate activation to <strong>systemd</strong>. This is very similar to the <strong>import-environment</strong> command provided by <strong>systemctl</strong>(1)).</p>
+<p>Variables that are special to <strong>dbus-daemon</strong> or <strong>systemd</strong> may be set, but their values will be overridden when a service is started. For instance, it is not useful to add <strong>DBUS_SESSION_BUS_ADDRESS</strong> to <strong>dbus-daemon</strong>s activation environment, although it might still be useful to add it to <strong>systemd</strong>s activation environment.</p>
+<h1>OPTIONS</h1>
+<p><strong>--all</strong></p>
+<blockquote>
+<p>Set all environment variables present in the environment used by <strong>dbus-update-activation-environment</strong>.</p>
+</blockquote>
+<p><strong>--systemd</strong></p>
+<blockquote>
+<p>Set environment variables for systemd user services as well as for traditional D-Bus session services.</p>
+</blockquote>
+<p><strong>--verbose</strong></p>
+<blockquote>
+<p>Output messages to standard error explaining what dbus-update-activation-environment is doing.</p>
+</blockquote>
+<p><em>VAR</em></p>
+<blockquote>
+<p>If <em>VAR</em> is present in the environment of <strong>dbus-update-activation-environment</strong>, set it to the same value for D-Bus services. Its value must be UTF-8 (if not, it is skipped with a warning). If <em>VAR</em> is not present in the environment, this argument is silently ignored.</p>
+</blockquote>
+<p><em>VAR</em>=<em>VAL</em></p>
+<blockquote>
+<p>Set <em>VAR</em> to <em>VAL</em>, which must be UTF-8.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p><strong>dbus-update-activation-environment</strong> is primarily designed to be used in Linux distributions X11 session startup scripts, in conjunction with the "user bus" design.</p>
+<p>To propagate <strong>DISPLAY</strong> and <strong>XAUTHORITY</strong> to <strong>dbus-daemon</strong> and, if present, <strong>systemd</strong>, and propagate <strong>DBUS_SESSION_BUS_ADDRESS</strong> to <strong>systemd</strong>:</p>
+<blockquote>
+<pre><code>        dbus-update-activation-environment --systemd \
+            DBUS_SESSION_BUS_ADDRESS DISPLAY XAUTHORITY
+      </code></pre>
+</blockquote>
+<p>To propagate all environment variables except <strong>XDG_SEAT</strong>, <strong>XDG_SESSION_ID</strong> and <strong>XDG_VTNR</strong> to <strong>dbus-daemon</strong> (and, if present, <strong>systemd</strong>) for compatibility with legacy X11 session startup scripts:</p>
+<blockquote>
+<pre><code>        # in a subshell so the variables remain set in the
+        # parent script
+        (
+          unset XDG_SEAT
+          unset XDG_SESSION_ID
+          unset XDG_VTNR
+
+          dbus-update-activation-environment --systemd --all
+        )
+      </code></pre>
+</blockquote>
+<h1>EXIT STATUS</h1>
+<p><strong>dbus-update-activation-environment</strong> exits with status 0 on success, EX_USAGE (64) on invalid command-line options, EX_OSERR (71) if unable to connect to the session bus, or EX_UNAVAILABLE (69) if unable to set the environment variables. Other nonzero exit codes might be added in future versions.</p>
+<h1>ENVIRONMENT</h1>
+<p><strong>DBUS_SESSION_BUS_ADDRESS</strong>, <strong>XDG_RUNTIME_DIR</strong> and/or <strong>DISPLAY</strong> are used to find the address of the session bus.</p>
+<h1>LIMITATIONS</h1>
+<p><strong>dbus-daemon</strong> does not provide a way to unset environment variables after they have been set (although <strong>systemd</strong> does), so <strong>dbus-update-activation-environment</strong> does not offer this functionality either.</p>
+<p>POSIX does not specify the encoding of non-ASCII environment variable names or values and allows them to contain any non-zero byte, but neither <strong>dbus-daemon</strong> nor <strong>systemd</strong> supports environment variables with non-UTF-8 names or values. Accordingly, <strong>dbus-update-activation-environment</strong> assumes that any name or value that appears to be valid UTF-8 is intended to be UTF-8, and ignores other names or values with a warning.</p>
+<h1>BUGS</h1>
+<p>Please send bug reports to the D-Bus bug tracker or mailing list. See <strong>http://www.freedesktop.org/software/dbus/</strong>.</p>
+<h1>SEE ALSO</h1>
+<p><strong>dbus-daemon</strong>(1), <strong>systemd</strong>(1), the <strong>import-environment</strong> command of <strong>systemctl</strong>(1)</p>
+<h1>COPYRIGHT</h1>
+<p><br />
+Copyright © 2015 Collabora Ltd.<br />
+</p>
+<p>This man page is distributed under the same terms as dbus-update-activation-environment (MIT/X11). There is NO WARRANTY, to the extent permitted by law.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

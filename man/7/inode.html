@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command inode</title><meta name="description" content="Linux command inode file inode information"><meta name="keywords" content="linux, command, inode, bsd, file inode information"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>inode - file inode information</p>
+<h1>DESCRIPTION</h1>
+<p>Each file has an inode containing metadata about the file. An application can retrieve this metadata using <strong>stat</strong>(2) (or related calls), which returns a <em>stat</em> structure, or <strong>statx</strong>(2), which returns a <em>statx</em> structure.</p>
+<p>The following is a list of the information typically found in, or associated with, the file inode, with the names of the corresponding structure fields returned by <strong>stat</strong>(2) and <strong>statx</strong>(2):</p>
+<dl>
+<dt>Device where inode resides</dt>
+<dd><p><em>stat.st_dev</em>; <em>statx.stx_dev_minor</em> and <em>statx.stx_dev_major</em></p>
+<p>Each inode (as well as the associated file) resides in a filesystem that is hosted on a device. That device is identified by the combination of its major ID (which identifies the general class of device) and minor ID (which identifies a specific instance in the general class).</p>
+</dd>
+<dt>Inode number</dt>
+<dd><p><em>stat.st_ino</em>; <em>statx.stx_ino</em></p>
+<p>Each file in a filesystem has a unique inode number. Inode numbers are guaranteed to be unique only within a filesystem (i.e., the same inode numbers may be used by different filesystems, which is the reason that hard links may not cross filesystem boundaries). This field contains the file's inode number.</p>
+</dd>
+<dt>File type and mode</dt>
+<dd><p><em>stat.st_mode</em>; <em>statx.stx_mode</em></p>
+<p>See the discussion of file type and mode, below.</p>
+</dd>
+<dt>Link count</dt>
+<dd><p><em>stat.st_nlink</em>; <em>statx.stx_nlink</em></p>
+<p>This field contains the number of hard links to the file. Additional links to an existing file are created using <strong>link</strong>(2).</p>
+</dd>
+<dt>User ID</dt>
+<dd><p><em>st_uid</em> <em>stat.st_uid</em>; <em>statx.stx_uid</em></p>
+<p>This field records the user ID of the owner of the file. For newly created files, the file user ID is the effective user ID of the creating process. The user ID of a file can be changed using <strong>chown</strong>(2).</p>
+</dd>
+<dt>Group ID</dt>
+<dd><p><em>stat.st_gid</em>; <em>statx.stx_gid</em></p>
+<p>The inode records the ID of the group owner of the file. For newly created files, the file group ID is either the group ID of the parent directory or the effective group ID of the creating process, depending on whether or not the set-group-ID bit is set on the parent directory (see below). The group ID of a file can be changed using <strong>chown</strong>(2).</p>
+</dd>
+<dt>Device represented by this inode</dt>
+<dd><p><em>stat.st_rdev</em>; <em>statx.stx_rdev_minor</em> and <em>statx.stx_rdev_major</em></p>
+<p>If this file (inode) represents a device, then the inode records the major and minor ID of that device.</p>
+</dd>
+<dt>File size</dt>
+<dd><p><em>stat.st_size</em>; <em>statx.stx_size</em></p>
+<p>This field gives the size of the file (if it is a regular file or a symbolic link) in bytes. The size of a symbolic link is the length of the pathname it contains, without a terminating null byte.</p>
+</dd>
+<dt>Preferred block size for I/O</dt>
+<dd><p><em>stat.st_blksize</em>; <em>statx.stx_blksize</em></p>
+<p>This field gives the "preferred" blocksize for efficient filesystem I/O. (Writing to a file in smaller chunks may cause an inefficient read-modify-rewrite.)</p>
+</dd>
+<dt>Number of blocks allocated to the file</dt>
+<dd><p><em>stat.st_blocks</em>; <em>statx.stx_size</em></p>
+<p>This field indicates the number of blocks allocated to the file, 512-byte units, (This may be smaller than <em>st_size</em>/512 when the file has holes.)</p>
+<p>The POSIX.1 standard notes that the unit for the <em>st_blocks</em> member of the <em>stat</em> structure is not defined by the standard. On many implementations it is 512 bytes; on a few systems, a different unit is used, such as 1024. Furthermore, the unit may differ on a per-filesystem basis.</p>
+</dd>
+<dt>Last access timestamp (atime)</dt>
+<dd><p><em>stat.st_atime</em>; <em>statx.stx_atime</em></p>
+<p>This is the file's last access timestamp. It is changed by file accesses, for example, by <strong>execve</strong>(2), <strong>mknod</strong>(2), <strong>pipe</strong>(2), <strong>utime</strong>(2), and <strong>read</strong>(2) (of more than zero bytes). Other interfaces, such as <strong>mmap</strong>(2), may or may not update the atime timestamp</p>
+<p>Some filesystem types allow mounting in such a way that file and/or directory accesses do not cause an update of the atime timestamp. (See <em>noatime</em>, <em>nodiratime</em>, and <em>relatime</em> in <strong>mount</strong>(8), and related information in <strong>mount</strong>(2).) In addition, the atime timestamp is not updated if a file is opened with the <strong>O_NOATIME</strong> flag; see <strong>open</strong>(2).</p>
+</dd>
+<dt>File creation (birth) timestamp (btime)</dt>
+<dd><p>(not returned in the <em>stat</em> structure); <em>statx.stx_btime</em></p>
+<p>The file's creation timestamp. This is set on file creation and not changed subsequently.</p>
+<p>The btime timestamp was not historically present on UNIX systems and is not currently supported by most Linux filesystems.</p>
+</dd>
+<dt>Last modification timestamp (mtime)</dt>
+<dd><p><em>stat.st_mtime</em>; <em>statx.stx_mtime</em></p>
+<p>This is the file's last modification timestamp. It is changed by file modifications, for example, by <strong>mknod</strong>(2), <strong>truncate</strong>(2), <strong>utime</strong>(2), and <strong>write</strong>(2) (of more than zero bytes). Moreover, the mtime timestamp of a directory is changed by the creation or deletion of files in that directory. The mtime timestamp is <em>not</em> changed for changes in owner, group, hard link count, or mode.</p>
+</dd>
+<dt>Last status change timestamp (ctime)</dt>
+<dd><p><em>stat.st_ctime</em>; <em>statx.stx_ctime</em></p>
+<p>This is the file's last status change timestamp. It is changed by writing or by setting inode information (i.e., owner, group, link count, mode, etc.).</p>
+</dd>
+</dl>
+<p>The timestamp fields report time measured with a zero point at the <em>Epoch</em>, 1970-01-02 00:00:00 +0000, UTC (see <strong>time</strong>(7)).</p>
+<p>Nanosecond timestamps are supported on XFS, JFS, Btrfs, and ext4 (since Linux 2.6.23). Nanosecond timestamps are not supported in ext2, ext3, and Reiserfs. In order to return timestamps with nanosecond precision, the timestamp fields in the <em>stat</em> and <em>statx</em> structures are defined as structures that include a nanosecond component. See <strong>stat</strong>(2) and <strong>statx</strong>(2) for details. On filesystems that do not support subsecond timestamps, the nanosecond fields in the <em>stat</em> and <em>statx</em> structures are returned with the value 0.</p>
+<h2>The file type and mode</h2>
+<p>The <em>stat.st_mode</em> field (for <strong>statx</strong>(2), the <em>statx.stx_mode</em> field) contains the file type and mode.</p>
+<p>POSIX refers to the <em>stat.st_mode</em> bits corresponding to the mask <strong>S_IFMT</strong> (see below) as the <em>file type</em>, the 12 bits corresponding to the mask 07777 as the <em>file mode bits</em> and the least significant 9 bits (0777) as the <em>file permission bits</em>.</p>
+<p>The following mask values are defined for the file type:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">S_IFMT</td>
+<td style="text-align: left;">0170000</td>
+<td style="text-align: left;">bit mask for the file type bit field</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_IFSOCK</td>
+<td style="text-align: left;">0140000</td>
+<td style="text-align: left;">socket</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">S_IFLNK</td>
+<td style="text-align: left;">0120000</td>
+<td style="text-align: left;">symbolic link</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_IFREG</td>
+<td style="text-align: left;">0100000</td>
+<td style="text-align: left;">regular file</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">S_IFBLK</td>
+<td style="text-align: left;">0060000</td>
+<td style="text-align: left;">block device</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_IFDIR</td>
+<td style="text-align: left;">0040000</td>
+<td style="text-align: left;">directory</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">S_IFCHR</td>
+<td style="text-align: left;">0020000</td>
+<td style="text-align: left;">character device</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_IFIFO</td>
+<td style="text-align: left;">0010000</td>
+<td style="text-align: left;">FIFO</td>
+</tr>
+</tbody>
+</table>
+<p>Thus, to test for a regular file (for example), one could write:</p>
+<pre><code>stat(pathname, &amp;sb);
+if ((sb.st_mode &amp; S_IFMT) == S_IFREG) {
+    /* Handle regular file */
+}</code></pre>
+<p>Because tests of the above form are common, additional macros are defined by POSIX to allow the test of the file type in <em>st_mode</em> to be written more concisely:</p>
+<blockquote>
+<dl>
+<dt><strong>S_ISREG</strong>(m)</dt>
+<dd><p>is it a regular file?</p>
+</dd>
+<dt><strong>S_ISDIR</strong>(m)</dt>
+<dd><p>directory?</p>
+</dd>
+<dt><strong>S_ISCHR</strong>(m)</dt>
+<dd><p>character device?</p>
+</dd>
+<dt><strong>S_ISBLK</strong>(m)</dt>
+<dd><p>block device?</p>
+</dd>
+<dt><strong>S_ISFIFO</strong>(m)</dt>
+<dd><p>FIFO (named pipe)?</p>
+</dd>
+<dt><strong>S_ISLNK</strong>(m)</dt>
+<dd><p>symbolic link? (Not in POSIX.1-1996.)</p>
+</dd>
+<dt><strong>S_ISSOCK</strong>(m)</dt>
+<dd><p>socket? (Not in POSIX.1-1996.)</p>
+</dd>
+</dl>
+</blockquote>
+<p>The preceding code snippet could thus be rewritten as:</p>
+<pre><code>stat(pathname, &amp;sb);
+if (S_ISREG(sb.st_mode)) {
+    /* Handle regular file */
+}</code></pre>
+<p>The definitions of most of the above file type test macros are provided if any of the following feature test macros is defined: <strong>_BSD_SOURCE</strong> (in glibc 2.19 and earlier), <strong>_SVID_SOURCE</strong> (in glibc 2.19 and earlier), or <strong>_DEFAULT_SOURCE</strong> (in glibc 2.20 and later). In addition, definitions of all of the above macros except <strong>S_IFSOCK</strong> and <strong>S_ISSOCK</strong>() are provided if <strong>_XOPEN_SOURCE</strong> is defined.</p>
+<p>The definition of <strong>S_IFSOCK</strong> can also be exposed either by defining <strong>_XOPEN_SOURCE</strong> with a value of 500 or greater or (since glibc 2.24) by defining both <strong>_XOPEN_SOURCE</strong> and <strong>_XOPEN_SOURCE_EXTENDED</strong>.</p>
+<p>The definition of <strong>S_ISSOCK</strong>() is exposed if any of the following feature test macros is defined: <strong>_BSD_SOURCE</strong> (in glibc 2.19 and earlier), <strong>_DEFAULT_SOURCE</strong> (in glibc 2.20 and later), <strong>_XOPEN_SOURCE</strong> with a value of 500 or greater, <strong>_POSIX_C_SOURCE</strong> with a value of 200112L or greater, or (since glibc 2.24) by defining both <strong>_XOPEN_SOURCE</strong> and <strong>_XOPEN_SOURCE_EXTENDED</strong>.</p>
+<p>The following mask values are defined for the file mode component of the <em>st_mode</em> field:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">S_ISUID</td>
+<td style="text-align: left;">04000</td>
+<td style="text-align: left;">set-user-ID bit (see <strong>execve</strong>(2))</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">S_ISGID</td>
+<td style="text-align: left;">02000</td>
+<td style="text-align: left;">set-group-ID bit (see below)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_ISVTX</td>
+<td style="text-align: left;">01000</td>
+<td style="text-align: left;">sticky bit (see below)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_IRWXU</td>
+<td style="text-align: left;">00700</td>
+<td style="text-align: left;">owner has read, write, and execute permission</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">S_IRUSR</td>
+<td style="text-align: left;">00400</td>
+<td style="text-align: left;">owner has read permission</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_IWUSR</td>
+<td style="text-align: left;">00200</td>
+<td style="text-align: left;">owner has write permission</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">S_IXUSR</td>
+<td style="text-align: left;">00100</td>
+<td style="text-align: left;">owner has execute permission</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">S_IRWXG</td>
+<td style="text-align: left;">00070</td>
+<td style="text-align: left;">group has read, write, and execute permission</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_IRGRP</td>
+<td style="text-align: left;">00040</td>
+<td style="text-align: left;">group has read permission</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">S_IWGRP</td>
+<td style="text-align: left;">00020</td>
+<td style="text-align: left;">group has write permission</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_IXGRP</td>
+<td style="text-align: left;">00010</td>
+<td style="text-align: left;">group has execute permission</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_IRWXO</td>
+<td style="text-align: left;">00007</td>
+<td style="text-align: left;">others (not in group) have read, write, and execute permission</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">S_IROTH</td>
+<td style="text-align: left;">00004</td>
+<td style="text-align: left;">others have read permission</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">S_IWOTH</td>
+<td style="text-align: left;">00002</td>
+<td style="text-align: left;">others have write permission</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">S_IXOTH</td>
+<td style="text-align: left;">00001</td>
+<td style="text-align: left;">others have execute permission</td>
+</tr>
+</tbody>
+</table>
+<p>The set-group-ID bit (<strong>S_ISGID</strong>) has several special uses. For a directory, it indicates that BSD semantics are to be used for that directory: files created there inherit their group ID from the directory, not from the effective group ID of the creating process, and directories created there will also get the <strong>S_ISGID</strong> bit set. For an executable file, the set-group-ID bit causes the effective group ID of a process that executes the file to change as described in <strong>execve</strong>(2). For a file that does not have the group execution bit (<strong>S_IXGRP</strong>) set, the set-group-ID bit indicates mandatory file/record locking.</p>
+<p>The sticky bit (<strong>S_ISVTX</strong>) on a directory means that a file in that directory can be renamed or deleted only by the owner of the file, by the owner of the directory, and by a privileged process.</p>
+<h1>CONFORMING TO</h1>
+<p>If you need to obtain the definition of the <em>blkcnt_t</em> or <em>blksize_t</em> types from <em>&lt;sys/stat.h&gt;</em>, then define <strong>_XOPEN_SOURCE</strong> with the value 500 or greater (before including <em>any</em> header files).</p>
+<p>POSIX.1-1990 did not describe the <strong>S_IFMT</strong>, <strong>S_IFSOCK</strong>, <strong>S_IFLNK</strong>, <strong>S_IFREG</strong>, <strong>S_IFBLK</strong>, <strong>S_IFDIR</strong>, <strong>S_IFCHR</strong>, <strong>S_IFIFO</strong>, <strong>S_ISVTX</strong> constants, but instead specified the use of the macros <strong>S_ISDIR</strong>(), and so on. The <strong>S_IF*</strong> constants are present in POSIX.1-2001 and later.</p>
+<p>The <strong>S_ISLNK</strong>() and <strong>S_ISSOCK</strong>() macros were not in POSIX.1-1996, but both are present in POSIX.1-2001; the former is from SVID 4, the latter from SUSv2.</p>
+<p>UNIX V7 (and later systems) had <strong>S_IREAD</strong>, <strong>S_IWRITE</strong>, <strong>S_IEXEC</strong>, where POSIX prescribes the synonyms <strong>S_IRUSR</strong>, <strong>S_IWUSR</strong>, <strong>S_IXUSR</strong>.</p>
+<h1>NOTES</h1>
+<p>For pseudofiles that are autogenerated by the kernel, the file size (<em>stat.st_size</em>; <em>statx.stx_size</em>) reported by the kernel is not accurate. For example, the value 0 is returned for many files under the <em>/proc</em> directory, while various files under <em>/sys</em> report a size of 4096 bytes, even though the file content is smaller. For such files, one should simply try to read as many bytes as possible (and append '\0' to the returned buffer if it is to be interpreted as a string).</p>
+<h1>SEE ALSO</h1>
+<p><strong>stat</strong>(1), <strong>stat</strong>(2), <strong>statx</strong>(2), <strong>symlink</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

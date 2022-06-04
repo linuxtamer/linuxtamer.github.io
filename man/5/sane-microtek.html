@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sane-microtek</title><meta name="description" content="Linux command sane-microtek SANE backend for Microtek scanners"><meta name="keywords" content="linux, command, sane-microtek, bsd, SANE backend for Microtek scanners"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sane-microtek - SANE backend for Microtek scanners</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sane-microtek</strong> library implements a SANE (Scanner Access Now Easy) backend that provides access to the "second generation" Microtek scanners. At present, the following hardware is known to work with this backend:</p>
+<blockquote>
+<p>Microtek ScanMaker E2, E3, E6<br />
+Microtek ScanMaker II, IIG, IIHR, IISP, III<br />
+Microtek ScanMaker 35t, 35t+, 45t<br />
+Microtek ScanMaker 600GS, 600ZS (see bug notes)<br />
+Agfa StudioScan<br />
+Agfa StudioScan II, StudioScan IIsi<br />
+Agfa Arcus II (but not the "Arcus")<br />
+Agfa DuoScan (preliminary)<br />
+Vobis "Highscreen Realscan"<br />
+Microtek Color PageWiz (preliminary)<br />
+</p>
+<p>Transparent Media Adapter<br />
+Document AutoFeeder<br />
+</p>
+</blockquote>
+<p>The driver supports line art, halftone, 8bpp gray, and 24bpp color scans at normal and "expanded" resolutions (i.e. 1200x1200 on an E6), fast scans for color previews, and downloadable gamma tables.</p>
+<p>The supported scanners are all SCSI scanners. However, some parallel port models may work (under Linux), if they use a parport-&gt;scsi chip, and if you can find a scsi-&gt;parport driver. This is known to be the case for the Color PageWiz.</p>
+<p>The driver does <strong>not</strong> support the newest Microtek scanners, such as the V330 and V660, which use a new and very different SCSI-II command set. For those, try the alternate <strong>microtek2</strong> backend. Most non-SCSI scanners would use the new command set. Most scanners newer than the Scanmaker E6 would use the new command set.</p>
+<p>If you own a Microtek scanner other than the ones listed above, tell us what happens --- see the <strong>BUGS</strong> section at the end of this document.</p>
+<p>Although this manual page is generally updated with each release, up-to-date information on new releases and extraneous helpful hints are available from the backend homepage:<br />
+</p>
+<blockquote>
+<p><strong>http://www.mir.com/mtek/</strong></p>
+</blockquote>
+<h1>DEVICE NAMES</h1>
+<p>This backend expects device names of the form:</p>
+<blockquote>
+<p><em>special</em></p>
+</blockquote>
+<p>Where <em>special</em> is the UNIX path-name for the special device that corresponds to the scanner. The special device name must be a generic SCSI device or a symlink to such a device. Under Linux, such a device name could be <em>/dev/sga</em> or <em>/dev/sge</em>, for example.</p>
+<h1>CONFIGURATION</h1>
+<p>The contents of the <em>microtek.conf</em> file is a list of device names that correspond to Microtek scanners. Empty lines and lines starting with a hash mark (#) are ignored. A sample configuration file is shown below:</p>
+<blockquote>
+<p>/dev/scanner<br />
+# this is a comment<br />
+/dev/sge</p>
+</blockquote>
+<p>The configuration file may also contain the special tokens <em>norealcal</em> or <em>noprecal.</em> <em>norealcal</em> will disable the use of magic, undocumented scanner calibration commands which are known to work on the E6, but may not work with other models. <em>noprecal</em> will disable logic which tries to avoid scanner precalibration. This logic would only have been activated if the magic calibration code was turned off.</p>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/sane.d/microtek.conf</em></dt>
+<dd><p>The backend configuration file (see also description of <strong>SANE_CONFIG_DIR</strong> below).</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-microtek.a</em></dt>
+<dd><p>The static library implementing this backend.</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-microtek.so</em></dt>
+<dd><p>The shared library implementing this backend (present on systems that support dynamic loading).</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>SANE_CONFIG_DIR</strong></dt>
+<dd><p>This environment variable specifies the list of directories that may contain the configuration file. Under UNIX, the directories are separated by a colon (`:'), under OS/2, they are separated by a semi-colon (`;'). If this variable is not set, the configuration file is searched in two default directories: first, the current working directory (".") and then in /etc/sane.d. If the value of the environment variable ends with the directory separator character, then the default directories are searched after the explicitly specified directories. For example, setting <strong>SANE_CONFIG_DIR</strong> to "/tmp/config:" would result in directories "tmp/config", ".", and "/etc/sane.d" being searched (in this order).</p>
+</dd>
+<dt><strong>SANE_DEBUG_MICROTEK</strong></dt>
+<dd><p>If the library was compiled with debugging support enabled, this environment variable controls the debug level for this backend. A value of 128 requests maximally copious debug output; smaller levels reduce verbosity.</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p>sane(7), sane-scsi(5)</p>
+<h1>AUTHOR</h1>
+<p>Matt Marjanovic</p>
+<h1>BUGS</h1>
+<p>Known bugs/limitations are:</p>
+<blockquote>
+<p>Brightness and contrast broken.<br />
+The 600GS is grayscale only, and will lock up if you select color. (Unfortunately, the 600GS and 600ZS are indistinguishable by software.)<br />
+</p>
+</blockquote>
+<p>i.e. don't complain about these --- but if brightness and/or contrast <strong>do</strong> work for you, please tell me.</p>
+<p>If your scanner locks up, try setting the <em>norealcal</em> or <em>noprecal</em> option in the configuration file (first one, then both), and see if it helps. (If it does, report it.)</p>
+<p>Send lengthy bug reports and new scanner information to <strong>mtek-bugs@mir.com</strong>. All bug reports and new scanner inquiries should include an error log file. You can generate copious stderr output by setting the SANE_DEBUG_MICROTEK environment variable described above. For example:</p>
+<blockquote>
+<p>setenv SANE_DEBUG_MICROTEK 128</p>
+</blockquote>
+<p>More general comments, suggestions, and inquiries about frontends or SANE should go to <strong>sane-devel@alioth-lists.debian.net</strong>, the SANE Developers mailing list. Have a look at http://www.sane-project.org/mailing-lists.html concerning subscription to sane-devel.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

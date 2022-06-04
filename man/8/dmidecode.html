@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command dmidecode</title><meta name="description" content="Linux command dmidecode DMI table decoder"><meta name="keywords" content="linux, command, dmidecode, bsd, DMI table decoder"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>dmidecode - DMI table decoder</p>
+<h1>SYNOPSIS</h1>
+<p><strong>dmidecode</strong> [<strong>OPTIONS</strong>]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>dmidecode</strong> is a tool for dumping a computer's DMI (some say SMBIOS) table contents in a human-readable format. This table contains a description of the system's hardware components, as well as other useful pieces of information such as serial numbers and BIOS revision. Thanks to this table, you can retrieve this information without having to probe for the actual hardware. While this is a good point in terms of report speed and safeness, this also makes the presented information possibly unreliable.</p>
+<p>The DMI table doesn't only describe what the system is currently made of, it also can report the possible evolutions (such as the fastest supported CPU or the maximal amount of memory supported).</p>
+<p>SMBIOS stands for System Management BIOS, while DMI stands for Desktop Management Interface. Both standards are tightly related and developed by the DMTF (Desktop Management Task Force).</p>
+<p>As you run it, <strong>dmidecode</strong> will try to locate the DMI table. It will first try to read the DMI table from sysfs, and next try reading directly from memory if sysfs access failed. If <strong>dmidecode</strong> succeeds in locating a valid DMI table, it will then parse this table and display a list of records like this one:</p>
+<p>Handle 0x0002, DMI type 2, 8 bytes. Base Board Information Manufacturer: Intel Product Name: C440GX+ Version: 727281-001 Serial Number: INCY92700942</p>
+<p>Each record has:</p>
+<ul>
+<li><p>A handle. This is a unique identifier, which allows records to reference each other. For example, processor records usually reference cache memory records using their handles.</p></li>
+<li><p>A type. The SMBIOS specification defines different types of elements a computer can be made of. In this example, the type is 2, which means that the record contains "Base Board Information".</p></li>
+<li><p>A size. Each record has a 4-byte header (2 for the handle, 1 for the type, 1 for the size), the rest is used by the record data. This value doesn't take text strings into account (these are placed at the end of the record), so the actual length of the record may be (and is often) greater than the displayed value.</p></li>
+<li><p>Decoded values. The information presented of course depends on the type of record. Here, we learn about the board's manufacturer, model, version and serial number.</p></li>
+</ul>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-d</strong>, <strong>--dev-mem FILE</strong></dt>
+<dd><p>Read memory from device <strong>FILE</strong> (default: <strong>/dev/mem</strong>)</p>
+</dd>
+<dt><strong>-q</strong>, <strong>--quiet</strong></dt>
+<dd><p>Be less verbose. Unknown, inactive and OEM-specific entries are not displayed. Meta-data and handle references are hidden.</p>
+</dd>
+<dt><strong>-s</strong>, <strong>--string KEYWORD</strong></dt>
+<dd><p>Only display the value of the DMI string identified by <strong>KEYWORD</strong>. <strong>KEYWORD</strong> must be a keyword from the following list: <strong>bios-vendor</strong>, <strong>bios-version</strong>, <strong>bios-release-date</strong>, <strong>bios-revision</strong>, <strong>firmware-revision</strong>, <strong>system-manufacturer</strong>, <strong>system-product-name</strong>, <strong>system-version</strong>, <strong>system-serial-number</strong>, <strong>system-uuid</strong>, <strong>system-sku-number</strong>, <strong>system-family</strong>, <strong>baseboard-manufacturer</strong>, <strong>baseboard-product-name</strong>, <strong>baseboard-version</strong>, <strong>baseboard-serial-number</strong>, <strong>baseboard-asset-tag</strong>, <strong>chassis-manufacturer</strong>, <strong>chassis-type</strong>, <strong>chassis-version</strong>, <strong>chassis-serial-number</strong>, <strong>chassis-asset-tag</strong>, <strong>processor-family</strong>, <strong>processor-manufacturer</strong>, <strong>processor-version</strong>, <strong>processor-frequency</strong>. Each keyword corresponds to a given DMI type and a given offset within this entry type. Not all strings may be meaningful or even defined on all systems. Some keywords may return more than one result on some systems (e.g. <strong>processor-version</strong> on a multi-processor system). If <strong>KEYWORD</strong> is not provided or not valid, a list of all valid keywords is printed and <strong>dmidecode</strong> exits with an error. This option cannot be used more than once.</p>
+</dd>
+</dl>
+<p>Note: on Linux, most of these strings can alternatively be read directly from <strong>sysfs</strong>, typically from files under <em>/sys/devices/virtual/dmi/id</em>. Most of these files are even readable by regular users.</p>
+<dl>
+<dt><strong>-t</strong>, <strong>--type TYPE</strong></dt>
+<dd><p>Only display the entries of type <strong>TYPE</strong>. <strong>TYPE</strong> can be either a DMI type number, or a comma-separated list of type numbers, or a keyword from the following list: <strong>bios</strong>, <strong>system</strong>, <strong>baseboard</strong>, <strong>chassis</strong>, <strong>processor</strong>, <strong>memory</strong>, <strong>cache</strong>, <strong>connector</strong>, <strong>slot</strong>. Refer to the DMI TYPES section below for details. If this option is used more than once, the set of displayed entries will be the union of all the given types. If <strong>TYPE</strong> is not provided or not valid, a list of all valid keywords is printed and <strong>dmidecode</strong> exits with an error.</p>
+</dd>
+<dt><strong>-H</strong>, <strong>--handle HANDLE</strong></dt>
+<dd><p>Only display the entry whose handle matches <strong>HANDLE</strong>. <strong>HANDLE</strong> is a 16-bit integer.</p>
+</dd>
+<dt><strong>-u</strong>, <strong>--dump</strong></dt>
+<dd><p>Do not decode the entries, dump their contents as hexadecimal instead. Note that this is still a text output, no binary data will be thrown upon you. The strings attached to each entry are displayed as both hexadecimal and ASCII. This option is mainly useful for debugging.</p>
+</dd>
+<dt><strong> </strong> <strong>--dump-bin FILE</strong></dt>
+<dd><p>Do not decode the entries, instead dump the DMI data to a file in binary form. The generated file is suitable to pass to <strong>--from-dump</strong> later.</p>
+</dd>
+<dt><strong> </strong> <strong>--from-dump FILE</strong></dt>
+<dd><p>Read the DMI data from a binary file previously generated using <strong>--dump-bin</strong>.</p>
+</dd>
+<dt><strong> </strong> <strong>--no-sysfs</strong></dt>
+<dd><p>Do not attempt to read DMI data from sysfs files. This is mainly useful for debugging.</p>
+</dd>
+<dt><strong> </strong> <strong>--oem-string N</strong></dt>
+<dd><p>Only display the value of the OEM string number <strong>N</strong>. The first OEM string has number 1. With special value "count", return the number of OEM strings instead.</p>
+</dd>
+<dt><strong>-h</strong>, <strong>--help</strong></dt>
+<dd><p>Display usage information and exit</p>
+</dd>
+<dt><strong>-V</strong>, <strong>--version</strong></dt>
+<dd><p>Display the version and exit</p>
+</dd>
+</dl>
+<p>Options --string, --type, --dump-bin and --oem-string determine the output format and are mutually exclusive.</p>
+<p>Please note in case of <strong>dmidecode</strong> is run on a system with BIOS that boasts new SMBIOS specification, which is not supported by the tool yet, it will print out relevant message in addition to requested data on the very top of the output. Thus informs the output data is not reliable.</p>
+<h1>DMI TYPES</h1>
+<p>The SMBIOS specification defines the following DMI types:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">Type</td>
+<td style="text-align: left;">Information</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0</td>
+<td style="text-align: left;">BIOS</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">System</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">Baseboard</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">Chassis</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: left;">Processor</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">Memory Controller</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">6</td>
+<td style="text-align: left;">Memory Module</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">7</td>
+<td style="text-align: left;">Cache</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">8</td>
+<td style="text-align: left;">Port Connector</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">9</td>
+<td style="text-align: left;">System Slots</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">10</td>
+<td style="text-align: left;">On Board Devices</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">11</td>
+<td style="text-align: left;">OEM Strings</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">12</td>
+<td style="text-align: left;">System Configuration Options</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">13</td>
+<td style="text-align: left;">BIOS Language</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">14</td>
+<td style="text-align: left;">Group Associations</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">15</td>
+<td style="text-align: left;">System Event Log</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">16</td>
+<td style="text-align: left;">Physical Memory Array</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">17</td>
+<td style="text-align: left;">Memory Device</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">18</td>
+<td style="text-align: left;">32-bit Memory Error</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">19</td>
+<td style="text-align: left;">Memory Array Mapped Address</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">20</td>
+<td style="text-align: left;">Memory Device Mapped Address</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">21</td>
+<td style="text-align: left;">Built-in Pointing Device</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">22</td>
+<td style="text-align: left;">Portable Battery</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">23</td>
+<td style="text-align: left;">System Reset</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">24</td>
+<td style="text-align: left;">Hardware Security</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">25</td>
+<td style="text-align: left;">System Power Controls</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">26</td>
+<td style="text-align: left;">Voltage Probe</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">27</td>
+<td style="text-align: left;">Cooling Device</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">28</td>
+<td style="text-align: left;">Temperature Probe</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">29</td>
+<td style="text-align: left;">Electrical Current Probe</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">30</td>
+<td style="text-align: left;">Out-of-band Remote Access</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">31</td>
+<td style="text-align: left;">Boot Integrity Services</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">32</td>
+<td style="text-align: left;">System Boot</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">33</td>
+<td style="text-align: left;">64-bit Memory Error</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">34</td>
+<td style="text-align: left;">Management Device</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">35</td>
+<td style="text-align: left;">Management Device Component</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">36</td>
+<td style="text-align: left;">Management Device Threshold Data</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">37</td>
+<td style="text-align: left;">Memory Channel</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">38</td>
+<td style="text-align: left;">IPMI Device</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">39</td>
+<td style="text-align: left;">Power Supply</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">40</td>
+<td style="text-align: left;">Additional Information</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">41</td>
+<td style="text-align: left;">Onboard Devices Extended Information</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">42</td>
+<td style="text-align: left;">Management Controller Host Interface</td>
+</tr>
+</tbody>
+</table>
+<p>Additionally, type 126 is used for disabled entries and type 127 is an end-of-table marker. Types 128 to 255 are for OEM-specific data. <strong>dmidecode</strong> will display these entries by default, but it can only decode them when the vendors have contributed documentation or code for them.</p>
+<p>Keywords can be used instead of type numbers with <strong>--type</strong>. Each keyword is equivalent to a list of type numbers:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Types</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">bios</td>
+<td style="text-align: left;">0, 13</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">system</td>
+<td style="text-align: left;">1, 12, 15, 23, 32</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">baseboard</td>
+<td style="text-align: left;">2, 10, 41</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">chassis</td>
+<td style="text-align: left;">3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">processor</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">memory</td>
+<td style="text-align: left;">5, 6, 16, 17</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">cache</td>
+<td style="text-align: left;">7</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">connector</td>
+<td style="text-align: left;">8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">slot</td>
+<td style="text-align: left;">9</td>
+</tr>
+</tbody>
+</table>
+<p>Keywords are matched case-insensitively. The following command lines are equivalent:</p>
+<ul>
+<li><p>dmidecode --type 0 --type 13</p></li>
+<li><p>dmidecode --type 0,13</p></li>
+<li><p>dmidecode --type bios</p></li>
+<li><p>dmidecode --type BIOS</p></li>
+</ul>
+<h1>BINARY DUMP FILE FORMAT</h1>
+<p>The binary dump files generated by --dump-bin and read using --from-dump are formatted as follows:</p>
+<ul>
+<li><p>The SMBIOS or DMI entry point is located at offset 0x00. It is crafted to hard-code the table address at offset 0x20.</p></li>
+<li><p>The DMI table is located at offset 0x20.</p></li>
+</ul>
+<h1>UUID FORMAT</h1>
+<p>There is some ambiguity about how to interpret the UUID fields prior to SMBIOS specification version 2.6. There was no mention of byte swapping, and RFC 4122 says that no byte swapping should be applied by default. However, SMBIOS specification version 2.6 (and later) explicitly states that the first 3 fields of the UUID should be read as little-endian numbers (byte-swapped). Furthermore, it implies that the same was already true for older versions of the specification, even though it was not mentioned. In practice, many hardware vendors were not byte-swapping the UUID. So, in order to preserve compatibility, it was decided to interpret the UUID fields according to RFC 4122 (no byte swapping) when the SMBIOS version is older than 2.6, and to interpret the first 3 fields as little-endian (byte-swapped) when the SMBIOS version is 2.6 or later. The Linux kernel follows the same logic.</p>
+<h1>FILES</h1>
+<p><em>/dev/mem</em><br />
+<em>/sys/firmware/dmi/tables/smbios_entry_point</em> (Linux only)<br />
+<em>/sys/firmware/dmi/tables/DMI</em> (Linux only)</p>
+<h1>BUGS</h1>
+<p>More often than not, information contained in the DMI tables is inaccurate, incomplete or simply wrong.</p>
+<h1>AUTHORS</h1>
+<p>Alan Cox, Jean Delvare</p>
+<h1>SEE ALSO</h1>
+<p><strong>biosdecode</strong>(8), <strong>mem</strong>(4), <strong>ownership</strong>(8), <strong>vpddecode</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

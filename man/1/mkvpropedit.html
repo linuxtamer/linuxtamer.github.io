@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mkvpropedit</title><meta name="description" content="Linux command mkvpropedit Modify properties of existing Matroska files without a complete remux"><meta name="keywords" content="linux, command, mkvpropedit, bsd, Modify properties of existing Matroska files without a complete remux"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mkvpropedit - Modify properties of existing Matroska files without a complete remux</p>
+<h1>SYNOPSIS</h1>
+<p><strong>mkvpropedit</strong> [options] {source-filename} {actions}</p>
+<h1>DESCRIPTION</h1>
+<p>This program analyses an existing Matroska file and modifies some of its properties. Then it writes those modifications to the existing file. Among the properties that can be changed are the segment information elements (e.g. the title) and the track headers (e.g. the language code, default track flag or the name).</p>
+<p>Options:</p>
+<p><strong>-l</strong>, <strong>--list-property-names</strong></p>
+<blockquote>
+<p>Lists all known and editable property names, their type (string, integer, boolean etc) and a short description. The program exits afterwards. Therefore the <em>source-filename</em> parameter does not have to be supplied.</p>
+</blockquote>
+<p><strong>-p</strong>, <strong>--parse-mode</strong> <em>mode</em></p>
+<blockquote>
+<p>Sets the parse mode. The parameter <em>mode</em> can either be fast (which is also the default) or full. The fast mode does not parse the whole file but uses the meta seek elements for locating the required elements of a source file. In 99% of all cases this is enough. But for files that do not contain meta seek elements or which are damaged the user might have to set the full parse mode. A full scan of a file can take a couple of minutes while a fast scan only takes seconds.</p>
+</blockquote>
+<p>Actions that deal with track and segment info properties:</p>
+<p><strong>-e</strong>, <strong>--edit</strong> <em>selector</em></p>
+<blockquote>
+<p>Sets the Matroska file section (segment information or a certain tracks headers) that all following add, set and delete actions operate on. This option can be used multiple times in order to make modifications to more than one element.</p>
+<p>By default <strong>mkvpropedit</strong>(1) will edit the segment information section.</p>
+<p>See the section about edit selectors for a full description of the syntax.</p>
+</blockquote>
+<p><strong>-a</strong>, <strong>--add</strong> <em>name</em>=<em>value</em></p>
+<blockquote>
+<p>Adds a property <em>name</em> with the value <em>value</em>. The property will be added even if such a property exists already. Note that most properties are unique and cannot occur more than once.</p>
+</blockquote>
+<p><strong>-s</strong>, <strong>--set</strong> <em>name</em>=<em>value</em></p>
+<blockquote>
+<p>Sets all occurrences of the property <em>name</em> to the value <em>value</em>. If no such property exists then it will be added.</p>
+</blockquote>
+<p><strong>-d</strong>, <strong>--delete</strong> <em>name</em></p>
+<blockquote>
+<p>Deletes all occurrences of the property <em>name</em>. Note that some properties are required and cannot be deleted.</p>
+</blockquote>
+<p>Actions that deal with tags and chapters:</p>
+<p><strong>-t</strong>, <strong>--tags</strong> <em>selector</em>:<em>filename</em></p>
+<blockquote>
+<p>Add or replace tags in the file with the ones from filename or remove them if filename is empty. <strong>mkvpropedit</strong>(1) reads the same XML tag format that <strong>mkvmerge</strong>(1) reads as well.</p>
+<p>The <em>selector</em> must be one of the words <strong>all</strong>, <strong>global</strong> or <strong>track</strong>. For <strong>all</strong> <strong>mkvpropedit</strong>(1) will replace or remove all tags in a file. With <strong>global</strong> only global tags will be replaced or removed.</p>
+<p>With <strong>track</strong> <strong>mkvpropedit</strong>(1) will replace tags for a specific track. Additionally the tags read from filename will be assigned to the same track. The track is specified in the same way edit selectors are specified (see below), e.g. --tags track:a1:new-audio-tags.xml.</p>
+</blockquote>
+<p><strong>--add-track-statistics-tags</strong></p>
+<blockquote>
+<p>Calculates statistics for all tracks in a file and adds new statistics tags for them. If the file already contains such tags then theyll be updated.</p>
+</blockquote>
+<p><strong>--delete-track-statistics-tags</strong></p>
+<blockquote>
+<p>Deletes all existing track statistics tags from a file. If the file doesnt contain track statistics tags then it wont be modified.</p>
+</blockquote>
+<p><strong>-c</strong>, <strong>--chapters</strong> <em>filename</em></p>
+<blockquote>
+<p>Add or replace chapters in the file with the ones from filename or remove them if filename is empty. <strong>mkvpropedit</strong>(1) reads the same XML and simple chapter formats that <strong>mkvmerge</strong>(1) reads as well.</p>
+</blockquote>
+<p>Actions for handling attachments:</p>
+<p><strong>--add-attachment</strong> <em>filename</em></p>
+<blockquote>
+<p>Adds a new attachment from <em>filename</em>.</p>
+<p>If the option <strong>--attachment-name</strong> has been used prior to this option then its value is used as the new attachments name. Otherwise it is derived from <em>filename</em>.</p>
+<p>If the option <strong>--attachment-mime-type</strong> has been used prior to this option then its value is used as the new attachments MIME type. Otherwise it is auto-detected from the content of <em>filename</em>.</p>
+<p>If the option <strong>--attachment-description</strong> has been used prior to this option then its value is used as the new attachments description. Otherwise no description will be set.</p>
+<p>If the option <strong>--attachment-uid</strong> has been used prior to this option then its value is used as the new attachments UID. Otherwise a random UID will be generated automatically.</p>
+</blockquote>
+<p><strong>--replace-attachment</strong> <em>selector</em>:<em>filename</em></p>
+<blockquote>
+<p>Replaces one or more attachments that match <em>selector</em> with the file <em>filename</em>. If more than one existing attachment matches <em>selector</em> then all of their contents will be replaced by the content of <em>filename</em>.</p>
+<p>The <em>selector</em> can have one of four forms. Theyre explained below in the section attachment selectors.</p>
+<p>If the option <strong>--attachment-name</strong> has been used prior to this option then its value is set as the new name for each modified attachment. Otherwise the names arent changed.</p>
+<p>If the option <strong>--attachment-mime-type</strong> has been used prior to this option then its value is set as the new MIME type for each modified attachment. Otherwise the MIME types arent changed.</p>
+<p>If the option <strong>--attachment-description</strong> has been used prior to this option then its value is set as the new description for each modified attachment. Otherwise the descriptions arent changed.</p>
+<p>If the option <strong>--attachment-uid</strong> has been used prior to this option then its value is set as the new UID for each modified attachment. Otherwise the UIDs arent changed.</p>
+</blockquote>
+<p><strong>--update-attachment</strong> <em>selector</em></p>
+<blockquote>
+<p>Sets the properties of one or more attachments that match <em>selector</em>. If more than one existing attachment matches <em>selector</em> then all of their properties will be updated.</p>
+<p>The <em>selector</em> can have one of four forms. Theyre explained below in the section attachment selectors.</p>
+<p>If the option <strong>--attachment-name</strong> has been used prior to this option then its value is set as the new name for each modified attachment. Otherwise the names arent changed.</p>
+<p>If the option <strong>--attachment-mime-type</strong> has been used prior to this option then its value is set as the new MIME type for each modified attachment. Otherwise the MIME types arent changed.</p>
+<p>If the option <strong>--attachment-description</strong> has been used prior to this option then its value is set as the new description for each modified attachment. Otherwise the descriptions arent changed.</p>
+<p>If the option <strong>--attachment-uid</strong> has been used prior to this option then its value is set as the new UID for each modified attachment. Otherwise the UIDs arent changed.</p>
+</blockquote>
+<p><strong>--delete-attachment</strong> <em>selector</em></p>
+<blockquote>
+<p>Deletes one or more attachments that match <em>selector</em>.</p>
+<p>The <em>selector</em> can have one of four forms. Theyre explained below in the section attachment selectors.</p>
+</blockquote>
+<p>Options for attachment actions:</p>
+<p><strong>--attachment-name</strong> <em>name</em></p>
+<blockquote>
+<p>Sets the name to use for the following <strong>--add-attachment</strong> or <strong>--replace-attachment</strong> operation.</p>
+</blockquote>
+<p><strong>--attachment-mime-type</strong> <em>mime-type</em></p>
+<blockquote>
+<p>Sets the MIME type to use for the following <strong>--add-attachment</strong> or <strong>--replace-attachment</strong> operation.</p>
+</blockquote>
+<p><strong>--attachment-description</strong> <em>description</em></p>
+<blockquote>
+<p>Sets the description to use for the following <strong>--add-attachment</strong> or <strong>--replace-attachment</strong> operation.</p>
+</blockquote>
+<p>Other options:</p>
+<p><strong>--disable-language-ietf</strong></p>
+<blockquote>
+<p>Normally when the user requests changes to the language track header property, <strong>mkvpropedit</strong>(1) will apply the same change to the new LanguageIETF track header element in addition to the legacy Language element. If this option is used, the change is only applied to the legacy Language element.</p>
+<p>This option does not affect changes requested via the language-ietf track header property.</p>
+</blockquote>
+<p><strong>--command-line-charset</strong> <em>character-set</em></p>
+<blockquote>
+<p>Sets the character set to convert strings given on the command line from. It defaults to the character set given by systems current locale.</p>
+</blockquote>
+<p><strong>--output-charset</strong> <em>character-set</em></p>
+<blockquote>
+<p>Sets the character set to which strings are converted that are to be output. It defaults to the character set given by systems current locale.</p>
+</blockquote>
+<p><strong>-r</strong>, <strong>--redirect-output</strong> <em>file-name</em></p>
+<blockquote>
+<p>Writes all messages to the file <em>file-name</em> instead of to the console. While this can be done easily with output redirection there are cases in which this option is needed: when the terminal reinterprets the output before writing it to a file. The character set set with <strong>--output-charset</strong> is honored.</p>
+</blockquote>
+<p><strong>--ui-language</strong> <em>code</em></p>
+<blockquote>
+<p>Forces the translations for the language <em>code</em> to be used (e.g. de_DE for the German translations). Entering list as the <em>code</em> will cause the program to output a list of available translations.</p>
+</blockquote>
+<p><strong>--abort-on-warnings</strong></p>
+<blockquote>
+<p>Tells the program to abort after the first warning is emitted. The programs exit code will be 1.</p>
+</blockquote>
+<p><strong>--debug</strong> <em>topic</em></p>
+<blockquote>
+<p>Turn on debugging for a specific feature. This option is only useful for developers.</p>
+</blockquote>
+<p><strong>--engage</strong> <em>feature</em></p>
+<blockquote>
+<p>Turn on experimental features. A list of available features can be requested with <strong>mkvpropedit --engage list</strong>. These features are not meant to be used in normal situations.</p>
+</blockquote>
+<p><strong>--gui-mode</strong></p>
+<blockquote>
+<p>Turns on GUI mode. In this mode specially-formatted lines may be output that can tell a controlling GUI whats happening. These messages follow the format #GUI#message. The message may be followed by key/value pairs as in #GUI#message#key1=value1#key2=value2.... Neither the messages nor the keys are ever translated and always output in English.</p>
+</blockquote>
+<p><strong>-v</strong>, <strong>--verbose</strong></p>
+<blockquote>
+<p>Be verbose and show all the important Matroska elements as theyre read.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Show usage information and exit.</p>
+</blockquote>
+<p><strong>-V</strong>, <strong>--version</strong></p>
+<blockquote>
+<p>Show version information and exit.</p>
+</blockquote>
+<p><strong>@</strong><em>options-file.json</em></p>
+<blockquote>
+<p>Reads additional command line arguments from the file <em>options-file</em>. For a full explanation on the supported formats for such files see the section called "Option files" in the <strong>mkvmerge</strong>(1) man page.</p>
+</blockquote>
+<h1>EDIT SELECTORS</h1>
+<p>The <strong>--edit</strong> option sets the Matroska file section (segment information or a certain tracks headers) that all following add, set and delete actions operate on. This stays valid until the next <strong>--edit</strong> option is found. The argument to this option is called the edit selector.</p>
+<p>By default <strong>mkvpropedit</strong>(1) will edit the segment information section.</p>
+<h2>Segment information</h2>
+<p>The segment information can be selected with one of these three words: info, segment_info or segmentinfo. It contains properties like the segment title or the segment UID.</p>
+<h2>Track headers</h2>
+<p>Track headers can be selected with a slightly more complex selector. All variations start with track:. The track header properties include elements like the language code, default track flag or the tracks name.</p>
+<p><strong>track:</strong><em>n</em></p>
+<blockquote>
+<p>If the parameter <em>n</em> is a number then the <em>n</em>th track will be selected. The track order is the same that <strong>mkvmerge</strong>(1)s <strong>--identify</strong> option outputs.</p>
+<p>Numbering starts at 1.</p>
+</blockquote>
+<p><strong>track:</strong><em>tn</em></p>
+<blockquote>
+<p>If the parameter starts with a single character <em>t</em> followed by a <em>n</em> then the <em>n</em>th track of a specific track type will be selected. The track type parameter <em>t</em> must be one of these four characters: a for an audio track, b for a button track, s for a subtitle track and v for a video track. The track order is the same that <strong>mkvmerge</strong>(1)s <strong>--identify</strong> option outputs.</p>
+<p>Numbering starts at 1.</p>
+</blockquote>
+<p><strong>track:</strong>=<em>uid</em></p>
+<blockquote>
+<p>If the parameter starts with a = followed by a number <em>uid</em>, the track whose track UID element equals the given <em>uid</em> will be selected. Track UIDs can be obtained with <strong>mkvinfo</strong>(1).</p>
+</blockquote>
+<p><strong>track:</strong>@<em>number</em></p>
+<blockquote>
+<p>If the parameter starts with a @ followed by a number <em>number</em>, the track whose track number element equals this <em>number</em> will be selected. Track numbers can be obtained with <strong>mkvinfo</strong>(1).</p>
+</blockquote>
+<h2>Notes</h2>
+<p>Due to the nature of the track edit selectors it is possible that several selectors actually match the same track headers. In such cases all actions for those edit selectors will be combined and executed in the order in which theyre given on the command line.</p>
+<h1>ATTACHMENT SELECTORS</h1>
+<p>An attachment selector is used with the two actions <strong>--replace-attachment</strong> and <strong>--delete-attachment</strong>. It can have one of the following four forms:</p>
+<blockquote>
+<p>1.</p>
+<p>Selection by attachment ID. In this form the selector is simply a number, the attachments ID as output by <strong>mkvmerge</strong>(1)s identification command.</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>Selection by attachment UID (unique ID). In this form the selector is the equal sign = followed by a number, the attachments unique ID as output by <strong>mkvmerge</strong>(1)s verbose identification command.</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>Selection by attachment name. In this form the selector is the literal word name: followed by the existing attachments name. If this selector is used with <strong>--replace-attachment</strong> then colons within the name to match must be escaped as \c.</p>
+</blockquote>
+<blockquote>
+<p>4.</p>
+<p>Selection by MIME type. In this form the selector is the literal word mime-type: followed by the existing attachments MIME type. If this selector is used with <strong>--replace-attachment</strong> then colons within the MIME type to match must be escaped as \c.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>The following example edits a file called movie.mkv. It sets the segment title and modifies the language code of an audio and a subtitle track. Note that this example can be shortened by leaving out the first <strong>--edit</strong> option because editing the segment information element is the default for all options found before the first <strong>--edit</strong> option anyway.</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --edit info --set &quot;title=The movie&quot; --edit track:a1 --set language=fre --edit track:a2 --set language=ita</code></pre>
+</blockquote>
+<p>The second example removes the default track flag from the first subtitle track and sets it for the second one. Note that <strong>mkvpropedit</strong>(1), unlike <strong>mkvmerge</strong>(1), does not set the default track flag of other tracks to 0 if it is set to 1 for a different track automatically.</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --edit track:s1 --set flag-default=0 --edit track:s2 --set flag-default=1</code></pre>
+</blockquote>
+<p>Replacing the tags for the second subtitle track in a file looks like this:</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --tags track:s2:new-subtitle-tags.xml</code></pre>
+</blockquote>
+<p>Removing all tags requires leaving out the file name:</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --tags all:</code></pre>
+</blockquote>
+<p>Replacing the chapters in a file looks like this:</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --chapters new-chapters.xml</code></pre>
+</blockquote>
+<p>Removing all chapters requires leaving out the file name:</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --chapters </code></pre>
+</blockquote>
+<p>Adding a font file (Arial.ttf) as an attachment:</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --add-attachment Arial.ttf</code></pre>
+</blockquote>
+<p>Adding a font file (89719823.ttf) as an attachment and providing some information as it really is just Arial:</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --attachment-name Arial.ttf --attachment-description The Arial font as a TrueType font --attachment-mime-type application/x-truetype-font --add-attachment 89719823.ttf</code></pre>
+</blockquote>
+<p>Replacing one attached font (Comic.ttf) file with another one (Arial.ttf):</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --attachment-name Arial.ttf --attachment-description The Arial font as a TrueType font --replace-attachment name:Comic.ttf:Arial.ttf</code></pre>
+</blockquote>
+<p>Deleting the second attached file, whatever it may be:</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --delete-attachment 2</code></pre>
+</blockquote>
+<p>Deleting all attached fonts by MIME type:</p>
+<blockquote>
+<pre><code>$ mkvpropedit movie.mkv --delete-attachment mime-type:application/x-truetype-font</code></pre>
+</blockquote>
+<h1>EXIT CODES</h1>
+<p><strong>mkvpropedit</strong>(1) exits with one of three exit codes:</p>
+<blockquote>
+<p>·</p>
+<p><strong>0</strong> -- This exit code means that the modification has completed successfully.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>1</strong> -- In this case <strong>mkvpropedit</strong>(1) has output at least one warning, but the modification did continue. A warning is prefixed with the text Warning:. Depending on the issues involved the resulting files might be ok or not. The user is urged to check both the warning and the resulting files.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>2</strong> -- This exit code is used after an error occurred. <strong>mkvpropedit</strong>(1) aborts right after outputting the error message. Error messages range from wrong command line arguments over read/write errors to broken files.</p>
+</blockquote>
+<h1>TEXT FILES AND CHARACTER SET CONVERSIONS</h1>
+<p>For an in-depth discussion about how all tools in the MKVToolNix suite handle character set conversions, input/output encoding, command line encoding and console encoding please see the identically-named section in the <strong>mkvmerge</strong>(1) man page.</p>
+<h1>ENVIRONMENT VARIABLES</h1>
+<p><strong>mkvpropedit</strong>(1) uses the default variables that determine the systems locale (e.g. <em>LANG</em> and the <em>LC_*</em> family). Additional variables:</p>
+<p><em>MKVPROPEDIT_DEBUG</em>, <em>MKVTOOLNIX_DEBUG</em> and its short form <em>MTX_DEBUG</em></p>
+<blockquote>
+<p>The content is treated as if it had been passed via the <strong>--debug</strong> option.</p>
+</blockquote>
+<p><em>MKVPROPEDIT_ENGAGE</em>, <em>MKVTOOLNIX_ENGAGE</em> and its short form <em>MTX_ENGAGE</em></p>
+<blockquote>
+<p>The content is treated as if it had been passed via the <strong>--engage</strong> option.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>mkvmerge</strong>(1), <strong>mkvinfo</strong>(1), <strong>mkvextract</strong>(1), <strong>mkvtoolnix-gui</strong>(1)</p>
+<h1>WWW</h1>
+<p>The latest version can always be found at <strong>the MKVToolNix homepage</strong>[1].</p>
+<h1>AUTHOR</h1>
+<p><strong>Moritz Bunkus</strong> &lt;moritz@bunkus.org&gt;</p>
+<blockquote>
+<p>Developer</p>
+</blockquote>
+<h1>NOTES</h1>
+<ul>
+<li><p>the MKVToolNix homepage</p>
+<p>https://mkvtoolnix.download/</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

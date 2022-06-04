@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pivot_root</title><meta name="description" content="Linux command pivot_root change the root filesystem"><meta name="keywords" content="linux, command, pivot_root, bsd, change the root filesystem"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pivot_root - change the root filesystem</p>
+<h1>SYNOPSIS</h1>
+<p><strong>pivot_root</strong> <em>new_root put_old</em></p>
+<h1>DESCRIPTION</h1>
+<p><strong>pivot_root</strong> moves the root file system of the current process to the directory <em>put_old</em> and makes <em>new_root</em> the new root file system. Since <strong>pivot_root</strong>(8) simply calls <strong>pivot_root</strong>(2), we refer to the man page of the latter for further details.</p>
+<p>Note that, depending on the implementation of <strong>pivot_root</strong>, root and cwd of the caller may or may not change. The following is a sequence for invoking <strong>pivot_root</strong> that works in either case, assuming that <strong>pivot_root</strong> and <strong>chroot</strong> are in the current <strong>PATH</strong>:</p>
+<p>cd <em>new_root</em><br />
+pivot_root . <em>put_old</em><br />
+exec chroot . <em>command</em></p>
+<p>Note that <strong>chroot</strong> must be available under the old root and under the new root, because <strong>pivot_root</strong> may or may not have implicitly changed the root directory of the shell.</p>
+<p>Note that <strong>exec chroot</strong> changes the running executable, which is necessary if the old root directory should be unmounted afterwards. Also note that standard input, output, and error may still point to a device on the old root file system, keeping it busy. They can easily be changed when invoking <strong>chroot</strong> (see below; note the absence of leading slashes to make it work whether <strong>pivot_root</strong> has changed the shell's root or not).</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-V</strong>, <strong>--version</strong></dt>
+<dd><p>Display version information and exit.</p>
+</dd>
+<dt><strong>-h</strong>, <strong>--help</strong></dt>
+<dd><p>Display help text and exit.</p>
+</dd>
+</dl>
+<h1>EXAMPLE</h1>
+<p>Change the root file system to /dev/hda1 from an interactive shell:</p>
+<pre><code>mount /dev/hda1 /new-root
+cd /new-root
+pivot_root . old-root
+exec chroot . sh &lt;dev/console &gt;dev/console 2&gt;&amp;1
+umount /old-root</code></pre>
+<p>Mount the new root file system over NFS from 10.0.0.1:/my_root and run <strong>init</strong>:</p>
+<pre><code>ifconfig lo 127.0.0.1 up   # for portmap
+# configure Ethernet or such
+portmap   # for lockd (implicitly started by mount)
+mount -o ro 10.0.0.1:/my_root /mnt
+killall portmap   # portmap keeps old root busy
+cd /mnt
+pivot_root . old_root
+exec chroot . sh -c &#39;umount /old_root; exec /sbin/init&#39; \
+  &lt;dev/console &gt;dev/console 2&gt;&amp;1</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>chroot</strong>(1), <strong>pivot_root</strong>(2), <strong>mount</strong>(8), <strong>switch_root</strong>(8), <strong>umount</strong>(8)</p>
+<h1>AVAILABILITY</h1>
+<p>The pivot_root command is part of the util-linux package and is available from https://www.kernel.org/pub/linux/utils/util-linux/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

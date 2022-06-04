@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pkey_alloc</title><meta name="description" content="Linux command pkey_alloc allocate or free a protection key"><meta name="keywords" content="linux, command, pkey_alloc, bsd, allocate or free a protection key"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pkey_alloc, pkey_free - allocate or free a protection key</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;sys/mman.h&gt;
+
+int pkey_alloc(unsigned int flags, unsigned int access_rights);
+int pkey_free(int pkey);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>pkey_alloc</strong>() allocates a protection key (pkey) and allows it to be passed to <strong>pkey_mprotect</strong>(2).</p>
+<p>The <strong>pkey_alloc</strong>() <em>flags</em> is reserved for future use and currently must always be specified as 0.</p>
+<p>The <strong>pkey_alloc</strong>() <em>access_rights</em> argument may contain zero or more disable operations:</p>
+<dl>
+<dt><strong>PKEY_DISABLE_ACCESS</strong></dt>
+<dd><p>Disable all data access to memory covered by the returned protection key.</p>
+</dd>
+<dt><strong>PKEY_DISABLE_WRITE</strong></dt>
+<dd><p>Disable write access to memory covered by the returned protection key.</p>
+</dd>
+</dl>
+<p><strong>pkey_free</strong>() frees a protection key and makes it available for later allocations. After a protection key has been freed, it may no longer be used in any protection-key-related operations.</p>
+<p>An application should not call <strong>pkey_free</strong>() on any protection key which has been assigned to an address range by <strong>pkey_mprotect</strong>(2) and which is still in use. The behavior in this case is undefined and may result in an error.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>pkey_alloc</strong>() returns a positive protection key value. On success, <strong>pkey_free</strong>() returns zero. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>pkey</em>, <em>flags</em>, or <em>access_rights</em> is invalid.</p>
+</dd>
+<dt><strong>ENOSPC</strong></dt>
+<dd><p>(<strong>pkey_alloc</strong>()) All protection keys available for the current process have been allocated. The number of keys available is architecture-specific and implementation-specific and may be reduced by kernel-internal use of certain keys. There are currently 15 keys available to user programs on x86.</p>
+<p>This error will also be returned if the processor or operating system does not support protection keys. Applications should always be prepared to handle this error, since factors outside of the application's control can reduce the number of available pkeys.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>pkey_alloc</strong>() and <strong>pkey_free</strong>() were added to Linux in kernel 4.9; library support was added in glibc 2.27.</p>
+<h1>CONFORMING TO</h1>
+<p>The <strong>pkey_alloc</strong>() and <strong>pkey_free</strong>() system calls are Linux-specific.</p>
+<h1>NOTES</h1>
+<p><strong>pkey_alloc</strong>() is always safe to call regardless of whether or not the operating system supports protection keys. It can be used in lieu of any other mechanism for detecting pkey support and will simply fail with the error <strong>ENOSPC</strong> if the operating system has no pkey support.</p>
+<p>The kernel guarantees that the contents of the hardware rights register (PKRU) will be preserved only for allocated protection keys. Any time a key is unallocated (either before the first call returning that key from <strong>pkey_alloc</strong>() or after it is freed via <strong>pkey_free</strong>()), the kernel may make arbitrary changes to the parts of the rights register affecting access to that key.</p>
+<h1>EXAMPLES</h1>
+<p>See <strong>pkeys</strong>(7).</p>
+<h1>SEE ALSO</h1>
+<p><strong>pkey_mprotect</strong>(2), <strong>pkeys</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command setfsgid</title><meta name="description" content="Linux command setfsgid set group identity used for filesystem checks"><meta name="keywords" content="linux, command, setfsgid, bsd, set group identity used for filesystem checks"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>setfsgid - set group identity used for filesystem checks</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/fsuid.h&gt;</strong></p>
+<p><strong>int setfsgid(uid_t </strong><em>fsgid</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>On Linux, a process has both a filesystem group ID and an effective group ID. The (Linux-specific) filesystem group ID is used for permissions checking when accessing filesystem objects, while the effective group ID is used for some other kinds of permissions checks (see <strong>credentials</strong>(7)).</p>
+<p>Normally, the value of the process's filesystem group ID is the same as the value of its effective group ID. This is so, because whenever a process's effective group ID is changed, the kernel also changes the filesystem group ID to be the same as the new value of the effective group ID. A process can cause the value of its filesystem group ID to diverge from its effective group ID by using <strong>setfsgid</strong>() to change its filesystem group ID to the value given in <em>fsgid</em>.</p>
+<p><strong>setfsgid</strong>() will succeed only if the caller is the superuser or if <em>fsgid</em> matches either the caller's real group ID, effective group ID, saved set-group-ID, or current the filesystem user ID.</p>
+<h1>RETURN VALUE</h1>
+<p>On both success and failure, this call returns the previous filesystem group ID of the caller.</p>
+<h1>VERSIONS</h1>
+<p>This system call is present in Linux since version 1.2.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>setfsgid</strong>() is Linux-specific and should not be used in programs intended to be portable.</p>
+<h1>NOTES</h1>
+<p>The filesystem group ID concept and the <strong>setfsgid</strong>() system call were invented for historical reasons that are no longer applicable on modern Linux kernels. See <strong>setfsuid</strong>(2) for a discussion of why the use of both <strong>setfsuid</strong>(2) and <strong>setfsgid</strong>() is nowadays unneeded.</p>
+<p>The original Linux <strong>setfsgid</strong>() system call supported only 16-bit group IDs. Subsequently, Linux 2.4 added <strong>setfsgid32</strong>() supporting 32-bit IDs. The glibc <strong>setfsgid</strong>() wrapper function transparently deals with the variation across kernel versions.</p>
+<h2>C library/kernel differences</h2>
+<p>In glibc 2.15 and earlier, when the wrapper for this system call determines that the argument can't be passed to the kernel without integer truncation (because the kernel is old and does not support 32-bit group IDs), it will return -1 and set <em>errno</em> to <strong>EINVAL</strong> without attempting the system call.</p>
+<h1>BUGS</h1>
+<p>No error indications of any kind are returned to the caller, and the fact that both successful and unsuccessful calls return the same value makes it impossible to directly determine whether the call succeeded or failed. Instead, the caller must resort to looking at the return value from a further call such as <em>setfsgid(-1)</em> (which will always fail), in order to determine if a preceding call to <strong>setfsgid</strong>() changed the filesystem group ID. At the very least, <strong>EPERM</strong> should be returned when the call fails (because the caller lacks the <strong>CAP_SETGID</strong> capability).</p>
+<h1>SEE ALSO</h1>
+<p><strong>kill</strong>(2), <strong>setfsuid</strong>(2), <strong>capabilities</strong>(7), <strong>credentials</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

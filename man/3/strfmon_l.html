@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command strfmon_l</title><meta name="description" content="Linux command strfmon_l convert monetary value to a string"><meta name="keywords" content="linux, command, strfmon_l, bsd, convert monetary value to a string"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>strfmon, strfmon_l - convert monetary value to a string</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;monetary.h&gt;
+
+ssize_t strfmon(char *s, size_t max, const char *format, ...);
+
+ssize_t strfmon_l(char *s, size_t max, locale_t locale,
+ const char *format, ...);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>strfmon</strong>() function formats the specified monetary amount according to the current locale and format specification <em>format</em> and places the result in the character array <em>s</em> of size <em>max</em>.</p>
+<p>The <strong>strfmon_l</strong>() function performs the same task, but uses the locale specified by <em>locale</em>. The behavior of <strong>strfmon_l</strong>() is undefined if <em>locale</em> is the special locale object <strong>LC_GLOBAL_LOCALE</strong> (see <strong>duplocale</strong>(3)) or is not a valid locale object handle.</p>
+<p>Ordinary characters in <em>format</em> are copied to <em>s</em> without conversion. Conversion specifiers are introduced by a '%' character. Immediately following it there can be zero or more of the following flags:</p>
+<dl>
+<dt><strong>=</strong><em>f</em></dt>
+<dd><p>The single-byte character <em>f</em> is used as the numeric fill character (to be used with a left precision, see below). When not specified, the space character is used.</p>
+</dd>
+<dt><strong>^</strong></dt>
+<dd><p>Do not use any grouping characters that might be defined for the current locale. By default, grouping is enabled.</p>
+</dd>
+<dt><strong>(</strong> or <strong>+</strong></dt>
+<dd><p>The ( flag indicates that negative amounts should be enclosed between parentheses. The + flag indicates that signs should be handled in the default way, that is, amounts are preceded by the locale's sign indication, for example, nothing for positive, "-" for negative.</p>
+</dd>
+<dt><strong>!</strong></dt>
+<dd><p>Omit the currency symbol.</p>
+</dd>
+<dt><strong>-</strong></dt>
+<dd><p>Left justify all fields. The default is right justification.</p>
+</dd>
+</dl>
+<p>Next, there may be a field width: a decimal digit string specifying a minimum field width in bytes. The default is 0. A result smaller than this width is padded with spaces (on the left, unless the left-justify flag was given).</p>
+<p>Next, there may be a left precision of the form "#" followed by a decimal digit string. If the number of digits left of the radix character is smaller than this, the representation is padded on the left with the numeric fill character. Grouping characters are not counted in this field width.</p>
+<p>Next, there may be a right precision of the form "." followed by a decimal digit string. The amount being formatted is rounded to the specified number of digits prior to formatting. The default is specified in the <em>frac_digits</em> and <em>int_frac_digits</em> items of the current locale. If the right precision is 0, no radix character is printed. (The radix character here is determined by <strong>LC_MONETARY</strong>, and may differ from that specified by <strong>LC_NUMERIC</strong>.)</p>
+<p>Finally, the conversion specification must be ended with a conversion character. The three conversion characters are</p>
+<dl>
+<dt><strong>%</strong></dt>
+<dd><p>(In this case, the entire specification must be exactly "%%".) Put a '%' character in the result string.</p>
+</dd>
+<dt><strong>i</strong></dt>
+<dd><p>One argument of type <em>double</em> is converted using the locale's international currency format.</p>
+</dd>
+<dt><strong>n</strong></dt>
+<dd><p>One argument of type <em>double</em> is converted using the locale's national currency format.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>The <strong>strfmon</strong>() function returns the number of characters placed in the array <em>s</em>, not including the terminating null byte, provided the string, including the terminating null byte, fits. Otherwise, it sets <em>errno</em> to <strong>E2BIG</strong>, returns -1, and the contents of the array is undefined.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>strfmon</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>strfmon_l</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>EXAMPLES</h1>
+<p>The call</p>
+<pre><code>strfmon(buf, sizeof(buf), &quot;[%^=*#6n] [%=*#6i]&quot;,
+        1234.567, 1234.567);</code></pre>
+<p>outputs</p>
+<pre><code>[€ **1234,57] [EUR **1 234,57]</code></pre>
+<p>in the <em>nl_NL</em> locale. The <em>de_DE</em>, <em>de_CH</em>, <em>en_AU</em>, and <em>en_GB</em> locales yield</p>
+<pre><code>[ **1234,57 €] [ **1.234,57 EUR]
+[ Fr. **1234.57] [ CHF **1&#39;234.57]
+[ $**1234.57] [ AUD**1,234.57]
+[ £**1234.57] [ GBP**1,234.57]</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>duplocale</strong>(3), <strong>setlocale</strong>(3), <strong>sprintf</strong>(3), <strong>locale</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

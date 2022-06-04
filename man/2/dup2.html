@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command dup2</title><meta name="description" content="Linux command dup2 duplicate a file descriptor"><meta name="keywords" content="linux, command, dup2, bsd, duplicate a file descriptor"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>dup, dup2, dup3 - duplicate a file descriptor</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+
+int dup(int oldfd);
+int dup2(int oldfd, int newfd);
+
+#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;fcntl.h&gt; /* Obtain O_* constant definitions */
+#include &lt;unistd.h&gt;
+
+int dup3(int oldfd, int newfd, int flags);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>dup</strong>() system call creates a copy of the file descriptor <em>oldfd</em>, using the lowest-numbered unused file descriptor for the new descriptor.</p>
+<p>After a successful return, the old and new file descriptors may be used interchangeably. They refer to the same open file description (see <strong>open</strong>(2)) and thus share file offset and file status flags; for example, if the file offset is modified by using <strong>lseek</strong>(2) on one of the file descriptors, the offset is also changed for the other.</p>
+<p>The two file descriptors do not share file descriptor flags (the close-on-exec flag). The close-on-exec flag (<strong>FD_CLOEXEC</strong>; see <strong>fcntl</strong>(2)) for the duplicate descriptor is off.</p>
+<h2>dup2()</h2>
+<p>The <strong>dup2</strong>() system call performs the same task as <strong>dup</strong>(), but instead of using the lowest-numbered unused file descriptor, it uses the file descriptor number specified in <em>newfd</em>. If the file descriptor <em>newfd</em> was previously open, it is silently closed before being reused.</p>
+<p>The steps of closing and reusing the file descriptor <em>newfd</em> are performed <em>atomically</em>. This is important, because trying to implement equivalent functionality using <strong>close</strong>(2) and <strong>dup</strong>() would be subject to race conditions, whereby <em>newfd</em> might be reused between the two steps. Such reuse could happen because the main program is interrupted by a signal handler that allocates a file descriptor, or because a parallel thread allocates a file descriptor.</p>
+<p>Note the following points:</p>
+<ul>
+<li><p>If <em>oldfd</em> is not a valid file descriptor, then the call fails, and <em>newfd</em> is not closed.</p></li>
+<li><p>If <em>oldfd</em> is a valid file descriptor, and <em>newfd</em> has the same value as <em>oldfd</em>, then <strong>dup2</strong>() does nothing, and returns <em>newfd</em>.</p></li>
+</ul>
+<h2>dup3()</h2>
+<p><strong>dup3</strong>() is the same as <strong>dup2</strong>(), except that:</p>
+<ul>
+<li><p>The caller can force the close-on-exec flag to be set for the new file descriptor by specifying <strong>O_CLOEXEC</strong> in <em>flags</em>. See the description of the same flag in <strong>open</strong>(2) for reasons why this may be useful.</p></li>
+<li><p>If <em>oldfd</em> equals <em>newfd</em>, then <strong>dup3</strong>() fails with the error <strong>EINVAL</strong>.</p></li>
+</ul>
+<h1>RETURN VALUE</h1>
+<p>On success, these system calls return the new file descriptor. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>oldfd</em> isn't an open file descriptor.</p>
+</dd>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>newfd</em> is out of the allowed range for file descriptors (see the discussion of <strong>RLIMIT_NOFILE</strong> in <strong>getrlimit</strong>(2)).</p>
+</dd>
+<dt><strong>EBUSY</strong></dt>
+<dd><p>(Linux only) This may be returned by <strong>dup2</strong>() or <strong>dup3</strong>() during a race condition with <strong>open</strong>(2) and <strong>dup</strong>().</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>The <strong>dup2</strong>() or <strong>dup3</strong>() call was interrupted by a signal; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(<strong>dup3</strong>()) <em>flags</em> contain an invalid value.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(<strong>dup3</strong>()) <em>oldfd</em> was equal to <em>newfd</em>.</p>
+</dd>
+<dt><strong>EMFILE</strong></dt>
+<dd><p>The per-process limit on the number of open file descriptors has been reached (see the discussion of <strong>RLIMIT_NOFILE</strong> in <strong>getrlimit</strong>(2)).</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>dup3</strong>() was added to Linux in version 2.6.27; glibc support is available starting with version 2.9.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>dup</strong>(), <strong>dup2</strong>(): POSIX.1-2001, POSIX.1-2008, SVr4, 4.3BSD.</p>
+<p><strong>dup3</strong>() is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>The error returned by <strong>dup2</strong>() is different from that returned by <strong>fcntl(</strong>..., <strong>F_DUPFD</strong>, ...<strong>)</strong> when <em>newfd</em> is out of range. On some systems, <strong>dup2</strong>() also sometimes returns <strong>EINVAL</strong> like <strong>F_DUPFD</strong>.</p>
+<p>If <em>newfd</em> was open, any errors that would have been reported at <strong>close</strong>(2) time are lost. If this is of concern, then—unless the program is single-threaded and does not allocate file descriptors in signal handlers—the correct approach is <em>not</em> to close <em>newfd</em> before calling <strong>dup2</strong>(), because of the race condition described above. Instead, code something like the following could be used:</p>
+<pre><code>/* Obtain a duplicate of &#39;newfd&#39; that can subsequently
+   be used to check for close() errors; an EBADF error
+   means that &#39;newfd&#39; was not open. */
+
+tmpfd = dup(newfd);
+if (tmpfd == -1 &amp;&amp; errno != EBADF) {
+    /* Handle unexpected dup() error */
+}
+
+/* Atomically duplicate &#39;oldfd&#39; on &#39;newfd&#39; */
+
+if (dup2(oldfd, newfd) == -1) {
+    /* Handle dup2() error */
+}
+
+/* Now check for close() errors on the file originally
+   referred to by &#39;newfd&#39; */
+
+if (tmpfd != -1) {
+    if (close(tmpfd) == -1) {
+        /* Handle errors from close */
+    }
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>close</strong>(2), <strong>fcntl</strong>(2), <strong>open</strong>(2), <strong>pidfd_getfd</strong>(2)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

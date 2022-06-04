@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command foomatic-rip</title><meta name="description" content="Linux command foomatic-rip Universal print filter/RIP wrapper"><meta name="keywords" content="linux, command, foomatic-rip, bsd, Universal print filter/RIP wrapper"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>foomatic-rip - Universal print filter/RIP wrapper</p>
+<h1>SYNOPSIS</h1>
+<h2>General Options:</h2>
+<p><strong><strong>foomatic-rip</strong> <strong>[-v] [-q]</strong></strong><em><em> &lt;mode-specific options&gt;</em></em></p>
+<h2>Spooler-less printing filter:</h2>
+<p><strong><strong>foomatic-rip</strong> <strong>[-P</strong></strong><em> <em>&lt;printer&gt;</em></em><strong> </strong> | <strong>--ppd</strong> <em>&lt;ppdfile&gt;</em> <strong>]</strong> [<strong>-J</strong> <em>&lt;jobtitle&gt;</em> ] [<strong>-o</strong> <em>&lt;option&gt;</em><strong>=</strong><em>&lt;value&gt;</em> [...]] <strong>[</strong><em>&lt;files&gt;</em><strong>]</strong></p>
+<h2>CUPS filter:</h2>
+<p><strong><strong>foomatic-rip</strong> <em>&lt;jobid&gt;</em></strong><em> <em>&lt;user&gt;</em></em><strong> <em>&lt;jobtitle&gt;</em></strong><em> <em>&lt;numcopies&gt;</em></em><strong> <em>&lt;options&gt;</em></strong><em> <strong>[</strong><em>&lt;file&gt;</em><strong>]</strong></em></p>
+<h1>DESCRIPTION</h1>
+<p>foomatic-rip is a universal print filter which can be used as CUPS filter or stand-alone for spooler-less, direct printing. It has the following features:</p>
+<dl>
+<dt>·</dt>
+<dd><p>It translates PostScript and PDF from standard input or a file to the printer's native language on standard output.</p>
+</dd>
+</dl>
+<dl>
+<dt>·</dt>
+<dd><p>The translation is done with an external renderer, usually Ghostscript (<strong>gs(1)</strong>). If no translation is needed (PostScript printer) the renderer's command line reduces to <strong>cat(1)</strong>. The way how this translation is done is described in a <strong>PPD file</strong>.</p>
+</dd>
+</dl>
+<dl>
+<dt>·</dt>
+<dd><p>Printer capabilities, how to handle user options, and how to build the renderer command line is always described by <strong>PPD files</strong>, these PPD files usually come from <strong>Foomatic</strong> or can be the ones supplied by the manufacturers of PostScript printers. The PPD files are the same for both CUPS and direct printing.</p>
+</dd>
+</dl>
+<dl>
+<dt>·</dt>
+<dd><p>foomatic-rip works with <strong>CUPS</strong> and for direct printing (<strong>without</strong> spooler), where the latter is mainly for testing and debugging. The mode is selected by the command line options and environment variables which are supplied to foomatic-rip.</p>
+</dd>
+</dl>
+<dl>
+<dt>·</dt>
+<dd><p>foomatic-rip does not only apply option settings supplied by the user through the command line of the printing command, but also searches the entire job for embedded option settings (only PostScript jobs). Here not only settings which affect the whole job are taken into account, but also settings in the page headers, which are only valid for the page where they were found, so applications which produce PostScript code with page-specific printer option settings are fully supported.</p>
+</dd>
+</dl>
+<h1>DIRECT, SPOOLER-LESS PRINTING</h1>
+<h2>Options</h2>
+<dl>
+<dt><strong>-v</strong></dt>
+<dd><p>verbose mode for debugging. <strong>WARNING:</strong> This will create a file in /tmp that contains the debugging information. This opens a security loophole and should not be used in production.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-q</strong></dt>
+<dd><p>quiet mode - minimal information output</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-P</strong><em> &lt;printer&gt;</em></dt>
+<dd><p><em>&lt;printer&gt;</em> is the configured printer which should be used for this job.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--ppd</strong><em> &lt;ppdfile&gt;</em></dt>
+<dd><p>The PPD file <em>&lt;ppdfile&gt;</em> should be applied for processing this job.</p>
+</dd>
+<dt><strong>-o</strong><em> <em>&lt;option&gt;</em><strong>=</strong><em>&lt;value&gt;</em></em></dt>
+<dd><p>Option settings for this job.</p>
+</dd>
+<dt><strong><em>&lt;files&gt;</em></strong></dt>
+<dd><p>The file(s) to be printed.</p>
+</dd>
+</dl>
+<p><strong>foomatic-rip</strong> will print from standard input unless at least one file to be printed is specified on the command line. If your printer PPD file is stored as <em>/etc/direct/&lt;printer&gt;.ppd</em> or <em>~/.foomatic/direct/&lt;printer&gt;.ppd</em> you can use it by simply specifying "-P <em>&lt;printer&gt;</em>".</p>
+<p>Put a line</p>
+<p><strong>*FoomaticRIPPostPipe: "| </strong><em>&lt;command&gt;</em><strong>"</strong></p>
+<p>into the PPD file, right after <strong>*PPD-Adobe: "4.3"</strong>, where <em>&lt;command&gt;</em> is a command into which you want to re-direct the output data. Due to the restrictions of PPD files <strong>&lt;</strong>, <strong>&gt;</strong>, and <strong>"</strong> are not allowed in the <em>&lt;command&gt;</em>, replace them as follows:</p>
+<pre><code>Character Replacement
+---------------------
+&lt; &amp;lt;
+&gt; &amp;gt;
+&quot; &amp;quot;
+&#39; &amp;apos;
+&amp; &amp;amp;</code></pre>
+<p>This way you can print directly to your printer, use</p>
+<p><strong>*FoomaticRIPPostPipe: "| cat &amp;gt; /dev/lp0"</strong></p>
+<p>or</p>
+<p><strong>*FoomaticRIPPostPipe: "| cat &amp;gt; /dev/usb/lp0"</strong></p>
+<p>for local parallel or USB printers. To make normal users able to print this way add them to the group <strong>lp</strong> and make sure that the appropriate printer device file <em>/dev/...</em> is group-writable for the <strong>lp</strong> group.</p>
+<p>for a TCP/Socket/JetDirect printer with the host name <strong>printer</strong> listening on port <strong>9100</strong> you need this:</p>
+<p><strong>*FoomaticRIPPostPipe: "| /usr/bin/nc -w 1 printer 9100"</strong></p>
+<p>Note the "-w 1" in the "nc" command line, it makes "nc" exiting immediately after the data is transferred to the printer.</p>
+<p><strong>*FoomaticRIPPostPipe: "| rlpr -Plp@printserver"</strong></p>
+<p>directs your jobs to the LPD printer queue <strong>lp</strong> on the machine named <strong>printserver</strong>.</p>
+<p>See also http://www.openprinting.org/direct-doc.html</p>
+<h1>PRINTING WITH SPOOLER</h1>
+<p>See the documentation on the OpenPrinting Web site:</p>
+<p>http://www.openprinting.org/</p>
+<h1>CONFIGURATION FILE</h1>
+<p>The file <strong>/etc/cups/foomatic-rip.conf</strong> or if it is not readable the file <strong>/etc/foomatic/filter.conf</strong> is read whenever foomatic-rip is executed. It allows one to configure the behavior of foomatic-rip as follows (lines beginning with <strong>#</strong> are comments and therefore get ignored):</p>
+<dl>
+<dt><strong>debug: 0|1</strong></dt>
+<dd><p>Turns on (<strong>1</strong>) or off (<strong>0</strong>) the debug mode. This is equivalent to supplying the <strong>--debug</strong> command line option. Default setting is <strong>0</strong>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>echo:</strong><em> [&lt;path&gt;/]&lt;executable&gt;</em></dt>
+<dd><p>Sets the path to an <strong>echo(1)</strong> executable which supports <strong>-n</strong>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>gspath:</strong><em> [&lt;path&gt;/]&lt;executable&gt;</em></dt>
+<dd><p>Sets the path to the Ghostscript (<strong>gs(1)</strong>) executable. To be used if Ghostscript is at a non-standard location or if an alternative Ghostscript should be used.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>execpath:</strong><em> &lt;path&gt;[:&lt;path&gt;]...</em></dt>
+<dd><p>Sets the <strong>$PATH</strong> variable to be used by foomatic-rip.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>cupsfilterpath:</strong><em> &lt;path&gt;[:&lt;path&gt;]...</em></dt>
+<dd><p>Sets the directories (colon-separated) in which foomatic-rip searches for CUPS filters.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>preferred_shell:</strong><em> [&lt;path&gt;/]&lt;executable&gt;</em></dt>
+<dd><p>Sets the preferred shell to use when executing FoomaticRIPCommandLine and friends. Several PPD files use shell constructs that require a more modern shell like <strong>bash</strong>, <strong>zsh</strong>, or <strong>ksh</strong>.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt>/etc/cups/ppd/&lt;printer&gt;.ppd</dt>
+<dd>
+</dd>
+<dt>/etc/direct/&lt;printer&gt;.ppd</dt>
+<dd>
+</dd>
+</dl>
+<p>The PPD files of the currently defined printers</p>
+<dl>
+<dt>/etc/cups/foomatic-rip.conf</dt>
+<dd>
+</dd>
+<dt>/etc/foomatic/filter.conf</dt>
+<dd>
+</dd>
+</dl>
+<p>Configuration file for foomatic-rip</p>
+<h1>EXIT STATUS</h1>
+<p><strong>foomatic-rip</strong> returns 0 unless something unexpected happens.</p>
+<h1>AUTHOR</h1>
+<p>Till Kamppeter &lt;<em>till.kamppeter@gmail.com</em>&gt; with parts of Manfred Wassmanns's &lt;<em>manolo@NCC-1701.B.Shuttle.de</em>&gt; man pages for the Foomatic 2.0.x filters.</p>
+<h1>BUGS</h1>
+<p>None so far.</p>
+<p>Please send bug reports to the OpenPrinting bug tracker:</p>
+<p>http://bugs.linuxfoundation.org/</p>
+<p>Use "OpenPrinting" as the product and "cups-filters" as the component.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

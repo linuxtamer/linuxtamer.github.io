@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command ioctl</title><meta name="description" content="Linux command ioctl control device"><meta name="keywords" content="linux, command, ioctl, bsd, control device"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>ioctl - control device</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/ioctl.h&gt;</strong></p>
+<p><strong>int ioctl(int </strong><em>fd</em><strong>, unsigned long </strong><em>request</em><strong>, ...);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>ioctl</strong>() system call manipulates the underlying device parameters of special files. In particular, many operating characteristics of character special files (e.g., terminals) may be controlled with <strong>ioctl</strong>() requests. The argument <em>fd</em> must be an open file descriptor.</p>
+<p>The second argument is a device-dependent request code. The third argument is an untyped pointer to memory. It's traditionally <strong>char *</strong><em>argp</em> (from the days before <strong>void *</strong> was valid C), and will be so named for this discussion.</p>
+<p>An <strong>ioctl</strong>() <em>request</em> has encoded in it whether the argument is an <em>in</em> parameter or <em>out</em> parameter, and the size of the argument <em>argp</em> in bytes. Macros and defines used in specifying an <strong>ioctl</strong>() <em>request</em> are located in the file <em>&lt;sys/ioctl.h&gt;</em>. See NOTES.</p>
+<h1>RETURN VALUE</h1>
+<p>Usually, on success zero is returned. A few <strong>ioctl</strong>() requests use the return value as an output parameter and return a nonnegative value on success. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not a valid file descriptor.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>argp</em> references an inaccessible memory area.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>request</em> or <em>argp</em> is not valid.</p>
+</dd>
+<dt><strong>ENOTTY</strong></dt>
+<dd><p><em>fd</em> is not associated with a character special device.</p>
+</dd>
+<dt><strong>ENOTTY</strong></dt>
+<dd><p>The specified request does not apply to the kind of object that the file descriptor <em>fd</em> references.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>No single standard. Arguments, returns, and semantics of <strong>ioctl</strong>() vary according to the device driver in question (the call is used as a catch-all for operations that don't cleanly fit the UNIX stream I/O model).</p>
+<p>The <strong>ioctl</strong>() system call appeared in Version 7 AT&amp;T UNIX.</p>
+<h1>NOTES</h1>
+<p>In order to use this call, one needs an open file descriptor. Often the <strong>open</strong>(2) call has unwanted side effects, that can be avoided under Linux by giving it the <strong>O_NONBLOCK</strong> flag.</p>
+<h2>ioctl structure</h2>
+<p>Ioctl command values are 32-bit constants. In principle these constants are completely arbitrary, but people have tried to build some structure into them.</p>
+<p>The old Linux situation was that of mostly 16-bit constants, where the last byte is a serial number, and the preceding byte(s) give a type indicating the driver. Sometimes the major number was used: 0x03 for the <strong>HDIO_*</strong> ioctls, 0x06 for the <strong>LP*</strong> ioctls. And sometimes one or more ASCII letters were used. For example, <strong>TCGETS</strong> has value 0x00005401, with 0x54 = 'T' indicating the terminal driver, and <strong>CYGETTIMEOUT</strong> has value 0x00435906, with 0x43 0x59 = 'C' 'Y' indicating the cyclades driver.</p>
+<p>Later (0.98p5) some more information was built into the number. One has 2 direction bits (00: none, 01: write, 10: read, 11: read/write) followed by 14 size bits (giving the size of the argument), followed by an 8-bit type (collecting the ioctls in groups for a common purpose or a common driver), and an 8-bit serial number.</p>
+<p>The macros describing this structure live in <em>&lt;asm/ioctl.h&gt;</em> and are <strong>_IO(type,nr)</strong> and <strong>{_IOR,_IOW,_IOWR}(type,nr,size)</strong>. They use <em>sizeof(size)</em> so that size is a misnomer here: this third argument is a data type.</p>
+<p>Note that the size bits are very unreliable: in lots of cases they are wrong, either because of buggy macros using <em>sizeof(sizeof(struct))</em>, or because of legacy values.</p>
+<p>Thus, it seems that the new structure only gave disadvantages: it does not help in checking, but it causes varying values for the various architectures.</p>
+<h1>SEE ALSO</h1>
+<p><strong>execve</strong>(2), <strong>fcntl</strong>(2), <strong>ioctl_console</strong>(2), <strong>ioctl_fat</strong>(2), <strong>ioctl_ficlonerange</strong>(2), <strong>ioctl_fideduperange</strong>(2), <strong>ioctl_fslabel</strong>(2), <strong>ioctl_getfsmap</strong>(2), <strong>ioctl_iflags</strong>(2), <strong>ioctl_ns</strong>(2), <strong>ioctl_tty</strong>(2), <strong>ioctl_userfaultfd</strong>(2), <strong>open</strong>(2), <strong>sd</strong>(4), <strong>tty</strong>(4)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

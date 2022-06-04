@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fcntl</title><meta name="description" content="Linux command fcntl manipulate file descriptor"><meta name="keywords" content="linux, command, fcntl, bsd, manipulate file descriptor"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>fcntl - manipulate file descriptor</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+
+int fcntl(int fd, int cmd, ... /* arg */ );</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>fcntl</strong>() performs one of the operations described below on the open file descriptor <em>fd</em>. The operation is determined by <em>cmd</em>.</p>
+<p><strong>fcntl</strong>() can take an optional third argument. Whether or not this argument is required is determined by <em>cmd</em>. The required argument type is indicated in parentheses after each <em>cmd</em> name (in most cases, the required type is <em>int</em>, and we identify the argument using the name <em>arg</em>), or <em>void</em> is specified if the argument is not required.</p>
+<p>Certain of the operations below are supported only since a particular Linux kernel version. The preferred method of checking whether the host kernel supports a particular operation is to invoke <strong>fcntl</strong>() with the desired <em>cmd</em> value and then test whether the call failed with <strong>EINVAL</strong>, indicating that the kernel does not recognize this value.</p>
+<h2>Duplicating a file descriptor</h2>
+<dl>
+<dt><strong>F_DUPFD</strong> (<em>int</em>)</dt>
+<dd><p>Duplicate the file descriptor <em>fd</em> using the lowest-numbered available file descriptor greater than or equal to <em>arg</em>. This is different from <strong>dup2</strong>(2), which uses exactly the file descriptor specified.</p>
+<p>On success, the new file descriptor is returned.</p>
+<p>See <strong>dup</strong>(2) for further details.</p>
+</dd>
+<dt><strong>F_DUPFD_CLOEXEC</strong> (<em>int</em>; since Linux 2.6.24)</dt>
+<dd><p>As for <strong>F_DUPFD</strong>, but additionally set the close-on-exec flag for the duplicate file descriptor. Specifying this flag permits a program to avoid an additional <strong>fcntl</strong>() <strong>F_SETFD</strong> operation to set the <strong>FD_CLOEXEC</strong> flag. For an explanation of why this flag is useful, see the description of <strong>O_CLOEXEC</strong> in <strong>open</strong>(2).</p>
+</dd>
+</dl>
+<h2>File descriptor flags</h2>
+<p>The following commands manipulate the flags associated with a file descriptor. Currently, only one such flag is defined: <strong>FD_CLOEXEC</strong>, the close-on-exec flag. If the <strong>FD_CLOEXEC</strong> bit is set, the file descriptor will automatically be closed during a successful <strong>execve</strong>(2). (If the <strong>execve</strong>(2) fails, the file descriptor is left open.) If the <strong>FD_CLOEXEC</strong> bit is not set, the file descriptor will remain open across an <strong>execve</strong>(2).</p>
+<dl>
+<dt><strong>F_GETFD</strong> (<em>void</em>)</dt>
+<dd><p>Return (as the function result) the file descriptor flags; <em>arg</em> is ignored.</p>
+</dd>
+<dt><strong>F_SETFD</strong> (<em>int</em>)</dt>
+<dd><p>Set the file descriptor flags to the value specified by <em>arg</em>.</p>
+</dd>
+</dl>
+<p>In multithreaded programs, using <strong>fcntl</strong>() <strong>F_SETFD</strong> to set the close-on-exec flag at the same time as another thread performs a <strong>fork</strong>(2) plus <strong>execve</strong>(2) is vulnerable to a race condition that may unintentionally leak the file descriptor to the program executed in the child process. See the discussion of the <strong>O_CLOEXEC</strong> flag in <strong>open</strong>(2) for details and a remedy to the problem.</p>
+<h2>File status flags</h2>
+<p>Each open file description has certain associated status flags, initialized by <strong>open</strong>(2) and possibly modified by <strong>fcntl</strong>(). Duplicated file descriptors (made with <strong>dup</strong>(2), <strong>fcntl</strong>(F_DUPFD), <strong>fork</strong>(2), etc.) refer to the same open file description, and thus share the same file status flags.</p>
+<p>The file status flags and their semantics are described in <strong>open</strong>(2).</p>
+<dl>
+<dt><strong>F_GETFL</strong> (<em>void</em>)</dt>
+<dd><p>Return (as the function result) the file access mode and the file status flags; <em>arg</em> is ignored.</p>
+</dd>
+<dt><strong>F_SETFL</strong> (<em>int</em>)</dt>
+<dd><p>Set the file status flags to the value specified by <em>arg</em>. File access mode (<strong>O_RDONLY</strong>, <strong>O_WRONLY</strong>, <strong>O_RDWR</strong>) and file creation flags (i.e., <strong>O_CREAT</strong>, <strong>O_EXCL</strong>, <strong>O_NOCTTY</strong>, <strong>O_TRUNC</strong>) in <em>arg</em> are ignored. On Linux, this command can change only the <strong>O_APPEND</strong>, <strong>O_ASYNC</strong>, <strong>O_DIRECT</strong>, <strong>O_NOATIME</strong>, and <strong>O_NONBLOCK</strong> flags. It is not possible to change the <strong>O_DSYNC</strong> and <strong>O_SYNC</strong> flags; see BUGS, below.</p>
+</dd>
+</dl>
+<h2>Advisory record locking</h2>
+<p>Linux implements traditional ("process-associated") UNIX record locks, as standardized by POSIX. For a Linux-specific alternative with better semantics, see the discussion of open file description locks below.</p>
+<p><strong>F_SETLK</strong>, <strong>F_SETLKW</strong>, and <strong>F_GETLK</strong> are used to acquire, release, and test for the existence of record locks (also known as byte-range, file-segment, or file-region locks). The third argument, <em>lock</em>, is a pointer to a structure that has at least the following fields (in unspecified order).</p>
+<pre><code>struct flock {
+    ...
+    short l_type;    /* Type of lock: F_RDLCK,
+                        F_WRLCK, F_UNLCK */
+    short l_whence;  /* How to interpret l_start:
+                        SEEK_SET, SEEK_CUR, SEEK_END */
+    off_t l_start;   /* Starting offset for lock */
+    off_t l_len;     /* Number of bytes to lock */
+    pid_t l_pid;     /* PID of process blocking our lock
+                        (set by F_GETLK and F_OFD_GETLK) */
+    ...
+};</code></pre>
+<p>The <em>l_whence</em>, <em>l_start</em>, and <em>l_len</em> fields of this structure specify the range of bytes we wish to lock. Bytes past the end of the file may be locked, but not bytes before the start of the file.</p>
+<p><em>l_start</em> is the starting offset for the lock, and is interpreted relative to either: the start of the file (if <em>l_whence</em> is <strong>SEEK_SET</strong>); the current file offset (if <em>l_whence</em> is <strong>SEEK_CUR</strong>); or the end of the file (if <em>l_whence</em> is <strong>SEEK_END</strong>). In the final two cases, <em>l_start</em> can be a negative number provided the offset does not lie before the start of the file.</p>
+<p><em>l_len</em> specifies the number of bytes to be locked. If <em>l_len</em> is positive, then the range to be locked covers bytes <em>l_start</em> up to and including <em>l_start</em>+<em>l_len</em>-1. Specifying 0 for <em>l_len</em> has the special meaning: lock all bytes starting at the location specified by <em>l_whence</em> and <em>l_start</em> through to the end of file, no matter how large the file grows.</p>
+<p>POSIX.1-2001 allows (but does not require) an implementation to support a negative <em>l_len</em> value; if <em>l_len</em> is negative, the interval described by <em>lock</em> covers bytes <em>l_start</em>+<em>l_len</em> up to and including <em>l_start</em>-1. This is supported by Linux since kernel versions 2.4.21 and 2.5.49.</p>
+<p>The <em>l_type</em> field can be used to place a read (<strong>F_RDLCK</strong>) or a write (<strong>F_WRLCK</strong>) lock on a file. Any number of processes may hold a read lock (shared lock) on a file region, but only one process may hold a write lock (exclusive lock). An exclusive lock excludes all other locks, both shared and exclusive. A single process can hold only one type of lock on a file region; if a new lock is applied to an already-locked region, then the existing lock is converted to the new lock type. (Such conversions may involve splitting, shrinking, or coalescing with an existing lock if the byte range specified by the new lock does not precisely coincide with the range of the existing lock.)</p>
+<dl>
+<dt><strong>F_SETLK</strong> (<em>struct flock *</em>)</dt>
+<dd><p>Acquire a lock (when <em>l_type</em> is <strong>F_RDLCK</strong> or <strong>F_WRLCK</strong>) or release a lock (when <em>l_type</em> is <strong>F_UNLCK</strong>) on the bytes specified by the <em>l_whence</em>, <em>l_start</em>, and <em>l_len</em> fields of <em>lock</em>. If a conflicting lock is held by another process, this call returns -1 and sets <em>errno</em> to <strong>EACCES</strong> or <strong>EAGAIN</strong>. (The error returned in this case differs across implementations, so POSIX requires a portable application to check for both errors.)</p>
+</dd>
+<dt><strong>F_SETLKW</strong> (<em>struct flock *</em>)</dt>
+<dd><p>As for <strong>F_SETLK</strong>, but if a conflicting lock is held on the file, then wait for that lock to be released. If a signal is caught while waiting, then the call is interrupted and (after the signal handler has returned) returns immediately (with return value -1 and <em>errno</em> set to <strong>EINTR</strong>; see <strong>signal</strong>(7)).</p>
+</dd>
+<dt><strong>F_GETLK</strong> (<em>struct flock *</em>)</dt>
+<dd><p>On input to this call, <em>lock</em> describes a lock we would like to place on the file. If the lock could be placed, <strong>fcntl</strong>() does not actually place it, but returns <strong>F_UNLCK</strong> in the <em>l_type</em> field of <em>lock</em> and leaves the other fields of the structure unchanged.</p>
+<p>If one or more incompatible locks would prevent this lock being placed, then <strong>fcntl</strong>() returns details about one of those locks in the <em>l_type</em>, <em>l_whence</em>, <em>l_start</em>, and <em>l_len</em> fields of <em>lock</em>. If the conflicting lock is a traditional (process-associated) record lock, then the <em>l_pid</em> field is set to the PID of the process holding that lock. If the conflicting lock is an open file description lock, then <em>l_pid</em> is set to -1. Note that the returned information may already be out of date by the time the caller inspects it.</p>
+</dd>
+</dl>
+<p>In order to place a read lock, <em>fd</em> must be open for reading. In order to place a write lock, <em>fd</em> must be open for writing. To place both types of lock, open a file read-write.</p>
+<p>When placing locks with <strong>F_SETLKW</strong>, the kernel detects <em>deadlocks</em>, whereby two or more processes have their lock requests mutually blocked by locks held by the other processes. For example, suppose process A holds a write lock on byte 100 of a file, and process B holds a write lock on byte 200. If each process then attempts to lock the byte already locked by the other process using <strong>F_SETLKW</strong>, then, without deadlock detection, both processes would remain blocked indefinitely. When the kernel detects such deadlocks, it causes one of the blocking lock requests to immediately fail with the error <strong>EDEADLK</strong>; an application that encounters such an error should release some of its locks to allow other applications to proceed before attempting regain the locks that it requires. Circular deadlocks involving more than two processes are also detected. Note, however, that there are limitations to the kernel's deadlock-detection algorithm; see BUGS.</p>
+<p>As well as being removed by an explicit <strong>F_UNLCK</strong>, record locks are automatically released when the process terminates.</p>
+<p>Record locks are not inherited by a child created via <strong>fork</strong>(2), but are preserved across an <strong>execve</strong>(2).</p>
+<p>Because of the buffering performed by the <strong>stdio</strong>(3) library, the use of record locking with routines in that package should be avoided; use <strong>read</strong>(2) and <strong>write</strong>(2) instead.</p>
+<p>The record locks described above are associated with the process (unlike the open file description locks described below). This has some unfortunate consequences:</p>
+<ul>
+<li><p>If a process closes <em>any</em> file descriptor referring to a file, then all of the process's locks on that file are released, regardless of the file descriptor(s) on which the locks were obtained. This is bad: it means that a process can lose its locks on a file such as <em>/etc/passwd</em> or <em>/etc/mtab</em> when for some reason a library function decides to open, read, and close the same file.</p></li>
+<li><p>The threads in a process share locks. In other words, a multithreaded program can't use record locking to ensure that threads don't simultaneously access the same region of a file.</p></li>
+</ul>
+<p>Open file description locks solve both of these problems.</p>
+<h2>Open file description locks (non-POSIX)</h2>
+<p>Open file description locks are advisory byte-range locks whose operation is in most respects identical to the traditional record locks described above. This lock type is Linux-specific, and available since Linux 3.15. (There is a proposal with the Austin Group to include this lock type in the next revision of POSIX.1.) For an explanation of open file descriptions, see <strong>open</strong>(2).</p>
+<p>The principal difference between the two lock types is that whereas traditional record locks are associated with a process, open file description locks are associated with the open file description on which they are acquired, much like locks acquired with <strong>flock</strong>(2). Consequently (and unlike traditional advisory record locks), open file description locks are inherited across <strong>fork</strong>(2) (and <strong>clone</strong>(2) with <strong>CLONE_FILES</strong>), and are only automatically released on the last close of the open file description, instead of being released on any close of the file.</p>
+<p>Conflicting lock combinations (i.e., a read lock and a write lock or two write locks) where one lock is an open file description lock and the other is a traditional record lock conflict even when they are acquired by the same process on the same file descriptor.</p>
+<p>Open file description locks placed via the same open file description (i.e., via the same file descriptor, or via a duplicate of the file descriptor created by <strong>fork</strong>(2), <strong>dup</strong>(2), <strong>fcntl</strong>() <strong>F_DUPFD</strong>, and so on) are always compatible: if a new lock is placed on an already locked region, then the existing lock is converted to the new lock type. (Such conversions may result in splitting, shrinking, or coalescing with an existing lock as discussed above.)</p>
+<p>On the other hand, open file description locks may conflict with each other when they are acquired via different open file descriptions. Thus, the threads in a multithreaded program can use open file description locks to synchronize access to a file region by having each thread perform its own <strong>open</strong>(2) on the file and applying locks via the resulting file descriptor.</p>
+<p>As with traditional advisory locks, the third argument to <strong>fcntl</strong>(), <em>lock</em>, is a pointer to an <em>flock</em> structure. By contrast with traditional record locks, the <em>l_pid</em> field of that structure must be set to zero when using the commands described below.</p>
+<p>The commands for working with open file description locks are analogous to those used with traditional locks:</p>
+<dl>
+<dt><strong>F_OFD_SETLK</strong> (<em>struct flock *</em>)</dt>
+<dd><p>Acquire an open file description lock (when <em>l_type</em> is <strong>F_RDLCK</strong> or <strong>F_WRLCK</strong>) or release an open file description lock (when <em>l_type</em> is <strong>F_UNLCK</strong>) on the bytes specified by the <em>l_whence</em>, <em>l_start</em>, and <em>l_len</em> fields of <em>lock</em>. If a conflicting lock is held by another process, this call returns -1 and sets <em>errno</em> to <strong>EAGAIN</strong>.</p>
+</dd>
+<dt><strong>F_OFD_SETLKW</strong> (<em>struct flock *</em>)</dt>
+<dd><p>As for <strong>F_OFD_SETLK</strong>, but if a conflicting lock is held on the file, then wait for that lock to be released. If a signal is caught while waiting, then the call is interrupted and (after the signal handler has returned) returns immediately (with return value -1 and <em>errno</em> set to <strong>EINTR</strong>; see <strong>signal</strong>(7)).</p>
+</dd>
+<dt><strong>F_OFD_GETLK</strong> (<em>struct flock *</em>)</dt>
+<dd><p>On input to this call, <em>lock</em> describes an open file description lock we would like to place on the file. If the lock could be placed, <strong>fcntl</strong>() does not actually place it, but returns <strong>F_UNLCK</strong> in the <em>l_type</em> field of <em>lock</em> and leaves the other fields of the structure unchanged. If one or more incompatible locks would prevent this lock being placed, then details about one of these locks are returned via <em>lock</em>, as described above for <strong>F_GETLK</strong>.</p>
+</dd>
+</dl>
+<p>In the current implementation, no deadlock detection is performed for open file description locks. (This contrasts with process-associated record locks, for which the kernel does perform deadlock detection.)</p>
+<h2>Mandatory locking</h2>
+<p><em>Warning</em>: the Linux implementation of mandatory locking is unreliable. See BUGS below. Because of these bugs, and the fact that the feature is believed to be little used, since Linux 4.5, mandatory locking has been made an optional feature, governed by a configuration option (<strong>CONFIG_MANDATORY_FILE_LOCKING</strong>). This is an initial step toward removing this feature completely.</p>
+<p>By default, both traditional (process-associated) and open file description record locks are advisory. Advisory locks are not enforced and are useful only between cooperating processes.</p>
+<p>Both lock types can also be mandatory. Mandatory locks are enforced for all processes. If a process tries to perform an incompatible access (e.g., <strong>read</strong>(2) or <strong>write</strong>(2)) on a file region that has an incompatible mandatory lock, then the result depends upon whether the <strong>O_NONBLOCK</strong> flag is enabled for its open file description. If the <strong>O_NONBLOCK</strong> flag is not enabled, then the system call is blocked until the lock is removed or converted to a mode that is compatible with the access. If the <strong>O_NONBLOCK</strong> flag is enabled, then the system call fails with the error <strong>EAGAIN</strong>.</p>
+<p>To make use of mandatory locks, mandatory locking must be enabled both on the filesystem that contains the file to be locked, and on the file itself. Mandatory locking is enabled on a filesystem using the "-o mand" option to <strong>mount</strong>(8), or the <strong>MS_MANDLOCK</strong> flag for <strong>mount</strong>(2). Mandatory locking is enabled on a file by disabling group execute permission on the file and enabling the set-group-ID permission bit (see <strong>chmod</strong>(1) and <strong>chmod</strong>(2)).</p>
+<p>Mandatory locking is not specified by POSIX. Some other systems also support mandatory locking, although the details of how to enable it vary across systems.</p>
+<h2>Lost locks</h2>
+<p>When an advisory lock is obtained on a networked filesystem such as NFS it is possible that the lock might get lost. This may happen due to administrative action on the server, or due to a network partition (i.e., loss of network connectivity with the server) which lasts long enough for the server to assume that the client is no longer functioning.</p>
+<p>When the filesystem determines that a lock has been lost, future <strong>read</strong>(2) or <strong>write</strong>(2) requests may fail with the error <strong>EIO</strong>. This error will persist until the lock is removed or the file descriptor is closed. Since Linux 3.12, this happens at least for NFSv4 (including all minor versions).</p>
+<p>Some versions of UNIX send a signal (<strong>SIGLOST</strong>) in this circumstance. Linux does not define this signal, and does not provide any asynchronous notification of lost locks.</p>
+<h2>Managing signals</h2>
+<p><strong>F_GETOWN</strong>, <strong>F_SETOWN</strong>, <strong>F_GETOWN_EX</strong>, <strong>F_SETOWN_EX</strong>, <strong>F_GETSIG</strong>, and <strong>F_SETSIG</strong> are used to manage I/O availability signals:</p>
+<dl>
+<dt><strong>F_GETOWN</strong> (<em>void</em>)</dt>
+<dd><p>Return (as the function result) the process ID or process group ID currently receiving <strong>SIGIO</strong> and <strong>SIGURG</strong> signals for events on file descriptor <em>fd</em>. Process IDs are returned as positive values; process group IDs are returned as negative values (but see BUGS below). <em>arg</em> is ignored.</p>
+</dd>
+<dt><strong>F_SETOWN</strong> (<em>int</em>)</dt>
+<dd><p>Set the process ID or process group ID that will receive <strong>SIGIO</strong> and <strong>SIGURG</strong> signals for events on the file descriptor <em>fd</em>. The target process or process group ID is specified in <em>arg</em>. A process ID is specified as a positive value; a process group ID is specified as a negative value. Most commonly, the calling process specifies itself as the owner (that is, <em>arg</em> is specified as <strong>getpid</strong>(2)).</p>
+<p>As well as setting the file descriptor owner, one must also enable generation of signals on the file descriptor. This is done by using the <strong>fcntl</strong>() <strong>F_SETFL</strong> command to set the <strong>O_ASYNC</strong> file status flag on the file descriptor. Subsequently, a <strong>SIGIO</strong> signal is sent whenever input or output becomes possible on the file descriptor. The <strong>fcntl</strong>() <strong>F_SETSIG</strong> command can be used to obtain delivery of a signal other than <strong>SIGIO</strong>.</p>
+<p>Sending a signal to the owner process (group) specified by <strong>F_SETOWN</strong> is subject to the same permissions checks as are described for <strong>kill</strong>(2), where the sending process is the one that employs <strong>F_SETOWN</strong> (but see BUGS below). If this permission check fails, then the signal is silently discarded. <em>Note</em>: The <strong>F_SETOWN</strong> operation records the caller's credentials at the time of the <strong>fcntl</strong>() call, and it is these saved credentials that are used for the permission checks.</p>
+<p>If the file descriptor <em>fd</em> refers to a socket, <strong>F_SETOWN</strong> also selects the recipient of <strong>SIGURG</strong> signals that are delivered when out-of-band data arrives on that socket. (<strong>SIGURG</strong> is sent in any situation where <strong>select</strong>(2) would report the socket as having an "exceptional condition".)</p>
+<p>The following was true in 2.6.x kernels up to and including kernel 2.6.11:</p>
+<blockquote>
+<p>If a nonzero value is given to <strong>F_SETSIG</strong> in a multithreaded process running with a threading library that supports thread groups (e.g., NPTL), then a positive value given to <strong>F_SETOWN</strong> has a different meaning: instead of being a process ID identifying a whole process, it is a thread ID identifying a specific thread within a process. Consequently, it may be necessary to pass <strong>F_SETOWN</strong> the result of <strong>gettid</strong>(2) instead of <strong>getpid</strong>(2) to get sensible results when <strong>F_SETSIG</strong> is used. (In current Linux threading implementations, a main thread's thread ID is the same as its process ID. This means that a single-threaded program can equally use <strong>gettid</strong>(2) or <strong>getpid</strong>(2) in this scenario.) Note, however, that the statements in this paragraph do not apply to the <strong>SIGURG</strong> signal generated for out-of-band data on a socket: this signal is always sent to either a process or a process group, depending on the value given to <strong>F_SETOWN</strong>.</p>
+</blockquote>
+<p>The above behavior was accidentally dropped in Linux 2.6.12, and won't be restored. From Linux 2.6.32 onward, use <strong>F_SETOWN_EX</strong> to target <strong>SIGIO</strong> and <strong>SIGURG</strong> signals at a particular thread.</p>
+</dd>
+<dt><strong>F_GETOWN_EX</strong> (<em>struct f_owner_ex *</em>) (since Linux 2.6.32)</dt>
+<dd><p>Return the current file descriptor owner settings as defined by a previous <strong>F_SETOWN_EX</strong> operation. The information is returned in the structure pointed to by <em>arg</em>, which has the following form:</p>
+<pre><code>struct f_owner_ex {
+    int   type;
+    pid_t pid;
+};</code></pre>
+<p>The <em>type</em> field will have one of the values <strong>F_OWNER_TID</strong>, <strong>F_OWNER_PID</strong>, or <strong>F_OWNER_PGRP</strong>. The <em>pid</em> field is a positive integer representing a thread ID, process ID, or process group ID. See <strong>F_SETOWN_EX</strong> for more details.</p>
+</dd>
+<dt><strong>F_SETOWN_EX</strong> (<em>struct f_owner_ex *</em>) (since Linux 2.6.32)</dt>
+<dd><p>This operation performs a similar task to <strong>F_SETOWN</strong>. It allows the caller to direct I/O availability signals to a specific thread, process, or process group. The caller specifies the target of signals via <em>arg</em>, which is a pointer to a <em>f_owner_ex</em> structure. The <em>type</em> field has one of the following values, which define how <em>pid</em> is interpreted:</p>
+<dl>
+<dt><strong>F_OWNER_TID</strong></dt>
+<dd><p>Send the signal to the thread whose thread ID (the value returned by a call to <strong>clone</strong>(2) or <strong>gettid</strong>(2)) is specified in <em>pid</em>.</p>
+</dd>
+<dt><strong>F_OWNER_PID</strong></dt>
+<dd><p>Send the signal to the process whose ID is specified in <em>pid</em>.</p>
+</dd>
+<dt><strong>F_OWNER_PGRP</strong></dt>
+<dd><p>Send the signal to the process group whose ID is specified in <em>pid</em>. (Note that, unlike with <strong>F_SETOWN</strong>, a process group ID is specified as a positive value here.)</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>F_GETSIG</strong> (<em>void</em>)</dt>
+<dd><p>Return (as the function result) the signal sent when input or output becomes possible. A value of zero means <strong>SIGIO</strong> is sent. Any other value (including <strong>SIGIO</strong>) is the signal sent instead, and in this case additional info is available to the signal handler if installed with <strong>SA_SIGINFO</strong>. <em>arg</em> is ignored.</p>
+</dd>
+<dt><strong>F_SETSIG</strong> (<em>int</em>)</dt>
+<dd><p>Set the signal sent when input or output becomes possible to the value given in <em>arg</em>. A value of zero means to send the default <strong>SIGIO</strong> signal. Any other value (including <strong>SIGIO</strong>) is the signal to send instead, and in this case additional info is available to the signal handler if installed with <strong>SA_SIGINFO</strong>.</p>
+<p>By using <strong>F_SETSIG</strong> with a nonzero value, and setting <strong>SA_SIGINFO</strong> for the signal handler (see <strong>sigaction</strong>(2)), extra information about I/O events is passed to the handler in a <em>siginfo_t</em> structure. If the <em>si_code</em> field indicates the source is <strong>SI_SIGIO</strong>, the <em>si_fd</em> field gives the file descriptor associated with the event. Otherwise, there is no indication which file descriptors are pending, and you should use the usual mechanisms (<strong>select</strong>(2), <strong>poll</strong>(2), <strong>read</strong>(2) with <strong>O_NONBLOCK</strong> set etc.) to determine which file descriptors are available for I/O.</p>
+<p>Note that the file descriptor provided in <em>si_fd</em> is the one that was specified during the <strong>F_SETSIG</strong> operation. This can lead to an unusual corner case. If the file descriptor is duplicated (<strong>dup</strong>(2) or similar), and the original file descriptor is closed, then I/O events will continue to be generated, but the <em>si_fd</em> field will contain the number of the now closed file descriptor.</p>
+<p>By selecting a real time signal (value &gt;= <strong>SIGRTMIN</strong>), multiple I/O events may be queued using the same signal numbers. (Queuing is dependent on available memory.) Extra information is available if <strong>SA_SIGINFO</strong> is set for the signal handler, as above.</p>
+<p>Note that Linux imposes a limit on the number of real-time signals that may be queued to a process (see <strong>getrlimit</strong>(2) and <strong>signal</strong>(7)) and if this limit is reached, then the kernel reverts to delivering <strong>SIGIO</strong>, and this signal is delivered to the entire process rather than to a specific thread.</p>
+</dd>
+</dl>
+<p>Using these mechanisms, a program can implement fully asynchronous I/O without using <strong>select</strong>(2) or <strong>poll</strong>(2) most of the time.</p>
+<p>The use of <strong>O_ASYNC</strong> is specific to BSD and Linux. The only use of <strong>F_GETOWN</strong> and <strong>F_SETOWN</strong> specified in POSIX.1 is in conjunction with the use of the <strong>SIGURG</strong> signal on sockets. (POSIX does not specify the <strong>SIGIO</strong> signal.) <strong>F_GETOWN_EX</strong>, <strong>F_SETOWN_EX</strong>, <strong>F_GETSIG</strong>, and <strong>F_SETSIG</strong> are Linux-specific. POSIX has asynchronous I/O and the <em>aio_sigevent</em> structure to achieve similar things; these are also available in Linux as part of the GNU C Library (Glibc).</p>
+<h2>Leases</h2>
+<p><strong>F_SETLEASE</strong> and <strong>F_GETLEASE</strong> (Linux 2.4 onward) are used to establish a new lease, and retrieve the current lease, on the open file description referred to by the file descriptor <em>fd</em>. A file lease provides a mechanism whereby the process holding the lease (the "lease holder") is notified (via delivery of a signal) when a process (the "lease breaker") tries to <strong>open</strong>(2) or <strong>truncate</strong>(2) the file referred to by that file descriptor.</p>
+<dl>
+<dt><strong>F_SETLEASE</strong> (<em>int</em>)</dt>
+<dd><p>Set or remove a file lease according to which of the following values is specified in the integer <em>arg</em>:</p>
+<dl>
+<dt><strong>F_RDLCK</strong></dt>
+<dd><p>Take out a read lease. This will cause the calling process to be notified when the file is opened for writing or is truncated. A read lease can be placed only on a file descriptor that is opened read-only.</p>
+</dd>
+<dt><strong>F_WRLCK</strong></dt>
+<dd><p>Take out a write lease. This will cause the caller to be notified when the file is opened for reading or writing or is truncated. A write lease may be placed on a file only if there are no other open file descriptors for the file.</p>
+</dd>
+<dt><strong>F_UNLCK</strong></dt>
+<dd><p>Remove our lease from the file.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>Leases are associated with an open file description (see <strong>open</strong>(2)). This means that duplicate file descriptors (created by, for example, <strong>fork</strong>(2) or <strong>dup</strong>(2)) refer to the same lease, and this lease may be modified or released using any of these descriptors. Furthermore, the lease is released by either an explicit <strong>F_UNLCK</strong> operation on any of these duplicate file descriptors, or when all such file descriptors have been closed.</p>
+<p>Leases may be taken out only on regular files. An unprivileged process may take out a lease only on a file whose UID (owner) matches the filesystem UID of the process. A process with the <strong>CAP_LEASE</strong> capability may take out leases on arbitrary files.</p>
+<dl>
+<dt><strong>F_GETLEASE</strong> (<em>void</em>)</dt>
+<dd><p>Indicates what type of lease is associated with the file descriptor <em>fd</em> by returning either <strong>F_RDLCK</strong>, <strong>F_WRLCK</strong>, or <strong>F_UNLCK</strong>, indicating, respectively, a read lease , a write lease, or no lease. <em>arg</em> is ignored.</p>
+</dd>
+</dl>
+<p>When a process (the "lease breaker") performs an <strong>open</strong>(2) or <strong>truncate</strong>(2) that conflicts with a lease established via <strong>F_SETLEASE</strong>, the system call is blocked by the kernel and the kernel notifies the lease holder by sending it a signal (<strong>SIGIO</strong> by default). The lease holder should respond to receipt of this signal by doing whatever cleanup is required in preparation for the file to be accessed by another process (e.g., flushing cached buffers) and then either remove or downgrade its lease. A lease is removed by performing an <strong>F_SETLEASE</strong> command specifying <em>arg</em> as <strong>F_UNLCK</strong>. If the lease holder currently holds a write lease on the file, and the lease breaker is opening the file for reading, then it is sufficient for the lease holder to downgrade the lease to a read lease. This is done by performing an <strong>F_SETLEASE</strong> command specifying <em>arg</em> as <strong>F_RDLCK</strong>.</p>
+<p>If the lease holder fails to downgrade or remove the lease within the number of seconds specified in <em>/proc/sys/fs/lease-break-time</em>, then the kernel forcibly removes or downgrades the lease holder's lease.</p>
+<p>Once a lease break has been initiated, <strong>F_GETLEASE</strong> returns the target lease type (either <strong>F_RDLCK</strong> or <strong>F_UNLCK</strong>, depending on what would be compatible with the lease breaker) until the lease holder voluntarily downgrades or removes the lease or the kernel forcibly does so after the lease break timer expires.</p>
+<p>Once the lease has been voluntarily or forcibly removed or downgraded, and assuming the lease breaker has not unblocked its system call, the kernel permits the lease breaker's system call to proceed.</p>
+<p>If the lease breaker's blocked <strong>open</strong>(2) or <strong>truncate</strong>(2) is interrupted by a signal handler, then the system call fails with the error <strong>EINTR</strong>, but the other steps still occur as described above. If the lease breaker is killed by a signal while blocked in <strong>open</strong>(2) or <strong>truncate</strong>(2), then the other steps still occur as described above. If the lease breaker specifies the <strong>O_NONBLOCK</strong> flag when calling <strong>open</strong>(2), then the call immediately fails with the error <strong>EWOULDBLOCK</strong>, but the other steps still occur as described above.</p>
+<p>The default signal used to notify the lease holder is <strong>SIGIO</strong>, but this can be changed using the <strong>F_SETSIG</strong> command to <strong>fcntl</strong>(). If a <strong>F_SETSIG</strong> command is performed (even one specifying <strong>SIGIO</strong>), and the signal handler is established using <strong>SA_SIGINFO</strong>, then the handler will receive a <em>siginfo_t</em> structure as its second argument, and the <em>si_fd</em> field of this argument will hold the file descriptor of the leased file that has been accessed by another process. (This is useful if the caller holds leases against multiple files.)</p>
+<h2>File and directory change notification (dnotify)</h2>
+<dl>
+<dt><strong>F_NOTIFY</strong> (<em>int</em>)</dt>
+<dd><p>(Linux 2.4 onward) Provide notification when the directory referred to by <em>fd</em> or any of the files that it contains is changed. The events to be notified are specified in <em>arg</em>, which is a bit mask specified by ORing together zero or more of the following bits:</p>
+</dd>
+</dl>
+<blockquote>
+<dl>
+<dt><strong>DN_ACCESS</strong></dt>
+<dd><p>A file was accessed (<strong>read</strong>(2), <strong>pread</strong>(2), <strong>readv</strong>(2), and similar)</p>
+</dd>
+<dt><strong>DN_MODIFY</strong></dt>
+<dd><p>A file was modified (<strong>write</strong>(2), <strong>pwrite</strong>(2), <strong>writev</strong>(2), <strong>truncate</strong>(2), <strong>ftruncate</strong>(2), and similar).</p>
+</dd>
+<dt><strong>DN_CREATE</strong></dt>
+<dd><p>A file was created (<strong>open</strong>(2), <strong>creat</strong>(2), <strong>mknod</strong>(2), <strong>mkdir</strong>(2), <strong>link</strong>(2), <strong>symlink</strong>(2), <strong>rename</strong>(2) into this directory).</p>
+</dd>
+<dt><strong>DN_DELETE</strong></dt>
+<dd><p>A file was unlinked (<strong>unlink</strong>(2), <strong>rename</strong>(2) to another directory, <strong>rmdir</strong>(2)).</p>
+</dd>
+<dt><strong>DN_RENAME</strong></dt>
+<dd><p>A file was renamed within this directory (<strong>rename</strong>(2)).</p>
+</dd>
+<dt><strong>DN_ATTRIB</strong></dt>
+<dd><p>The attributes of a file were changed (<strong>chown</strong>(2), <strong>chmod</strong>(2), <strong>utime</strong>(2), <strong>utimensat</strong>(2), and similar).</p>
+</dd>
+</dl>
+</blockquote>
+<blockquote>
+<p>(In order to obtain these definitions, the <strong>_GNU_SOURCE</strong> feature test macro must be defined before including <em>any</em> header files.)</p>
+<p>Directory notifications are normally "one-shot", and the application must reregister to receive further notifications. Alternatively, if <strong>DN_MULTISHOT</strong> is included in <em>arg</em>, then notification will remain in effect until explicitly removed.</p>
+<p>A series of <strong>F_NOTIFY</strong> requests is cumulative, with the events in <em>arg</em> being added to the set already monitored. To disable notification of all events, make an <strong>F_NOTIFY</strong> call specifying <em>arg</em> as 0.</p>
+<p>Notification occurs via delivery of a signal. The default signal is <strong>SIGIO</strong>, but this can be changed using the <strong>F_SETSIG</strong> command to <strong>fcntl</strong>(). (Note that <strong>SIGIO</strong> is one of the nonqueuing standard signals; switching to the use of a real-time signal means that multiple notifications can be queued to the process.) In the latter case, the signal handler receives a <em>siginfo_t</em> structure as its second argument (if the handler was established using <strong>SA_SIGINFO</strong>) and the <em>si_fd</em> field of this structure contains the file descriptor which generated the notification (useful when establishing notification on multiple directories).</p>
+<p>Especially when using <strong>DN_MULTISHOT</strong>, a real time signal should be used for notification, so that multiple notifications can be queued.</p>
+<p><strong>NOTE:</strong> New applications should use the <em>inotify</em> interface (available since kernel 2.6.13), which provides a much superior interface for obtaining notifications of filesystem events. See <strong>inotify</strong>(7).</p>
+</blockquote>
+<h2>Changing the capacity of a pipe</h2>
+<dl>
+<dt><strong>F_SETPIPE_SZ</strong> (<em>int</em>; since Linux 2.6.35)</dt>
+<dd><p>Change the capacity of the pipe referred to by <em>fd</em> to be at least <em>arg</em> bytes. An unprivileged process can adjust the pipe capacity to any value between the system page size and the limit defined in <em>/proc/sys/fs/pipe-max-size</em> (see <strong>proc</strong>(5)). Attempts to set the pipe capacity below the page size are silently rounded up to the page size. Attempts by an unprivileged process to set the pipe capacity above the limit in <em>/proc/sys/fs/pipe-max-size</em> yield the error <strong>EPERM</strong>; a privileged process (<strong>CAP_SYS_RESOURCE</strong>) can override the limit.</p>
+<p>When allocating the buffer for the pipe, the kernel may use a capacity larger than <em>arg</em>, if that is convenient for the implementation. (In the current implementation, the allocation is the next higher power-of-two page-size multiple of the requested size.) The actual capacity (in bytes) that is set is returned as the function result.</p>
+<p>Attempting to set the pipe capacity smaller than the amount of buffer space currently used to store data produces the error <strong>EBUSY</strong>.</p>
+<p>Note that because of the way the pages of the pipe buffer are employed when data is written to the pipe, the number of bytes that can be written may be less than the nominal size, depending on the size of the writes.</p>
+</dd>
+<dt><strong>F_GETPIPE_SZ</strong> (<em>void</em>; since Linux 2.6.35)</dt>
+<dd><p>Return (as the function result) the capacity of the pipe referred to by <em>fd</em>.</p>
+</dd>
+</dl>
+<h2>File Sealing</h2>
+<p>File seals limit the set of allowed operations on a given file. For each seal that is set on a file, a specific set of operations will fail with <strong>EPERM</strong> on this file from now on. The file is said to be sealed. The default set of seals depends on the type of the underlying file and filesystem. For an overview of file sealing, a discussion of its purpose, and some code examples, see <strong>memfd_create</strong>(2).</p>
+<p>Currently, file seals can be applied only to a file descriptor returned by <strong>memfd_create</strong>(2) (if the <strong>MFD_ALLOW_SEALING</strong> was employed). On other filesystems, all <strong>fcntl</strong>() operations that operate on seals will return <strong>EINVAL</strong>.</p>
+<p>Seals are a property of an inode. Thus, all open file descriptors referring to the same inode share the same set of seals. Furthermore, seals can never be removed, only added.</p>
+<dl>
+<dt><strong>F_ADD_SEALS</strong> (<em>int</em>; since Linux 3.17)</dt>
+<dd><p>Add the seals given in the bit-mask argument <em>arg</em> to the set of seals of the inode referred to by the file descriptor <em>fd</em>. Seals cannot be removed again. Once this call succeeds, the seals are enforced by the kernel immediately. If the current set of seals includes <strong>F_SEAL_SEAL</strong> (see below), then this call will be rejected with <strong>EPERM</strong>. Adding a seal that is already set is a no-op, in case <strong>F_SEAL_SEAL</strong> is not set already. In order to place a seal, the file descriptor <em>fd</em> must be writable.</p>
+</dd>
+<dt><strong>F_GET_SEALS</strong> (<em>void</em>; since Linux 3.17)</dt>
+<dd><p>Return (as the function result) the current set of seals of the inode referred to by <em>fd</em>. If no seals are set, 0 is returned. If the file does not support sealing, -1 is returned and <em>errno</em> is set to <strong>EINVAL</strong>.</p>
+</dd>
+</dl>
+<p>The following seals are available:</p>
+<dl>
+<dt><strong>F_SEAL_SEAL</strong></dt>
+<dd><p>If this seal is set, any further call to <strong>fcntl</strong>() with <strong>F_ADD_SEALS</strong> fails with the error <strong>EPERM</strong>. Therefore, this seal prevents any modifications to the set of seals itself. If the initial set of seals of a file includes <strong>F_SEAL_SEAL</strong>, then this effectively causes the set of seals to be constant and locked.</p>
+</dd>
+<dt><strong>F_SEAL_SHRINK</strong></dt>
+<dd><p>If this seal is set, the file in question cannot be reduced in size. This affects <strong>open</strong>(2) with the <strong>O_TRUNC</strong> flag as well as <strong>truncate</strong>(2) and <strong>ftruncate</strong>(2). Those calls fail with <strong>EPERM</strong> if you try to shrink the file in question. Increasing the file size is still possible.</p>
+</dd>
+<dt><strong>F_SEAL_GROW</strong></dt>
+<dd><p>If this seal is set, the size of the file in question cannot be increased. This affects <strong>write</strong>(2) beyond the end of the file, <strong>truncate</strong>(2), <strong>ftruncate</strong>(2), and <strong>fallocate</strong>(2). These calls fail with <strong>EPERM</strong> if you use them to increase the file size. If you keep the size or shrink it, those calls still work as expected.</p>
+</dd>
+<dt><strong>F_SEAL_WRITE</strong></dt>
+<dd><p>If this seal is set, you cannot modify the contents of the file. Note that shrinking or growing the size of the file is still possible and allowed. Thus, this seal is normally used in combination with one of the other seals. This seal affects <strong>write</strong>(2) and <strong>fallocate</strong>(2) (only in combination with the <strong>FALLOC_FL_PUNCH_HOLE</strong> flag). Those calls fail with <strong>EPERM</strong> if this seal is set. Furthermore, trying to create new shared, writable memory-mappings via <strong>mmap</strong>(2) will also fail with <strong>EPERM</strong>.</p>
+<p>Using the <strong>F_ADD_SEALS</strong> operation to set the <strong>F_SEAL_WRITE</strong> seal fails with <strong>EBUSY</strong> if any writable, shared mapping exists. Such mappings must be unmapped before you can add this seal. Furthermore, if there are any asynchronous I/O operations (<strong>io_submit</strong>(2)) pending on the file, all outstanding writes will be discarded.</p>
+</dd>
+<dt><strong>F_SEAL_FUTURE_WRITE</strong> (since Linux 5.1)</dt>
+<dd><p>The effect of this seal is similar to <strong>F_SEAL_WRITE</strong>, but the contents of the file can still be modified via shared writable mappings that were created prior to the seal being set. Any attempt to create a new writable mapping on the file via <strong>mmap</strong>(2) will fail with <strong>EPERM</strong>. Likewise, an attempt to write to the file via <strong>write</strong>(2) will fail with <strong>EPERM</strong>.</p>
+<p>Using this seal, one process can create a memory buffer that it can continue to modify while sharing that buffer on a "read-only" basis with other processes.</p>
+</dd>
+</dl>
+<h2>File read/write hints</h2>
+<p>Write lifetime hints can be used to inform the kernel about the relative expected lifetime of writes on a given inode or via a particular open file description. (See <strong>open</strong>(2) for an explanation of open file descriptions.) In this context, the term "write lifetime" means the expected time the data will live on media, before being overwritten or erased.</p>
+<p>An application may use the different hint values specified below to separate writes into different write classes, so that multiple users or applications running on a single storage back-end can aggregate their I/O patterns in a consistent manner. However, there are no functional semantics implied by these flags, and different I/O classes can use the write lifetime hints in arbitrary ways, so long as the hints are used consistently.</p>
+<p>The following operations can be applied to the file descriptor, <em>fd</em>:</p>
+<dl>
+<dt><strong>F_GET_RW_HINT</strong> (<em>uint64_t *</em>; since Linux 4.13)</dt>
+<dd><p>Returns the value of the read/write hint associated with the underlying inode referred to by <em>fd</em>.</p>
+</dd>
+<dt><strong>F_SET_RW_HINT</strong> (<em>uint64_t *</em>; since Linux 4.13)</dt>
+<dd><p>Sets the read/write hint value associated with the underlying inode referred to by <em>fd</em>. This hint persists until either it is explicitly modified or the underlying filesystem is unmounted.</p>
+</dd>
+<dt><strong>F_GET_FILE_RW_HINT</strong> (<em>uint64_t *</em>; since Linux 4.13)</dt>
+<dd><p>Returns the value of the read/write hint associated with the open file description referred to by <em>fd</em>.</p>
+</dd>
+<dt><strong>F_SET_FILE_RW_HINT</strong> (<em>uint64_t *</em>; since Linux 4.13)</dt>
+<dd><p>Sets the read/write hint value associated with the open file description referred to by <em>fd</em>.</p>
+</dd>
+</dl>
+<p>If an open file description has not been assigned a read/write hint, then it shall use the value assigned to the inode, if any.</p>
+<p>The following read/write hints are valid since Linux 4.13:</p>
+<dl>
+<dt><strong>RWH_WRITE_LIFE_NOT_SET</strong></dt>
+<dd><p>No specific hint has been set. This is the default value.</p>
+</dd>
+<dt><strong>RWH_WRITE_LIFE_NONE</strong></dt>
+<dd><p>No specific write lifetime is associated with this file or inode.</p>
+</dd>
+<dt><strong>RWH_WRITE_LIFE_SHORT</strong></dt>
+<dd><p>Data written to this inode or via this open file description is expected to have a short lifetime.</p>
+</dd>
+<dt><strong>RWH_WRITE_LIFE_MEDIUM</strong></dt>
+<dd><p>Data written to this inode or via this open file description is expected to have a lifetime longer than data written with <strong>RWH_WRITE_LIFE_SHORT</strong>.</p>
+</dd>
+<dt><strong>RWH_WRITE_LIFE_LONG</strong></dt>
+<dd><p>Data written to this inode or via this open file description is expected to have a lifetime longer than data written with <strong>RWH_WRITE_LIFE_MEDIUM</strong>.</p>
+</dd>
+<dt><strong>RWH_WRITE_LIFE_EXTREME</strong></dt>
+<dd><p>Data written to this inode or via this open file description is expected to have a lifetime longer than data written with <strong>RWH_WRITE_LIFE_LONG</strong>.</p>
+</dd>
+</dl>
+<p>All the write-specific hints are relative to each other, and no individual absolute meaning should be attributed to them.</p>
+<h1>RETURN VALUE</h1>
+<p>For a successful call, the return value depends on the operation:</p>
+<dl>
+<dt><strong>F_DUPFD</strong></dt>
+<dd><p>The new file descriptor.</p>
+</dd>
+<dt><strong>F_GETFD</strong></dt>
+<dd><p>Value of file descriptor flags.</p>
+</dd>
+<dt><strong>F_GETFL</strong></dt>
+<dd><p>Value of file status flags.</p>
+</dd>
+<dt><strong>F_GETLEASE</strong></dt>
+<dd><p>Type of lease held on file descriptor.</p>
+</dd>
+<dt><strong>F_GETOWN</strong></dt>
+<dd><p>Value of file descriptor owner.</p>
+</dd>
+<dt><strong>F_GETSIG</strong></dt>
+<dd><p>Value of signal sent when read or write becomes possible, or zero for traditional <strong>SIGIO</strong> behavior.</p>
+</dd>
+<dt><strong>F_GETPIPE_SZ</strong>, <strong>F_SETPIPE_SZ</strong></dt>
+<dd><p>The pipe capacity.</p>
+</dd>
+<dt><strong>F_GET_SEALS</strong></dt>
+<dd><p>A bit mask identifying the seals that have been set for the inode referred to by <em>fd</em>.</p>
+</dd>
+<dt>All other commands</dt>
+<dd><p>Zero.</p>
+</dd>
+</dl>
+<p>On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong> or <strong>EAGAIN</strong></dt>
+<dd><p>Operation is prohibited by locks held by other processes.</p>
+</dd>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>The operation is prohibited because the file has been memory-mapped by another process.</p>
+</dd>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not an open file descriptor</p>
+</dd>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_SETLK</strong> or <strong>F_SETLKW</strong> and the file descriptor open mode doesn't match with the type of lock requested.</p>
+</dd>
+<dt><strong>EBUSY</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_SETPIPE_SZ</strong> and the new pipe capacity specified in <em>arg</em> is smaller than the amount of buffer space currently used to store data in the pipe.</p>
+</dd>
+<dt><strong>EBUSY</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_ADD_SEALS</strong>, <em>arg</em> includes <strong>F_SEAL_WRITE</strong>, and there exists a writable, shared mapping on the file referred to by <em>fd</em>.</p>
+</dd>
+<dt><strong>EDEADLK</strong></dt>
+<dd><p>It was detected that the specified <strong>F_SETLKW</strong> command would cause a deadlock.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>lock</em> is outside your accessible address space.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_SETLKW</strong> or <strong>F_OFD_SETLKW</strong> and the operation was interrupted by a signal; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_GETLK</strong>, <strong>F_SETLK</strong>, <strong>F_OFD_GETLK</strong>, or <strong>F_OFD_SETLK</strong>, and the operation was interrupted by a signal before the lock was checked or acquired. Most likely when locking a remote file (e.g., locking over NFS), but can sometimes happen locally.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The value specified in <em>cmd</em> is not recognized by this kernel.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_ADD_SEALS</strong> and <em>arg</em> includes an unrecognized sealing bit.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_ADD_SEALS</strong> or <strong>F_GET_SEALS</strong> and the filesystem containing the inode referred to by <em>fd</em> does not support sealing.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_DUPFD</strong> and <em>arg</em> is negative or is greater than the maximum allowable value (see the discussion of <strong>RLIMIT_NOFILE</strong> in <strong>getrlimit</strong>(2)).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_SETSIG</strong> and <em>arg</em> is not an allowable signal number.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_OFD_SETLK</strong>, <strong>F_OFD_SETLKW</strong>, or <strong>F_OFD_GETLK</strong>, and <em>l_pid</em> was not specified as zero.</p>
+</dd>
+<dt><strong>EMFILE</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_DUPFD</strong> and the per-process limit on the number of open file descriptors has been reached.</p>
+</dd>
+<dt><strong>ENOLCK</strong></dt>
+<dd><p>Too many segment locks open, lock table is full, or a remote locking protocol failed (e.g., locking over NFS).</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p><strong>F_NOTIFY</strong> was specified in <em>cmd</em>, but <em>fd</em> does not refer to a directory.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p><em>cmd</em> is <strong>F_SETPIPE_SZ</strong> and the soft or hard user pipe limit has been reached; see <strong>pipe</strong>(7).</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>Attempted to clear the <strong>O_APPEND</strong> flag on a file that has the append-only attribute set.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p><em>cmd</em> was <strong>F_ADD_SEALS</strong>, but <em>fd</em> was not open for writing or the current set of seals on the file already includes <strong>F_SEAL_SEAL</strong>.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>SVr4, 4.3BSD, POSIX.1-2001. Only the operations <strong>F_DUPFD</strong>, <strong>F_GETFD</strong>, <strong>F_SETFD</strong>, <strong>F_GETFL</strong>, <strong>F_SETFL</strong>, <strong>F_GETLK</strong>, <strong>F_SETLK</strong>, and <strong>F_SETLKW</strong> are specified in POSIX.1-2001.</p>
+<p><strong>F_GETOWN</strong> and <strong>F_SETOWN</strong> are specified in POSIX.1-2001. (To get their definitions, define either <strong>_XOPEN_SOURCE</strong> with the value 500 or greater, or <strong>_POSIX_C_SOURCE</strong> with the value 200809L or greater.)</p>
+<p><strong>F_DUPFD_CLOEXEC</strong> is specified in POSIX.1-2008. (To get this definition, define <strong>_POSIX_C_SOURCE</strong> with the value 200809L or greater, or <strong>_XOPEN_SOURCE</strong> with the value 700 or greater.)</p>
+<p><strong>F_GETOWN_EX</strong>, <strong>F_SETOWN_EX</strong>, <strong>F_SETPIPE_SZ</strong>, <strong>F_GETPIPE_SZ</strong>, <strong>F_GETSIG</strong>, <strong>F_SETSIG</strong>, <strong>F_NOTIFY</strong>, <strong>F_GETLEASE</strong>, and <strong>F_SETLEASE</strong> are Linux-specific. (Define the <strong>_GNU_SOURCE</strong> macro to obtain these definitions.)</p>
+<p><strong>F_OFD_SETLK</strong>, <strong>F_OFD_SETLKW</strong>, and <strong>F_OFD_GETLK</strong> are Linux-specific (and one must define <strong>_GNU_SOURCE</strong> to obtain their definitions), but work is being done to have them included in the next version of POSIX.1.</p>
+<p><strong>F_ADD_SEALS</strong> and <strong>F_GET_SEALS</strong> are Linux-specific.</p>
+<h1>NOTES</h1>
+<p>The errors returned by <strong>dup2</strong>(2) are different from those returned by <strong>F_DUPFD</strong>.</p>
+<h2>File locking</h2>
+<p>The original Linux <strong>fcntl</strong>() system call was not designed to handle large file offsets (in the <em>flock</em> structure). Consequently, an <strong>fcntl64</strong>() system call was added in Linux 2.4. The newer system call employs a different structure for file locking, <em>flock64</em>, and corresponding commands, <strong>F_GETLK64</strong>, <strong>F_SETLK64</strong>, and <strong>F_SETLKW64</strong>. However, these details can be ignored by applications using glibc, whose <strong>fcntl</strong>() wrapper function transparently employs the more recent system call where it is available.</p>
+<h2>Record locks</h2>
+<p>Since kernel 2.0, there is no interaction between the types of lock placed by <strong>flock</strong>(2) and <strong>fcntl</strong>().</p>
+<p>Several systems have more fields in <em>struct flock</em> such as, for example, <em>l_sysid</em> (to identify the machine where the lock is held). Clearly, <em>l_pid</em> alone is not going to be very useful if the process holding the lock may live on a different machine; on Linux, while present on some architectures (such as MIPS32), this field is not used.</p>
+<p>The original Linux <strong>fcntl</strong>() system call was not designed to handle large file offsets (in the <em>flock</em> structure). Consequently, an <strong>fcntl64</strong>() system call was added in Linux 2.4. The newer system call employs a different structure for file locking, <em>flock64</em>, and corresponding commands, <strong>F_GETLK64</strong>, <strong>F_SETLK64</strong>, and <strong>F_SETLKW64</strong>. However, these details can be ignored by applications using glibc, whose <strong>fcntl</strong>() wrapper function transparently employs the more recent system call where it is available.</p>
+<h2>Record locking and NFS</h2>
+<p>Before Linux 3.12, if an NFSv4 client loses contact with the server for a period of time (defined as more than 90 seconds with no communication), it might lose and regain a lock without ever being aware of the fact. (The period of time after which contact is assumed lost is known as the NFSv4 leasetime. On a Linux NFS server, this can be determined by looking at <em>/proc/fs/nfsd/nfsv4leasetime</em>, which expresses the period in seconds. The default value for this file is 90.) This scenario potentially risks data corruption, since another process might acquire a lock in the intervening period and perform file I/O.</p>
+<p>Since Linux 3.12, if an NFSv4 client loses contact with the server, any I/O to the file by a process which "thinks" it holds a lock will fail until that process closes and reopens the file. A kernel parameter, <em>nfs.recover_lost_locks</em>, can be set to 1 to obtain the pre-3.12 behavior, whereby the client will attempt to recover lost locks when contact is reestablished with the server. Because of the attendant risk of data corruption, this parameter defaults to 0 (disabled).</p>
+<h1>BUGS</h1>
+<h2>F_SETFL</h2>
+<p>It is not possible to use <strong>F_SETFL</strong> to change the state of the <strong>O_DSYNC</strong> and <strong>O_SYNC</strong> flags. Attempts to change the state of these flags are silently ignored.</p>
+<h2>F_GETOWN</h2>
+<p>A limitation of the Linux system call conventions on some architectures (notably i386) means that if a (negative) process group ID to be returned by <strong>F_GETOWN</strong> falls in the range -1 to -4095, then the return value is wrongly interpreted by glibc as an error in the system call; that is, the return value of <strong>fcntl</strong>() will be -1, and <em>errno</em> will contain the (positive) process group ID. The Linux-specific <strong>F_GETOWN_EX</strong> operation avoids this problem. Since glibc version 2.11, glibc makes the kernel <strong>F_GETOWN</strong> problem invisible by implementing <strong>F_GETOWN</strong> using <strong>F_GETOWN_EX</strong>.</p>
+<h2>F_SETOWN</h2>
+<p>In Linux 2.4 and earlier, there is bug that can occur when an unprivileged process uses <strong>F_SETOWN</strong> to specify the owner of a socket file descriptor as a process (group) other than the caller. In this case, <strong>fcntl</strong>() can return -1 with <em>errno</em> set to <strong>EPERM</strong>, even when the owner process (group) is one that the caller has permission to send signals to. Despite this error return, the file descriptor owner is set, and signals will be sent to the owner.</p>
+<h2>Deadlock detection</h2>
+<p>The deadlock-detection algorithm employed by the kernel when dealing with <strong>F_SETLKW</strong> requests can yield both false negatives (failures to detect deadlocks, leaving a set of deadlocked processes blocked indefinitely) and false positives (<strong>EDEADLK</strong> errors when there is no deadlock). For example, the kernel limits the lock depth of its dependency search to 10 steps, meaning that circular deadlock chains that exceed that size will not be detected. In addition, the kernel may falsely indicate a deadlock when two or more processes created using the <strong>clone</strong>(2) <strong>CLONE_FILES</strong> flag place locks that appear (to the kernel) to conflict.</p>
+<h2>Mandatory locking</h2>
+<p>The Linux implementation of mandatory locking is subject to race conditions which render it unreliable: a <strong>write</strong>(2) call that overlaps with a lock may modify data after the mandatory lock is acquired; a <strong>read</strong>(2) call that overlaps with a lock may detect changes to data that were made only after a write lock was acquired. Similar races exist between mandatory locks and <strong>mmap</strong>(2). It is therefore inadvisable to rely on mandatory locking.</p>
+<h1>SEE ALSO</h1>
+<p><strong>dup2</strong>(2), <strong>flock</strong>(2), <strong>open</strong>(2), <strong>socket</strong>(2), <strong>lockf</strong>(3), <strong>capabilities</strong>(7), <strong>feature_test_macros</strong>(7), <strong>lslocks</strong>(8)</p>
+<p><em>locks.txt</em>, <em>mandatory-locking.txt</em>, and <em>dnotify.txt</em> in the Linux kernel source directory <em>Documentation/filesystems/</em> (on older kernels, these files are directly under the <em>Documentation/</em> directory, and <em>mandatory-locking.txt</em> is called <em>mandatory.txt</em>)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command s_time</title><meta name="description" content="Linux command s_time SSL/TLS performance timing program"><meta name="keywords" content="linux, command, s_time, bsd, SSL/TLS performance timing program"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>openssl-s_time, s_time - SSL/TLS performance timing program</p>
+<h1>SYNOPSIS</h1>
+<p><strong>openssl</strong> <strong>s_time</strong> [<strong>-help</strong>] [<strong>-connect host:port</strong>] [<strong>-www page</strong>] [<strong>-cert filename</strong>] [<strong>-key filename</strong>] [<strong>-CApath directory</strong>] [<strong>-CAfile filename</strong>] [<strong>-no-CAfile</strong>] [<strong>-no-CApath</strong>] [<strong>-reuse</strong>] [<strong>-new</strong>] [<strong>-verify depth</strong>] [<strong>-nameopt option</strong>] [<strong>-time seconds</strong>] [<strong>-ssl3</strong>] [<strong>-bugs</strong>] [<strong>-cipher cipherlist</strong>] [<strong>-ciphersuites val</strong>]</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>s_time</strong> command implements a generic SSL/TLS client which connects to a remote host using SSL/TLS. It can request a page from the server and includes the time to transfer the payload data in its timing measurements. It measures the number of connections within a given timeframe, the amount of data transferred (if any), and calculates the average time spent for one connection.</p>
+<h1>OPTIONS</h1>
+<ul>
+<li><p>Print out a usage message.</p></li>
+<li><p>This specifies the host and optional port to connect to.</p></li>
+<li><p>This specifies the page to GET from the server. A value of '/' gets the index.htm[l] page. If this parameter is not specified, then <strong>s_time</strong> will only perform the handshake to establish SSL connections but not transfer any payload data.</p></li>
+<li><p>The certificate to use, if one is requested by the server. The default is not to use a certificate. The file is in PEM format.</p></li>
+<li><p>The private key to use. If not specified then the certificate file will be used. The file is in PEM format.</p></li>
+<li><p>The verify depth to use. This specifies the maximum length of the server certificate chain and turns on server certificate verification. Currently the verify operation continues after errors so all the problems with a certificate chain can be seen. As a side effect the connection will never fail due to a server certificate verify failure.</p></li>
+<li><p>Option which determines how the subject or issuer names are displayed. The <strong>option</strong> argument can be a single option or multiple options separated by commas. Alternatively the <strong>-nameopt</strong> switch may be used more than once to set multiple options. See the <strong>x509</strong> (1) manual page for details.</p></li>
+<li><p>The directory to use for server certificate verification. This directory must be in hash format, see <strong>verify</strong> for more information. These are also used when building the client certificate chain.</p></li>
+<li><p>A file containing trusted certificates to use during server authentication and to use when attempting to build the client certificate chain.</p></li>
+<li><p>Do not load the trusted CA certificates from the default file location</p></li>
+<li><p>Do not load the trusted CA certificates from the default directory location</p></li>
+<li><p>Performs the timing test using a new session ID for each connection. If neither <strong>-new</strong> nor <strong>-reuse</strong> are specified, they are both on by default and executed in sequence.</p></li>
+<li><p>Performs the timing test using the same session ID; this can be used as a test that session caching is working. If neither <strong>-new</strong> nor <strong>-reuse</strong> are specified, they are both on by default and executed in sequence.</p></li>
+<li><p>This option disables the use of SSL version 3. By default the initial handshake uses a method which should be compatible with all servers and permit them to use SSL v3 or TLS as appropriate. The timing program is not as rich in options to turn protocols on and off as the <strong>s_client</strong> (1) program and may not connect to all servers. Unfortunately there are a lot of ancient and broken servers in use which cannot handle this technique and will fail to connect. Some servers only work if TLS is turned off with the <strong>-ssl3</strong> option. Note that this option may not be available, depending on how OpenSSL was built.</p></li>
+<li><p>There are several known bugs in SSL and TLS implementations. Adding this option enables various workarounds.</p></li>
+<li><p>This allows the TLSv1.2 and below cipher list sent by the client to be modified. This list will be combined with any TLSv1.3 ciphersuites that have been configured. Although the server determines which cipher suite is used it should take the first supported cipher in the list sent by the client. See <strong>ciphers</strong> (1) for more information.</p></li>
+<li><p>This allows the TLSv1.3 ciphersuites sent by the client to be modified. This list will be combined with any TLSv1.2 and below ciphersuites that have been configured. Although the server determines which cipher suite is used it should take the first supported cipher in the list sent by the client. See <strong>ciphers</strong> (1) for more information. The format for this list is a simple colon (:) separated list of TLSv1.3 ciphersuite names.</p></li>
+<li><p>Specifies how long (in seconds) <strong>s_time</strong> should establish connections and optionally transfer payload data from a server. Server and client performance and the link speed determine how many connections <strong>s_time</strong> can establish.</p></li>
+</ul>
+<h1>NOTES</h1>
+<p><strong>s_time</strong> can be used to measure the performance of an SSL connection. To connect to an SSL HTTP server and get the default page the command</p>
+<p>openssl s_time -connect servername:443 -www / -CApath yourdir -CAfile yourfile.pem -cipher commoncipher [-ssl3]</p>
+<p>would typically be used (https uses port 443). 'commoncipher' is a cipher to which both client and server can agree, see the <strong>ciphers</strong> (1) command for details.</p>
+<p>If the handshake fails then there are several possible causes, if it is nothing obvious like no client certificate then the <strong>-bugs</strong> and <strong>-ssl3</strong> options can be tried in case it is a buggy server. In particular you should play with these options <strong>before</strong> submitting a bug report to an OpenSSL mailing list.</p>
+<p>A frequent problem when attempting to get client certificates working is that a web client complains it has no certificates or gives an empty list to choose from. This is normally because the server is not sending the clients certificate authority in its acceptable CA list when it requests a certificate. By using <strong>s_client</strong> (1) the CA list can be viewed and checked. However, some servers only request client authentication after a specific URL is requested. To obtain the list in this case it is necessary to use the <strong>-prexit</strong> option of <strong>s_client</strong> (1) and send an HTTP request for an appropriate page.</p>
+<p>If a certificate is specified on the command line using the <strong>-cert</strong> option it will not be used unless the server specifically requests a client certificate. Therefore, merely including a client certificate on the command line is no guarantee that the certificate works.</p>
+<h1>BUGS</h1>
+<p>Because this program does not have all the options of the <strong>s_client</strong> (1) program to turn protocols on and off, you may not be able to measure the performance of all protocols with all servers.</p>
+<p>The <strong>-verify</strong> option should really exit if the server verification fails.</p>
+<h1>SEE ALSO</h1>
+<p><strong>s_client</strong> (1), <strong>s_server</strong> (1), <strong>ciphers</strong> (1)</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright 2004-2020 The OpenSSL Project Authors. All Rights Reserved.</p>
+<p>Licensed under the OpenSSL license (the License). You may not use this file except in compliance with the License. You can obtain a copy in the file LICENSE in the source distribution or at &lt;https://www.openssl.org/source/license.html&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

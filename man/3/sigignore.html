@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sigignore</title><meta name="description" content="Linux command sigignore System V signal API"><meta name="keywords" content="linux, command, sigignore, bsd, System V signal API"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sigset, sighold, sigrelse, sigignore - System V signal API</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;signal.h&gt;</strong></p>
+<p><strong>typedef void (*sighandler_t)(int);</strong></p>
+<p><strong>sighandler_t sigset(int </strong><em>sig</em><strong>, sighandler_t </strong><em>disp</em><strong>);</strong></p>
+<p><strong>int sighold(int </strong><em>sig</em><strong>);</strong></p>
+<p><strong>int sigrelse(int </strong><em>sig</em><strong>);</strong></p>
+<p><strong>int sigignore(int </strong><em>sig</em><strong>);</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>sigset</strong>(), <strong>sighold</strong>(), <strong>sigrelse</strong>(), <strong>sigignore</strong>():<br />
+</p>
+<blockquote>
+<p>_XOPEN_SOURCE &gt;= 500</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>These functions are provided in glibc as a compatibility interface for programs that make use of the historical System V signal API. This API is obsolete: new applications should use the POSIX signal API (<strong>sigaction</strong>(2), <strong>sigprocmask</strong>(2), etc.)</p>
+<p>The <strong>sigset</strong>() function modifies the disposition of the signal <em>sig</em>. The <em>disp</em> argument can be the address of a signal handler function, or one of the following constants:</p>
+<dl>
+<dt><strong>SIG_DFL</strong></dt>
+<dd><p>Reset the disposition of <em>sig</em> to the default.</p>
+</dd>
+<dt><strong>SIG_IGN</strong></dt>
+<dd><p>Ignore <em>sig</em>.</p>
+</dd>
+<dt><strong>SIG_HOLD</strong></dt>
+<dd><p>Add <em>sig</em> to the process's signal mask, but leave the disposition of <em>sig</em> unchanged.</p>
+</dd>
+</dl>
+<p>If <em>disp</em> specifies the address of a signal handler, then <em>sig</em> is added to the process's signal mask during execution of the handler.</p>
+<p>If <em>disp</em> was specified as a value other than <strong>SIG_HOLD</strong>, then <em>sig</em> is removed from the process's signal mask.</p>
+<p>The dispositions for <strong>SIGKILL</strong> and <strong>SIGSTOP</strong> cannot be changed.</p>
+<p>The <strong>sighold</strong>() function adds <em>sig</em> to the calling process's signal mask.</p>
+<p>The <strong>sigrelse</strong>() function removes <em>sig</em> from the calling process's signal mask.</p>
+<p>The <strong>sigignore</strong>() function sets the disposition of <em>sig</em> to <strong>SIG_IGN</strong>.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>sigset</strong>() returns <strong>SIG_HOLD</strong> if <em>sig</em> was blocked before the call, or the signal's previous disposition if it was not blocked before the call. On error, <strong>sigset</strong>() returns -1, with <em>errno</em> set to indicate the error. (But see BUGS below.)</p>
+<p>The <strong>sighold</strong>(), <strong>sigrelse</strong>(), and <strong>sigignore</strong>() functions return 0 on success; on error, these functions return -1 and set <em>errno</em> to indicate the error.</p>
+<h1>ERRORS</h1>
+<p>For <strong>sigset</strong>() see the ERRORS under <strong>sigaction</strong>(2) and <strong>sigprocmask</strong>(2).</p>
+<p>For <strong>sighold</strong>() and <strong>sigrelse</strong>() see the ERRORS under <strong>sigprocmask</strong>(2).</p>
+<p>For <strong>sigignore</strong>(), see the errors under <strong>sigaction</strong>(2).</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sigset</strong>(), <strong>sighold</strong>(),<br />
+<strong>sigrelse</strong>(), <strong>sigignore</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>SVr4, POSIX.1-2001, POSIX.1-2008. These functions are obsolete: do not use them in new programs. POSIX.1-2008 marks <strong>sighold</strong>(), <strong>sigignore</strong>(), <strong>sigpause</strong>(3), <strong>sigrelse</strong>(), and <strong>sigset</strong>() as obsolete, recommending the use of <strong>sigaction</strong>(2), <strong>sigprocmask</strong>(2), <strong>pthread_sigmask</strong>(3), and <strong>sigsuspend</strong>(2) instead.</p>
+<h1>NOTES</h1>
+<p>These functions appeared in glibc version 2.1.</p>
+<p>The <em>sighandler_t</em> type is a GNU extension; it is used on this page only to make the <strong>sigset</strong>() prototype more easily readable.</p>
+<p>The <strong>sigset</strong>() function provides reliable signal handling semantics (as when calling <strong>sigaction</strong>(2) with <em>sa_mask</em> equal to 0).</p>
+<p>On System V, the <strong>signal</strong>() function provides unreliable semantics (as when calling <strong>sigaction</strong>(2) with <em>sa_mask</em> equal to <em>SA_RESETHAND | SA_NODEFER</em>). On BSD, <strong>signal</strong>() provides reliable semantics. POSIX.1-2001 leaves these aspects of <strong>signal</strong>() unspecified. See <strong>signal</strong>(2) for further details.</p>
+<p>In order to wait for a signal, BSD and System V both provided a function named <strong>sigpause</strong>(3), but this function has a different argument on the two systems. See <strong>sigpause</strong>(3) for details.</p>
+<h1>BUGS</h1>
+<p>In versions of glibc before 2.2, <strong>sigset</strong>() did not unblock <em>sig</em> if <em>disp</em> was specified as a value other than <strong>SIG_HOLD</strong>.</p>
+<p>In versions of glibc before 2.5, <strong>sigset</strong>() does not correctly return the previous disposition of the signal in two cases. First, if <em>disp</em> is specified as <strong>SIG_HOLD</strong>, then a successful <strong>sigset</strong>() always returns <strong>SIG_HOLD</strong>. Instead, it should return the previous disposition of the signal (unless the signal was blocked, in which case <strong>SIG_HOLD</strong> should be returned). Second, if the signal is currently blocked, then the return value of a successful <strong>sigset</strong>() should be <strong>SIG_HOLD</strong>. Instead, the previous disposition of the signal is returned. These problems have been fixed since glibc 2.5.</p>
+<h1>SEE ALSO</h1>
+<p><strong>kill</strong>(2), <strong>pause</strong>(2), <strong>sigaction</strong>(2), <strong>signal</strong>(2), <strong>sigprocmask</strong>(2), <strong>raise</strong>(3), <strong>sigpause</strong>(3), <strong>sigvec</strong>(3), <strong>signal</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command setresgid32</title><meta name="description" content="Linux command setresgid32 set real, effective and saved user or group ID"><meta name="keywords" content="linux, command, setresgid32, bsd, set real, effective and saved user or group ID"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>setresuid, setresgid - set real, effective and saved user or group ID</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#define _GNU_SOURCE</strong> /* See feature_test_macros(7) */<br />
+<strong>#include &lt;unistd.h&gt;</strong></p>
+<p><strong>int setresuid(uid_t </strong><em>ruid</em><strong>, uid_t </strong><em>euid</em><strong>, uid_t </strong><em>suid</em><strong>);</strong><br />
+<strong>int setresgid(gid_t </strong><em>rgid</em><strong>, gid_t </strong><em>egid</em><strong>, gid_t </strong><em>sgid</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>setresuid</strong>() sets the real user ID, the effective user ID, and the saved set-user-ID of the calling process.</p>
+<p>An unprivileged process may change its real UID, effective UID, and saved set-user-ID, each to one of: the current real UID, the current effective UID or the current saved set-user-ID.</p>
+<p>A privileged process (on Linux, one having the <strong>CAP_SETUID</strong> capability) may set its real UID, effective UID, and saved set-user-ID to arbitrary values.</p>
+<p>If one of the arguments equals -1, the corresponding value is not changed.</p>
+<p>Regardless of what changes are made to the real UID, effective UID, and saved set-user-ID, the filesystem UID is always set to the same value as the (possibly new) effective UID.</p>
+<p>Completely analogously, <strong>setresgid</strong>() sets the real GID, effective GID, and saved set-group-ID of the calling process (and always modifies the filesystem GID to be the same as the effective GID), with the same restrictions for unprivileged processes.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<p><em>Note</em>: there are cases where <strong>setresuid</strong>() can fail even when the caller is UID 0; it is a grave security error to omit checking for a failure return from <strong>setresuid</strong>().</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>The call would change the caller's real UID (i.e., <em>ruid</em> does not match the caller's real UID), but there was a temporary failure allocating the necessary kernel data structures.</p>
+</dd>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p><em>ruid</em> does not match the caller's real UID and this call would bring the number of processes belonging to the real user ID <em>ruid</em> over the caller's <strong>RLIMIT_NPROC</strong> resource limit. Since Linux 3.1, this error case no longer occurs (but robust applications should check for this error); see the description of <strong>EAGAIN</strong> in <strong>execve</strong>(2).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>One or more of the target user or group IDs is not valid in this user namespace.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The calling process is not privileged (did not have the necessary capability in its user namespace) and tried to change the IDs to values that are not permitted. For <strong>setresuid</strong>(), the necessary capability is <strong>CAP_SETUID</strong>; for <strong>setresgid</strong>(), it is <strong>CAP_SETGID</strong>.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>These calls are available under Linux since Linux 2.1.44.</p>
+<h1>CONFORMING TO</h1>
+<p>These calls are nonstandard; they also appear on HP-UX and some of the BSDs.</p>
+<h1>NOTES</h1>
+<p>Under HP-UX and FreeBSD, the prototype is found in <em>&lt;unistd.h&gt;</em>. Under Linux, the prototype is provided by glibc since version 2.3.2.</p>
+<p>The original Linux <strong>setresuid</strong>() and <strong>setresgid</strong>() system calls supported only 16-bit user and group IDs. Subsequently, Linux 2.4 added <strong>setresuid32</strong>() and <strong>setresgid32</strong>(), supporting 32-bit IDs. The glibc <strong>setresuid</strong>() and <strong>setresgid</strong>() wrapper functions transparently deal with the variations across kernel versions.</p>
+<h2>C library/kernel differences</h2>
+<p>At the kernel level, user IDs and group IDs are a per-thread attribute. However, POSIX requires that all threads in a process share the same credentials. The NPTL threading implementation handles the POSIX requirements by providing wrapper functions for the various system calls that change process UIDs and GIDs. These wrapper functions (including those for <strong>setresuid</strong>() and <strong>setresgid</strong>()) employ a signal-based technique to ensure that when one thread changes credentials, all of the other threads in the process also change their credentials. For details, see <strong>nptl</strong>(7).</p>
+<h1>SEE ALSO</h1>
+<p><strong>getresuid</strong>(2), <strong>getuid</strong>(2), <strong>setfsgid</strong>(2), <strong>setfsuid</strong>(2), <strong>setreuid</strong>(2), <strong>setuid</strong>(2), <strong>capabilities</strong>(7), <strong>credentials</strong>(7), <strong>user_namespaces</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

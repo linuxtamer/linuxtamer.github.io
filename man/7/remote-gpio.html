@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command remote-gpio</title><meta name="description" content="Linux command remote-gpio GPIO Zero remote GPIO guide"><meta name="keywords" content="linux, command, remote-gpio, bsd, GPIO Zero remote GPIO guide"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>remote-gpio - GPIO Zero remote GPIO guide</p>
+<p>GPIO Zero supports a number of different pin implementations (low-level pin libraries which deal with the GPIO pins directly). By default, the <em>RPi.GPIO</em> &lt;<strong>https://pypi.python.org/pypi/RPi.GPIO</strong>&gt; library is used (assuming it is installed on your system), but you can optionally specify one to use. For more information, see the api_pins documentation page.</p>
+<p>One of the pin libraries supported, <em>pigpio</em> &lt;<strong>http://abyz.me.uk/rpi/pigpio/python.html</strong>&gt;, provides the ability to control GPIO pins remotely over the network, which means you can use GPIO Zero to control devices connected to a Raspberry Pi on the network. You can do this from another Raspberry Pi, or even from a PC.</p>
+<p>See the recipes_remote_gpio page for examples on how remote pins can be used.</p>
+<h1>PREPARING THE RASPBERRY PI</h1>
+<p>If you're using Raspberry Pi OS (desktop - not Lite) then you have everything you need to use the remote GPIO feature. If you're using Raspberry Pi OS Lite, or another distribution, you'll need to install pigpio:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo apt install pigpio</code></pre>
+</blockquote>
+</blockquote>
+<p>Alternatively, pigpio is available from <em>abyz.me.uk</em> &lt;<strong>http://abyz.me.uk/rpi/pigpio/download.html</strong>&gt;.</p>
+<p>You'll need to enable remote connections, and launch the pigpio daemon on the Raspberry Pi.</p>
+<h2>Enable remote connections</h2>
+<p>On the Raspberry Pi OS desktop image, you can enable <em>Remote GPIO</em> in the Raspberry Pi configuration tool: [image]</p>
+<p>Alternatively, enter <strong>sudo raspi-config</strong> on the command line, and enable Remote GPIO. This is functionally equivalent to the desktop method.</p>
+<p>This will allow remote connections (until disabled) when the pigpio daemon is launched using <strong>systemctl</strong> (see below). It will also launch the pigpio daemon for the current session. Therefore, nothing further is required for the current session, but after a reboot, a <strong>systemctl</strong> command will be required.</p>
+<h2>Command-line: systemctl</h2>
+<p>To automate running the daemon at boot time, run:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo systemctl enable pigpiod</code></pre>
+</blockquote>
+</blockquote>
+<p>To run the daemon once using <strong>systemctl</strong>, run:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo systemctl start pigpiod</code></pre>
+</blockquote>
+</blockquote>
+<h2>Command-line: pigpiod</h2>
+<p>Another option is to launch the pigpio daemon manually:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo pigpiod</code></pre>
+</blockquote>
+</blockquote>
+<p>This is for single-session-use and will not persist after a reboot. However, this method can be used to allow connections from a specific IP address, using the <strong>-n</strong> flag. For example:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo pigpiod -n localhost # allow localhost only
+$ sudo pigpiod -n 192.168.1.65 # allow 192.168.1.65 only
+$ sudo pigpiod -n localhost -n 192.168.1.65 # allow localhost and 192.168.1.65 only</code></pre>
+</blockquote>
+</blockquote>
+<p><strong>NOTE:</strong></p>
+<blockquote>
+<blockquote>
+<p>Note that running <strong>sudo pigpiod</strong> will not honour the Remote GPIO configuration setting (i.e. without the <strong>-n</strong> flag it will allow remote connections even if the remote setting is disabled), but <strong>sudo systemctl</strong> enable pigpiod or <strong>sudo systemctl start pigpiod</strong> will not allow remote connections unless configured accordingly.</p>
+</blockquote>
+</blockquote>
+<h1>PREPARING THE CONTROL COMPUTER</h1>
+<p>If the control computer (the computer you're running your Python code from) is a Raspberry Pi running Raspberry Pi OS (or a PC running <em>Raspberry Pi Desktop</em> x86 &lt;<strong>https://www.raspberrypi.org/downloads/raspberry-pi-desktop/</strong>&gt;), then you have everything you need. If you're using another Linux distribution, Mac OS or Windows then you'll need to install the <em>pigpio</em> &lt;<strong>http://abyz.me.uk/rpi/pigpio/python.html</strong>&gt; Python library on the PC.</p>
+<h2>Raspberry Pi</h2>
+<p>First, update your repositories list:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo apt update</code></pre>
+</blockquote>
+</blockquote>
+<p>Then install GPIO Zero and the pigpio library for Python 3:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo apt install python3-gpiozero python3-pigpio</code></pre>
+</blockquote>
+</blockquote>
+<p>or Python 2:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo apt install python-gpiozero python-pigpio</code></pre>
+</blockquote>
+</blockquote>
+<p>Alternatively, install with pip:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo pip3 install gpiozero pigpio</code></pre>
+</blockquote>
+</blockquote>
+<p>or for Python 2:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo pip install gpiozero pigpio</code></pre>
+</blockquote>
+</blockquote>
+<h2>Linux</h2>
+<p>First, update your distribution's repositories list. For example:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo apt update</code></pre>
+</blockquote>
+</blockquote>
+<p>Then install pip for Python 3:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo apt install python3-pip</code></pre>
+</blockquote>
+</blockquote>
+<p>or Python 2:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo apt install python-pip</code></pre>
+</blockquote>
+</blockquote>
+<p>(Alternatively, install pip with <em>get-pip</em> &lt;<strong>https://pip.pypa.io/en/stable/installing/</strong>&gt;.)</p>
+<p>Next, install GPIO Zero and pigpio for Python 3:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo pip3 install gpiozero pigpio</code></pre>
+</blockquote>
+</blockquote>
+<p>or Python 2:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ sudo pip install gpiozero pigpio</code></pre>
+</blockquote>
+</blockquote>
+<h2>Mac OS</h2>
+<p>First, install pip. If you installed Python 3 using brew, you will already have pip. If not, install pip with <em>get-pip</em> &lt;<strong>https://pip.pypa.io/en/stable/installing/</strong>&gt;.</p>
+<p>Next, install GPIO Zero and pigpio with pip:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ pip3 install gpiozero pigpio</code></pre>
+</blockquote>
+</blockquote>
+<p>Or for Python 2:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ pip install gpiozero pigpio</code></pre>
+</blockquote>
+</blockquote>
+<h2>Windows</h2>
+<p>Modern Python installers for Windows bundle pip with Python. If pip is not installed, you can <em>follow this guide</em> &lt;<strong>https://projects.raspberrypi.org/en/projects/using-pip-on-windows</strong>&gt;. Next, install GPIO Zero and pigpio with pip:</p>
+<blockquote>
+<blockquote>
+<pre><code>C:\Users\user1&gt; pip install gpiozero pigpio</code></pre>
+</blockquote>
+</blockquote>
+<h1>ENVIRONMENT VARIABLES</h1>
+<p>The simplest way to use devices with remote pins is to set the <strong>PIGPIO_ADDR</strong> environment variable to the IP address of the desired Raspberry Pi. You must run your Python script or launch your development environment with the environment variable set using the command line. For example, one of the following:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ PIGPIO_ADDR=192.168.1.3 python3 hello.py
+$ PIGPIO_ADDR=192.168.1.3 python3
+$ PIGPIO_ADDR=192.168.1.3 ipython3
+$ PIGPIO_ADDR=192.168.1.3 idle3 &amp;</code></pre>
+</blockquote>
+</blockquote>
+<p>If you are running this from a PC (not a Raspberry Pi) with gpiozero and the <em>pigpio</em> &lt;<strong>http://abyz.me.uk/rpi/pigpio/python.html</strong>&gt; Python library installed, this will work with no further configuration. However, if you are running this from a Raspberry Pi, you will also need to ensure the default pin factory is set to <strong>PiGPIOFactory</strong>. If <em>RPi.GPIO</em> &lt;<strong>https://pypi.python.org/pypi/RPi.GPIO</strong>&gt; is installed, this will be selected as the default pin factory, so either uninstall it, or use the <strong>GPIOZERO_PIN_FACTORY</strong> environment variable to override it:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ GPIOZERO_PIN_FACTORY=pigpio PIGPIO_ADDR=192.168.1.3 python3 hello.py</code></pre>
+</blockquote>
+</blockquote>
+<p>This usage will set the pin factory to <strong>PiGPIOFactory</strong> with a default host of <strong>192.168.1.3</strong>. The pin factory can be changed inline in the code, as seen in the following sections.</p>
+<p>With this usage, you can write gpiozero code like you would on a Raspberry Pi, with no modifications needed. For example:</p>
+<blockquote>
+<blockquote>
+<pre><code>from gpiozero import LED
+from time import sleep
+
+red = LED(17)
+
+while True:
+    red.on()
+    sleep(1)
+    red.off()
+    sleep(1)
+</code></pre>
+</blockquote>
+</blockquote>
+<p>When run with:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ PIGPIO_ADDR=192.168.1.3 python3 led.py</code></pre>
+</blockquote>
+</blockquote>
+<p>will flash the LED connected to pin 17 of the Raspberry Pi with the IP address <strong>192.168.1.3</strong>. And:</p>
+<blockquote>
+<blockquote>
+<pre><code>$ PIGPIO_ADDR=192.168.1.4 python3 led.py</code></pre>
+</blockquote>
+</blockquote>
+<p>will flash the LED connected to pin 17 of the Raspberry Pi with the IP address <strong>192.168.1.4</strong>, without any code changes, as long as the Raspberry Pi has the pigpio daemon running.</p>
+<p><strong>NOTE:</strong></p>
+<blockquote>
+<blockquote>
+<p>When running code directly on a Raspberry Pi, any pin factory can be used (assuming the relevant library is installed), but when a device is used remotely, only <strong>PiGPIOFactory</strong> can be used, as <em>pigpio</em> &lt;<strong>http://abyz.me.uk/rpi/pigpio/python.html</strong>&gt; is the only pin library which supports remote GPIO.</p>
+</blockquote>
+</blockquote>
+<h1>PIN FACTORIES</h1>
+<p>An alternative (or additional) method of configuring gpiozero objects to use remote pins is to create instances of <strong>PiGPIOFactory</strong> objects, and use them when instantiating device objects. For example, with no environment variables set:</p>
+<blockquote>
+<blockquote>
+<pre><code>from gpiozero import LED
+from gpiozero.pins.pigpio import PiGPIOFactory
+from time import sleep
+
+factory = PiGPIOFactory(host=&#39;192.168.1.3&#39;)
+led = LED(17, pin_factory=factory)
+
+while True:
+    led.on()
+    sleep(1)
+    led.off()
+    sleep(1)
+</code></pre>
+</blockquote>
+</blockquote>
+<p>This allows devices on multiple Raspberry Pis to be used in the same script:</p>
+<blockquote>
+<blockquote>
+<pre><code>from gpiozero import LED
+from gpiozero.pins.pigpio import PiGPIOFactory
+from time import sleep
+
+factory3 = PiGPIOFactory(host=&#39;192.168.1.3&#39;)
+factory4 = PiGPIOFactory(host=&#39;192.168.1.4&#39;)
+led_1 = LED(17, pin_factory=factory3)
+led_2 = LED(17, pin_factory=factory4)
+
+while True:
+    led_1.on()
+    led_2.off()
+    sleep(1)
+    led_1.off()
+    led_2.on()
+    sleep(1)
+</code></pre>
+</blockquote>
+</blockquote>
+<p>You can, of course, continue to create gpiozero device objects as normal, and create others using remote pins. For example, if run on a Raspberry Pi, the following script will flash an LED on the controller Pi, and also on another Pi on the network:</p>
+<blockquote>
+<blockquote>
+<pre><code>from gpiozero import LED
+from gpiozero.pins.pigpio import PiGPIOFactory
+from time import sleep
+
+remote_factory = PiGPIOFactory(host=&#39;192.168.1.3&#39;)
+led_1 = LED(17)  # local pin
+led_2 = LED(17, pin_factory=remote_factory)  # remote pin
+
+while True:
+    led_1.on()
+    led_2.off()
+    sleep(1)
+    led_1.off()
+    led_2.on()
+    sleep(1)
+</code></pre>
+</blockquote>
+</blockquote>
+<p>Alternatively, when run with the environment variables <strong>GPIOZERO_PIN_FACTORY=pigpio PIGPIO_ADDR=192.168.1.3</strong> set, the following script will behave exactly the same as the previous one:</p>
+<blockquote>
+<blockquote>
+<pre><code>from gpiozero import LED
+from gpiozero.pins.rpigpio import RPiGPIOFactory
+from time import sleep
+
+local_factory = RPiGPIOFactory()
+led_1 = LED(17, pin_factory=local_factory)  # local pin
+led_2 = LED(17)  # remote pin
+
+while True:
+    led_1.on()
+    led_2.off()
+    sleep(1)
+    led_1.off()
+    led_2.on()
+    sleep(1)
+</code></pre>
+</blockquote>
+</blockquote>
+<p>Of course, multiple IP addresses can be used:</p>
+<blockquote>
+<blockquote>
+<pre><code>from gpiozero import LED
+from gpiozero.pins.pigpio import PiGPIOFactory
+from time import sleep
+
+factory3 = PiGPIOFactory(host=&#39;192.168.1.3&#39;)
+factory4 = PiGPIOFactory(host=&#39;192.168.1.4&#39;)
+
+led_1 = LED(17)  # local pin
+led_2 = LED(17, pin_factory=factory3)  # remote pin on one pi
+led_3 = LED(17, pin_factory=factory4)  # remote pin on another pi
+
+while True:
+    led_1.on()
+    led_2.off()
+    led_3.on()
+    sleep(1)
+    led_1.off()
+    led_2.on()
+    led_3.off()
+    sleep(1)
+</code></pre>
+</blockquote>
+</blockquote>
+<p>Note that these examples use the <strong>LED</strong> class, which takes a <em>pin</em> argument to initialise. Some classes, particularly those representing HATs and other add-on boards, do not require their pin numbers to be specified. However, it is still possible to use remote pins with these devices, either using environment variables, or the <em>pin_factory</em> keyword argument:</p>
+<blockquote>
+<blockquote>
+<pre><code>import gpiozero
+from gpiozero import TrafficHat
+from gpiozero.pins.pigpio import PiGPIOFactory
+from time import sleep
+
+gpiozero.Device.pin_factory = PiGPIOFactory(host=&#39;192.168.1.3&#39;)
+th = TrafficHat()  # traffic hat on 192.168.1.3 using remote pins
+</code></pre>
+</blockquote>
+</blockquote>
+<p>This also allows you to swap between two IP addresses and create instances of multiple HATs connected to different Pis:</p>
+<blockquote>
+<blockquote>
+<pre><code>import gpiozero
+from gpiozero import TrafficHat
+from gpiozero.pins.pigpio import PiGPIOFactory
+from time import sleep
+
+remote_factory = PiGPIOFactory(host=&#39;192.168.1.3&#39;)
+
+th_1 = TrafficHat()  # traffic hat using local pins
+th_2 = TrafficHat(pin_factory=remote_factory)  # traffic hat on 192.168.1.3 using remote pins
+</code></pre>
+</blockquote>
+</blockquote>
+<p>You could even use a HAT which is not supported by GPIO Zero (such as the <em>Sense HAT</em> &lt;<strong>https://www.raspberrypi.org/products/sense-hat/</strong>&gt;) on one Pi, and use remote pins to control another over the network:</p>
+<blockquote>
+<blockquote>
+<pre><code>from gpiozero import MotionSensor
+from gpiozero.pins.pigpio import PiGPIOFactory
+from sense_hat import SenseHat
+
+remote_factory = PiGPIOFactory(host=&#39;192.198.1.4&#39;)
+pir = MotionSensor(4, pin_factory=remote_factory)  # remote motion sensor
+sense = SenseHat()  # local sense hat
+
+while True:
+    pir.wait_for_motion()
+    sense.show_message(sense.temperature)
+</code></pre>
+</blockquote>
+</blockquote>
+<p>Note that in this case, the Sense HAT code must be run locally, and the GPIO remotely.</p>
+<h1>REMOTE GPIO USAGE</h1>
+<p>Continue to:</p>
+<blockquote>
+<ul>
+<li><p>recipes_remote_gpio</p></li>
+<li><p>pi_zero_otg</p></li>
+</ul>
+</blockquote>
+<h1>AUTHOR</h1>
+<p>Ben Nuttall</p>
+<h1>COPYRIGHT</h1>
+<p>2015-2021 Ben Nuttall</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

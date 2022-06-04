@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command ipp-usb</title><meta name="description" content="Linux command ipp-usb Daemon for IPP over USB printer support"><meta name="keywords" content="linux, command, ipp-usb, bsd, Daemon for IPP over USB printer support"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p><strong>ipp-usb</strong> - Daemon for IPP over USB printer support</p>
+<h1>DESCRIPTION</h1>
+<p><strong>ipp-usb</strong> daemon enables driver-less printing and scanning on USB-only AirPrint-compatible printers and MFPs.</p>
+<p>It works by connecting to the device by USB using IPP-over-USB protocol, and exposing the device to the network, including DNS-SD (ZeroConf) advertising.</p>
+<p>IPP printing, eSCL scanning and web console are fully supported.</p>
+<h1>SYNOPSIS</h1>
+<h2>Usage:</h2>
+<p><strong>ipp-usb mode [options]</strong></p>
+<h2>Modes are:</h2>
+<dl>
+<dt><strong>standalone</strong></dt>
+<dd><p>run forever, automatically discover IPP-over-USB devices and serve them all</p>
+</dd>
+<dt><strong>udev</strong></dt>
+<dd><p>like standalone, but exit when last IPP-over-USB device is disconnected</p>
+</dd>
+<dt><strong>debug</strong></dt>
+<dd><p>logs duplicated on console, -bg option is ignored</p>
+</dd>
+<dt><strong>check</strong></dt>
+<dd><p>check configuration and exit</p>
+</dd>
+</dl>
+<h2>Options are</h2>
+<dl>
+<dt><strong>-bg</strong></dt>
+<dd><p>run in background (ignored in debug mode)</p>
+</dd>
+</dl>
+<h1>CONFIGURATION</h1>
+<p><strong>ipp-usb</strong> searched for its configuration file in two places: 1. <strong>/etc/ipp-usb/ipp-usb.conf</strong> 2. <strong>ipp-usb.conf</strong> in the directory where executable file is located</p>
+<p>Configuration file syntax is very similar to .INI files syntax. It consist of named sections, and each section contains a set of named variables. Comments are started from # or ; characters and continues until end of line:</p>
+<ul>
+<li></li>
+</ul>
+<pre><code># This is a comment
+[section 1]
+variable 1 = value 1  ; and another comment
+variable 2 = value 2</code></pre>
+<ul>
+<li></li>
+</ul>
+<h2>Network parameters</h2>
+<p>Network parameters are all in the <strong>[network]</strong> section:</p>
+<ul>
+<li></li>
+</ul>
+<pre><code>[network]
+  # TCP ports for HTTP will be automatically allocated in the following range
+  http-min-port = 60000
+  http-max-port = 65535
+
+  # Enable or disable DNS-SD advertisement
+  dns-sd = enable      # enable | disable
+
+  # Network interface to use. Set to `all` if you want to expose you
+  # printer to the local network. This way you can share your printer
+  # with other computers in the network, as well as with iOS and Android
+  # devices.
+  interface = loopback # all | loopback
+
+  # Enable or disable IPv6
+  ipv6 = enable        # enable | disable</code></pre>
+<ul>
+<li></li>
+</ul>
+<h2>Logging configuration</h2>
+<p>Logging parameters are all in the <strong>[logging]</strong> section:</p>
+<ul>
+<li></li>
+</ul>
+<pre><code>[logging]
+  # device-log  - what logs are generated per device
+  # main-log    - what common logs are generated
+  # console-log - what of generated logs goes to console
+  #
+  # parameter contains a comma-separated list of
+  # the following keywords:
+  #   error     - error messages
+  #   info      - informative messages
+  #   debug     - debug messages
+  #   trace-ipp, trace-escl, trace-http - very detailed per-protocol traces
+  #   all       - all logs
+  #   trace-all - alias to all
+  #
+  # Note, trace-* implies debug, debug implies info, info implies error
+  device-log    = all
+  main-log      = debug
+  console-log   = debug
+
+  # Log rotation parameters:
+  #   log-file-size    - max log file before rotation. Use suffix M
+  #                      for megabytes or K for kilobytes
+  #   log-backup-files - how many backup files to preserve during rotation
+  #
+  max-file-size    = 256K
+  max-backup-files = 5
+
+  # Enable or disable ANSI colors on console
+  console-color = enable # enable | disable</code></pre>
+<ul>
+<li></li>
+</ul>
+<h2>Quirks</h2>
+<p>Some devices, due to their firmware bugs, require special handling, called device-specific <strong>quirks</strong>. <strong>ipp-usb</strong> loads quirks from the <strong>/usr/share/ipp-usb/quirks/*.conf</strong> files. These files have .INI-file syntax with the content that looks like this:</p>
+<ul>
+<li></li>
+</ul>
+<pre><code>[HP LaserJet MFP M28-M31]
+  http-connection = keep-alive
+
+[HP OfficeJet Pro 8730]
+  http-connection = close
+
+[HP Inc. HP Laser MFP 135a]
+  blacklist = true
+
+# Default configuration
+[*]
+  http-connection = &quot;&quot;</code></pre>
+<ul>
+<li></li>
+</ul>
+<p>For each discovered device, its model name is matched against sections of the quirks files. Section name may contain glob-style wildcards: <strong>*</strong> that matches any sequence of characters and <strong>?</strong>, that matches any single character. If device name must contain any of these characters, use backslash as escape.</p>
+<p>All matching sections from all quirks files are taken in consideration, and applied in priority order. Priority is computed using the following algorithm:</p>
+<ul>
+<li><p>When matching model name against section name, amount of non-wildcard matched characters is counted, and the longer match wins</p></li>
+<li><p>Otherwise, section loaded first wins. Files are loaded in alphabetical order, sections read sequentially</p></li>
+<li></li>
+</ul>
+<p>If some parameter exist in multiple sections, used its value from the most priority section</p>
+<p>The following parameters are defined:</p>
+<dl>
+<dt><strong>blacklist = true | false</strong></dt>
+<dd><p>If <strong>true</strong>, the matching device is ignored by the <strong>ipp-usb</strong></p>
+</dd>
+<dt><strong>http-XXX = YYY</strong></dt>
+<dd><p>Set XXX header of the HTTP requests forwarded to device to YYY. If YYY is empty string, XXX header is removed</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<ul>
+<li><p><strong>/etc/ipp-usb/ipp-usb.conf</strong>: the daemon configuration file</p></li>
+<li><p><strong>/var/log/ipp-usb/main.log</strong>: the main log file</p></li>
+<li><p><strong>/var/log/ipp-usb/&lt;DEVICE&gt;.log</strong>: per-device log files</p></li>
+<li><p><strong>/var/ipp-usb/dev/&lt;DEVICE&gt;.state</strong>: device state (HTTP port allocation, DNS-SD name)</p></li>
+<li><p><strong>/var/ipp-usb/lock/ipp-usb.lock</strong>: lock file, that helps to prevent multiple copies of daemon to run simultaneously</p></li>
+<li><p><strong>/usr/share/ipp-usb/quirks/*.conf</strong>: device-specific quirks (see above)</p></li>
+<li></li>
+</ul>
+<h1>COPYRIGHT</h1>
+<p>Copyright (c) by Alexander Pevzner (pzz@apevzner.com)<br />
+All rights reserved.</p>
+<p>This program is licensed under 2-Clause BSD license. See LICENSE file for details.</p>
+<h1>SEE ALSO</h1>
+<p>cups(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

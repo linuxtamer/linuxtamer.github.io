@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command blkid</title><meta name="description" content="Linux command blkid locate/print block device attributes"><meta name="keywords" content="linux, command, blkid, bsd, locate/print block device attributes"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>blkid - locate/print block device attributes</p>
+<h1>SYNOPSIS</h1>
+<ul>
+<li><p><strong>--label</strong><em> label</em> | <strong>--uuid</strong><em> uuid</em></p></li>
+</ul>
+<ul>
+<li><p>[<strong>--no-encoding</strong> <strong>--garbage-collect --list-one --cache-file</strong> <em>file</em>] [<strong>--output</strong> <em>format</em>] [<strong>--match-tag</strong> <em>tag</em>] [<strong>--match-token</strong> <em>NAME=value</em>] [<em>device</em> ...]</p></li>
+</ul>
+<ul>
+<li><p><strong>--probe</strong> [<strong>--offset</strong> <em>offset</em>] [<strong>--output</strong> <em>format</em>] [<strong>--size</strong> <em>size</em>] [<strong>--match-tag</strong> <em>tag</em>] [<strong>--match-types</strong> <em>list</em>] [<strong>--usages</strong> <em>list</em>] [<strong>--no-part-details</strong>] <em>device</em> ...</p></li>
+</ul>
+<ul>
+<li><p><strong>--info</strong> [<strong>--output</strong> <em>format</em>] [<strong>--match-tag</strong> <em>tag</em>] <em>device</em> ...</p></li>
+</ul>
+<h1>DESCRIPTION</h1>
+<p>The <strong>blkid</strong> program is the command-line interface to working with the <strong>libblkid</strong>(3) library. It can determine the type of content (e.g., filesystem or swap) that a block device holds, and also the attributes (tokens, NAME=value pairs) from the content metadata (e.g., LABEL or UUID fields).</p>
+<p><strong>It is recommended to use</strong> <strong>lsblk</strong>(8) <strong>command to get information about block devices, or lsblk --fs to get an overview of filesystems, or</strong> <strong>findmnt</strong>(8) <strong>to search in already mounted filesystems.</strong></p>
+<blockquote>
+<p><strong>lsblk</strong>(8) provides more information, better control on output formatting, easy to use in scripts and it does not require root permissions to get actual information. <strong>blkid</strong> reads information directly from devices and for non-root users it returns cached unverified information. <strong>blkid</strong> is mostly designed for system services and to test libblkid functionality.</p>
+</blockquote>
+<p>When <em>device</em> is specified, tokens from only this device are displayed. It is possible to specify multiple <em>device</em> arguments on the command line. If none is given, all partitions or unpartitioned devices which appear in <em>/proc/partitions</em> are shown, if they are recognized.</p>
+<p><strong>blkid</strong> has two main forms of operation: either searching for a device with a specific NAME=value pair, or displaying NAME=value pairs for one or more specified devices.</p>
+<p>For security reasons <strong>blkid</strong> silently ignores all devices where the probing result is ambivalent (multiple colliding filesystems are detected). The low-level probing mode (<strong>-p</strong>) provides more information and extra exit status in this case. It's recommended to use <strong>wipefs</strong>(8) to get a detailed overview and to erase obsolete stuff (magic strings) from the device.</p>
+<h1>OPTIONS</h1>
+<p>The <em>size</em> and <em>offset</em> arguments may be followed by the multiplicative suffixes like KiB (=1024), MiB (=1024*1024), and so on for GiB, TiB, PiB, EiB, ZiB and YiB (the "iB" is optional, e.g., "K" has the same meaning as "KiB"), or the suffixes KB (=1000), MB (=1000*1000), and so on for GB, TB, PB, EB, ZB and YB.</p>
+<dl>
+<dt><strong>-c</strong>, <strong>--cache-file</strong> <em>cachefile</em></dt>
+<dd><p>Read from <em>cachefile</em> instead of reading from the default cache file (see the CONFIGURATION FILE section for more details). If you want to start with a clean cache (i.e., don't report devices previously scanned but not necessarily available at this time), specify <em>/dev/null</em>.</p>
+</dd>
+<dt><strong>-d</strong>, <strong>--no-encoding</strong></dt>
+<dd><p>Don't encode non-printing characters. The non-printing characters are encoded by ^ and M- notation by default. Note that the <strong>--output udev</strong> output format uses a different encoding which cannot be disabled.</p>
+</dd>
+<dt><strong>-D</strong>, <strong>--no-part-details</strong></dt>
+<dd><p>Don't print information (PART_ENTRY_* tags) from partition table in low-level probing mode.</p>
+</dd>
+<dt><strong>-g</strong>, <strong>--garbage-collect</strong></dt>
+<dd><p>Perform a garbage collection pass on the blkid cache to remove devices which no longer exist.</p>
+</dd>
+<dt><strong>-h</strong>, <strong>--help</strong></dt>
+<dd><p>Display a usage message and exit.</p>
+</dd>
+<dt><strong>-i</strong>, <strong>--info</strong></dt>
+<dd><p>Display information about I/O Limits (aka I/O topology). The 'export' output format is automatically enabled. This option can be used together with the <strong>--probe</strong> option.</p>
+</dd>
+<dt><strong>-k</strong>, <strong>--list-filesystems</strong></dt>
+<dd><p>List all known filesystems and RAIDs and exit.</p>
+</dd>
+<dt><strong>-l</strong>, <strong>--list-one</strong></dt>
+<dd><p>Look up only one device that matches the search parameter specified with the <strong>--match-token</strong> option. If there are multiple devices that match the specified search parameter, then the device with the highest priority is returned, and/or the first device found at a given priority (but see below note about udev). Device types in order of decreasing priority are: Device Mapper, EVMS, LVM, MD, and finally regular block devices. If this option is not specified, <strong>blkid</strong> will print all of the devices that match the search parameter.</p>
+</dd>
+</dl>
+<p>This option forces <strong>blkid</strong> to use udev when used for LABEL or UUID tokens in <strong>--match-token</strong>. The goal is to provide output consistent with other utils (like mount, etc.) on systems where the same tag is used for multiple devices.</p>
+<dl>
+<dt><strong>-L</strong>, <strong>--label</strong> <em>label</em></dt>
+<dd><p>Look up the device that uses this filesystem <em>label</em>; this is equal to <strong>--list-one --output device --match-token LABEL=<em>label</em></strong>. This lookup method is able to reliably use /dev/disk/by-label udev symlinks (dependent on a setting in /etc/blkid.conf). Avoid using the symlinks directly; it is not reliable to use the symlinks without verification. The <strong>--label</strong> option works on systems with and without udev.</p>
+</dd>
+</dl>
+<p>Unfortunately, the original <strong>blkid</strong>(8) from e2fsprogs uses the <strong>-L</strong> option as a synonym for <strong>-o list</strong>. For better portability, use <strong>-l -o device</strong> -t LABEL=<em>label</em> and <strong>-o list</strong> in your scripts rather than the <strong>-L</strong> option.</p>
+<dl>
+<dt><strong>-n</strong>, <strong>--match-types</strong> <em>list</em></dt>
+<dd><p>Restrict the probing functions to the specified (comma-separated) <em>list</em> of superblock types (names). The list items may be prefixed with "no" to specify the types which should be ignored. For example:</p>
+</dd>
+</dl>
+<p>blkid --probe --match-types vfat,ext3,ext4 /dev/sda1</p>
+<p>probes for vfat, ext3 and ext4 filesystems, and</p>
+<p>blkid --probe --match-types nominix /dev/sda1</p>
+<p>probes for all supported formats except minix filesystems. This option is only useful together with <strong>--probe</strong>.</p>
+<dl>
+<dt><strong>-o</strong>, <strong>--output</strong> <em>format</em></dt>
+<dd><p>Use the specified output format. Note that the order of variables and devices is not fixed. See also option <strong>-s</strong>. The <em>format</em> parameter may be:</p>
+<dl>
+<dt><strong>full</strong></dt>
+<dd><p>print all tags (the default)</p>
+</dd>
+<dt><strong>value</strong></dt>
+<dd><p>print the value of the tags</p>
+</dd>
+<dt><strong>list</strong></dt>
+<dd><p>print the devices in a user-friendly format; this output format is unsupported for low-level probing (<strong>--probe</strong> or <strong>--info</strong>).</p>
+</dd>
+</dl>
+<p>This output format is <strong>DEPRECATED</strong> in favour of the <strong>lsblk</strong>(8) command.</p>
+<dl>
+<dt><strong>device</strong></dt>
+<dd><p>print the device name only; this output format is always enabled for the <strong>--label</strong> and <strong>--uuid</strong> options</p>
+</dd>
+<dt><strong>udev</strong></dt>
+<dd><p>print key="value" pairs for easy import into the udev environment; the keys are prefixed by ID_FS_ or ID_PART_ prefixes. The value may be modified to be safe for udev environment; allowed is plain ASCII, hex-escaping and valid UTF-8, everything else (including whitespaces) is replaced with '_'. The keys with _ENC postfix use hex-escaping for unsafe chars.</p>
+</dd>
+</dl>
+<p>The udev output returns the ID_FS_AMBIVALENT tag if more superblocks are detected, and ID_PART_ENTRY_* tags are always returned for all partitions including empty partitions.</p>
+<p>This output format is <strong>DEPRECATED</strong>.</p>
+<dl>
+<dt><strong>export</strong></dt>
+<dd><p>print key=value pairs for easy import into the environment; this output format is automatically enabled when I/O Limits (<strong>--info</strong> option) are requested.</p>
+</dd>
+</dl>
+<p>The non-printing characters are encoded by ^ and M- notation and all potentially unsafe characters are escaped.</p>
+</dd>
+<dt><strong>-O</strong>, <strong>--offset</strong> <em>offset</em></dt>
+<dd><p>Probe at the given <em>offset</em> (only useful with <strong>--probe</strong>). This option can be used together with the <strong>--info</strong> option.</p>
+</dd>
+<dt><strong>-p</strong>, <strong>--probe</strong></dt>
+<dd><p>Switch to low-level superblock probing mode (bypassing the cache).</p>
+</dd>
+</dl>
+<p>Note that low-level probing also returns information about partition table type (PTTYPE tag) and partitions (PART_ENTRY_* tags). The tag names produced by low-level probing are based on names used internally by libblkid and it may be different than when executed without <strong>--probe</strong> (for example PART_ENTRY_UUID= vs PARTUUID=). See also <strong>--no-part-details</strong>.</p>
+<dl>
+<dt><strong>-s</strong>, <strong>--match-tag</strong> <em>tag</em></dt>
+<dd><p>For each (specified) device, show only the tags that match <em>tag</em>. It is possible to specify multiple <strong>--match-tag</strong> options. If no tag is specified, then all tokens are shown for all (specified) devices. In order to just refresh the cache without showing any tokens, use <strong>--match-tag none</strong> with no other options.</p>
+</dd>
+<dt><strong>-S</strong>, <strong>--size</strong> <em>size</em></dt>
+<dd><p>Override the size of device/file (only useful with <strong>--probe</strong>).</p>
+</dd>
+<dt><strong>-t</strong>, <strong>--match-token</strong> <em>NAME=value</em></dt>
+<dd><p>Search for block devices with tokens named <em>NAME</em> that have the value <em>value</em>, and display any devices which are found. Common values for <em>NAME</em> include <strong>TYPE</strong>, <strong>LABEL</strong>, and <strong>UUID</strong>. If there are no devices specified on the command line, all block devices will be searched; otherwise only the specified devices are searched.</p>
+</dd>
+<dt><strong>-u</strong>, <strong>--usages</strong> <em>list</em></dt>
+<dd><p>Restrict the probing functions to the specified (comma-separated) <em>list</em> of "usage" types. Supported usage types are: filesystem, raid, crypto and other. The list items may be prefixed with "no" to specify the usage types which should be ignored. For example:</p>
+</dd>
+</dl>
+<p>blkid --probe --usages filesystem,other /dev/sda1</p>
+<p>probes for all filesystem and other (e.g., swap) formats, and</p>
+<p>blkid --probe --usages noraid /dev/sda1</p>
+<p>probes for all supported formats except RAIDs. This option is only useful together with <strong>--probe</strong>.</p>
+<dl>
+<dt><strong>-U</strong>, <strong>--uuid</strong> <em>uuid</em></dt>
+<dd><p>Look up the device that uses this filesystem <em>uuid</em>. For more details see the <strong>--label</strong> option.</p>
+</dd>
+<dt><strong>-V</strong>, <strong>--version</strong></dt>
+<dd><p>Display version number and exit.</p>
+</dd>
+</dl>
+<h1>EXIT STATUS</h1>
+<p>If the specified device or device addressed by specified token (option <strong>--match-token</strong>) was found and it's possible to gather any information about the device, an exit status 0 is returned. Note the option <strong>--match-tag</strong> filters output tags, but it does not affect exit status.</p>
+<p>If the specified token was not found, or no (specified) devices could be identified, or it is impossible to gather any information about the device identifiers or device content an exit status of 2 is returned.</p>
+<p>For usage or other errors, an exit status of 4 is returned.</p>
+<p>If an ambivalent probing result was detected by low-level probing mode (<strong>-p</strong>), an exit status of 8 is returned.</p>
+<h1>CONFIGURATION FILE</h1>
+<p>The standard location of the <em>/etc/blkid.conf</em> config file can be overridden by the environment variable BLKID_CONF. The following options control the libblkid library:</p>
+<dl>
+<dt><em>SEND_UEVENT=&lt;yes|not&gt;</em></dt>
+<dd><p>Sends uevent when <em>/dev/disk/by-{label,uuid,partuuid,partlabel}/</em> symlink does not match with LABEL, UUID, PARTUUID or PARTLABEL on the device. Default is "yes".</p>
+</dd>
+<dt><em>CACHE_FILE=&lt;path&gt;</em></dt>
+<dd><p>Overrides the standard location of the cache file. This setting can be overridden by the environment variable BLKID_FILE. Default is <em>/run/blkid/blkid.tab</em>, or <em>/etc/blkid.tab</em> on systems without a /run directory.</p>
+</dd>
+<dt><em>EVALUATE=&lt;methods&gt;</em></dt>
+<dd><p>Defines LABEL and UUID evaluation method(s). Currently, the libblkid library supports the "udev" and "scan" methods. More than one method may be specified in a comma-separated list. Default is "udev,scan". The "udev" method uses udev <em>/dev/disk/by-*</em> symlinks and the "scan" method scans all block devices from the <em>/proc/partitions</em> file.</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<ul>
+<li></li>
+</ul>
+<h1>AUTHORS</h1>
+<p><strong>blkid</strong> was written by Andreas Dilger for libblkid and improved by Theodore Ts'o and Karel Zak.</p>
+<h1>SEE ALSO</h1>
+<p><strong>libblkid</strong>(3), <strong>findfs</strong>(8), <strong>lsblk</strong>(8), <strong>wipefs</strong>(8)</p>
+<h1>AVAILABILITY</h1>
+<p>The blkid command is part of the util-linux package and is available from https://www.kernel.org/pub/linux/utils/util-linux/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

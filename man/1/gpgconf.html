@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command gpgconf</title><meta name="description" content="Linux command gpgconf Modify .gnupg home directories"><meta name="keywords" content="linux, command, gpgconf, bsd, Modify .gnupg home directories"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p><strong>gpgconf</strong> - Modify .gnupg home directories</p>
+<h1>SYNOPSIS</h1>
+<p><strong>gpgconf</strong> [<em>options</em>] <strong>--list-components</strong><br />
+<strong>gpgconf</strong> [<em>options</em>] <strong>--list-options</strong> <em>component</em><br />
+<strong>gpgconf</strong> [<em>options</em>] <strong>--change-options</strong> <em>component</em></p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>gpgconf</strong> is a utility to automatically and reasonable safely query and modify configuration files in the ‘<em>.gnupg</em>’ home directory. It is designed not to be invoked manually by the user, but automatically by graphical user interfaces (GUI). ([Please note that currently no locking is done, so concurrent access should be avoided. There are some precautions to avoid corruption with concurrent usage, but results may be inconsistent and some changes may get lost. The stateless design makes it difficult to provide more guarantees.])</p>
+<p><strong>gpgconf</strong> provides access to the configuration of one or more components of the GnuPG system. These components correspond more or less to the programs that exist in the GnuPG framework, like GPG, GPGSM, DirMngr, etc. But this is not a strict one-to-one relationship. Not all configuration options are available through <strong>gpgconf</strong>. <strong>gpgconf</strong> provides a generic and abstract method to access the most important configuration options that can feasibly be controlled via such a mechanism.</p>
+<p><strong>gpgconf</strong> can be used to gather and change the options available in each component, and can also provide their default values. <strong>gpgconf</strong> will give detailed type information that can be used to restrict the user's input without making an attempt to commit the changes.</p>
+<p><strong>gpgconf</strong> provides the backend of a configuration editor. The configuration editor would usually be a graphical user interface program that displays the current options, their default values, and allows the user to make changes to the options. These changes can then be made active with <strong>gpgconf</strong> again. Such a program that uses <strong>gpgconf</strong> in this way will be called GUI throughout this section.</p>
+<h1>COMMANDS</h1>
+<p>One of the following commands must be given:</p>
+<dl>
+<dt><strong>--list-components</strong></dt>
+<dd><p>List all components. This is the default command used if none is specified.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--check-programs</strong></dt>
+<dd><p>List all available backend programs and test whether they are runnable.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--list-options <em>component</em></strong></dt>
+<dd><p>List all options of the component <em>component</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--change-options <em>component</em></strong></dt>
+<dd><p>Change the options of the component <em>component</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--check-options <em>component</em></strong></dt>
+<dd><p>Check the options for the component <em>component</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--apply-profile <em>file</em></strong></dt>
+<dd><p>Apply the configuration settings listed in <em>file</em> to the configuration files. If <em>file</em> has no suffix and no slashes the command first tries to read a file with the suffix <strong>.prf</strong> from the data directory (<strong>gpgconf --list-dirs datadir</strong>) before it reads the file verbatim. A profile is divided into sections using the bracketed component name. Each section then lists the option which shall go into the respective configuration file.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--apply-defaults</strong></dt>
+<dd><p>Update all configuration files with values taken from the global configuration file (usually ‘<em>/etc/gnupg/gpgconf.conf</em>’).</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--list-dirs [<em>names</em>]</strong></dt>
+<dd><p>Lists the directories used by <strong>gpgconf</strong>. One directory is listed per line, and each line consists of a colon-separated list where the first field names the directory type (for example <strong>sysconfdir</strong>) and the second field contains the percent-escaped directory. Although they are not directories, the socket file names used by <strong>gpg-agent</strong> and <strong>dirmngr</strong> are printed as well. Note that the socket file names and the <strong>homedir</strong> lines are the default names and they may be overridden by command line switches. If <em>names</em> are given only the directories or file names specified by the list names are printed without any escaping.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--list-config [<em>filename</em>]</strong></dt>
+<dd><p>List the global configuration file in a colon separated format. If <em>filename</em> is given, check that file instead.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--check-config [<em>filename</em>]</strong></dt>
+<dd><p>Run a syntax check on the global configuration file. If <em>filename</em> is given, check that file instead.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--query-swdb <em>package_name</em> [<em>version_string</em>]</strong></dt>
+<dd><p>Returns the current version for <em>package_name</em> and if <em>version_string</em> is given also an indicator on whether an update is available. The actual file with the software version is automatically downloaded and checked by <strong>dirmngr</strong>. <strong>dirmngr</strong> uses a thresholds to avoid download the file too often and it does this by default only if it can be done via Tor. To force an update of that file this command can be used:</p>
+</dd>
+</dl>
+<blockquote>
+<pre><code>       gpg-connect-agent --dirmngr &#39;loadswdb --force&#39; /bye</code></pre>
+</blockquote>
+<dl>
+<dt><strong>--reload [<em>component</em>]</strong></dt>
+<dd><p>Reload all or the given component. This is basically the same as sending a SIGHUP to the component. Components which don't support reloading are ignored. Without <em>component</em> or by using "all" for <em>component</em> all components which are daemons are reloaded.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--launch [<em>component</em>]</strong></dt>
+<dd><p>If the <em>component</em> is not already running, start it. <strong>component</strong> must be a daemon. This is in general not required because the system starts these daemons as needed. However, external software making direct use of <strong>gpg-agent</strong> or <strong>dirmngr</strong> may use this command to ensure that they are started. Using "all" for <em>component</em> launches all components which are daemons.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--kill [<em>component</em>]</strong></dt>
+<dd><p>Kill the given component that runs as a daemon, including <strong>gpg-agent</strong>, <strong>dirmngr</strong>, and <strong>scdaemon</strong>. A <strong>component</strong> which does not run as a daemon will be ignored. Using "all" for <em>component</em> kills all components running as daemons. Note that as of now reload and kill have the same effect for <strong>scdaemon</strong>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--create-socketdir</strong></dt>
+<dd><p>Create a directory for sockets below /run/user or /var/run/user. This is command is only required if a non default home directory is used and the /run based sockets shall be used. For the default home directory GnUPG creates a directory on the fly.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--remove-socketdir</strong></dt>
+<dd><p>Remove a directory created with command <strong>--create-socketdir</strong>.</p>
+</dd>
+</dl>
+<h1>OPTIONS</h1>
+<p>The following options may be used:</p>
+<dl>
+<dt><strong>-o <em>file</em></strong><br />
+<strong>--output <em>file</em></strong></dt>
+<dd><p>Write output to <em>file</em>. Default is to write to stdout.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-v</strong><br />
+<strong>--verbose</strong></dt>
+<dd><p>Outputs additional information while running. Specifically, this extends numerical field values by human-readable descriptions.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-q</strong><br />
+<strong>--quiet</strong></dt>
+<dd><p>Try to be as quiet as possible.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--homedir <em>dir</em></strong></dt>
+<dd><p>Set the name of the home directory to <em>dir</em>. If this option is not used, the home directory defaults to ‘<em>~/.gnupg</em>’. It is only recognized when given on the command line. It also overrides any home directory stated through the environment variable ‘<em>GNUPGHOME</em>’ or (on Windows systems) by means of the Registry entry <em>HKCU\Software\GNU\GnuPG:HomeDir</em>.</p>
+</dd>
+</dl>
+<p>On Windows systems it is possible to install GnuPG as a portable application. In this case only this command line option is considered, all other ways to set a home directory are ignored.</p>
+<p>To install GnuPG as a portable application under Windows, create an empty file named ‘<em>gpgconf.ctl</em>’ in the same directory as the tool ‘<em>gpgconf.exe</em>’. The root of the installation is then that directory; or, if ‘<em>gpgconf.exe</em>’ has been installed directly below a directory named ‘<em>bin</em>’, its parent directory. You also need to make sure that the following directories exist and are writable: ‘<em>ROOT/home</em>’ for the GnuPG home and ‘<em>ROOT/var/cache/gnupg</em>’ for internal cache files.</p>
+<dl>
+<dt><strong>-n</strong><br />
+<strong>--dry-run</strong></dt>
+<dd><p>Do not actually change anything. This is currently only implemented for <strong>--change-options</strong> and can be used for testing purposes.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-r</strong><br />
+<strong>--runtime</strong></dt>
+<dd><p>Only used together with <strong>--change-options</strong>. If one of the modified options can be changed in a running daemon process, signal the running daemon to ask it to reparse its configuration file after changing.</p>
+</dd>
+</dl>
+<p>This means that the changes will take effect at run-time, as far as this is possible. Otherwise, they will take effect at the next start of the respective backend programs.</p>
+<dl>
+<dt><strong>--status-fd <em>n</em></strong></dt>
+<dd><p>Write special status strings to the file descriptor <em>n</em>. This program returns the status messages SUCCESS or FAILURE which are helpful when the caller uses a double fork approach and can't easily get the return code of the process.</p>
+</dd>
+</dl>
+<h1>USAGE</h1>
+<p>The command <strong>--list-components</strong> will list all components that can be configured with <strong>gpgconf</strong>. Usually, one component will correspond to one GnuPG-related program and contain the options of that program's configuration file that can be modified using <strong>gpgconf</strong>. However, this is not necessarily the case. A component might also be a group of selected options from several programs, or contain entirely virtual options that have a special effect rather than changing exactly one option in one configuration file.</p>
+<p>A component is a set of configuration options that semantically belong together. Furthermore, several changes to a component can be made in an atomic way with a single operation. The GUI could for example provide a menu with one entry for each component, or a window with one tabulator sheet per component.</p>
+<p>The command <strong>--list-components</strong> lists all available components, one per line. The format of each line is:</p>
+<p><em>name</em>:<em>description</em>:<em>pgmname</em>:</p>
+<dl>
+<dt><strong>name</strong></dt>
+<dd><p>This field contains a name tag of the component. The name tag is used to specify the component in all communication with <strong>gpgconf</strong>. The name tag is to be used <em>verbatim</em>. It is thus not in any escaped format.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>description</strong></dt>
+<dd><p>The <em>string</em> in this field contains a human-readable description of the component. It can be displayed to the user of the GUI for informational purposes. It is <em>percent-escaped</em> and <em>localized</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>pgmname</strong></dt>
+<dd><p>The <em>string</em> in this field contains the absolute name of the program's file. It can be used to unambiguously invoke that program. It is <em>percent-escaped</em>.</p>
+</dd>
+</dl>
+<p>Example:</p>
+<blockquote>
+<pre><code>$ gpgconf --list-components
+gpg:GPG for OpenPGP:/usr/local/bin/gpg2:
+gpg-agent:GPG Agent:/usr/local/bin/gpg-agent:
+scdaemon:Smartcard Daemon:/usr/local/bin/scdaemon:
+gpgsm:GPG for S/MIME:/usr/local/bin/gpgsm:
+dirmngr:Directory Manager:/usr/local/bin/dirmngr:</code></pre>
+</blockquote>
+<h2>Checking programs</h2>
+<p>The command <strong>--check-programs</strong> is similar to <strong>--list-components</strong> but works on backend programs and not on components. It runs each program to test whether it is installed and runnable. This also includes a syntax check of all config file options of the program.</p>
+<p>The command <strong>--check-programs</strong> lists all available programs, one per line. The format of each line is:</p>
+<p><em>name</em>:<em>description</em>:<em>pgmname</em>:<em>avail</em>:<em>okay</em>:<em>cfgfile</em>:<em>line</em>:<em>error</em>:</p>
+<dl>
+<dt><strong>name</strong></dt>
+<dd><p>This field contains a name tag of the program which is identical to the name of the component. The name tag is to be used <em>verbatim</em>. It is thus not in any escaped format. This field may be empty to indicate a continuation of error descriptions for the last name. The description and pgmname fields are then also empty.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>description</strong></dt>
+<dd><p>The <em>string</em> in this field contains a human-readable description of the component. It can be displayed to the user of the GUI for informational purposes. It is <em>percent-escaped</em> and <em>localized</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>pgmname</strong></dt>
+<dd><p>The <em>string</em> in this field contains the absolute name of the program's file. It can be used to unambiguously invoke that program. It is <em>percent-escaped</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>avail</strong></dt>
+<dd><p>The <em>boolean value</em> in this field indicates whether the program is installed and runnable.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>okay</strong></dt>
+<dd><p>The <em>boolean value</em> in this field indicates whether the program's config file is syntactically okay.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>cfgfile</strong></dt>
+<dd><p>If an error occurred in the configuration file (as indicated by a false value in the field <strong>okay</strong>), this field has the name of the failing configuration file. It is <em>percent-escaped</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>line</strong></dt>
+<dd><p>If an error occurred in the configuration file, this field has the line number of the failing statement in the configuration file. It is an <em>unsigned number</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>error</strong></dt>
+<dd><p>If an error occurred in the configuration file, this field has the error text of the failing statement in the configuration file. It is <em>percent-escaped</em> and <em>localized</em>.</p>
+</dd>
+</dl>
+<p>In the following example the <strong>dirmngr</strong> is not runnable and the configuration file of <strong>scdaemon</strong> is not okay.</p>
+<blockquote>
+<pre><code>$ gpgconf --check-programs
+gpg:GPG for OpenPGP:/usr/local/bin/gpg2:1:1:
+gpg-agent:GPG Agent:/usr/local/bin/gpg-agent:1:1:
+scdaemon:Smartcard Daemon:/usr/local/bin/scdaemon:1:0:
+gpgsm:GPG for S/MIME:/usr/local/bin/gpgsm:1:1:
+dirmngr:Directory Manager:/usr/local/bin/dirmngr:0:0:</code></pre>
+</blockquote>
+<p>The command configuration file in the same manner as <strong>--check-programs</strong>, but only for the component <em>component</em>.</p>
+<h2>Listing options</h2>
+<p>Every component contains one or more options. Options may be gathered into option groups to allow the GUI to give visual hints to the user about which options are related.</p>
+<p>The command lists all options (and the groups they belong to) in the component <em>component</em>, one per line. <em>component</em> must be the string in the field <em>name</em> in the output of the <strong>--list-components</strong> command.</p>
+<p>There is one line for each option and each group. First come all options that are not in any group. Then comes a line describing a group. Then come all options that belong into each group. Then comes the next group and so on. There does not need to be any group (and in this case the output will stop after the last non-grouped option).</p>
+<p>The format of each line is:</p>
+<p><em>name</em>:<em>flags</em>:<em>level</em>:<em>description</em>:<em>type</em>:<em>alt-type</em>:<em>argname</em>:<em>default</em>:<em>argdef</em>:<em>value</em></p>
+<dl>
+<dt><strong>name</strong></dt>
+<dd><p>This field contains a name tag for the group or option. The name tag is used to specify the group or option in all communication with <strong>gpgconf</strong>. The name tag is to be used <em>verbatim</em>. It is thus not in any escaped format.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>flags</strong></dt>
+<dd><p>The flags field contains an <em>unsigned number</em>. Its value is the OR-wise combination of the following flag values:</p>
+</dd>
+</dl>
+<blockquote>
+<dl>
+<dt><strong>group (1)</strong></dt>
+<dd><p>If this flag is set, this is a line describing a group and not an option.</p>
+</dd>
+</dl>
+</blockquote>
+<p>The following flag values are only defined for options (that is, if the <strong>group</strong> flag is not used).</p>
+<blockquote>
+<dl>
+<dt><strong>optional arg (2)</strong></dt>
+<dd><p>If this flag is set, the argument is optional. This is never set for <em>type</em> <strong>0</strong> (none) options.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>list (4)</strong></dt>
+<dd><p>If this flag is set, the option can be given multiple times.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>runtime (8)</strong></dt>
+<dd><p>If this flag is set, the option can be changed at runtime.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>default (16)</strong></dt>
+<dd><p>If this flag is set, a default value is available.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>default desc (32)</strong></dt>
+<dd><p>If this flag is set, a (runtime) default is available. This and the <strong>default</strong> flag are mutually exclusive.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>no arg desc (64)</strong></dt>
+<dd><p>If this flag is set, and the <strong>optional arg</strong> flag is set, then the option has a special meaning if no argument is given.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>no change (128)</strong></dt>
+<dd><p>If this flag is set, <strong>gpgconf</strong> ignores requests to change the value. GUI frontends should grey out this option. Note, that manual changes of the configuration files are still possible.</p>
+</dd>
+</dl>
+</blockquote>
+<dl>
+<dt><strong>level</strong></dt>
+<dd><p>This field is defined for options and for groups. It contains an <em>unsigned number</em> that specifies the expert level under which this group or option should be displayed. The following expert levels are defined for options (they have analogous meaning for groups):</p>
+</dd>
+</dl>
+<blockquote>
+<dl>
+<dt><strong>basic (0)</strong></dt>
+<dd><p>This option should always be offered to the user.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>advanced (1)</strong></dt>
+<dd><p>This option may be offered to advanced users.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>expert (2)</strong></dt>
+<dd><p>This option should only be offered to expert users.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>invisible (3)</strong></dt>
+<dd><p>This option should normally never be displayed, not even to expert users.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>internal (4)</strong></dt>
+<dd><p>This option is for internal use only. Ignore it.</p>
+</dd>
+</dl>
+</blockquote>
+<p>The level of a group will always be the lowest level of all options it contains.</p>
+<dl>
+<dt><strong>description</strong></dt>
+<dd><p>This field is defined for options and groups. The <em>string</em> in this field contains a human-readable description of the option or group. It can be displayed to the user of the GUI for informational purposes. It is <em>percent-escaped</em> and <em>localized</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>type</strong></dt>
+<dd><p>This field is only defined for options. It contains an <em>unsigned</em> number that specifies the type of the option's argument, if any. The following types are defined:</p>
+</dd>
+</dl>
+<p>Basic types:</p>
+<blockquote>
+<dl>
+<dt><strong>none (0)</strong></dt>
+<dd><p>No argument allowed.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>string (1)</strong></dt>
+<dd><p>An <em>unformatted string</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>int32 (2)</strong></dt>
+<dd><p>A <em>signed number</em>.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>uint32 (3)</strong></dt>
+<dd><p>An <em>unsigned number</em>.</p>
+</dd>
+</dl>
+</blockquote>
+<p>Complex types:</p>
+<blockquote>
+<dl>
+<dt><strong>pathname (32)</strong></dt>
+<dd><p>A <em>string</em> that describes the pathname of a file. The file does not necessarily need to exist.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>ldap server (33)</strong></dt>
+<dd><p>A <em>string</em> that describes an LDAP server in the format:</p>
+</dd>
+</dl>
+<p><em>hostname</em>:<em>port</em>:<em>username</em>:<em>password</em>:<em>base_dn</em></p>
+<dl>
+<dt><strong>key fingerprint (34)</strong></dt>
+<dd><p>A <em>string</em> with a 40 digit fingerprint specifying a certificate.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>pub key (35)</strong></dt>
+<dd><p>A <em>string</em> that describes a certificate by user ID, key ID or fingerprint.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>sec key (36)</strong></dt>
+<dd><p>A <em>string</em> that describes a certificate with a key by user ID, key ID or fingerprint.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>alias list (37)</strong></dt>
+<dd><p>A <em>string</em> that describes an alias list, like the one used with gpg's group option. The list consists of a key, an equal sign and space separated values.</p>
+</dd>
+</dl>
+</blockquote>
+<p>More types will be added in the future. Please see the <em>alt-type</em> field for information on how to cope with unknown types.</p>
+<dl>
+<dt><strong>alt-type</strong></dt>
+<dd><p>This field is identical to <em>type</em>, except that only the types <strong>0</strong> to <strong>31</strong> are allowed. The GUI is expected to present the user the option in the format specified by <em>type</em>. But if the argument type <em>type</em> is not supported by the GUI, it can still display the option in the more generic basic type <em>alt-type</em>. The GUI must support all the defined basic types to be able to display all options. More basic types may be added in future versions. If the GUI encounters a basic type it doesn't support, it should report an error and abort the operation.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>argname</strong></dt>
+<dd><p>This field is only defined for options with an argument type <em>type</em> that is not <strong>0</strong>. In this case it may contain a <em>percent-escaped</em> and <em>localized string</em> that gives a short name for the argument. The field may also be empty, though, in which case a short name is not known.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>default</strong></dt>
+<dd><p>This field is defined only for options for which the <strong>default</strong> or <strong>default desc</strong> flag is set. If the <strong>default</strong> flag is set, its format is that of an <em>option argument</em> (see: [Format conventions], for details). If the default value is empty, then no default is known. Otherwise, the value specifies the default value for this option. If the <strong>default desc</strong> flag is set, the field is either empty or contains a description of the effect if the option is not given.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>argdef</strong></dt>
+<dd><p>This field is defined only for options for which the <strong>optional</strong> arg flag is set. If the <strong>no arg desc</strong> flag is not set, its format is that of an <em>option argument</em> (see: [Format conventions], for details). If the default value is empty, then no default is known. Otherwise, the value specifies the default argument for this option. If the <strong>no arg desc</strong> flag is set, the field is either empty or contains a description of the effect of this option if no argument is given.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>value</strong></dt>
+<dd><p>This field is defined only for options. Its format is that of an <em>option argument</em>. If it is empty, then the option is not explicitly set in the current configuration, and the default applies (if any). Otherwise, it contains the current value of the option. Note that this field is also meaningful if the option itself does not take a real argument (in this case, it contains the number of times the option appears).</p>
+</dd>
+</dl>
+<h2>Changing options</h2>
+<p>The command to change the options of the component <em>component</em> to the specified values. <em>component</em> must be the string in the field <em>name</em> in the output of the <strong>--list-components</strong> command. You have to provide the options that shall be changed in the following format on standard input:</p>
+<p><em>name</em>:<em>flags</em>:<em>new-value</em></p>
+<dl>
+<dt><strong>name</strong></dt>
+<dd><p>This is the name of the option to change. <em>name</em> must be the string in the field <em>name</em> in the output of the <strong>--list-options</strong> command.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>flags</strong></dt>
+<dd><p>The flags field contains an <em>unsigned number</em>. Its value is the OR-wise combination of the following flag values:</p>
+</dd>
+</dl>
+<blockquote>
+<dl>
+<dt><strong>default (16)</strong></dt>
+<dd><p>If this flag is set, the option is deleted and the default value is used instead (if applicable).</p>
+</dd>
+</dl>
+</blockquote>
+<dl>
+<dt><strong>new-value</strong></dt>
+<dd><p>The new value for the option. This field is only defined if the <strong>default</strong> flag is not set. The format is that of an <em>option</em> argument. If it is empty (or the field is omitted), the default argument is used (only allowed if the argument is optional for this option). Otherwise, the option will be set to the specified value.</p>
+</dd>
+</dl>
+<p>The output of the command is the same as that of <strong>--check-options</strong> for the modified configuration file.</p>
+<p>Examples:</p>
+<p>To set the force option, which is of basic type <strong>none (0)</strong>:</p>
+<blockquote>
+<pre><code>$ echo &#39;force:0:1&#39; | gpgconf --change-options dirmngr</code></pre>
+</blockquote>
+<p>To delete the force option:</p>
+<blockquote>
+<pre><code>$ echo &#39;force:16:&#39; | gpgconf --change-options dirmngr</code></pre>
+</blockquote>
+<p>The <strong>--runtime</strong> option can influence when the changes take effect.</p>
+<h2>Listing global options</h2>
+<p>Sometimes it is useful for applications to look at the global options file ‘<em>gpgconf.conf</em>’. The colon separated listing format is record oriented and uses the first field to identify the record type:</p>
+<dl>
+<dt><strong>k</strong></dt>
+<dd><p>This describes a key record to start the definition of a new ruleset for a user/group. The format of a key record is:</p>
+</dd>
+</dl>
+<p><strong>k:</strong><em>user</em>:<em>group</em>:</p>
+<blockquote>
+<dl>
+<dt><strong>user</strong></dt>
+<dd><p>This is the user field of the key. It is percent escaped. See the definition of the gpgconf.conf format for details.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>group</strong></dt>
+<dd><p>This is the group field of the key. It is percent escaped.</p>
+</dd>
+</dl>
+</blockquote>
+<dl>
+<dt><strong>r</strong></dt>
+<dd><p>This describes a rule record. All rule records up to the next key record make up a rule set for that key. The format of a rule record is:</p>
+</dd>
+</dl>
+<p><strong>r:::</strong><em>component</em>:<em>option</em>:<em>flag</em>:<em>value</em>:</p>
+<blockquote>
+<dl>
+<dt><strong>component</strong></dt>
+<dd><p>This is the component part of a rule. It is a plain string.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>option</strong></dt>
+<dd><p>This is the option part of a rule. It is a plain string.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>flag</strong></dt>
+<dd><p>This is the flags part of a rule. There may be only one flag per rule but by using the same component and option, several flags may be assigned to an option. It is a plain string.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>value</strong></dt>
+<dd><p>This is the optional value for the option. It is a percent escaped string with a single quotation mark to indicate a string. The quotation mark is only required to distinguish between no value specified and an empty string.</p>
+</dd>
+</dl>
+</blockquote>
+<p>Unknown record types should be ignored. Note that there is intentionally no feature to change the global option file through <strong>gpgconf</strong>.</p>
+<h2>Get and compare software versions.</h2>
+<p>The GnuPG Project operates a server to query the current versions of software packages related to GnuPG. <strong>gpgconf</strong> can be used to access this online database. To allow for offline operations, this feature works by having <strong>dirmngr</strong> download a file from <strong>https://versions.gnupg.org</strong>, checking the signature of that file and storing the file in the GnuPG home directory. If <strong>gpgconf</strong> is used and <strong>dirmngr</strong> is running, it may ask <strong>dirmngr</strong> to refresh that file before itself uses the file.</p>
+<p>The command <strong>--query-swdb</strong> returns information for the given package in a colon delimited format:</p>
+<dl>
+<dt><strong>name</strong></dt>
+<dd><p>This is the name of the package as requested. Note that "gnupg" is a special name which is replaced by the actual package implementing this version of GnuPG. For this name it is also not required to specify a version because <strong>gpgconf</strong> takes its own version in this case.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>iversion</strong></dt>
+<dd><p>The currently installed version or an empty string. The value is taken from the command line argument but may be provided by gpg if not given.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>status</strong></dt>
+<dd><p>The status of the software package according to this table:</p>
+<dl>
+<dt><strong>-</strong></dt>
+<dd><p>No information available. This is either because no current version has been specified or due to an error.</p>
+</dd>
+<dt><strong>?</strong></dt>
+<dd><p>The given name is not known in the online database.</p>
+</dd>
+<dt><strong>u</strong></dt>
+<dd><p>An update of the software is available.</p>
+</dd>
+<dt><strong>c</strong></dt>
+<dd><p>The installed version of the software is current.</p>
+</dd>
+<dt><strong>n</strong></dt>
+<dd><p>The installed version is already newer than the released version.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl>
+<dt><strong>urgency</strong></dt>
+<dd><p>If the value (the empty string should be considered as zero) is greater than zero an important update is available.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>error</strong></dt>
+<dd><p>This returns an <strong>gpg-error</strong> error code to distinguish between various failure modes.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>filedate</strong></dt>
+<dd><p>This gives the date of the file with the version numbers in standard ISO format (<strong>yyyymmddThhmmss</strong>). The date has been extracted by <strong>dirmngr</strong> from the signature of the file.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>verified</strong></dt>
+<dd><p>This gives the date in ISO format the file was downloaded. This value can be used to evaluate the freshness of the information.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>version</strong></dt>
+<dd><p>This returns the version string for the requested software from the file.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>reldate</strong></dt>
+<dd><p>This returns the release date in ISO format.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>size</strong></dt>
+<dd><p>This returns the size of the package as decimal number of bytes.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>hash</strong></dt>
+<dd><p>This returns a hexified SHA-2 hash of the package.</p>
+</dd>
+</dl>
+<p>More fields may be added in future to the output.</p>
+<h1>FILES</h1>
+<dl>
+<dt><strong>/etc/gnupg/gpgconf.conf</strong></dt>
+<dd><p> If this file exists, it is processed as a global configuration file. A commented example can be found in the ‘<em>examples</em>’ directory of the distribution.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong><em>GNUPGHOME</em>/swdb.lst</strong></dt>
+<dd><p> A file with current software versions. <strong>dirmngr</strong> creates this file on demand from an online resource.</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>gpg</strong>(1), <strong>gpgsm</strong>(1), <strong>gpg-agent</strong>(1), <strong>scdaemon</strong>(1), <strong>dirmngr</strong>(1)</p>
+<p>The full documentation for this tool is maintained as a Texinfo manual. If GnuPG and the info program are properly installed at your site, the command</p>
+<blockquote>
+<pre><code>info gnupg</code></pre>
+</blockquote>
+<p>should give you access to the complete manual including a menu structure and an index.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command duplocale</title><meta name="description" content="Linux command duplocale duplicate a locale object"><meta name="keywords" content="linux, command, duplocale, bsd, duplicate a locale object"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>duplocale - duplicate a locale object</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;locale.h&gt;
+
+locale_t duplocale(locale_t locobj);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>duplocale</strong>():</p>
+<blockquote>
+<dl>
+<dt>Since glibc 2.10:</dt>
+<dd><p>_XOPEN_SOURCE &gt;= 700</p>
+</dd>
+<dt>Before glibc 2.10:</dt>
+<dd><p>_GNU_SOURCE</p>
+</dd>
+</dl>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>The <strong>duplocale</strong>() function creates a duplicate of the locale object referred to by <em>locobj</em>.</p>
+<p>If <em>locobj</em> is <strong>LC_GLOBAL_LOCALE</strong>, <strong>duplocale</strong>() creates a locale object containing a copy of the global locale determined by <strong>setlocale</strong>(3).</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>duplocale</strong>() returns a handle for the new locale object. On error, it returns <em>(locale_t) 0</em>, and sets <em>errno</em> to indicate the cause of the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient memory to create the duplicate locale object.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The <strong>duplocale</strong>() function first appeared in version 2.3 of the GNU C library.</p>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>Duplicating a locale can serve the following purposes:</p>
+<ul>
+<li><p>To create a copy of a locale object in which one of more categories are to be modified (using <strong>newlocale</strong>(3)).</p></li>
+<li><p>To obtain a handle for the current locale which can used in other functions that employ a locale handle, such as <strong>toupper_l</strong>(3). This is done by applying <strong>duplocale</strong>() to the value returned by the following call:</p>
+<p>loc = uselocale((locale_t) 0);</p>
+<p>This technique is necessary, because the above <strong>uselocale</strong>(3) call may return the value <strong>LC_GLOBAL_LOCALE</strong>, which results in undefined behavior if passed to functions such as <strong>toupper_l</strong>(3). Calling <strong>duplocale</strong>() can be used to ensure that the <strong>LC_GLOBAL_LOCALE</strong> value is converted into a usable locale object. See EXAMPLES, below.</p></li>
+</ul>
+<p>Each locale object created by <strong>duplocale</strong>() should be deallocated using <strong>freelocale</strong>(3).</p>
+<h1>EXAMPLES</h1>
+<p>The program below uses <strong>uselocale</strong>(3) and <strong>duplocale</strong>() to obtain a handle for the current locale which is then passed to <strong>toupper_l</strong>(3). The program takes one command-line argument, a string of characters that is converted to uppercase and displayed on standard output. An example of its use is the following:</p>
+<pre><code>$ ./a.out abc
+ABC</code></pre>
+<h2>Program source</h2>
+<pre><code>#define _XOPEN_SOURCE 700
+#include &lt;ctype.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;locale.h&gt;
+
+#define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
+                        } while (0)
+
+int
+main(int argc, char *argv[])
+{
+    locale_t loc, nloc;
+
+    if (argc != 2) {
+        fprintf(stderr, &quot;Usage: %s string\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    /* This sequence is necessary, because uselocale() might return
+       the value LC_GLOBAL_LOCALE, which can&#39;t be passed as an
+       argument to toupper_l() */
+
+    loc = uselocale((locale_t) 0);
+    if (loc == (locale_t) 0)
+        errExit(&quot;uselocale&quot;);
+
+    nloc = duplocale(loc);
+    if (nloc == (locale_t) 0)
+        errExit(&quot;duplocale&quot;);
+
+    for (char *p = argv[1]; *p; p++)
+        putchar(toupper_l(*p, nloc));
+
+    printf(&quot;\n&quot;);
+
+    freelocale(nloc);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>freelocale</strong>(3), <strong>newlocale</strong>(3), <strong>setlocale</strong>(3), <strong>uselocale</strong>(3), <strong>locale</strong>(5), <strong>locale</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

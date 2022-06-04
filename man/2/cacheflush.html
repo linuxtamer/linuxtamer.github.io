@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command cacheflush</title><meta name="description" content="Linux command cacheflush flush contents of instruction and/or data cache"><meta name="keywords" content="linux, command, cacheflush, bsd, flush contents of instruction and/or data cache"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>cacheflush - flush contents of instruction and/or data cache</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;asm/cachectl.h&gt;
+
+int cacheflush(char *addr, int nbytes, int cache);</code></pre>
+<p><em>Note</em>: On some architectures, there is no glibc wrapper for this system call; see NOTES.</p>
+<h1>DESCRIPTION</h1>
+<p><strong>cacheflush</strong>() flushes the contents of the indicated cache(s) for the user addresses in the range <em>addr</em> to <em>(addr+nbytes-1)</em>. <em>cache</em> may be one of:</p>
+<dl>
+<dt><strong>ICACHE</strong></dt>
+<dd><p>Flush the instruction cache.</p>
+</dd>
+<dt><strong>DCACHE</strong></dt>
+<dd><p>Write back to memory and invalidate the affected valid cache lines.</p>
+</dd>
+<dt><strong>BCACHE</strong></dt>
+<dd><p>Same as <strong>(ICACHE|DCACHE)</strong>.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p><strong>cacheflush</strong>() returns 0 on success or -1 on error. If errors are detected, <em>errno</em> will indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>Some or all of the address range <em>addr</em> to <em>(addr+nbytes-1)</em> is not accessible.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>cache</em> is not one of <strong>ICACHE</strong>, <strong>DCACHE</strong>, or <strong>BCACHE</strong> (but see BUGS).</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>Historically, this system call was available on all MIPS UNIX variants including RISC/os, IRIX, Ultrix, NetBSD, OpenBSD, and FreeBSD (and also on some non-UNIX MIPS operating systems), so that the existence of this call in MIPS operating systems is a de-facto standard.</p>
+<h2>Caveat</h2>
+<p><strong>cacheflush</strong>() should not be used in programs intended to be portable. On Linux, this call first appeared on the MIPS architecture, but nowadays, Linux provides a <strong>cacheflush</strong>() system call on some other architectures, but with different arguments.</p>
+<h1>NOTES</h1>
+<h2>Architecture-specific variants</h2>
+<p>Glibc provides a wrapper for this system call, with the prototype shown in SYNOPSIS, for the following architectures: ARC, CSKY, MIPS, and NIOS2.</p>
+<p>On some other architectures, Linux provides this system call, with different arguments:</p>
+<dl>
+<dt>M68K:</dt>
+<dd>
+</dd>
+</dl>
+<pre><code>int cacheflush(unsigned long addr, int scope, int cache,
+ unsigned long len);</code></pre>
+<dl>
+<dt>SH:</dt>
+<dd>
+</dd>
+</dl>
+<pre><code>int cacheflush(unsigned long addr, unsigned long len, int op);</code></pre>
+<dl>
+<dt>NDS32:</dt>
+<dd>
+</dd>
+</dl>
+<pre><code>int cacheflush(unsigned int start, unsigned int end, int cache);</code></pre>
+<p>On the above architectures, glibc does not provide a wrapper for this system call; call it using <strong>syscall</strong>(2).</p>
+<h2>GCC alternative</h2>
+<p>Unless you need the finer grained control that this system call provides, you probably want to use the GCC built-in function <strong>__builtin___clear_cache</strong>(), which provides a portable interface across platforms supported by GCC and compatible compilers:</p>
+<pre><code>void __builtin___clear_cache(void *begin, void *end);</code></pre>
+<p>On platforms that don't require instruction cache flushes, <strong>__builtin___clear_cache</strong>() has no effect.</p>
+<p><em>Note</em>: On some GCC-compatible compilers, the prototype for this built-in function uses <em>char *</em> instead of <em>void *</em> for the parameters.</p>
+<h1>BUGS</h1>
+<p>Linux kernels older than version 2.6.11 ignore the <em>addr</em> and <em>nbytes</em> arguments, making this function fairly expensive. Therefore, the whole cache is always flushed.</p>
+<p>This function always behaves as if <strong>BCACHE</strong> has been passed for the <em>cache</em> argument and does not do any error checking on the <em>cache</em> argument.</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

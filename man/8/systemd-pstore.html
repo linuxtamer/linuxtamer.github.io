@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-pstore</title><meta name="description" content="Linux command systemd-pstore A service to archive contents of pstore"><meta name="keywords" content="linux, command, systemd-pstore, bsd, A service to archive contents of pstore"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-pstore.service, systemd-pstore - A service to archive contents of pstore</p>
+<h1>SYNOPSIS</h1>
+<p>/lib/systemd/systemd-pstore</p>
+<p>systemd-pstore.service</p>
+<h1>DESCRIPTION</h1>
+<p>systemd-pstore.service is a system service that archives the contents of the Linux persistent storage filesystem, pstore, to other storage, thus preserving the existing information contained in the pstore, and clearing pstore storage for future error events.</p>
+<p>Linux provides a persistent storage file system, pstore, that can store error records when the kernel dies (or reboots or powers-off). These records in turn can be referenced to debug kernel problems (currently the kernel stuffs the tail of the dmesg, which also contains a stack backtrace, into pstore).</p>
+<p>The pstore file system supports a variety of backends that map onto persistent storage, such as the ACPI ERST and UEFI variables. The pstore backends typically offer a relatively small amount of persistent storage, e.g. 64KiB, which can quickly fill up and thus prevent subsequent kernel crashes from recording errors. Thus there is a need to monitor and extract the pstore contents so that future kernel problems can also record information in the pstore.</p>
+<p>The pstore service is independent of the kdump service. In cloud environments specifically, host and guest filesystems are on remote filesystems (eg. iSCSI or NFS), thus kdump relies (implicitly and/or explicitly) upon proper operation of networking software *and* hardware *and* infrastructure. Thus it may not be possible to capture a kernel coredump to a file since writes over the network may not be possible.</p>
+<p>The pstore backend, on the other hand, is completely local and provides a path to store error records which will survive a reboot and aid in post-mortem debugging.</p>
+<p>The <strong>systemd-pstore</strong> executable does the actual work. Upon starting, the pstore.conf file is read and the /sys/fs/pstore directory contents are processed according to the options. Pstore files are written to the journal, and optionally saved into /var/lib/systemd/pstore.</p>
+<h1>CONFIGURATION</h1>
+<p>The behavior of <strong>systemd-pstore</strong> is configured through the configuration file /etc/systemd/pstore.conf and corresponding snippets /etc/systemd/pstore.conf.d/*.conf, see <strong>pstore.conf</strong>(5).</p>
+<h2>Disabling pstore processing</h2>
+<p>To disable pstore processing by <strong>systemd-pstore</strong>, set</p>
+<blockquote>
+<pre><code>Storage=none</code></pre>
+</blockquote>
+<p>in <strong>pstore.conf</strong>(5).</p>
+<h2>Controlling kernel parameters</h2>
+<p>The kernel has two parameters, /sys/module/kernel/parameters/crash_kexec_post_notifiers and /sys/module/printk/parameters/always_kmsg_dump, that control writes into pstore. The crash_kexec_post_notifiers parameter enables the kernel to write dmesg (including stack trace) into pstore upon a panic or crash, and printk.always_kmsg_dump parameter enables the kernel to write dmesg upon a normal shutdown (shutdown, reboot, halt). These kernel parameters are managed via the <strong>tmpfiles.d</strong>(5) mechanism, specifically the file /usr/lib/tmpfiles/systemd-pstore.conf.</p>
+<h1>USAGE</h1>
+<p>Data stored in the journal can be viewed with <strong>journalctl</strong>(1) as usual.</p>
+<h1>SEE ALSO</h1>
+<p><strong>pstore.conf</strong>(5)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

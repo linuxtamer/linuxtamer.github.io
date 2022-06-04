@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mremap</title><meta name="description" content="Linux command mremap remap a virtual memory address"><meta name="keywords" content="linux, command, mremap, bsd, remap a virtual memory address"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mremap - remap a virtual memory address</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;sys/mman.h&gt;
+
+void *mremap(void *old_address, size_t old_size,
+ size_t new_size, int flags, ... /* void *new_address */);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>mremap</strong>() expands (or shrinks) an existing memory mapping, potentially moving it at the same time (controlled by the <em>flags</em> argument and the available virtual address space).</p>
+<p><em>old_address</em> is the old address of the virtual memory block that you want to expand (or shrink). Note that <em>old_address</em> has to be page aligned. <em>old_size</em> is the old size of the virtual memory block. <em>new_size</em> is the requested size of the virtual memory block after the resize. An optional fifth argument, <em>new_address</em>, may be provided; see the description of <strong>MREMAP_FIXED</strong> below.</p>
+<p>If the value of <em>old_size</em> is zero, and <em>old_address</em> refers to a shareable mapping (see <strong>mmap</strong>(2) <strong>MAP_SHARED</strong>), then <strong>mremap</strong>() will create a new mapping of the same pages. <em>new_size</em> will be the size of the new mapping and the location of the new mapping may be specified with <em>new_address</em>; see the description of <strong>MREMAP_FIXED</strong> below. If a new mapping is requested via this method, then the <strong>MREMAP_MAYMOVE</strong> flag must also be specified.</p>
+<p>The <em>flags</em> bit-mask argument may be 0, or include the following flags:</p>
+<dl>
+<dt><strong>MREMAP_MAYMOVE</strong></dt>
+<dd><p>By default, if there is not sufficient space to expand a mapping at its current location, then <strong>mremap</strong>() fails. If this flag is specified, then the kernel is permitted to relocate the mapping to a new virtual address, if necessary. If the mapping is relocated, then absolute pointers into the old mapping location become invalid (offsets relative to the starting address of the mapping should be employed).</p>
+</dd>
+<dt><strong>MREMAP_FIXED</strong> (since Linux 2.3.31)</dt>
+<dd><p>This flag serves a similar purpose to the <strong>MAP_FIXED</strong> flag of <strong>mmap</strong>(2). If this flag is specified, then <strong>mremap</strong>() accepts a fifth argument, <em>void *new_address</em>, which specifies a page-aligned address to which the mapping must be moved. Any previous mapping at the address range specified by <em>new_address</em> and <em>new_size</em> is unmapped.</p>
+<p>If <strong>MREMAP_FIXED</strong> is specified, then <strong>MREMAP_MAYMOVE</strong> must also be specified.</p>
+</dd>
+<dt><strong>MREMAP_DONTUNMAP</strong> (since Linux 5.7)</dt>
+<dd><p>This flag, which must be used in conjunction with <strong>MREMAP_MAYMOVE</strong>, remaps a mapping to a new address but does not unmap the mapping at <em>old_address</em>.</p>
+<p>The <strong>MREMAP_DONTUNMAP</strong> flag can be used only with private anonymous mappings (see the description of <strong>MAP_PRIVATE</strong> and <strong>MAP_ANONYMOUS</strong> in <strong>mmap</strong>(2)).</p>
+<p>After completion, any access to the range specified by <em>old_address</em> and <em>old_size</em> will result in a page fault. The page fault will be handled by a <strong>userfaultfd</strong>(2) handler if the address is in a range previously registered with <strong>userfaultfd</strong>(2). Otherwise, the kernel allocates a zero-filled page to handle the fault.</p>
+<p>The <strong>MREMAP_DONTUNMAP</strong> flag may be used to atomically move a mapping while leaving the source mapped. See NOTES for some possible applications of <strong>MREMAP_DONTUNMAP</strong>.</p>
+</dd>
+</dl>
+<p>If the memory segment specified by <em>old_address</em> and <em>old_size</em> is locked (using <strong>mlock</strong>(2) or similar), then this lock is maintained when the segment is resized and/or relocated. As a consequence, the amount of memory locked by the process may change.</p>
+<h1>RETURN VALUE</h1>
+<p>On success <strong>mremap</strong>() returns a pointer to the new virtual memory area. On error, the value <strong>MAP_FAILED</strong> (that is, <em>(void *) -1</em>) is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>The caller tried to expand a memory segment that is locked, but this was not possible without exceeding the <strong>RLIMIT_MEMLOCK</strong> resource limit.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>Some address in the range <em>old_address</em> to <em>old_address</em>+<em>old_size</em> is an invalid virtual memory address for this process. You can also get <strong>EFAULT</strong> even if there exist mappings that cover the whole address space requested, but those mappings are of different types.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>An invalid argument was given. Possible causes are:</p>
+<ul>
+<li><p><em>old_address</em> was not page aligned;</p></li>
+<li><p>a value other than <strong>MREMAP_MAYMOVE</strong> or <strong>MREMAP_FIXED</strong> or <strong>MREMAP_DONTUNMAP</strong> was specified in <em>flags</em>;</p></li>
+<li><p><em>new_size</em> was zero;</p></li>
+<li><p><em>new_size</em> or <em>new_address</em> was invalid;</p></li>
+<li><p>the new address range specified by <em>new_address</em> and <em>new_size</em> overlapped the old address range specified by <em>old_address</em> and <em>old_size</em>;</p></li>
+<li><p><strong>MREMAP_FIXED</strong> or <strong>MREMAP_DONTUNMAP</strong> was specified without also specifying <strong>MREMAP_MAYMOVE</strong>;</p></li>
+<li><p><strong>MREMAP_DONTUNMAP</strong> was specified, but one or more pages in the range specified by <em>old_address</em> and <em>old_size</em> were not private anonymous;</p></li>
+<li><p><strong>MREMAP_DONTUNMAP</strong> was specified and <em>old_size</em> was not equal to <em>new_size</em>;</p></li>
+<li><p><em>old_size</em> was zero and <em>old_address</em> does not refer to a shareable mapping (but see BUGS);</p></li>
+<li><p><em>old_size</em> was zero and the <strong>MREMAP_MAYMOVE</strong> flag was not specified.</p></li>
+</ul>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Not enough memory was available to complete the operation. Possible causes are:</p>
+<ul>
+<li><p>The memory area cannot be expanded at the current virtual address, and the <strong>MREMAP_MAYMOVE</strong> flag is not set in <em>flags</em>. Or, there is not enough (virtual) memory available.</p></li>
+<li><p><strong>MREMAP_DONTUNMAP</strong> was used causing a new mapping to be created that would exceed the (virtual) memory available. Or, it would exceed the maximum number of allowed mappings.</p></li>
+</ul>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>This call is Linux-specific, and should not be used in programs intended to be portable.</p>
+<h1>NOTES</h1>
+<p><strong>mremap</strong>() changes the mapping between virtual addresses and memory pages. This can be used to implement a very efficient <strong>realloc</strong>(3).</p>
+<p>In Linux, memory is divided into pages. A process has (one or) several linear virtual memory segments. Each virtual memory segment has one or more mappings to real memory pages (in the page table). Each virtual memory segment has its own protection (access rights), which may cause a segmentation violation (<strong>SIGSEGV</strong>) if the memory is accessed incorrectly (e.g., writing to a read-only segment). Accessing virtual memory outside of the segments will also cause a segmentation violation.</p>
+<p>If <strong>mremap</strong>() is used to move or expand an area locked with <strong>mlock</strong>(2) or equivalent, the <strong>mremap</strong>() call will make a best effort to populate the new area but will not fail with <strong>ENOMEM</strong> if the area cannot be populated.</p>
+<p>Prior to version 2.4, glibc did not expose the definition of <strong>MREMAP_FIXED</strong>, and the prototype for <strong>mremap</strong>() did not allow for the <em>new_address</em> argument.</p>
+<h2>MREMAP_DONTUNMAP use cases</h2>
+<p>Possible applications for <strong>MREMAP_DONTUNMAP</strong> include:</p>
+<ul>
+<li><p>Non-cooperative <strong>userfaultfd</strong>(2): an application can yank out a virtual address range using <strong>MREMAP_DONTUNMAP</strong> and then employ a <strong>userfaultfd</strong>(2) handler to handle the page faults that subsequently occur as other threads in the process touch pages in the yanked range.</p></li>
+<li><p>Garbage collection: <strong>MREMAP_DONTUNMAP</strong> can be used in conjunction with <strong>userfaultfd</strong>(2) to implement garbage collection algorithms (e.g., in a Java virtual machine). Such an implementation can be cheaper (and simpler) than conventional garbage collection techniques that involve marking pages with protection <strong>PROT_NONE</strong> in conjunction with the of a <strong>SIGSEGV</strong> handler to catch accesses to those pages.</p></li>
+</ul>
+<h1>BUGS</h1>
+<p>Before Linux 4.14, if <em>old_size</em> was zero and the mapping referred to by <em>old_address</em> was a private mapping (<strong>mmap</strong>(2) <strong>MAP_PRIVATE</strong>), <strong>mremap</strong>() created a new private mapping unrelated to the original mapping. This behavior was unintended and probably unexpected in user-space applications (since the intention of <strong>mremap</strong>() is to create a new mapping based on the original mapping). Since Linux 4.14, <strong>mremap</strong>() fails with the error <strong>EINVAL</strong> in this scenario.</p>
+<h1>SEE ALSO</h1>
+<p><strong>brk</strong>(2), <strong>getpagesize</strong>(2), <strong>getrlimit</strong>(2), <strong>mlock</strong>(2), <strong>mmap</strong>(2), <strong>sbrk</strong>(2), <strong>malloc</strong>(3), <strong>realloc</strong>(3)</p>
+<p>Your favorite text book on operating systems for more information on paged memory (e.g., <em>Modern Operating Systems</em> by Andrew S. Tanenbaum, <em>Inside Linux</em> by Randolph Bentson, <em>The Design of the UNIX Operating System</em> by Maurice J. Bach)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

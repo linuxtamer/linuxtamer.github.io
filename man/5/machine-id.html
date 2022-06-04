@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command machine-id</title><meta name="description" content="Linux command machine-id Local machine ID configuration file"><meta name="keywords" content="linux, command, machine-id, bsd, Local machine ID configuration file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>machine-id - Local machine ID configuration file</p>
+<h1>SYNOPSIS</h1>
+<p>/etc/machine-id</p>
+<h1>DESCRIPTION</h1>
+<p>The /etc/machine-id file contains the unique machine ID of the local system that is set during installation or boot. The machine ID is a single newline-terminated, hexadecimal, 32-character, lowercase ID. When decoded from hexadecimal, this corresponds to a 16-byte/128-bit value. This ID may not be all zeros.</p>
+<p>The machine ID is usually generated from a random source during system installation or first boot and stays constant for all subsequent boots. Optionally, for stateless systems, it is generated during runtime during early boot if necessary.</p>
+<p>The machine ID may be set, for example when network booting, with the <em>systemd.machine_id=</em> kernel command line parameter or by passing the option <strong>--machine-id=</strong> to systemd. An ID specified in this manner has higher priority and will be used instead of the ID stored in /etc/machine-id.</p>
+<p>The machine ID does not change based on local or network configuration or when hardware is replaced. Due to this and its greater length, it is a more useful replacement for the <strong>gethostid</strong>(3) call that POSIX specifies.</p>
+<p>This machine ID adheres to the same format and logic as the D-Bus machine ID.</p>
+<p>This ID uniquely identifies the host. It should be considered "confidential", and must not be exposed in untrusted environments, in particular on the network. If a stable unique identifier that is tied to the machine is needed for some application, the machine ID or any part of it must not be used directly. Instead the machine ID should be hashed with a cryptographic, keyed hash function, using a fixed, application-specific key. That way the ID will be properly unique, and derived in a constant way from the machine ID but there will be no way to retrieve the original machine ID from the application-specific one. The <strong>sd_id128_get_machine_app_specific</strong>(3) API provides an implementation of such an algorithm.</p>
+<h1>INITIALIZATION</h1>
+<p>Each machine should have a non-empty ID in normal operation. The ID of each machine should be unique. To achieve those objectives, /etc/machine-id can be initialized in a few different ways.</p>
+<p>For normal operating system installations, where a custom image is created for a specific machine, /etc/machine-id should be populated during installation.</p>
+<p><strong>systemd-machine-id-setup</strong>(1) may be used by installer tools to initialize the machine ID at install time, but /etc/machine-id may also be written using any other means.</p>
+<p>For operating system images which are created once and used on multiple machines, for example for containers or in the cloud, /etc/machine-id should be either missing or an empty file in the generic file system image (the difference between the two options is described under "First Boot Semantics" below). An ID will be generated during boot and saved to this file if possible. Having an empty file in place is useful because it allows a temporary file to be bind-mounted over the real file, in case the image is used read-only.</p>
+<p><strong>systemd-firstboot</strong>(1) may be used to initialize /etc/machine-id on mounted (but not booted) system images.</p>
+<p>When a machine is booted with <strong>systemd</strong>(1) the ID of the machine will be established. If <em>systemd.machine_id=</em> or <strong>--machine-id=</strong> options (see first section) are specified, this value will be used. Otherwise, the value in /etc/machine-id will be used. If this file is empty or missing, systemd will attempt to use the D-Bus machine ID from /var/lib/dbus/machine-id, the value of the kernel command line option <em>container_uuid</em>, the KVM DMI product_uuid or the devicetree vm,uuid (on KVM systems), and finally a randomly generated UUID.</p>
+<p>After the machine ID is established, <strong>systemd</strong>(1) will attempt to save it to /etc/machine-id. If this fails, it will attempt to bind-mount a temporary file over /etc/machine-id. It is an error if the file system is read-only and does not contain a (possibly empty) /etc/machine-id file.</p>
+<p><strong>systemd-machine-id-commit.service</strong>(8) will attempt to write the machine ID to the file system if /etc/machine-id or /etc/ are read-only during early boot but become writable later on.</p>
+<h1>FIRST BOOT SEMANTICS</h1>
+<p>/etc/machine-id is used to decide whether a boot is the first one. The rules are as follows:</p>
+<blockquote>
+<p>1.</p>
+<p>If /etc/machine-id does not exist, this is a first boot. During early boot, <strong>systemd</strong> will write "uninitialized\n" to this file and overmount a temporary file which contains the actual machine ID. Later (after first-boot-complete.target has been reached), the real machine ID will be written to disk.</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>If /etc/machine-id contains the string "uninitialized", a boot is also considered the first boot. The same mechanism as above applies.</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>If /etc/machine-id exists and is empty, a boot is <em>not</em> considered the first boot. <strong>systemd</strong> will still bind-mount a file containing the actual machine-id over it and later try to commit it to disk (if /etc/ is writable).</p>
+</blockquote>
+<blockquote>
+<p>4.</p>
+<p>If /etc/machine-id already contains a valid machine-id, this is not a first boot.</p>
+</blockquote>
+<p>If by any of the above rules, a first boot is detected, units with <em>ConditionFirstBoot=yes</em> will be run.</p>
+<h1>RELATION TO OSF UUIDS</h1>
+<p>Note that the machine ID historically is not an OSF UUID as defined by <strong>RFC 4122</strong>[1], nor a Microsoft GUID; however, starting with systemd v30, newly generated machine IDs do qualify as v4 UUIDs.</p>
+<p>In order to maintain compatibility with existing installations, an application requiring a UUID should decode the machine ID, and then apply the following operations to turn it into a valid OSF v4 UUID. With "id" being an unsigned character array:</p>
+<blockquote>
+<pre><code>/* Set UUID version to 4 --- truly random generation */
+id[6] = (id[6] &amp; 0x0F) | 0x40;
+/* Set the UUID variant to DCE */
+id[8] = (id[8] &amp; 0x3F) | 0x80;</code></pre>
+</blockquote>
+<p>(This code is inspired by "generate_random_uuid()" of drivers/char/random.c from the Linux kernel sources.)</p>
+<h1>HISTORY</h1>
+<p>The simple configuration file format of /etc/machine-id originates in the /var/lib/dbus/machine-id file introduced by D-Bus. In fact, this latter file might be a symlink to /etc/machine-id.</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemd-machine-id-setup</strong>(1), <strong>gethostid</strong>(3), <strong>hostname</strong>(5), <strong>machine-info</strong>(5), <strong>os-release</strong>(5), <strong>sd-id128</strong>(3), <strong>sd_id128_get_machine</strong>(3), <strong>systemd-firstboot</strong>(1)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>RFC 4122</p>
+<p>https://tools.ietf.org/html/rfc4122</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

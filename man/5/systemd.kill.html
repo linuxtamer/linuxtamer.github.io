@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd.kill</title><meta name="description" content="Linux command systemd.kill Process killing procedure configuration"><meta name="keywords" content="linux, command, systemd.kill, bsd, Process killing procedure configuration"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd.kill - Process killing procedure configuration</p>
+<h1>SYNOPSIS</h1>
+<p><em>service</em>.service, <em>socket</em>.socket, <em>mount</em>.mount, <em>swap</em>.swap, <em>scope</em>.scope</p>
+<h1>DESCRIPTION</h1>
+<p>Unit configuration files for services, sockets, mount points, swap devices and scopes share a subset of configuration options which define the killing procedure of processes belonging to the unit.</p>
+<p>This man page lists the configuration options shared by these five unit types. See <strong>systemd.unit</strong>(5) for the common options shared by all unit configuration files, and <strong>systemd.service</strong>(5), <strong>systemd.socket</strong>(5), <strong>systemd.swap</strong>(5), <strong>systemd.mount</strong>(5) and <strong>systemd.scope</strong>(5) for more information on the configuration file options specific to each unit type.</p>
+<p>The kill procedure configuration options are configured in the [Service], [Socket], [Mount] or [Swap] section, depending on the unit type.</p>
+<h1>OPTIONS</h1>
+<p><em>KillMode=</em></p>
+<blockquote>
+<p>Specifies how processes of this unit shall be killed. One of <strong>control-group</strong>, <strong>mixed</strong>, <strong>process</strong>, <strong>none</strong>.</p>
+<p>If set to <strong>control-group</strong>, all remaining processes in the control group of this unit will be killed on unit stop (for services: after the stop command is executed, as configured with <em>ExecStop=</em>). If set to <strong>mixed</strong>, the <strong>SIGTERM</strong> signal (see below) is sent to the main process while the subsequent <strong>SIGKILL</strong> signal (see below) is sent to all remaining processes of the units control group. If set to <strong>process</strong>, only the main process itself is killed (not recommended!). If set to <strong>none</strong>, no process is killed (strongly recommended against!). In this case, only the stop command will be executed on unit stop, but no process will be killed otherwise. Processes remaining alive after stop are left in their control group and the control group continues to exist after stop unless empty.</p>
+<p>Note that it is not recommended to set <em>KillMode=</em> to <strong>process</strong> or even <strong>none</strong>, as this allows processes to escape the service managers lifecycle and resource management, and to remain running even while their service is considered stopped and is assumed to not consume any resources.</p>
+<p>Processes will first be terminated via <strong>SIGTERM</strong> (unless the signal to send is changed via <em>KillSignal=</em> or <em>RestartKillSignal=</em>). Optionally, this is immediately followed by a <strong>SIGHUP</strong> (if enabled with <em>SendSIGHUP=</em>). If processes still remain after the main process of a unit has exited or the delay configured via the <em>TimeoutStopSec=</em> has passed, the termination request is repeated with the <strong>SIGKILL</strong> signal or the signal specified via <em>FinalKillSignal=</em> (unless this is disabled via the <em>SendSIGKILL=</em> option). See <strong>kill</strong>(2) for more information.</p>
+<p>Defaults to <strong>control-group</strong>.</p>
+</blockquote>
+<p><em>KillSignal=</em></p>
+<blockquote>
+<p>Specifies which signal to use when stopping a service. This controls the signal that is sent as first step of shutting down a unit (see above), and is usually followed by <strong>SIGKILL</strong> (see above and below). For a list of valid signals, see <strong>signal</strong>(7). Defaults to <strong>SIGTERM</strong>.</p>
+<p>Note that, right after sending the signal specified in this setting, systemd will always send <strong>SIGCONT</strong>, to ensure that even suspended tasks can be terminated cleanly.</p>
+</blockquote>
+<p><em>RestartKillSignal=</em></p>
+<blockquote>
+<p>Specifies which signal to use when restarting a service. The same as <em>KillSignal=</em> described above, with the exception that this setting is used in a restart job. Not set by default, and the value of <em>KillSignal=</em> is used.</p>
+</blockquote>
+<p><em>SendSIGHUP=</em></p>
+<blockquote>
+<p>Specifies whether to send <strong>SIGHUP</strong> to remaining processes immediately after sending the signal configured with <em>KillSignal=</em>. This is useful to indicate to shells and shell-like programs that their connection has been severed. Takes a boolean value. Defaults to "no".</p>
+</blockquote>
+<p><em>SendSIGKILL=</em></p>
+<blockquote>
+<p>Specifies whether to send <strong>SIGKILL</strong> (or the signal specified by <em>FinalKillSignal=</em>) to remaining processes after a timeout, if the normal shutdown procedure left processes of the service around. When disabled, a <em>KillMode=</em> of <strong>control-group</strong> or <strong>mixed</strong> service will not restart if processes from prior services exist within the control group. Takes a boolean value. Defaults to "yes".</p>
+</blockquote>
+<p><em>FinalKillSignal=</em></p>
+<blockquote>
+<p>Specifies which signal to send to remaining processes after a timeout if <em>SendSIGKILL=</em> is enabled. The signal configured here should be one that is not typically caught and processed by services (<strong>SIGTERM</strong> is not suitable). Developers can find it useful to use this to generate a coredump to troubleshoot why a service did not terminate upon receiving the initial <strong>SIGTERM</strong> signal. This can be achieved by configuring <em>LimitCORE=</em> and setting <em>FinalKillSignal=</em> to either <strong>SIGQUIT</strong> or <strong>SIGABRT</strong>. Defaults to <strong>SIGKILL</strong>.</p>
+</blockquote>
+<p><em>WatchdogSignal=</em></p>
+<blockquote>
+<p>Specifies which signal to use to terminate the service when the watchdog timeout expires (enabled through <em>WatchdogSec=</em>). Defaults to <strong>SIGABRT</strong>.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemctl</strong>(1), <strong>journalctl</strong>(1), <strong>systemd.unit</strong>(5), <strong>systemd.service</strong>(5), <strong>systemd.socket</strong>(5), <strong>systemd.swap</strong>(5), <strong>systemd.mount</strong>(5), <strong>systemd.exec</strong>(5), <strong>systemd.directives</strong>(7), <strong>kill</strong>(2), <strong>signal</strong>(7)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

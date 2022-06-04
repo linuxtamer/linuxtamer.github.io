@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command c++filt</title><meta name="description" content="Linux command c++filt demangle C++ and Java symbols"><meta name="keywords" content="linux, command, c++filt, bsd, demangle C++ and Java symbols"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>c++filt - demangle C++ and Java symbols</p>
+<h1>SYNOPSIS</h1>
+<p>c++filt [<strong>-_</strong>|<strong>--strip-underscore</strong>] [<strong>-n</strong>|<strong>--no-strip-underscore</strong>] [<strong>-p</strong>|<strong>--no-params</strong>] [<strong>-t</strong>|<strong>--types</strong>] [<strong>-i</strong>|<strong>--no-verbose</strong>] [<strong>-r</strong>|<strong>--no-recurse-limit</strong>] [<strong>-R</strong>|<strong>--recurse-limit</strong>] [<strong>-s</strong> <em>format</em>|<strong>--format=</strong><em>format</em>] [<strong>--help</strong>] [<strong>--version</strong>] [<em>symbol</em>...]</p>
+<h1>DESCRIPTION</h1>
+<p>The C++ and Java languages provide function overloading, which means that you can write many functions with the same name, providing that each function takes parameters of different types. In order to be able to distinguish these similarly named functions C++ and Java encode them into a low-level assembler name which uniquely identifies each different version. This process is known as <em>mangling</em>. The <strong>c++filt</strong> [1] program does the inverse mapping: it decodes (<em>demangles</em>) low-level names into user-level names so that they can be read.</p>
+<p>Every alphanumeric word (consisting of letters, digits, underscores, dollars, or periods) seen in the input is a potential mangled name. If the name decodes into a C++ name, the C++ name replaces the low-level name in the output, otherwise the original word is output. In this way you can pass an entire assembler source file, containing mangled names, through <strong>c++filt</strong> and see the same source file containing demangled names.</p>
+<p>You can also use <strong>c++filt</strong> to decipher individual symbols by passing them on the command line:</p>
+<p>c++filt &lt;symbol&gt;</p>
+<p>If no <em>symbol</em> arguments are given, <strong>c++filt</strong> reads symbol names from the standard input instead. All the results are printed on the standard output. The difference between reading names from the command line versus reading names from the standard input is that command-line arguments are expected to be just mangled names and no checking is performed to separate them from surrounding text. Thus for example:</p>
+<p>c++filt -n _Z1fv</p>
+<p>will work and demangle the name to f() whereas:</p>
+<p>c++filt -n _Z1fv,</p>
+<p>will not work. (Note the extra comma at the end of the mangled name which makes it invalid). This command however will work:</p>
+<p>echo _Z1fv, | c++filt -n</p>
+<p>and will display f(),, i.e., the demangled name followed by a trailing comma. This behaviour is because when the names are read from the standard input it is expected that they might be part of an assembler source file where there might be extra, extraneous characters trailing after a mangled name. For example:</p>
+<p>.type _Z1fv, @function</p>
+<h1>OPTIONS</h1>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>On some systems, both the C and C++ compilers put an underscore in front of every name. For example, the C name <code>foo</code> gets the low-level name <code>_foo</code>. This option removes the initial underscore. Whether <strong>c++filt</strong> removes the underscore by default is target dependent.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Do not remove the initial underscore.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>When demangling the name of a function, do not display the types of the function's parameters.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Attempt to demangle types as well as function names. This is disabled by default since mangled types are normally only used internally in the compiler, and they can be confused with non-mangled names. For example, a function called a treated as a mangled type name would be demangled to signed char.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Do not include implementation details (if any) in the demangled output.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+<p>Enables or disables a limit on the amount of recursion performed whilst demangling strings. Since the name mangling formats allow for an inifinite level of recursion it is possible to create strings whose decoding will exhaust the amount of stack space available on the host machine, triggering a memory fault. The limit tries to prevent this from happening by restricting recursion to 2048 levels of nesting. The default is for this limit to be enabled, but disabling it may be necessary in order to demangle truly complicated names. Note however that if the recursion limit is disabled then stack exhaustion is possible and any bug reports about such an event will be rejected. The <strong>-r</strong> option is a synonym for the <strong>--no-recurse-limit</strong> option. The <strong>-R</strong> option is a synonym for the <strong>--recurse-limit</strong> option.</p>
+<ul>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p><strong>c++filt</strong> can decode various methods of mangling, used by different compilers. The argument to this option selects which method it uses:</p>
+<blockquote>
+<ul>
+<li><p>Automatic selection based on executable (the default method)</p></li>
+<li><p>the one used by the GNU C++ compiler (g++)</p></li>
+<li><p>the one used by the Lucid compiler (lcc)</p></li>
+<li><p>the one specified by the C++ Annotated Reference Manual</p></li>
+<li><p>the one used by the HP compiler (aCC)</p></li>
+<li><p>the one used by the EDG compiler</p></li>
+<li><p>the one used by the GNU C++ compiler (g++) with the V3 ABI.</p></li>
+<li><p>the one used by the GNU Java compiler (gcj)</p></li>
+<li><p>the one used by the GNU Ada compiler (GNAT).</p></li>
+</ul>
+</blockquote>
+<blockquote>
+
+</blockquote>
+<ul>
+<li><p>Print a summary of the options to <strong>c++filt</strong> and exit.</p></li>
+<li><p>Print the version number of <strong>c++filt</strong> and exit.</p></li>
+</ul>
+<ol class="example" type="1">
+<li><p>Read command-line options from <em>file</em>. The options read are inserted in place of the original @<em>file</em> option. If <em>file</em> does not exist, or cannot be read, then the option will be treated literally, and not removed. Options in <em>file</em> are separated by whitespace. A whitespace character may be included in an option by surrounding the entire option in either single or double quotes. Any character (including a backslash) may be included by prefixing the character to be included with a backslash. The <em>file</em> may itself contain additional @<em>file</em> options; any such options will be processed recursively.</p></li>
+</ol>
+<h1>FOOTNOTES</h1>
+<ol type="1">
+<li><p>MS-DOS does not allow <code>+</code> characters in file names, so on MS-DOS this program is named <strong>CXXFILT</strong>.</p></li>
+</ol>
+<h1>SEE ALSO</h1>
+<p>the Info entries for <em>binutils</em>.</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright (c) 1991-2020 Free Software Foundation, Inc.</p>
+<p>Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.3 or any later version published by the Free Software Foundation; with no Invariant Sections, with no Front-Cover Texts, and with no Back-Cover Texts. A copy of the license is included in the section entitled GNU Free Documentation License.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command lscpu</title><meta name="description" content="Linux command lscpu display information about the CPU architecture"><meta name="keywords" content="linux, command, lscpu, bsd, display information about the CPU architecture"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>lscpu - display information about the CPU architecture</p>
+<h1>SYNOPSIS</h1>
+<p><strong>lscpu</strong> [options]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>lscpu</strong> gathers CPU architecture information from sysfs, /proc/cpuinfo and any applicable architecture-specific libraries (e.g. librtas on Powerpc). The command output can be optimized for parsing or for easy readability by humans. The information includes, for example, the number of CPUs, threads, cores, sockets, and Non-Uniform Memory Access (NUMA) nodes. There is also information about the CPU caches and cache sharing, family, model, bogoMIPS, byte order, and stepping.</p>
+<p>In virtualized environments, the CPU architecture information displayed reflects the configuration of the guest operating system which is typically different from the physical (host) system. On architectures that support retrieving physical topology information, <strong>lscpu</strong> also displays the number of physical sockets, chips, cores in the host system.</p>
+<p>Options that result in an output table have a <em>list</em> argument. Use this argument to customize the command output. Specify a comma-separated list of column labels to limit the output table to only the specified columns, arranged in the specified order. See <strong>COLUMNS</strong> for a list of valid column labels. The column labels are not case sensitive.</p>
+<p>Not all columns are supported on all architectures. If an unsupported column is specified, <strong>lscpu</strong> prints the column but does not provide any data for it.</p>
+<p>The default output formatting on terminal maybe optimized for better readability. The output for non-terminals (e.g., pipes) is never affected by this optimization and it is always in "Field: data\n" format.</p>
+<p>The cache sizes are reported as summary from all CPUs. The versions before v2.34 reported per-core sizes, but this output was confusing due to complicated CPUs topology and the way how caches are shared between CPUs. For more details about caches see <strong>--cache</strong>.</p>
+<h2>COLUMNS</h2>
+<p>Note that topology elements (core, socket, etc.) use a sequential unique ID starting from zero, but CPU logical numbers follow the kernel where there is no guarantee of sequential numbering.</p>
+<dl>
+<dt><strong>CPU</strong></dt>
+<dd><p>The logical CPU number of a CPU as used by the Linux kernel.</p>
+</dd>
+<dt><strong>CORE</strong></dt>
+<dd><p>The logical core number. A core can contain several CPUs.</p>
+</dd>
+<dt><strong>SOCKET</strong></dt>
+<dd><p>The logical socket number. A socket can contain several cores.</p>
+</dd>
+<dt><strong>BOOK</strong></dt>
+<dd><p>The logical book number. A book can contain several sockets.</p>
+</dd>
+<dt><strong>DRAWER</strong></dt>
+<dd><p>The logical drawer number. A drawer can contain several books.</p>
+</dd>
+<dt><strong>NODE</strong></dt>
+<dd><p>The logical NUMA node number. A node can contain several drawers.</p>
+</dd>
+<dt><strong>CACHE</strong></dt>
+<dd><p>Information about how caches are shared between CPUs.</p>
+</dd>
+<dt><strong>ADDRESS</strong></dt>
+<dd><p>The physical address of a CPU.</p>
+</dd>
+<dt><strong>ONLINE</strong></dt>
+<dd><p>Indicator that shows whether the Linux instance currently makes use of the CPU.</p>
+</dd>
+<dt><strong>CONFIGURED</strong></dt>
+<dd><p>Indicator that shows if the hypervisor has allocated the CPU to the virtual hardware on which the Linux instance runs. CPUs that are configured can be set online by the Linux instance. This column contains data only if your hardware system and hypervisor support dynamic CPU resource allocation.</p>
+</dd>
+<dt><strong>POLARIZATION</strong></dt>
+<dd><p>This column contains data for Linux instances that run on virtual hardware with a hypervisor that can switch the CPU dispatching mode (polarization). The polarization can be:</p>
+<dl>
+<dt><strong>horizontal</strong></dt>
+<dd><p>The workload is spread across all available CPUs.</p>
+</dd>
+<dt><strong>vertical</strong></dt>
+<dd><p>The workload is concentrated on few CPUs.</p>
+</dd>
+</dl>
+<p>For vertical polarization, the column also shows the degree of concentration, high, medium, or low. This column contains data only if your hardware system and hypervisor support CPU polarization.</p>
+</dd>
+<dt><strong>MAXMHZ</strong></dt>
+<dd><p>Maximum megahertz value for the CPU. Useful when <strong>lscpu is used as hardware</strong> inventory information gathering tool. Notice that the megahertz value is dynamic, and driven by CPU governor depending on current resource need.</p>
+</dd>
+<dt><strong>MINMHZ</strong></dt>
+<dd><p>Minimum megahertz value for the CPU.</p>
+</dd>
+</dl>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-a</strong>,<strong> --all</strong></dt>
+<dd><p>Include lines for online and offline CPUs in the output (default for <strong>-e</strong>). This option may only be specified together with option <strong>-e</strong> or <strong>-p</strong>.</p>
+</dd>
+<dt><strong>-B</strong>,<strong> --bytes</strong></dt>
+<dd><p>Print the sizes in bytes rather than in a human-readable format.</p>
+</dd>
+<dt><strong>-b</strong>,<strong> --online</strong></dt>
+<dd><p>Limit the output to online CPUs (default for <strong>-p</strong>). This option may only be specified together with option <strong>-e</strong> or <strong>-p</strong>.</p>
+</dd>
+<dt><strong>-C</strong>,<strong> --caches</strong>[=<em>list</em>]</dt>
+<dd><p>Display details about CPU caches. For details about available information see <strong>--help</strong> output.</p>
+</dd>
+</dl>
+<p>If the <em>list</em> argument is omitted, all columns for which data is available are included in the command output.</p>
+<p>When specifying the <em>list</em> argument, the string of option, equal sign (=), and <em>list</em> must not contain any blanks or other whitespace. Examples: '<strong>-C=NAME,ONE-SIZE</strong>' or '<strong>--caches=NAME,ONE-SIZE</strong>'.</p>
+<dl>
+<dt><strong>-c</strong>,<strong> --offline</strong></dt>
+<dd><p>Limit the output to offline CPUs. This option may only be specified together with option <strong>-e</strong> or <strong>-p</strong>.</p>
+</dd>
+<dt><strong>-e</strong>,<strong> --extended</strong>[=<em>list</em>]</dt>
+<dd><p>Display the CPU information in human-readable format.</p>
+</dd>
+</dl>
+<p>If the <em>list</em> argument is omitted, all columns for which data is available are included in the command output.</p>
+<p>When specifying the <em>list</em> argument, the string of option, equal sign (=), and <em>list</em> must not contain any blanks or other whitespace. Examples: '<strong>-e=cpu,node</strong>' or '<strong>--extended=cpu,node</strong>'.</p>
+<dl>
+<dt><strong>-h</strong>,<strong> --help</strong></dt>
+<dd><p>Display help text and exit.</p>
+</dd>
+<dt><strong>-J</strong>,<strong> --json</strong></dt>
+<dd><p>Use JSON output format for the default summary or extended output (see <strong>--extended</strong>).</p>
+</dd>
+<dt><strong>-p</strong>,<strong> --parse</strong>[=<em>list</em>]</dt>
+<dd><p>Optimize the command output for easy parsing.</p>
+</dd>
+</dl>
+<p>If the <em>list</em> argument is omitted, the command output is compatible with earlier versions of <strong>lscpu</strong>. In this compatible format, two commas are used to separate CPU cache columns. If no CPU caches are identified the cache column is omitted.<br />
+If the <em>list</em> argument is used, cache columns are separated with a colon (:).</p>
+<p>When specifying the <em>list</em> argument, the string of option, equal sign (=), and <em>list</em> must not contain any blanks or other whitespace. Examples: '<strong>-p=cpu,node</strong>' or '<strong>--parse=cpu,node</strong>'.</p>
+<dl>
+<dt><strong>-s</strong>,<strong> --sysroot </strong><em>directory</em></dt>
+<dd><p>Gather CPU data for a Linux instance other than the instance from which the <strong>lscpu</strong> command is issued. The specified <em>directory</em> is the system root of the Linux instance to be inspected.</p>
+</dd>
+<dt><strong>-x</strong>,<strong> --hex</strong></dt>
+<dd><p>Use hexadecimal masks for CPU sets (for example "ff"). The default is to print the sets in list format (for example 0,1). Note that before version 2.30 the mask has been printed with 0x prefix.</p>
+</dd>
+<dt><strong>-y</strong>,<strong> --physical</strong></dt>
+<dd><p>Display physical IDs for all columns with topology elements (core, socket, etc.). Other than logical IDs, which are assigned by <strong>lscpu</strong>, physical IDs are platform-specific values that are provided by the kernel. Physical IDs are not necessarily unique and they might not be arranged sequentially. If the kernel could not retrieve a physical ID for an element <strong>lscpu</strong> prints the dash (-) character.</p>
+</dd>
+</dl>
+<p>The CPU logical numbers are not affected by this option.</p>
+<dl>
+<dt><strong>-V</strong>,<strong> --version</strong></dt>
+<dd><p>Display version information and exit.</p>
+</dd>
+<dt><strong>--output-all</strong></dt>
+<dd><p>Output all available columns. This option must be combined with either <strong>--extended</strong>, <strong>--parse</strong> or <strong>--caches</strong>.</p>
+</dd>
+</dl>
+<h1>BUGS</h1>
+<p>The basic overview of CPU family, model, etc. is always based on the first CPU only.</p>
+<p>Sometimes in Xen Dom0 the kernel reports wrong data.</p>
+<p>On virtual hardware the number of cores per socket, etc. can be wrong.</p>
+<h1>AUTHORS</h1>
+<pre><code>Cai Qian &lt;qcai@redhat.com&gt;
+Karel Zak &lt;kzak@redhat.com&gt;
+Heiko Carstens &lt;heiko.carstens@de.ibm.com&gt;</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>chcpu</strong>(8)</p>
+<h1>AVAILABILITY</h1>
+<p>The lscpu command is part of the util-linux package and is available from https://www.kernel.org/pub/linux/utils/util-linux/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command saned</title><meta name="description" content="Linux command saned SANE network daemon"><meta name="keywords" content="linux, command, saned, bsd, SANE network daemon"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>saned - SANE network daemon</p>
+<h1>SYNOPSIS</h1>
+<p><strong>saned</strong> <strong>[ -a</strong> <em>[ username ]</em> <strong>]</strong> <strong>[ -u</strong> <em>username</em> <strong>]</strong> <strong>[ -b</strong> <em>address</em> <strong>]</strong> <strong>[ -l ]</strong> <strong>[ -D ]</strong> <strong>[ -o ]</strong> <strong>[ -d</strong> <em>n</em> <strong>]</strong> <strong>[ -e ]</strong> <strong>[ -h ]</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>saned</strong> is the SANE (Scanner Access Now Easy) daemon that allows remote clients to access image acquisition devices available on the local host.</p>
+<h1>OPTIONS</h1>
+<p>The <strong>-l</strong> flag requests that <strong>saned</strong> run in standalone daemon mode. In this mode, <strong>saned</strong> will listen for incoming client connections; <strong>inetd</strong> is not required for <strong>saned</strong> operations in this mode. The <strong>-b</strong> flag tells <strong>saned</strong> to bind to the <em>address</em> given. The <strong>-u</strong> flag requests that <strong>saned</strong> drop root privileges and run as the user (and group) associated with <em>username</em> after binding. The <strong>-D</strong> flag will request <strong>saned</strong> to detach from the console and run in the background. The flag <strong>-a</strong> is equivalent to the combination of <strong>-l -B -u</strong> <em>username</em> options.</p>
+<p>The <strong>-d</strong> flag sets the level of <strong>saned</strong> debug output. When compiled with debugging enabled, this flag may be followed by a number to request more or less debug info. The larger the number, the more verbose the debug output. E.g., <strong>-d128</strong> will request output of all debug info. A level of 0 produces no output at all. The default value is 2.</p>
+<p>The <strong>-e</strong> flag will divert <strong>saned</strong> debug output to stderr instead of the syslog default.</p>
+<p>The <strong>-o</strong> flag requests that <strong>saned</strong> exits after the first client disconnects. This is useful for debugging.</p>
+<p>The <strong>-h</strong> flag displays a short help message.</p>
+<p>If <strong>saned</strong> is run from other programs such as inetd, xinetd and systemd, check that program's documentation on how to pass command-line options.</p>
+<h1>CONFIGURATION</h1>
+<p>First and foremost: <strong>saned</strong> is not intended to be exposed to the internet or other non-trusted networks. Make sure that access is limited by tcpwrappers and/or a firewall setup. Don't depend only on <strong>saned</strong>'s own authentication. Don't run <strong>saned</strong> as root if it's not necessary. And do <strong>not</strong> install <strong>saned</strong> as setuid root.</p>
+<p>The <em>saned.conf</em> configuration file contains both options for the daemon and the access list.</p>
+<dl>
+<dt><strong>data_portrange</strong> = <em>min_port</em> - <em>max_port</em></dt>
+<dd><p>Specify the port range to use for the data connection. Pick a port range between 1024 and 65535; don't pick a too large port range, as it may have performance issues. Use this option if your <strong>saned</strong> server is sitting behind a firewall. If that firewall is a Linux machine, we strongly recommend using the Netfilter <em>nf_conntrack_sane</em> module instead.</p>
+</dd>
+<dt><strong>data_connect_timeout</strong> = <em>timeout</em></dt>
+<dd><p>Specify the time in milliseconds that saned will wait for a data connection. Without this option, if the data connection is not done before the scanner reaches the end of scan, the scanner will continue to scan past the end and may damage it depending on the backend. Specify zero to have the old behavior. The default is 4000ms.</p>
+</dd>
+</dl>
+<p>The access list is a list of host names, IP addresses or IP subnets (CIDR notation) that are permitted to use local SANE devices. IPv6 addresses must be enclosed in brackets, and should always be specified in their compressed form. Connections from localhost are always permitted. Empty lines and lines starting with a hash mark (#) are ignored. A line containing the single character ``+'' is interpreted to match any hostname. This allows any remote machine to use your scanner and may present a security risk, so this shouldn't be used unless you know what you're doing.</p>
+<p>A sample configuration file is shown below:</p>
+<blockquote>
+<p># Daemon options<br />
+data_portrange = 10000 - 10100<br />
+# Access list<br />
+scan-client.somedomain.firm<br />
+# this is a comment<br />
+192.168.0.1<br />
+192.168.2.12/29<br />
+[::1]<br />
+[2001:db8:185e::42:12]/64</p>
+</blockquote>
+<p>The case of the host names does not matter, so AHost.COM is considered identical to ahost.com.</p>
+<h1>SERVER DAEMON CONFIGURATION</h1>
+<p>For <strong>saned</strong> to work properly in its default mode of operation, it is also necessary to add the appropriate configuration for <em>(x)inetd or systemd.</em> (see below). Note that your inetd must support IPv6 if you want to connect to saned over IPv6 ; xinetd, openbsd-inetd and systemd are known to support IPv6, check the documentation for your inetd daemon.</p>
+<p>In the sections below the configuration for <em>inetd, xinetd</em> and <em>systemd</em> are described in more detail.</p>
+<p>For the configurations below it is necessary to add a line of the following form to <em>/etc/services</em>:</p>
+<blockquote>
+<p>sane-port 6566/tcp # SANE network scanner daemon</p>
+</blockquote>
+<p>The official IANA short name for port 6566 is "sane-port". The older name "sane" is now deprecated.</p>
+<h1>INETD CONFIGURATION</h1>
+<p>It is required to add a single line to the inetd configuration file <em>(/etc/inetd.conf)</em></p>
+<p>The configuration line normally looks like this:</p>
+<blockquote>
+<p>sane-port stream tcp nowait saned.saned /usr/sbin/saned saned</p>
+</blockquote>
+<p>However, if your system uses <strong>tcpd</strong>(8) for additional security screening, you may want to disable saned access control by putting ``+'' in <em>saned.conf</em> and use a line of the following form in <em>/etc/inetd.conf</em> instead:</p>
+<blockquote>
+<p>sane-port stream tcp nowait saned.saned /usr/sbin/tcpd /usr/sbin/saned</p>
+</blockquote>
+<p>Note that both examples assume that there is a <strong>saned</strong> group and a <strong>saned</strong> user. If you follow this example, please make sure that the access permissions on the special device are set such that <strong>saned</strong> can access the scanner (the program generally needs read and write access to scanner devices).</p>
+<h1>XINETD CONFIGURATION</h1>
+<p>If xinetd is installed on your system instead of inetd the following example for <em>/etc/xinetd.conf</em> may be helpful:</p>
+<blockquote>
+<pre><code># default: off
+# description: The sane server accepts requests
+# for network access to a local scanner via the
+# network.
+service sane-port
+{
+   port        = 6566
+   socket_type = stream
+   wait        = no
+   user        = saned
+   group       = saned
+   server      = /usr/sbin/saned
+}</code></pre>
+</blockquote>
+<h1>SYSTEMD CONFIGURATION</h1>
+<p>Saned can be compiled with explicit systemd support. This will allow logging debugging information to be forwarded to the systemd journal. The systemd support requires compilation with the systemd-devel package installed on the system. this is the preferred option.</p>
+<p>Saned can be used with systemd without the systemd integration compiled in, but then logging of debug information is not supported.</p>
+<p>The systemd configuration is different for the 2 options, so both are described below.</p>
+<h1>Systemd configuration for saned with systemd support compiled in</h1>
+<p>for the systemd configuration we need to add 2 configuration files in <em>/etc/systemd/system.</em></p>
+<p>The first file we need to add here is called <em>saned.socket.</em> It shall have the following contents:</p>
+<blockquote>
+<pre><code>[Unit]
+Description=saned incoming socket
+
+[Socket]
+ListenStream=6566
+Accept=yes
+MaxConnections=1
+
+[Install]
+WantedBy=sockets.target</code></pre>
+</blockquote>
+<p>The second file to be added is <em>saned@.service</em> with the following contents:</p>
+<blockquote>
+<pre><code>[Unit]
+Description=Scanner Service
+Requires=saned.socket
+
+[Service]
+ExecStart=/usr/sbin/saned
+User=saned
+Group=saned
+StandardInput=null
+StandardOutput=syslog
+StandardError=syslog
+Environment=SANE_CONFIG_DIR=/etc/sane.d
+# If you need to debug your configuration uncomment the next line and
+# change it as appropriate to set the desired debug options
+# Environment=SANE_DEBUG_DLL=255 SANE_DEBUG_BJNP=5
+
+[Install]
+Also=saned.socket</code></pre>
+</blockquote>
+<p>You need to set an environment variable for <strong>SANE_CONFIG_DIR</strong> pointing to the directory where saned can find its configuration files. you will have to remove the # on the last line and set the variables for the desired debugging information if required. Multiple variables can be set by separating the assignments by spaces as shown in the example above.</p>
+<p>Unlike <em>(x)inetd</em> , systemd allows debugging output from backends set using <strong>SANE_DEBUG_XXX</strong> to be captured. See the man-page for your backend to see what options are supported. With the service unit as described above, the debugging output is forwarded to the system log.</p>
+<h1>Systemd configuration when saned is compiled without systemd support</h1>
+<p>This configuration will also work when Saned is compiled WITH systemd integration support, but it does not allow debugging information to be logged.</p>
+<p>for systemd configuration for saned, we need to add 2 configuration files in <em>/etc/systemd/system.</em></p>
+<p>The first file we need to add here is called <em>saned.socket.</em> It is identical to the version for systemd with the support compiled in. It shall have the following contents:</p>
+<blockquote>
+<pre><code>[Unit]
+Description=saned incoming socket
+
+[Socket]
+ListenStream=6566
+Accept=yes
+MaxConnections=1
+
+[Install]
+WantedBy=sockets.target</code></pre>
+</blockquote>
+<p>The second file to be added is <em>saned@.service</em> This one differes from the sersion with systemd integration compiled in:</p>
+<blockquote>
+<pre><code>[Unit]
+Description=Scanner Service
+Requires=saned.socket
+
+[Service]
+ExecStart=/usr/sbin/saned
+User=saned
+Group=saned
+StandardInput=socket
+
+Environment=SANE_CONFIG_DIR=/etc/sane.d
+
+[Install]
+Also=saned.socket</code></pre>
+</blockquote>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/hosts.equiv</em></dt>
+<dd><p>The hosts listed in this file are permitted to access all local SANE devices. Caveat: this file imposes serious security risks and its use is not recommended.</p>
+</dd>
+<dt><em>/etc/sane.d/saned.conf</em></dt>
+<dd><p>Contains a list of hosts permitted to access local SANE devices (see also description of <strong>SANE_CONFIG_DIR</strong> below).</p>
+</dd>
+<dt><em>/etc/sane.d/saned.users</em></dt>
+<dd><p>If this file contains lines of the form</p>
+</dd>
+</dl>
+<p>user:password:backend</p>
+<p>access to the listed backends is restricted. A backend may be listed multiple times for different user/password combinations. The server uses MD5 hashing if supported by the client.</p>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>SANE_CONFIG_DIR</strong></dt>
+<dd><p>This environment variable specifies the list of directories that may contain the configuration file. Under UNIX, the directories are separated by a colon (`:'), under OS/2, they are separated by a semi-colon (`;'). If this variable is not set, the configuration file is searched in two default directories: first, the current working directory (".") and then in /etc/sane.d. If the value of the environment variable ends with the directory separator character, then the default directories are searched after the explicitly specified directories. For example, setting <strong>SANE_CONFIG_DIR</strong> to "/tmp/config:" would result in directories "tmp/config", ".", and "/etc/sane.d" being searched (in this order).</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>sane</strong>(7), <strong>scanimage</strong>(1), <strong>xscanimage</strong>(1), <strong>xcam</strong>(1), <strong>sane-dll</strong>(5), <strong>sane-net</strong>(5), <strong>sane-"backendname"</strong>(5)<br />
+<em>http://www.penguin-breeder.org/?page=sane-net</em></p>
+<h1>AUTHOR</h1>
+<p>David Mosberger</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

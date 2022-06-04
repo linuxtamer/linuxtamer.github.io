@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mkvmerge</title><meta name="description" content="Linux command mkvmerge Merge multimedia streams into a Matroska file"><meta name="keywords" content="linux, command, mkvmerge, bsd, Merge multimedia streams into a Matroska file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mkvmerge - Merge multimedia streams into a Matroska file</p>
+<h1>SYNOPSIS</h1>
+<p><strong>mkvmerge</strong> [global options] {-o out} [options1] {file1} [[options2] {file2}] [@options-file.json]</p>
+<h1>DESCRIPTION</h1>
+<p>This program takes the input from several media files and joins their streams (all of them or just a selection) into a Matroska file; see <strong>the Matroska website</strong>[1].</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Important</strong></p>
+<p><br />
+</p>
+<p>The order of command line options is important. Please read the section "Option order" if youre new to the program.</p>
+</blockquote>
+<h2>Global options</h2>
+<p><strong>-v</strong>, <strong>--verbose</strong></p>
+<blockquote>
+<p>Increase verbosity.</p>
+</blockquote>
+<p><strong>-q</strong>, <strong>--quiet</strong></p>
+<blockquote>
+<p>Suppress status output.</p>
+</blockquote>
+<p><strong>-o</strong>, <strong>--output</strong> <em>file-name</em></p>
+<blockquote>
+<p>Write to the file <em>file-name</em>. If splitting is used then this parameter is treated a bit differently. See the explanation for the <strong>--split</strong> option for details.</p>
+</blockquote>
+<p><strong>-w</strong>, <strong>--webm</strong></p>
+<blockquote>
+<p>Create a WebM compliant file. This is also turned on if the output file names extension is "webm". This mode enforces several restrictions. The only allowed codecs are VP8, VP9 video and Opus, Vorbis audio tracks. The DocType header item is changed to "webm".</p>
+<p>For chapters and tags only a subset of elements are allowed. <strong>mkvmerge</strong>(1) will automatically remove all elements not allowed by the specification.</p>
+</blockquote>
+<p><strong>--title</strong> <em>title</em></p>
+<blockquote>
+<p>Sets the general title for the output file, e.g. the movie name.</p>
+</blockquote>
+<p><strong>--default-language</strong> <em>language-code</em></p>
+<blockquote>
+<p>Sets the default language code that will be used for tracks for which no language is set with the <strong>--language</strong> option and for which the source container doesnt provide a language.</p>
+<p>The default language code is und for undefined.</p>
+</blockquote>
+<h2>Segment info handling (global options)</h2>
+<p><strong>--segmentinfo</strong> <em>filename.xml</em></p>
+<blockquote>
+<p>Read segment information from a XML file. This file can contain the segment family UID, segment UID, previous and next segment UID elements. An example file and a DTD are included in the MKVToolNix distribution.</p>
+<p>See the section about segment info XML files below for details.</p>
+</blockquote>
+<p><strong>--segment-uid</strong> <em>SID1,SID2,...</em></p>
+<blockquote>
+<p>Sets the segment UIDs to use. This is a comma-separated list of 128-bit segment UIDs in the usual UID form: hex numbers with or without the "0x" prefix, with or without spaces, exactly 32 digits.</p>
+<p>If SID starts with = then its rest is interpreted as the name of a Matroska file whose segment UID is read and used.</p>
+<p>Each file created contains one segment, and each segment has one segment UID. If more segment UIDs are specified than segments are created then the surplus UIDs are ignored. If fewer UIDs are specified than segments are created then random UIDs will be created for them.</p>
+</blockquote>
+<h2>Chapter and tag handling (global options)</h2>
+<p><strong>--chapter-language</strong> <em>language-code</em></p>
+<blockquote>
+<p>Sets the ISO 639-2 language code that is written for each chapter entry. Defaults to eng. See the section about chapters below for details.</p>
+<p>This option can be used both for simple chapter files and for source files that contain chapters but no information about the chapters language, e.g. MP4 and OGM files.</p>
+<p>The language set with this option is also used when chapters are generated with the <strong>--generate-chapters</strong> option.</p>
+</blockquote>
+<p><strong>--chapter-charset</strong> <em>character-set</em></p>
+<blockquote>
+<p>Sets the character set that is used for the conversion to UTF-8 for simple chapter files. See the section about text files and character sets for an explanation how <strong>mkvmerge</strong>(1) converts between character sets.</p>
+<p>This switch does also apply to chapters that are copied from certain container types, e.g. Ogg/OGM and MP4 files. See the section about chapters below for details.</p>
+</blockquote>
+<p><strong>--chapter-sync</strong> <em>d[,o[/p]]</em></p>
+<blockquote>
+<p>Adjust the timestamps of the chapters in the following source file by <em>d</em> ms. Alternatively you can use the <strong>--sync</strong> option with the special track ID <strong>-2</strong> (see section special track IDs).</p>
+<p><em>o</em>/<em>p</em>: adjust the timestamps by <em>o</em>/<em>p</em> to fix linear drifts. <em>p</em> defaults to 1 if omitted. Both <em>o</em> and <em>p</em> can be floating point numbers.</p>
+<p>Defaults: no manual sync correction (which is the same as <em>d</em> = <strong>0</strong> and <em>o</em>/<em>p</em> = <strong>1.0</strong>).</p>
+<p>This option can be used multiple times for an input file applying to several tracks by selecting different track IDs each time.</p>
+</blockquote>
+<p><strong>--generate-chapters</strong> <em>mode</em></p>
+<blockquote>
+<p><strong>mkvmerge</strong>(1) can create chapters automatically. The following two modes are currently supported:</p>
+<blockquote>
+<p>·</p>
+<p>when-appending – This mode creates one chapter at the start and one chapter whenever a file is appended.</p>
+<p>This mode also works with split modes parts: and parts-frames:. For these modes one chapter will be generated for each appended timestamp range (those whose start timestamps are prefixed with +).</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+<strong>mkvmerge</strong>(1) requires a video or an audio track to be present in order to be able to determine when a new file is appended. If one or more video tracks are muxed the first one is used. Otherwise the first audio track is used.</p>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>interval:<em>time-spec</em> – This mode creates one chapter at fixed intervals given by <em>time-spec</em>. The format is either the form <em>HH:MM:SS.nnnnnnnnn</em> or a number followed by one of the units s, ms or us.</p>
+<p>Example: --generate-chapters interval:45s</p>
+</blockquote>
+<p>The names for the new chapters are controlled by the option --generate-chapters-name-template. The language is set with --chapter-language which must occur before <strong>--generate-chapters</strong>.</p>
+</blockquote>
+<p><strong>--generate-chapters-name-template</strong> <em>template</em></p>
+<blockquote>
+<p>This sets the name template for chapter names generated by the option --generate-chapters. If the option is not used then default Chapter &lt;NUM:2&gt; will be used.</p>
+<p>There are several variables that can be used in the template that are replaced by their actual values when a chapter is generated. The string &lt;NUM&gt; will be replaced by the chapter number. The string &lt;START&gt; will be replaced by the chapters start timestamp.</p>
+<p>The strings &lt;FILE_NAME&gt; and &lt;FILE_NAME_WITH_EXT&gt; are only filled when generating chapters for appended files. They will be replaced by the appended files name wihtout respectively with its extension. Note that only the files base name and extension are inserted, not its directory or drive components.</p>
+<p>You can specify a minimum number of places for the chapter number with &lt;NUM:places&gt;, e.g. &lt;NUM:3&gt;. The resulting number will be padded with leading zeroes if the number of places is less than specified.</p>
+<p>You can control the format used by the start timestamp with &lt;START:format&gt;. The format defaults to %H:%M:%S if none is given. Valid format codes are:</p>
+<blockquote>
+<p>·</p>
+<p>%h – hours</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>%H – hours zero-padded to two places</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>%m – minutes</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>%M – minutes zero-padded to two places</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>%s – seconds</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>%S – seconds zero-padded to two places</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>%n – nanoseconds with nine places</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>%&lt;1-9&gt;n – nanoseconds with up to nine places (e.g. three places with %3n)</p>
+</blockquote>
+</blockquote>
+<p><strong>--cue-chapter-name-format</strong> <em>format</em></p>
+<blockquote>
+<p><strong>mkvmerge</strong>(1) supports reading CUE sheets for audio files as the input for chapters. CUE sheets usually contain the entries <em>PERFORMER</em> and <em>TITLE</em> for each index entry. <strong>mkvmerge</strong>(1) uses these two strings in order to construct the chapter name. With this option the format used for this name can be set.</p>
+<p>If this option is not given then <strong>mkvmerge</strong>(1) defaults to the format %p - %t (the performer, followed by a space, a dash, another space and the title).</p>
+<p>If the format is given then everything except the following meta characters is copied as-is, and the meta characters are replaced like this:</p>
+<blockquote>
+<p>·</p>
+<p><em>%p</em> is replaced by the current entrys <em>PERFORMER</em> string,</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><em>%t</em> is replaced by the current entrys <em>TITLE</em> string,</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><em>%n</em> is replaced by the current track number and</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><em>%N</em> is replaced by the current track number padded with a leading zero if it is &lt; 10.</p>
+</blockquote>
+</blockquote>
+<p><strong>--chapters</strong> <em>file-name</em></p>
+<blockquote>
+<p>Read chapter information from the file <em>file-name</em>. See the section about chapters below for details.</p>
+</blockquote>
+<p><strong>--global-tags</strong> <em>file-name</em></p>
+<blockquote>
+<p>Read global tags from the file <em>file-name</em>. See the section about tags below for details.</p>
+</blockquote>
+<h2>General output control (advanced global options)</h2>
+<p><strong>--track-order</strong> <em>FID1:TID1,FID2:TID2,...</em></p>
+<blockquote>
+<p>This option changes the order in which the tracks for an input file are created. The argument is a comma separated list of pairs IDs. Each pair contains first the file ID (<em>FID1</em>) which is simply the number of the file on the command line starting at 0. The second is a track ID (<em>TID1</em>) from that file. If some track IDs are omitted then those tracks are created after the ones given with this option have been created.</p>
+</blockquote>
+<p><strong>--cluster-length</strong> <em>spec</em></p>
+<blockquote>
+<p>Limit the number of data blocks or the duration of data in each cluster. The <em>spec</em> parameter can either be a number <em>n</em> without a unit or a number <em>d</em> postfixed with ms.</p>
+<p>If no unit is used then <strong>mkvmerge</strong>(1) will put at most <em>n</em> data blocks into each cluster. The maximum number of blocks is 65535.</p>
+<p>If the number <em>d</em> is postfixed with ms then <strong>mkvmerge</strong>(1) puts at most <em>d</em> milliseconds of data into each cluster. The minimum for <em>d</em> is 100ms, and the maximum is 32000ms.</p>
+<p><strong>mkvmerge</strong>(1) defaults to putting at most 65535 data blocks and 5000ms of data into a cluster.</p>
+<p>Programs trying to find a certain frame can only seek directly to a cluster and have to read the whole cluster afterwards. Therefore creating larger clusters may lead to imprecise or slow seeking.</p>
+</blockquote>
+<p><strong>--clusters-in-meta-seek</strong></p>
+<blockquote>
+<p>Tells <strong>mkvmerge</strong>(1) to create a meta seek element at the end of the file containing all clusters. See also the section about the Matroska file layout.</p>
+</blockquote>
+<p><strong>--timestamp-scale</strong> <em>factor</em></p>
+<blockquote>
+<p>Forces the timestamp scale factor to <em>factor</em>. Valid values are in the range <strong>1000</strong>..<strong>10000000</strong> or the special value <strong>-1</strong>.</p>
+<p>Normally <strong>mkvmerge</strong>(1) will use a value of <strong>1000000</strong> which means that timestamps and durations will have a precision of 1ms. For files that will not contain a video track but at least one audio track <strong>mkvmerge</strong>(1) will automatically chose a timestamp scale factor so that all timestamps and durations have a precision of one audio sample. This causes bigger overhead but allows precise seeking and extraction.</p>
+<p>If the special value <strong>-1</strong> is used then <strong>mkvmerge</strong>(1) will use sample precision even if a video track is present.</p>
+</blockquote>
+<p><strong>--enable-durations</strong></p>
+<blockquote>
+<p>Write durations for all blocks. This will increase file size and does not offer any additional value for players at the moment.</p>
+</blockquote>
+<p><strong>--no-cues</strong></p>
+<blockquote>
+<p>Tells <strong>mkvmerge</strong>(1) not to create and write the cue data which can be compared to an index in an AVI. Matroska files can be played back without the cue data, but seeking will probably be imprecise and slower. Use this only if youre really desperate for space or for testing purposes. See also option <strong>--cues</strong> which can be specified for each input file.</p>
+</blockquote>
+<p><strong>--no-date</strong></p>
+<blockquote>
+<p>By default <strong>mkvmerge</strong>(1) sets the "date" segment information field to the time &amp; date when multiplexing started. With this option that field is not written at all.</p>
+</blockquote>
+<p><strong>--disable-lacing</strong></p>
+<blockquote>
+<p>Disables lacing for all tracks. This will increase the files size, especially if there are many audio tracks. This option is not intended for everyday use.</p>
+</blockquote>
+<p><strong>--disable-track-statistics-tags</strong></p>
+<blockquote>
+<p>Normally <strong>mkvmerge</strong>(1) will write certain tags with statistics for each track. If such tags are already present then they will be overwritten. The tags are <strong>BPS</strong>, <strong>DURATION</strong>, <strong>NUMBER_OF_BYTES</strong> and <strong>NUMBER_OF_FRAMES</strong>.</p>
+<p>Enabling this option prevents <strong>mkvmerge</strong>(1) from writing those tags and from touching any existing tags with same names.</p>
+</blockquote>
+<p><strong>--disable-language-ietf</strong></p>
+<blockquote>
+<p>Normally <strong>mkvmerge</strong>(1) will write both the new LanguageIETF track header element and ChapLanguageIETF chapter element in addition to the legacy Language and ChapLanguage elements. If this option is used, only the two legacy elements are written.</p>
+</blockquote>
+<h2>File splitting, linking, appending and concatenation (more global options)</h2>
+<p><strong>--split</strong> <em>specification</em></p>
+<blockquote>
+<p>Splits the output file after a given size or a given time. Please note that tracks can only be split right before a key frame. Therefore the split point may be a bit off from what the user has specified.</p>
+<p>At the moment <strong>mkvmerge</strong>(1) supports four different modes.</p>
+<blockquote>
+<p>1.</p>
+<p>Splitting by size.</p>
+<p>Syntax: <strong>--split</strong> [size:]<em>d</em>[k|m|g]</p>
+<p>Examples: --split size:700m or --split 150000000</p>
+<p>The parameter <em>d</em> may end with k, m or g to indicate that the size is in KB, MB or GB respectively. Otherwise a size in bytes is assumed. After the current output file has reached this size limit a new one will be started.</p>
+<p>The size: prefix may be omitted for compatibility reasons.</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>Splitting after a duration.</p>
+<p>Syntax: <strong>--split</strong> [duration:]<em>HH:MM:SS.nnnnnnnnn</em>|<em>d</em>s</p>
+<p>Examples: --split duration:00:60:00.000 or --split 3600s</p>
+<p>The parameter must either have the form <em>HH:MM:SS.nnnnnnnnn</em> for specifying the duration in up to nano-second precision or be a number <em>d</em> followed by the letter s for the duration in seconds. <em>HH</em> is the number of hours, <em>MM</em> the number of minutes, <em>SS</em> the number of seconds and <em>nnnnnnnnn</em> the number of nanoseconds. Both the number of hours and the number of nanoseconds can be omitted. There can be up to nine digits after the decimal point. After the duration of the contents in the current output has reached this limit a new output file will be started.</p>
+<p>The duration: prefix may be omitted for compatibility reasons.</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>Splitting after specific timestamps.</p>
+<p>Syntax: <strong>--split</strong> timestamps:<em>A</em>[,<em>B</em>[,<em>C</em>...]]</p>
+<p>Example: --split timestamps:00:45:00.000,01:20:00.250,6300s</p>
+<p>The parameters <em>A</em>, <em>B</em>, <em>C</em> etc must all have the same format as the ones used for the duration (see above). The list of timestamps is separated by commas. After the input stream has reached the current split points timestamp a new file is created. Then the next split point given in this list is used.</p>
+<p>The timestamps: prefix must not be omitted.</p>
+</blockquote>
+<blockquote>
+<p>4.</p>
+<p>Keeping specific parts by specifying timestamp ranges while discarding others.</p>
+<p>Syntax: <strong>--split</strong> parts:<em>start1</em>-<em>end1</em>[,[+]<em>start2</em>-<em>end2</em>[,[+]<em>start3</em>-<em>end3</em>...]]</p>
+<p>Examples:</p>
+<blockquote>
+<p>1.</p>
+<p>--split parts:00:01:20-00:02:45,00:05:50-00:10:30</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>--split parts:00:01:20-00:02:45,+00:05:50-00:10:30</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>--split parts:-00:02:45,00:05:50-</p>
+</blockquote>
+<p>The parts mode tells <strong>mkvmerge</strong>(1) to keep certain ranges of timestamps while discarding others. The ranges to keep have to be listed after the parts: keyword and be separated by commas. A range itself consists of a start and an end timestamp in the same format the other variations of <em>--split</em> accept (e.g. both 00:01:20 and 80s refer to the same timestamp).</p>
+<p>If a start timestamp is left out then it defaults to the previous ranges end timestamp. If there was no previous range then it defaults to the start of the file (see example 3).</p>
+<p>If an end timestamp is left out then it defaults to the end of the source files which basically tells <strong>mkvmerge</strong>(1) to keep the rest (see example 3).</p>
+<p>Normally each range will be written to a new file. This can be changed so that consecutive ranges are written to the same file. For that the user has to prefix the start timestamp with a +. This tells <strong>mkvmerge</strong>(1) not to create a new file and instead append the range to the same file the previous range was written to. Timestamps will be adjusted so that there will be no gap in the output file even if there was a gap in the two ranges in the input file.</p>
+<p>In example 1 <strong>mkvmerge</strong>(1) will create two files. The first will contain the content starting from 00:01:20 until 00:02:45. The second file will contain the content starting from 00:05:50 until 00:10:30.</p>
+<p>In example 2 <strong>mkvmerge</strong>(1) will create only one file. This file will contain both the content starting from 00:01:20 until 00:02:45 and the content starting from 00:05:50 until 00:10:30.</p>
+<p>In example 3 <strong>mkvmerge</strong>(1) will create two files. The first will contain the content from the start of the source files until 00:02:45. The second file will contain the content starting from 00:05:50 until the end of the source files.</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+Note that <strong>mkvmerge</strong>(1) only makes decisions about splitting at key frame positions. This applies to both the start and the end of each range. So even if an end timestamp is between two key frames <strong>mkvmerge</strong>(1) will continue outputting the frames up to but excluding the following key frame.</p>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>5.</p>
+<p>Keeping specific parts by specifying frame/field number ranges while discarding others.</p>
+<p>Syntax: <strong>--split</strong> parts-frames:<em>start1</em>-<em>end1</em>[,[+]<em>start2</em>-<em>end2</em>[,[+]<em>start3</em>-<em>end3</em>...]]</p>
+<p>Examples:</p>
+<blockquote>
+<p>1.</p>
+<p>--split parts-frames:137-258,548-1211</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>--split parts-frames:733-912,+1592-2730</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>--split parts-frames:-430,2512-</p>
+</blockquote>
+<p>The parts-frames mode tells <strong>mkvmerge</strong>(1) to keep certain ranges of frame/field numbers while discarding others. The ranges to keep have to be listed after the parts-frames: keyword and be separated by commas. A range itself consists of a start and an end frame/field number. Numbering starts at 1.</p>
+<p>If a start number is left out then it defaults to the previous ranges end number. If there was no previous range then it defaults to the start of the file (see example 3).</p>
+<p>If an end number is left out then it defaults to the end of the source files which basically tells <strong>mkvmerge</strong>(1) to keep the rest (see example 3).</p>
+<p>Normally each range will be written to a new file. This can be changed so that consecutive ranges are written to the same file. For that the user has to prefix the start number with a +. This tells <strong>mkvmerge</strong>(1) not to create a new file and instead append the range to the same file the previous range was written to. Timestamps will be adjusted so that there will be no gap in the output file even if there was a gap in the two ranges in the input file.</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+Note that <strong>mkvmerge</strong>(1) only makes decisions about splitting at key frame positions. This applies to both the start and the end of each range. So even if an end frame/field number is between two key frames <strong>mkvmerge</strong>(1) will continue outputting the frames up to but excluding the following key frame.</p>
+</blockquote>
+<p>In example 1 <strong>mkvmerge</strong>(1) will create two files. The first will contain the content starting from the first key frame at or after 137 up to but excluding the first key frame at or after 258. The second file will contain the content starting from 548 until 1211.</p>
+<p>In example 2 <strong>mkvmerge</strong>(1) will create only one file. This file will contain both the content starting from 733 until 912 and the content starting from 1592 until 2730.</p>
+<p>In example 3 <strong>mkvmerge</strong>(1) will create two files. The first will contain the content from the start of the source files until 430. The second file will contain the content starting from 2512 until the end of the source files.</p>
+<p>This mode considers only the first video track that is output. If no video track is output no splitting will occur.</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+The numbers given with this argument are interpreted based on the number of Matroska blocks that are output. A single Matroska block contains either a full frame (for progressive content) or a single field (for interlaced content). mkvmerge does not distinguish between those two and simply counts the number of blocks. For example: If one wanted to split after the 25th full frame with interlaced content one would have to use 50 (two fields per full frame) as the split point.</p>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>6.</p>
+<p>Splitting after specific frames/fields.</p>
+<p>Syntax: <strong>--split</strong> frames:<em>A</em>[,<em>B</em>[,<em>C</em>...]]</p>
+<p>Example: --split frames:120,237,891</p>
+<p>The parameters <em>A</em>, <em>B</em>, <em>C</em> etc must all be positive integers. Numbering starts at 1. The list of frame/field numbers is separated by commas. After the input stream has reached the current split points frame/field number a new file is created. Then the next split point given in this list is used.</p>
+<p>The frames: prefix must not be omitted.</p>
+<p>This mode considers only the first video track that is output. If no video track is output no splitting will occur.</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+The numbers given with this argument are interpreted based on the number of Matroska blocks that are output. A single Matroska block contains either a full frame (for progressive content) or a single field (for interlaced content). mkvmerge does not distinguish between those two and simply counts the number of blocks. For example: If one wanted to split after the 25th full frame with interlaced content one would have to use 50 (two fields per full frame) as the split point.</p>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>7.</p>
+<p>Splitting before specific chapters.</p>
+<p>Syntax: <strong>--split</strong> chapters:all or <strong>--split</strong> chapters:<em>A</em>[,<em>B</em>[,<em>C</em>...]]</p>
+<p>Example: --split chapters:5,8</p>
+<p>The parameters <em>A</em>, <em>B</em>, <em>C</em> etc must all be positive integers. Numbering starts at 1. The list of chapter numbers is separated by commas. Splitting will occur right before the first key frame whose timestamp is equal to or bigger than the start timestamp for the chapters whose numbers are listed. A chapter starting at 0s is never considered for splitting and discarded silently.</p>
+<p>The keyword all can be used instead of listing all chapter numbers manually.</p>
+<p>The chapters: prefix must not be omitted.</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+The Matroska file format supports arbitrary deeply nested chapter structures called edition entries and chapter atoms. However, this mode only considers the top-most level of chapters across all edition entries.</p>
+</blockquote>
+</blockquote>
+<p>For this splitting mode the output filename is treated differently than for the normal operation. It may contain a <strong>printf</strong> like expression %d including an optional field width, e.g. %02d. If it does then the current file number will be formatted appropriately and inserted at that point in the filename. If there is no such pattern then a pattern of -%03d is assumed right before the files extension: -o output.mkv would result in output-001.mkv and so on. If theres no extension then -%03d will be appended to the name.</p>
+<p>Another possible pattern is %c which will be replaced by the name of the first chapter in the file. Note that when %c is present, the pattern -%03d will not be added automatically.</p>
+</blockquote>
+<p><strong>--link</strong></p>
+<blockquote>
+<p>Link files to one another when splitting the output file. See the section on file linking below for details.</p>
+</blockquote>
+<p><strong>--link-to-previous</strong> <em>segment-UID</em></p>
+<blockquote>
+<p>Links the first output file to the segment with the segment UID given by the <em>segment-UID</em> parameter. See the section on file linking below for details.</p>
+<p>If SID starts with = then its rest is interpreted as the name of a Matroska file whose segment UID is read and used.</p>
+</blockquote>
+<p><strong>--link-to-next</strong> <em>segment-UID</em></p>
+<blockquote>
+<p>Links the last output file to the segment with the segment UID given by the <em>segment-UID</em> parameter. See the section on file linking below for details.</p>
+<p>If SID starts with = then its rest is interpreted as the name of a Matroska file whose segment UID is read and used.</p>
+</blockquote>
+<p><strong>--append-mode</strong> <em>mode</em></p>
+<blockquote>
+<p>Determines how timestamps are calculated when appending files. The parameter <em>mode</em> can have two values: file which is also the default and track.</p>
+<p>When mkvmerge appends a track (called track2_1 from now on) from a second file (called file2) to a track (called track1_1) from the first file (called file1) then it has to offset all timestamps for track2_1 by an amount. For file mode this amount is the highest timestamp encountered in file1 even if that timestamp was from a different track than track1_1. In track mode the offset is the highest timestamp of track1_1.</p>
+<p>Unfortunately mkvmerge cannot detect which mode to use reliably. Therefore it defaults to file mode. file mode usually works better for files that have been created independently of each other; e.g. when appending AVI or MP4 files. track mode may work better for sources that are essentially just parts of one big file, e.g. for VOB and EVO files.</p>
+<p>Subtitle tracks are always treated as if file mode were active even if track mode actually is.</p>
+</blockquote>
+<p><strong>--append-to</strong> <em>SFID1:STID1:DFID1:DTID1[,...]</em></p>
+<blockquote>
+<p>This option controls to which track another track is appended. Each spec contains four IDs: a file ID, a track ID, a second file ID and a second track ID. The first pair, "source file ID" and "source track ID", identifies the track that is to be appended. The second pair, "destination file ID" and "destination track ID", identifies the track the first one is appended to.</p>
+<p>If this option has been omitted then a standard mapping is used. This standard mapping appends each track from the current file to a track from the previous file with the same track ID. This allows for easy appending if a movie has been split into two parts and both file have the same number of tracks and track IDs with the command <strong>mkvmerge -o output.mkv part1.mkv +part2.mkv</strong>.</p>
+</blockquote>
+<p><strong>+</strong></p>
+<blockquote>
+<p>A single + causes the next file to be appended instead of added. The + can also be put in front of the next file name. Therefore the following two commands are equivalent:</p>
+<blockquote>
+<pre><code>$ mkvmerge -o full.mkv file1.mkv + file2.mkv
+$ mkvmerge -o full.mkv file1.mkv +file2.mkv</code></pre>
+</blockquote>
+</blockquote>
+<p><strong>[</strong> <em>file1</em> <em>file2</em> <strong>]</strong></p>
+<blockquote>
+<p>If multiple file names are contained in a pair of square brackets then the second and all following files will be appended to the first file named within the brackets.</p>
+<p>This is an alternative syntax to using + between the file names. Therefore the following two commands are equivalent:</p>
+<blockquote>
+<pre><code>$ mkvmerge -o full.mkv file1.mkv + file2.mkv
+$ mkvmerge -o full.mkv [ file1.mkv file2.mkv ]</code></pre>
+</blockquote>
+</blockquote>
+<p><strong>=</strong></p>
+<blockquote>
+<p>Normally <strong>mkvmerge</strong>(1) looks for files in the same directory as an input file that have the same base name and only differ in their running number (e.g. VTS_01_1.VOB, VTS_01_2.VOB, VTS_01_3.VOB etc) and treats all of those files as if they were concatenated into a single big file. This option, a single =, causes mkvmerge not to look for those additional files.</p>
+<p>The = can also be put in front of the next file name. Therefore the following two commands are equivalent:</p>
+<blockquote>
+<pre><code>$ mkvmerge -o full.mkv = file1.mkv
+$ mkvmerge -o full.mkv =file1.mkv</code></pre>
+</blockquote>
+</blockquote>
+<p><strong>(</strong> <em>file1</em> <em>file2</em> <strong>)</strong></p>
+<blockquote>
+<p>If multiple file names are contained in a pair of parenthesis then those files will be treated as if they were concatenated into a single big file consisting of the content of each of the files one after the other.</p>
+<p>This can be used for e.g. VOB files coming from a DVD or MPEG transport streams. It cannot be used if each file contains its own set of headers which is usually the case with stand-alone files like AVI or MP4.</p>
+<p>Putting a file name into parenthesis also prevents <strong>mkvmerge</strong>(1) from looking for additional files with the same base name as described in option <strong>=</strong>. Therefore these two command lines are equivalent:</p>
+<blockquote>
+<pre><code>$ mkvmerge -o out.mkv = file.mkv
+$ mkvmerge -o out.mkv ( file.mkv )</code></pre>
+</blockquote>
+<p>Several things should be noted:</p>
+<blockquote>
+<p>1.</p>
+<p>There must be spaces both after the opening and before the closing parenthesis.</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>Every parameter between parenthesis is interpreted as a file name. Therefore all options applying to this logical file must be listed before the opening parenthesis.</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>Some shells treat parenthesis as special characters. Hence you must escape or quote them as shown in the example above.</p>
+</blockquote>
+</blockquote>
+<h2>Attachment support (more global options)</h2>
+<p><strong>--attachment-description</strong> <em>description</em></p>
+<blockquote>
+<p>Plain text description of the following attachment. Applies to the next <strong>--attach-file</strong> or <strong>--attach-file-once</strong> option.</p>
+</blockquote>
+<p><strong>--attachment-mime-type</strong> <em>MIME type</em></p>
+<blockquote>
+<p>MIME type of the following attachment. Applies to the next <strong>--attach-file</strong> or <strong>--attach-file-once</strong> option. A list of officially recognized MIME types can be found e.g. at <strong>the IANA homepage</strong>[2]. The MIME type is mandatory for an attachment.</p>
+</blockquote>
+<p><strong>--attachment-name</strong> <em>name</em></p>
+<blockquote>
+<p>Sets the name that will be stored in the output file for this attachment. If this option is not given then the name will be derived from the file name of the attachment as given with the <strong>--attach-file</strong> or the <strong>--attach-file-once</strong> option.</p>
+</blockquote>
+<p><strong>--attach-file</strong> <em>file-name</em>, <strong>--attach-file-once</strong> <em>file-name</em></p>
+<blockquote>
+<p>Creates a file attachment inside the Matroska file. The MIME type must have been set before this option can used. The difference between the two forms is that during splitting the files attached with <strong>--attach-file</strong> are attached to all output files while the ones attached with <strong>--attach-file-once</strong> are only attached to the first file created. If splitting is not used then both do the same.</p>
+<p><strong>mkvextract</strong>(1) can be used to extract attached files from a Matroska file.</p>
+</blockquote>
+<h2>Options that can be used for each input file</h2>
+<p><strong>-a</strong>, <strong>--audio-tracks</strong> <em>[!]n,m,...</em></p>
+<blockquote>
+<p>Copy the audio tracks <em>n</em>, <em>m</em> etc. The numbers are track IDs which can be obtained with the <strong>--identify</strong> switch. Theyre not simply the track numbers (see section track IDs). Default: copy all audio tracks.</p>
+<p>Instead of track IDs you can also provide ISO 639-2 language codes. This will only work for source files that provide language tags for their tracks.</p>
+<p>Default: copy all tracks of this kind.</p>
+<p>If the IDs are prefixed with ! then the meaning is reversed: copy all tracks of this kind but the ones listed after the !.</p>
+</blockquote>
+<p><strong>-d</strong>, <strong>--video-tracks</strong> <em>[!]n,m,...</em></p>
+<blockquote>
+<p>Copy the video tracks <em>n</em>, <em>m</em> etc. The numbers are track IDs which can be obtained with the <strong>--identify</strong> switch. Theyre not simply the track numbers (see section track IDs). Default: copy all video tracks.</p>
+<p>Instead of track IDs you can also provide ISO 639-2 language codes. This will only work for source files that provide language tags for their tracks.</p>
+<p>If the IDs are prefixed with ! then the meaning is reversed: copy all tracks of this kind but the ones listed after the !.</p>
+</blockquote>
+<p><strong>-s</strong>, <strong>--subtitle-tracks</strong> <em>[!]n,m,...</em></p>
+<blockquote>
+<p>Copy the subtitle tracks <em>n</em>, <em>m</em> etc. The numbers are track IDs which can be obtained with the <strong>--identify</strong> switch. Theyre not simply the track numbers (see section track IDs). Default: copy all subtitle tracks.</p>
+<p>Instead of track IDs you can also provide ISO 639-2 language codes. This will only work for source files that provide language tags for their tracks.</p>
+<p>If the IDs are prefixed with ! then the meaning is reversed: copy all tracks of this kind but the ones listed after the !.</p>
+</blockquote>
+<p><strong>-b</strong>, <strong>--button-tracks</strong> <em>[!]n,m,...</em></p>
+<blockquote>
+<p>Copy the button tracks <em>n</em>, <em>m</em> etc. The numbers are track IDs which can be obtained with the <strong>--identify</strong> switch. Theyre not simply the track numbers (see section track IDs). Default: copy all button tracks.</p>
+<p>Instead of track IDs you can also provide ISO 639-2 language codes. This will only work for source files that provide language tags for their tracks.</p>
+<p>If the IDs are prefixed with ! then the meaning is reversed: copy all tracks of this kind but the ones listed after the !.</p>
+</blockquote>
+<p><strong>--track-tags</strong> <em>[!]n,m,...</em></p>
+<blockquote>
+<p>Copy the tags for tracks <em>n</em>, <em>m</em> etc. The numbers are track IDs which can be obtained with the <strong>--identify</strong> switch (see section track IDs). Theyre not simply the track numbers. Default: copy tags for all tracks.</p>
+<p>If the IDs are prefixed with ! then the meaning is reversed: copy everything but the IDs listed after the !.</p>
+</blockquote>
+<p><strong>-m</strong>, <strong>--attachments</strong> <em>[!]n[:all|first],m[:all|first],...</em></p>
+<blockquote>
+<p>Copy the attachments with the IDs <em>n</em>, <em>m</em> etc to all or only the first output file. Each ID can be followed by either :all (which is the default if neither is entered) or :first. If splitting is active then those attachments whose IDs are specified with :all are copied to all of the resulting output files while the others are only copied into the first output file. If splitting is not active then both variants have the same effect.</p>
+<p>The default is to copy all attachments to all output files.</p>
+<p>If the IDs are prefixed with ! then the meaning is reversed: copy everything but the IDs listed after the !.</p>
+</blockquote>
+<p><strong>-A</strong>, <strong>--no-audio</strong></p>
+<blockquote>
+<p>Dont copy any audio track from this file.</p>
+</blockquote>
+<p><strong>-D</strong>, <strong>--no-video</strong></p>
+<blockquote>
+<p>Dont copy any video track from this file.</p>
+</blockquote>
+<p><strong>-S</strong>, <strong>--no-subtitles</strong></p>
+<blockquote>
+<p>Dont copy any subtitle track from this file.</p>
+</blockquote>
+<p><strong>-B</strong>, <strong>--no-buttons</strong></p>
+<blockquote>
+<p>Dont copy any button track from this file.</p>
+</blockquote>
+<p><strong>-T</strong>, <strong>--no-track-tags</strong></p>
+<blockquote>
+<p>Dont copy any track specific tags from this file.</p>
+</blockquote>
+<p><strong>--no-chapters</strong></p>
+<blockquote>
+<p>Dont copy chapters from this file.</p>
+</blockquote>
+<p><strong>-M</strong>, <strong>--no-attachments</strong></p>
+<blockquote>
+<p>Dont copy attachments from this file.</p>
+</blockquote>
+<p><strong>--no-global-tags</strong></p>
+<blockquote>
+<p>Dont copy global tags from this file.</p>
+</blockquote>
+<p><strong>-y</strong>, <strong>--sync</strong> <em>TID:d[,o[/p]]</em></p>
+<blockquote>
+<p>Adjust the timestamps of the track with the id <em>TID</em> by <em>d</em> ms. The track IDs are the same as the ones given with <strong>--identify</strong> (see section track IDs).</p>
+<p><em>o</em>/<em>p</em>: adjust the timestamps by <em>o</em>/<em>p</em> to fix linear drifts. <em>p</em> defaults to 1 if omitted. Both <em>o</em> and <em>p</em> can be floating point numbers.</p>
+<p>Defaults: no manual sync correction (which is the same as <em>d</em> = <strong>0</strong> and <em>o</em>/<em>p</em> = <strong>1.0</strong>).</p>
+<p>This option can be used multiple times for an input file applying to several tracks by selecting different track IDs each time.</p>
+</blockquote>
+<p><strong>--cues</strong> <em>TID:none|iframes|all</em></p>
+<blockquote>
+<p>Controls for which tracks cue (index) entries are created for the given track (see section track IDs). none inhibits the creation of cue entries. For iframes only blocks with no backward or forward references ( = I frames in video tracks) are put into the cue sheet. all causes <strong>mkvmerge</strong>(1) to create cue entries for all blocks which will make the file very big.</p>
+<p>The default is iframes for video and subtitle tracks and none for audio tracks. See also option <strong>--no-cues</strong> which inhibits the creation of cue entries regardless of the <strong>--cues</strong> options used.</p>
+<p>This option can be used multiple times for an input file applying to several tracks by selecting different track IDs each time.</p>
+</blockquote>
+<p><strong>--default-track</strong> <em>TID[:bool]</em></p>
+<blockquote>
+<p>Sets the default flag for the given track (see section track IDs) if the optional argument <em>bool</em> is not present. If the user does not explicitly select a track himself then the player should prefer the track that has his default flag set. Only one track of each kind (audio, video, subtitles, buttons) can have his default flag set. If the user wants no track to have the default track flag set then he has to set <em>bool</em> to <strong>0</strong> for all tracks.</p>
+<p>This option can be used multiple times for an input file applying to several tracks by selecting different track IDs each time.</p>
+</blockquote>
+<p><strong>--forced-track</strong> <em>TID[:bool]</em></p>
+<blockquote>
+<p>Sets the forced flag for the given track (see section track IDs) if the optional argument <em>bool</em> is not present. A player must play all tracks for which this flag is set to <strong>1</strong>.</p>
+<p>This option can be used multiple times for an input file applying to several tracks by selecting different track IDs each time.</p>
+</blockquote>
+<p><strong>--blockadd</strong> <em>TID:level</em></p>
+<blockquote>
+<p>Keep only the BlockAdditions up to the level <em>level</em> for the given track. The default is to keep all levels. This option only affects certain kinds of codecs like WAVPACK4.</p>
+</blockquote>
+<p><strong>--track-name</strong> <em>TID:name</em></p>
+<blockquote>
+<p>Sets the track name for the given track (see section track IDs) to <em>name</em>.</p>
+</blockquote>
+<p><strong>--language</strong> <em>TID:language</em></p>
+<blockquote>
+<p>Sets the language for the given track (see section track IDs). Both ISO 639-2 language codes and ISO 639-1 country codes are allowed. The country codes will be converted to language codes automatically. All languages including their ISO 639-2 codes can be listed with the <strong>--list-languages</strong> option.</p>
+<p>This option can be used multiple times for an input file applying to several tracks by selecting different track IDs each time.</p>
+</blockquote>
+<p><strong>-t</strong>, <strong>--tags</strong> <em>TID:file-name</em></p>
+<blockquote>
+<p>Read tags for the track with the number <em>TID</em> from the file <em>file-name</em>. See the section about tags below for details.</p>
+</blockquote>
+<p><strong>--aac-is-sbr</strong> <em>TID[:0|1]</em></p>
+<blockquote>
+<p>Tells <strong>mkvmerge</strong>(1) that the track with the ID <em>TID</em> is SBR AAC (also known as HE-AAC or AAC+). This options is needed if a) the source file is an AAC file (<em>not</em> for a Matroska file) and b) the AAC file contains SBR AAC data. The reason for this switch is that it is technically impossible to automatically tell normal AAC data from SBR AAC data without decoding a complete AAC frame. As there are several patent issues with AAC decoders <strong>mkvmerge</strong>(1) will never contain this decoding stage. So for SBR AAC files this switch is mandatory. The resulting file might not play back correctly or even not at all if the switch was omitted.</p>
+<p>If the source file is a Matroska file then the CodecID should be enough to detect SBR AAC. However, if the CodecID is wrong then this switch can be used to correct that.</p>
+<p>If mkvmerge wrongfully detects that an AAC file is SBR then you can add :0 to the track ID.</p>
+</blockquote>
+<p><strong>--reduce-to-core</strong> <em>TID</em></p>
+<blockquote>
+<p>Some audio codecs have a lossy core and optional extensions that implement lossless decoding. This option tells <strong>mkvmerge</strong>(1) to only copy the core but not the extensions. By default <strong>mkvmerge</strong>(1) copies both the core and the extensions.</p>
+<p>Currently only DTS tracks are affected by this option. TrueHD tracks that contain an embedded AC-3 core are instead presented as two separate tracks for which the user can select which track to copy. For DTS such a scheme would not work as the HD extensions cannot be decoded by themselves – unlike the TrueHD data.</p>
+</blockquote>
+<p><strong>--remove-dialog-normalization-gain</strong> <em>TID</em></p>
+<blockquote>
+<p>Some audio codecs contain header fields that tell the decoder or player to apply a (usually negative) gain for dialog normalization. This option tells <strong>mkvmerge</strong>(1) to remove or minimize that gain by modifying the corresponding header fields.</p>
+<p>Currently only AC-3, DTS and TrueHD tracks are affected by this option.</p>
+</blockquote>
+<p><strong>--timestamps</strong> <em>TID:file-name</em></p>
+<blockquote>
+<p>Read the timestamps to be used for the specific track ID from <em>file-name</em>. These timestamps forcefully override the timestamps that <strong>mkvmerge</strong>(1) normally calculates. Read the section about external timestamp files.</p>
+</blockquote>
+<p><strong>--default-duration</strong> <em>TID:x</em></p>
+<blockquote>
+<p>Forces the default duration of a given track to the specified value. Also modifies the tracks timestamps to match the default duration. The argument <em>x</em> must be postfixed with s, ms, us, ns, fps, p or i to specify the default duration in seconds, milliseconds, microseconds, nanoseconds, frames per second, progressive frames per second or interlaced frames per second respectively. The number <em>x</em> itself can be a floating point number or a fraction.</p>
+<p>If the default duration is not forced then mkvmerge will try to derive the tracks default duration from the container and/or the encoded bitstream for certain track types, e.g. AVC/H.264 or MPEG-2.</p>
+<p>This option can also be used to change the FPS of video tracks without having to use an external timestamp file.</p>
+</blockquote>
+<p><strong>--fix-bitstream-timing-information</strong> <em>TID[:0|1]</em></p>
+<blockquote>
+<p>Normally <strong>mkvmerge</strong>(1) does not change the timing information (frame/field rate) stored in the video bitstream. With this option that information is adjusted to match the container timing information. The container timing information can come from various sources: from the command line (see option <strong>--default-duration</strong>), the source container or derived from the bitstream.</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+This has only been implemented for AVC/H.264 video tracks so far.</p>
+</blockquote>
+</blockquote>
+<p><strong>--nalu-size-length</strong> <em>TID:n</em></p>
+<blockquote>
+<p>Forces the NALU size length to <em>n</em> bytes. This parameter is only used if the AVC/H.264 elementary stream packetizer is used. If left out it defaults to 4 bytes, but there are files that contain frames or slices that are all smaller than 65536 bytes. For such files you can use this parameter and decrease the size to 2.</p>
+</blockquote>
+<p><strong>--compression</strong> <em>TID:n</em></p>
+<blockquote>
+<p>Selects the compression method to be used for the track. Note that the player also has to support this method. Valid values are none, zlib and mpeg4_p2/mpeg4p2.</p>
+<p>The compression method mpeg4_p2/mpeg4p2 is a special compression method called header removal that is only available for MPEG4 part 2 video tracks.</p>
+<p>The default for some subtitle types is zlib compression. This compression method is also the one that most if not all playback applications support. Support for other compression methods other than none is not assured.</p>
+</blockquote>
+<h2>Options that only apply to video tracks</h2>
+<p><strong>-f</strong>, <strong>--fourcc</strong> <em>TID:FourCC</em></p>
+<blockquote>
+<p>Forces the FourCC to the specified value. Works only for video tracks in the MS compatibility mode.</p>
+</blockquote>
+<p><strong>--display-dimensions</strong> <em>TID:widthxheight</em></p>
+<blockquote>
+<p>Matroska files contain two values that set the display properties that a player should scale the image on playback to: display width and display height. These values can be set with this option, e.g. 1:640x480.</p>
+<p>Another way to specify the values is to use the <strong>--aspect-ratio</strong> or the <strong>--aspect-ratio-factor</strong> option (see below). These options are mutually exclusive.</p>
+</blockquote>
+<p><strong>--aspect-ratio</strong> <em>TID:ratio|width/height</em></p>
+<blockquote>
+<p>Matroska files contain two values that set the display properties that a player should scale the image on playback to: display width and display height. With this option <strong>mkvmerge</strong>(1) will automatically calculate the display width and display height based on the images original width and height and the aspect ratio given with this option. The ratio can be given either as a floating point number <em>ratio</em> or as a fraction <em>width</em>/<em>height</em>, e.g. 16/9.</p>
+<p>Another way to specify the values is to use the <strong>--aspect-ratio-factor</strong> or <strong>--display-dimensions</strong> options (see above and below). These options are mutually exclusive.</p>
+</blockquote>
+<p><strong>--aspect-ratio-factor</strong> <em>TID:factor|n/d</em></p>
+<blockquote>
+<p>Another way to set the aspect ratio is to specify a <em>factor</em>. The original aspect ratio is first multiplied with this <em>factor</em> and used as the target aspect ratio afterwards.</p>
+<p>Another way to specify the values is to use the <strong>--aspect-ratio</strong> or <strong>--display-dimensions</strong> options (see above). These options are mutually exclusive.</p>
+</blockquote>
+<p><strong>--cropping</strong> <em>TID:left,top,right,bottom</em></p>
+<blockquote>
+<p>Sets the pixel cropping parameters of a video track to the given values.</p>
+</blockquote>
+<p><strong>--colour-matrix</strong> <em>TID:n</em></p>
+<blockquote>
+<p>Sets the matrix coefficients of the video used to derive luma and chroma values from red, green and blue color primaries. The parameter <em>n</em> is an integer rangeing from <strong>0</strong> and <strong>10</strong>.</p>
+<p>Valid values and their meaning are:</p>
+<p><strong>0</strong>: GBR, <strong>1</strong>: BT709, <strong>2</strong>: unspecified, <strong>3</strong>: reserved, <strong>4</strong>: FCC, <strong>5</strong>: BT470BG, <strong>6</strong>: SMPTE 170M, <strong>7</strong>: SMPTE 240M, <strong>8</strong>: YCOCG, <strong>9</strong>: BT2020 non-constant luminance, <strong>10</strong>: BT2020 constant luminance</p>
+</blockquote>
+<p><strong>--colour-bits-per-channel</strong> <em>TID:n</em></p>
+<blockquote>
+<p>Sets the number of coded bits for a colour channel. A value of <strong>0</strong> indicates that the number of bits is unspecified.</p>
+</blockquote>
+<p><strong>--chroma-subsample</strong> <em>TID:hori,vert</em></p>
+<blockquote>
+<p>The amount of pixels to remove in the Cr and Cb channels for every pixel not removed horizontally/vertically.</p>
+<p>Example: For video with 4:2:0 chroma subsampling, the parameter should be set to <em>TID</em>:<strong>1</strong>,<strong>1</strong>.</p>
+</blockquote>
+<p><strong>--cb-subsample</strong> <em>TID:hori,vert</em></p>
+<blockquote>
+<p>The amount of pixels to remove in the Cb channel for every pixel not removed horizontally/vertically. This is additive with <strong>--chroma-subsample</strong>.</p>
+<p>Example: For video with 4:2:1 chroma subsampling, the parameter <strong>--chroma-subsample</strong> should be set to <em>TID</em>:<strong>1</strong>,<strong>0</strong> and Cb-subsample should be set to <em>TID</em>:<strong>1</strong>,<strong>0</strong>.</p>
+</blockquote>
+<p><strong>--chroma-siting</strong> <em>TID:hori,vert</em></p>
+<blockquote>
+<p>Sets how chroma is sited horizontally/vertically (<strong>0</strong>: unspecified, <strong>1</strong>: top collocated, <strong>2</strong>: half).</p>
+</blockquote>
+<p><strong>--colour-range</strong> <em>TID:n</em></p>
+<blockquote>
+<p>Sets the clipping of the color ranges (<strong>0</strong>: unspecified, <strong>1</strong>: broadcast range, <strong>2</strong>: full range (no clipping), <strong>3</strong>: defined by MatrixCoefficients/TransferCharacteristics).</p>
+</blockquote>
+<p><strong>--colour-transfer-characteristics</strong> <em>TID:n</em></p>
+<blockquote>
+<p>The transfer characteristics of the video.</p>
+<p>Valid values and their meaning are:</p>
+<p><strong>0</strong>: reserved, <strong>1</strong>: ITU-R BT.709, <strong>2</strong>: unspecified, <strong>3</strong>: reserved, <strong>4</strong>: gamma 2.2 curve, <strong>5</strong>: gamma 2.8 curve, <strong>6</strong>: SMPTE 170M, <strong>7</strong>: SMPTE 240M, <strong>8</strong>: linear, <strong>9</strong>: log, <strong>10</strong>: log sqrt, <strong>11</strong>: IEC 61966-2-4, <strong>12</strong>: ITU-R BT.1361 extended colour gamut, <strong>13</strong>: IEC 61966-2-1, <strong>14</strong>: ITU-R BT.2020 10 bit, <strong>15</strong>: ITU-R BT.2020 12 bit, <strong>16</strong>: SMPTE ST 2084, <strong>17</strong>: SMPTE ST 428-1; <strong>18</strong>: ARIB STD-B67 (HLG)</p>
+</blockquote>
+<p><strong>--colour-primaries</strong> <em>TID:n</em></p>
+<blockquote>
+<p>Sets the colour primaries of the video.</p>
+<p>Valid values and their meaning are:</p>
+<p><strong>0</strong>: reserved, <strong>1</strong>: ITU-R BT.709, <strong>2</strong>: unspecified, <strong>3</strong>: reserved, <strong>4</strong>: ITU-R BT.470M, <strong>5</strong>: ITU-R BT.470BG, <strong>6</strong>: SMPTE 170M, <strong>7</strong>: SMPTE 240M, <strong>8</strong>: FILM, <strong>9</strong>: ITU-R BT.2020, <strong>10</strong>: SMPTE ST 428-1, <strong>22</strong>: JEDEC P22 phosphors</p>
+</blockquote>
+<p><strong>--max-content-light</strong> <em>TID:n</em></p>
+<blockquote>
+<p>Sets the maximum brightness of a single pixel (Maximum Content Light Level) in candelas per square meter (cd/m²). The value of <em>n</em> should be a non-negtive integer.</p>
+</blockquote>
+<p><strong>--max-frame-light</strong> <em>TID:n</em></p>
+<blockquote>
+<p>Sets the maximum brightness of a single full frame (Maximum Frame-Average Light Level) in candelas per square meter (cd/m²). The value of <em>n</em> should be a non-negtive integer.</p>
+</blockquote>
+<p><strong>--chromaticity-coordinates</strong> <em>TID:red-x,red-y,green-x,green-y,blue-x,blue-y</em></p>
+<blockquote>
+<p>Sets the red/green/blue chromaticity coordinates as defined by CIE 1931.</p>
+</blockquote>
+<p><strong>--white-colour-coordinates</strong> <em>TID:x,y</em></p>
+<blockquote>
+<p>Sets the white colour chromaticity coordinates as defined by CIE 1931.</p>
+</blockquote>
+<p><strong>--max-luminance</strong> <em>TID:float</em></p>
+<blockquote>
+<p>Sets the maximum luminance in candelas per square meter (cd/m²). The value should be less than 9999.99.</p>
+</blockquote>
+<p><strong>--min-luminance</strong> <em>TID:float</em></p>
+<blockquote>
+<p>Sets the minimum luminance in candelas per square meter (cd/m²). The value should be less than 999.9999.</p>
+</blockquote>
+<p><strong>--projection-type</strong> <em>TID:method</em></p>
+<blockquote>
+<p>Sets the video projection method used. Valid values are 0 (rectangular projection), 1 (equirectangular projection), 2 (cubemap projection) and 3 (mesh projection).</p>
+</blockquote>
+<p><strong>--projection-private</strong> <em>TID:data</em></p>
+<blockquote>
+<p>Sets private data that only applies to a specific projection. Data must be given as hex numbers with or without the "0x" prefix, with or without spaces.</p>
+</blockquote>
+<p><strong>--projection-pose-yaw</strong> <em>TID:float</em></p>
+<blockquote>
+<p>Specifies a yaw rotation to the projection.</p>
+</blockquote>
+<p><strong>--projection-pose-pitch</strong> <em>TID:float</em></p>
+<blockquote>
+<p>Specifies a pitch rotation to the projection.</p>
+</blockquote>
+<p><strong>--projection-pose-roll</strong> <em>TID:float</em></p>
+<blockquote>
+<p>Specifies a roll rotation to the projection.</p>
+</blockquote>
+<p><strong>--field-order</strong> <em>TID:n</em></p>
+<blockquote>
+<p>Sets the field order for the video track with the track ID <em>TID</em>. The order must be one of the following numbers:</p>
+<p><strong>0</strong>: progressive; <strong>1</strong>: interlaced with top field displayed first and top field stored first; <strong>2</strong>: undetermined field order; <strong>6</strong>: interlaced with bottom field displayed first and bottom field stored first; <strong>9</strong>: interlaced with bottom field displayed first and top field stored first; <strong>14</strong>: interlaced with top field displayed first and bottom field stored first</p>
+</blockquote>
+<p><strong>--stereo-mode</strong> <em>TID:n|keyword</em></p>
+<blockquote>
+<p>Sets the stereo mode for the video track with the track ID <em>TID</em>. The mode can either be a number <em>n</em> between <strong>0</strong> and <strong>14</strong> or one of these keywords:</p>
+<p>mono, side_by_side_left_first, top_bottom_right_first, top_bottom_left_first, checkerboard_right_first, checkerboard_left_first, row_interleaved_right_first, row_interleaved_left_first, column_interleaved_right_first, column_interleaved_left_first, anaglyph_cyan_red, side_by_side_right_first, anaglyph_green_magenta, both_eyes_laced_left_first, both_eyes_laced_right_first.</p>
+</blockquote>
+<h2>Options that only apply to text subtitle tracks</h2>
+<p><strong>--sub-charset</strong> <em>TID:character-set</em></p>
+<blockquote>
+<p>Sets the character set for the conversion to UTF-8 for UTF-8 subtitles for the given track ID. If not specified the charset will be derived from the current locale settings. Note that a charset is not needed for subtitles read from Matroska files or from Kate streams, as these are always stored in UTF-8. See the section about text files and character sets for an explanation how <strong>mkvmerge</strong>(1) converts between character sets.</p>
+<p>This option can be used multiple times for an input file applying to several tracks by selecting different track IDs each time.</p>
+</blockquote>
+<h2>Other options</h2>
+<p><strong>-i</strong>, <strong>--identify</strong> <em>file-name</em></p>
+<blockquote>
+<p>Will let <strong>mkvmerge</strong>(1) probe the single file and report its type, the tracks contained in the file and their track IDs. If this option is used then the only other option allowed is the filename.</p>
+<p>The output format used for the result can be changed with the option --identification-format.</p>
+</blockquote>
+<p><strong>-J</strong> <em>file-name</em></p>
+<blockquote>
+<p>This is a convenient alias for "--identification-format json --identify file-name".</p>
+</blockquote>
+<p><strong>-F</strong>, <strong>--identification-format</strong> <em>format</em></p>
+<blockquote>
+<p>Determines the output format used by the --identify option. The following formats are supported: text (the default if this option isnt used) and json.</p>
+<blockquote>
+<p>1.</p>
+<p>The text format is short and human-readable. It consists of one line per item found (container, tracks, attachments etc.).</p>
+<p>This format is not meant to be parsed. The output will be translated into the language <strong>mkvmerge</strong>(1) uses (see also --ui-language).</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>The json format outputs a machine-readable JSON representation. This format follows the JSON schema described in the following file:</p>
+<p><strong>mkvmerge-identification-output-schema-v12.json</strong>[3]</p>
+<p>All versions of the JSON schema are available both online and in the released source code archives.</p>
+</blockquote>
+</blockquote>
+<p><strong>--probe-range-percentage</strong> <em>percentage</em></p>
+<blockquote>
+<p>File types such as MPEG program and transport streams (.vob, .m2ts) require parsing a certain amount of data in order to detect all tracks contained in the file. This amount is 0.3% of the source files size or 10 MB, whichever is higher.</p>
+<p>If tracks are known to be present but not found then the percentage to probe can be changed with this option. The minimum of 10 MB is built-in and cannot be changed.</p>
+</blockquote>
+<p><strong>-l</strong>, <strong>--list-types</strong></p>
+<blockquote>
+<p>Lists supported input file types.</p>
+</blockquote>
+<p><strong>--list-languages</strong></p>
+<blockquote>
+<p>Lists all languages and their ISO 639-2 code which can be used with the <strong>--language</strong> option.</p>
+</blockquote>
+<p><strong>--priority</strong> <em>priority</em></p>
+<blockquote>
+<p>Sets the process priority that <strong>mkvmerge</strong>(1) runs with. Valid values are lowest, lower, normal, higher and highest. If nothing is given then normal is used. On Unix like systems <strong>mkvmerge</strong>(1) will use the <strong>nice</strong>(2) function. Therefore only the super user can use higher and highest. On Windows all values are useable for every user.</p>
+<p>Selecting lowest also causes <strong>mkvmerge</strong>(1) to select idle I/O priority in addition to the lowest possible process priority.</p>
+</blockquote>
+<p><strong>--command-line-charset</strong> <em>character-set</em></p>
+<blockquote>
+<p>Sets the character set to convert strings given on the command line from. It defaults to the character set given by systems current locale. This settings applies to arguments of the following options: <strong>--title</strong>, <strong>--track-name</strong> and <strong>--attachment-description</strong>.</p>
+</blockquote>
+<p><strong>--output-charset</strong> <em>character-set</em></p>
+<blockquote>
+<p>Sets the character set to which strings are converted that are to be output. It defaults to the character set given by systems current locale.</p>
+</blockquote>
+<p><strong>-r</strong>, <strong>--redirect-output</strong> <em>file-name</em></p>
+<blockquote>
+<p>Writes all messages to the file <em>file-name</em> instead of to the console. While this can be done easily with output redirection there are cases in which this option is needed: when the terminal reinterprets the output before writing it to a file. The character set set with <strong>--output-charset</strong> is honored.</p>
+</blockquote>
+<p><strong>--flush-on-close</strong></p>
+<blockquote>
+<p>Tells the program to flush all data cached in memory to storage when closing files opened for writing. This can be used to prevent data loss on power outages or to circumvent certain problems in the operating system or drivers. The downside is that multiplexing will take longer as mkvmerge will wait until all data has been written to the storage before exiting. See issues #2469 and #2480 on the MKVToolNix bug tracker for in-depth discussions on the pros and cons.</p>
+</blockquote>
+<p><strong>--ui-language</strong> <em>code</em></p>
+<blockquote>
+<p>Forces the translations for the language <em>code</em> to be used (e.g. de_DE for the German translations). Entering list as the <em>code</em> will cause the program to output a list of available translations.</p>
+</blockquote>
+<p><strong>--abort-on-warnings</strong></p>
+<blockquote>
+<p>Tells the program to abort after the first warning is emitted. The programs exit code will be 1.</p>
+</blockquote>
+<p><strong>--deterministic</strong> <em>seed</em></p>
+<blockquote>
+<p>Enables the creation of byte-identical files if the same version of <strong>mkvmerge</strong>(1) is used with the same source files, the same set of options and the same seed. Note that the "date" segment information field is not written in this mode.</p>
+<p>The seed can be an arbitrary string and does not have to be a number.</p>
+<p>The result of byte-identical files is only guaranteed under the following conditions:</p>
+<blockquote>
+<p>1.</p>
+<p>The same version of <strong>mkvmerge</strong>(1) built with the same versions of libEBML and libMatroska is used.</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>The source files used are byte-identical.</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>The same command line options are used in the same order (with the notable exception of <em>--output ...</em>).</p>
+</blockquote>
+<p>Using other versions of <strong>mkvmerge</strong>(1) or other command-line options may result in the same byte-identical file but is not guaranteed to do so.</p>
+</blockquote>
+<p><strong>--debug</strong> <em>topic</em></p>
+<blockquote>
+<p>Turn on debugging for a specific feature. This option is only useful for developers.</p>
+</blockquote>
+<p><strong>--engage</strong> <em>feature</em></p>
+<blockquote>
+<p>Turn on experimental features. A list of available features can be requested with <strong>mkvmerge --engage list</strong>. These features are not meant to be used in normal situations.</p>
+</blockquote>
+<p><strong>--gui-mode</strong></p>
+<blockquote>
+<p>Turns on GUI mode. In this mode specially-formatted lines may be output that can tell a controlling GUI whats happening. These messages follow the format #GUI#message. The message may be followed by key/value pairs as in #GUI#message#key1=value1#key2=value2.... Neither the messages nor the keys are ever translated and always output in English.</p>
+</blockquote>
+<p><strong>@</strong><em>options-file.json</em></p>
+<blockquote>
+<p>Reads additional command line arguments from the file <em>options-file</em>. See the section about option files for further information.</p>
+</blockquote>
+<p><strong>--capabilities</strong></p>
+<blockquote>
+<p>Lists information about optional features that have been compiled in and exit. The first line output will be the version information. All following lines contain exactly one word whose presence indicates that the feature has been compiled in. These features are:</p>
+<blockquote>
+<p>·</p>
+<p>FLAC -- reading raw FLAC files and handling FLAC tracks in other containers, e.g. Ogg or Matroska.</p>
+</blockquote>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Show usage information and exit.</p>
+</blockquote>
+<p><strong>-V</strong>, <strong>--version</strong></p>
+<blockquote>
+<p>Show version information and exit.</p>
+</blockquote>
+<h1>USAGE</h1>
+<p>For each file the user can select which tracks <strong>mkvmerge</strong>(1) should take. They are all put into the file specified with <strong>-o</strong>. A list of known (and supported) source formats can be obtained with the <strong>-l</strong> option.</p>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Important</strong></p>
+<p><br />
+</p>
+<p>The order of command line options is important. Please read the section "Option order" if youre new to the program.</p>
+</blockquote>
+<h1>OPTION ORDER</h1>
+<p>The order in which options are entered is important for some options. Options fall into two categories:</p>
+<blockquote>
+<p>1.</p>
+<p>Options that affect the whole program and are not tied to any input file. These include but are not limited to <strong>--command-line-charset</strong>, <strong>--output</strong> or <strong>--title</strong>. These can appear anywhere on the command line.</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>Options that affect a single input file or a single track in an input file. These options all apply to the following input file on the command line. All options applying to the same input (or to tracks from the same input file) file can be written in any order as long as they all appear before that input files name. Examples for options applying to an input file are <strong>--no-chapters</strong> or <strong>--chapter-charset</strong>. Examples for options applying to a single track are <strong>--default-duration</strong> or <strong>--language</strong>.</p>
+</blockquote>
+<p>The options are processed from left to right. If an option appears multiple times within the same scope then the last occurrence will be used. Therefore the title will be set to "Something else" in the following example:</p>
+<blockquote>
+<pre><code>$ mkvmerge -o output.mkv --title This and that input.avi --title Something else</code></pre>
+</blockquote>
+<p>The following example shows that using the <strong>--language</strong> option twice is OK because theyre used in different scopes. Even though they apply to the same track ID they apply to different input files and therefore have different scopes:</p>
+<blockquote>
+<pre><code>$ mkvmerge -o output.mkv --language 0:fre français.ogg --language 0:deu deutsch.ogg</code></pre>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>Lets assume you have a file called MyMovie.avi and the audio track in a separate file, e.g. MyMovie.wav. First you want to encode the audio to OggVorbis:</p>
+<blockquote>
+<pre><code>$ oggenc -q4 -oMyMovie.ogg MyMovie.wav</code></pre>
+</blockquote>
+<p>After a couple of minutes you can join video and audio:</p>
+<blockquote>
+<pre><code>$ mkvmerge -o MyMovie-with-sound.mkv MyMovie.avi MyMovie.ogg</code></pre>
+</blockquote>
+<p>If your AVI already contains an audio track then it will be copied as well (if <strong>mkvmerge</strong>(1) supports the audio format). To avoid that simply do</p>
+<blockquote>
+<pre><code>$ mkvmerge -o MyMovie-with-sound.mkv -A MyMovie.avi MyMovie.ogg</code></pre>
+</blockquote>
+<p>After some minutes of consideration you rip another audio track, e.g. the directors comments or another language to MyMovie-add-audio.wav. Encode it again and join it up with the other file:</p>
+<blockquote>
+<pre><code>$ oggenc -q4 -oMyMovie-add-audio.ogg MyMovie-add-audio.wav
+$ mkvmerge -o MM-complete.mkv MyMovie-with-sound.mkv MyMovie-add-audio.ogg</code></pre>
+</blockquote>
+<p>The same result can be achieved with</p>
+<blockquote>
+<pre><code>$ mkvmerge -o MM-complete.mkv -A MyMovie.avi MyMovie.ogg MyMovie-add-audio.ogg</code></pre>
+</blockquote>
+<p>Now fire up mplayer and enjoy. If you have multiple audio tracks (or even video tracks) then you can tell mplayer which track to play with the <strong>-vid</strong> and <strong>-aid</strong> options. These are 0-based and do not distinguish between video and audio.</p>
+<p>If you need an audio track synchronized you can do that easily. First find out which track ID the Vorbis track has with</p>
+<blockquote>
+<pre><code>$ mkvmerge --identify outofsync.ogg</code></pre>
+</blockquote>
+<p>Now you can use that ID in the following command line:</p>
+<blockquote>
+<pre><code>$ mkvmerge -o goodsync.mkv -A source.avi -y 12345:200 outofsync.ogg</code></pre>
+</blockquote>
+<p>This would add 200ms of silence at the beginning of the audio track with the ID <strong>12345</strong> taken from outofsync.ogg.</p>
+<p>Some movies start synced correctly but slowly drift out of sync. For these kind of movies you can specify a delay factor that is applied to all timestamps -- no data is added or removed. So if you make that factor too big or too small youll get bad results. An example is that an episode I transcoded was <strong>0.2</strong> seconds out of sync at the end of the movie which was <strong>77340</strong> frames long. At <strong>29.97fps</strong> <strong>0.2</strong> seconds correspond to approx. <strong>6</strong> frames. So I did</p>
+<blockquote>
+<pre><code>$ mkvmerge -o goodsync.mkv -y 23456:0,77346/77340 outofsync.mkv</code></pre>
+</blockquote>
+<p>The result was fine.</p>
+<p>The sync options can also be used for subtitles in the same manner.</p>
+<p>For text subtitles you can either use some Windows software (like SubRipper) or the subrip package found in <strong>transcode</strong>(1)s sources in the contrib/subrip directory. The general process is:</p>
+<blockquote>
+<p>1.</p>
+<p>extract a raw subtitle stream from the source:</p>
+<blockquote>
+<pre><code>$ tccat -i /path/to/copied/dvd/ -T 1 -L | tcextract -x ps1 -t vob -a 0x20 | subtitle2pgm -o mymovie</code></pre>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>convert the resulting PGM images to text with gocr:</p>
+<blockquote>
+<pre><code>$ pgm2txt mymovie</code></pre>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>spell-check the resulting text files:</p>
+<blockquote>
+<pre><code>$ ispell -d american *txt</code></pre>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>4.</p>
+<p>convert the text files to a SRT file:</p>
+<blockquote>
+<pre><code>$ srttool -s -w -i mymovie.srtx -o mymovie.srt</code></pre>
+</blockquote>
+</blockquote>
+<p>The resulting file can be used as another input file for <strong>mkvmerge</strong>(1):</p>
+<blockquote>
+<pre><code>$ mkvmerge -o mymovie.mkv mymovie.avi mymovie.srt</code></pre>
+</blockquote>
+<p>If you want to specify the language for a given track then this is easily done. First find out the ISO 639-2 code for your language. <strong>mkvmerge</strong>(1) can list all of those codes for you:</p>
+<blockquote>
+<pre><code>$ mkvmerge --list-languages</code></pre>
+</blockquote>
+<p>Search the list for the languages you need. Lets assume you have put two audio tracks into a Matroska file and want to set their language codes and that their track IDs are 2 and 3. This can be done with</p>
+<blockquote>
+<pre><code>$ mkvmerge -o with-lang-codes.mkv --language 2:ger --language 3:dut without-lang-codes.mkv</code></pre>
+</blockquote>
+<p>As you can see you can use the <strong>--language</strong> switch multiple times.</p>
+<p>Maybe youd also like to have the player use the Dutch language as the default language. You also have extra subtitles, e.g. in English and French, and want to have the player display the French ones by default. This can be done with</p>
+<blockquote>
+<pre><code>$ mkvmerge -o with-lang-codes.mkv --language 2:ger --language 3:dut --default-track 3 without-lang-codes.mkv --language 0:eng english.srt --default-track 0 --language 0:fre french.srt</code></pre>
+</blockquote>
+<p>If you do not see the language or default track flags that youve specified in <strong>mkvinfo</strong>(1)s output then please read the section about default values.</p>
+<p>Turn off the compression for an input file.</p>
+<blockquote>
+<pre><code>$ mkvmerge -o no-compression.mkv --compression -1:none MyMovie.avi --compression -1:none mymovie.srt</code></pre>
+</blockquote>
+<h1>TRACK IDS</h1>
+<h2>Regular track IDs</h2>
+<p>Some of the options for <strong>mkvmerge</strong>(1) need a track ID to specify which track they should be applied to. Those track IDs are printed by the readers when demuxing the current input file, or if <strong>mkvmerge</strong>(1) is called with the <strong>--identify</strong> option. An example for such output:</p>
+<blockquote>
+<pre><code>$ mkvmerge -i v.mkv
+File v.mkv: container: Matroska
+Track ID 0: video (V_MS/VFW/FOURCC, DIV3)
+Track ID 1: audio (A_MPEG/L3)</code></pre>
+</blockquote>
+<p>Do not confuse the track IDs that are assigned to the tracks that are placed in the output MKV file with the track IDs of the input files. Only the input file track IDs are used for options needing these values.</p>
+<p>Also note that each input file has its own set of track IDs. Therefore the track IDs for file file1.ext as reported by mkvmerge --identify do not change no matter how many other input files are there or in which position file1.ext is used.</p>
+<p>Track IDs are assigned like this:</p>
+<blockquote>
+<p>·</p>
+<p>AVI files: The video track has the ID 0. The audio tracks get IDs in ascending order starting at 1.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>AAC, AC-3, MP3, SRT and WAV files: The one track in that file gets the ID 0.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Most other files: The track IDs are assigned in order the tracks are found in the file starting at 0.</p>
+</blockquote>
+<p>The options that use the track IDs are the ones whose description contains TID. The following options use track IDs as well: <strong>--audio-tracks</strong>, <strong>--video-tracks</strong>, <strong>--subtitle-tracks</strong>, <strong>--button-tracks</strong> and <strong>--track-tags</strong>.</p>
+<h2>Special track IDs</h2>
+<p>There are several IDs that have special meaning and do not occur in the identification output.</p>
+<p>The special track ID <strong>-1</strong> is a wild card and applies the given switch to all tracks that are read from an input file.</p>
+<p>The special track ID <strong>-2</strong> refers to the chapters in a source file. Currently only the <strong>--sync</strong> option uses this special ID. As an alternative to <strong>--sync -2:...</strong> the option <strong>--chapter-sync ...</strong> can be used.</p>
+<h1>TEXT FILES AND CHARACTER SET CONVERSIONS</h1>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+</p>
+<p>This section applies to all programs in MKVToolNix even if it only mentions <strong>mkvmerge</strong>(1).</p>
+</blockquote>
+<h2>Introduction</h2>
+<p>All text in a Matroska file is encoded in UTF-8. This means that <strong>mkvmerge</strong>(1) has to convert every text file it reads as well as every text given on the command line from one character set into UTF-8. In return this also means that <strong>mkvmerge</strong>(1)s output has to be converted back to that character set from UTF-8, e.g. if a non-English translation is used with <strong>--ui-language</strong> or for text originating from a Matroska file.</p>
+<p><strong>mkvmerge</strong>(1) does this conversion automatically based on the presence of a byte order marker (short: BOM) or the systems current locale. How the character set is inferred from the locale depends on the operating system that <strong>mkvmerge</strong>(1) is run on.</p>
+<h2>Byte order markers (BOM)</h2>
+<p>Text files that start with a BOM are already encoded in one representation of UTF. <strong>mkvmerge</strong>(1) supports the following five modes: UTF-8, UTF-16 Little and Big Endian, UTF-32 Little and Big Endian. Text files with a BOM are automatically converted to UTF-8. Any of the parameters that would otherwise set the character set for such a file (e.g. <strong>--sub-charset</strong>) is silently ignored.</p>
+<h2>Linux and Unix-like systems including macOS</h2>
+<p>On Unix-like systems <strong>mkvmerge</strong>(1) uses the <strong>setlocale</strong>(3) system call which in turn uses the environment variables <em>LANG</em>, <em>LC_ALL</em> and <em>LC_CYPE</em>. The resulting character set is often one of UTF-8 or the ISO-8859-* family and is used for all text file operations and for encoding strings on the command line and for output to the console.</p>
+<h2>Windows</h2>
+<p>On Windows the default character set used for converting text files is determined by a call to the <strong>GetACP()</strong> system call.</p>
+<p>Reading the command line is done with the <strong>GetCommandLineW()</strong> function which already returns a Unicode string. Therefore the option <strong>--command-line-charset</strong> is ignored on Windows.</p>
+<p>Output to the console consists of three scenarios:</p>
+<blockquote>
+<p>1.</p>
+<p>If the output is redirected with the option <strong>--redirect-output</strong> then the default charset is UTF-8. This can be changed with <strong>--output-charset</strong>.</p>
+<p>If the output is redirected with <strong>cmd.exe</strong> itself, e.g. with mkvinfo file.mkv &gt; info.txt, then the charset is always UTF-8 and cannot be changed.</p>
+<p>Otherwise (when writing directly to the console) the Windows function <strong>WriteConsoleW()</strong> is used and the option <strong>--output-charset</strong> is ignored. The console should be able to output all Unicode characters for which the corresponding language support is installed (e.g. Chinese characters might not be displayed on English Windows versions).</p>
+</blockquote>
+<h2>Command line options</h2>
+<p>The following options exist that allow specifying the character sets:</p>
+<blockquote>
+<p>·</p>
+<p><strong>--sub-charset</strong> for text subtitle files and for text subtitle tracks stored in container formats for which the character set cannot be determined unambiguously (e.g. Ogg files),</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>--chapter-charset</strong> for chapter text files and for chapters and file titles stored in container formats for which the character set cannot be determined unambiguously (e.g. Ogg files for chapter information, track and file titles etc; MP4 files for chapter information),</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>--command-line-charset</strong> for all strings on the command line,</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>--output-charset</strong> for all strings written to the console or to a file if the output has been redirected with the <strong>--redirect-output</strong> option. On non-Windows systems the default for the output charset is the systems current charset. On Windows it defaults to UTF-8 both for redirecting with <strong>--redirect-output</strong> and with <strong>cmd.exe</strong> itself, e.g. mkvinfo file.mkv &gt; info.txt.</p>
+</blockquote>
+<h1>OPTION FILES</h1>
+<p>An option file is a file <strong>mkvmerge</strong>(1) can read additional command line arguments from. This can be used in order to circumvent certain limitations of the shell or the operating system when executing external programs like a limited command line length.</p>
+<p>An option file contains JSON-formatted data. Its content must be a valid JSON array consisting solely of JSON strings. The files encoding must be UTF-8. The file should not start with a byte order marker (BOM), but if one exists, it will be skipped.</p>
+<p>The rules for escaping special characters inside JSON are the ones in the official JSON specification, <strong>RFC 7159</strong>[4].</p>
+<p>The command line <strong>mkvmerge -o "my file.mkv" -A "a movie.avi" sound.ogg</strong> could be converted into the following JSON option file called e.g. options.json:</p>
+<blockquote>
+<pre><code>[
+  &quot;-o&quot;,
+  &quot;c:\\Matroska\\my file.mkv&quot;,
+  &quot;--title&quot;,
+  &quot;#65&quot;,
+  &quot;-A&quot;,
+  &quot;a movie.avi&quot;,
+  &quot;sound.ogg&quot;
+]</code></pre>
+</blockquote>
+<h1>FILE LINKING</h1>
+<p>Matroska supports file linking which simply says that a specific file is the predecessor or successor of the current file. To be precise, its not really the files that are linked but the Matroska segments. As most files will probably only contain one Matroska segment the following explanations use the term file linking although segment linking would be more appropriate.</p>
+<p>Each segment is identified by a unique 128 bit wide segment UID. This UID is automatically generated by <strong>mkvmerge</strong>(1). The linking is done primarily via putting the segment UIDs (short: SID) of the previous/next file into the segment header information. <strong>mkvinfo</strong>(1) prints these SIDs if it finds them.</p>
+<p>If a file is split into several smaller ones and linking is used then the timestamps will not start at 0 again but will continue where the last file has left off. This way the absolute time is kept even if the previous files are not available (e.g. when streaming). If no linking is used then the timestamps should start at 0 for each file. By default <strong>mkvmerge</strong>(1) does not use file linking. If you want that you can turn it on with the <strong>--link</strong> option. This option is only useful if splitting is activated as well.</p>
+<p>Regardless of whether splitting is active or not the user can tell <strong>mkvmerge</strong>(1) to link the produced files to specific SIDs. This is achieved with the options <strong>--link-to-previous</strong> and <strong>--link-to-next</strong>. These options accept a segment SID in the format that <strong>mkvinfo</strong>(1) outputs: 16 hexadecimal numbers between <strong>0x00</strong> and <strong>0xff</strong> prefixed with 0x each, e.g. 0x41 0xda 0x73 0x66 0xd9 0xcf 0xb2 0x1e 0xae 0x78 0xeb 0xb4 0x5e 0xca 0xb3 0x93. Alternatively a shorter form can be used: 16 hexadecimal numbers between <strong>0x00</strong> and <strong>0xff</strong> without the 0x prefixes and without the spaces, e.g. 41da7366d9cfb21eae78ebb45ecab393.</p>
+<p>If splitting is used then the first file is linked to the SID given with <strong>--link-to-previous</strong> and the last file is linked to the SID given with <strong>--link-to-next</strong>. If splitting is not used then the one output file will be linked to both of the two SIDs.</p>
+<h1>DEFAULT VALUES</h1>
+<p>The Matroska specification states that some elements have a default value. Usually an element is not written to the file if its value is equal to its default value in order to save space. The elements that the user might miss in <strong>mkvinfo</strong>(1)s output are the <em>language</em> and the <em>default track flag</em> elements. The default value for the <em>language</em> is English (eng), and the default value for the <em>default track flag</em> is <em>true</em>. Therefore if you used <strong>--language 0:eng</strong> for a track then it will not show up in <strong>mkvinfo</strong>(1)s output.</p>
+<h1>ATTACHMENTS</h1>
+<p>Maybe you also want to keep some photos along with your Matroska file, or youre using SSA subtitles and need a special TrueType font thats really rare. In these cases you can attach those files to the Matroska file. They will not be just appended to the file but embedded in it. A player can then show those files (the photos case) or use them to render the subtitles (the TrueType fonts case).</p>
+<p>Heres an example how to attach a photo and a TrueType font to the output file:</p>
+<blockquote>
+<pre><code>$ mkvmerge -o output.mkv -A video.avi sound.ogg \
+  --attachment-description &quot;Me and the band behind the stage in a small get-together&quot; \
+  --attachment-mime-type image/jpeg \
+  --attach-file me_and_the_band.jpg \
+  --attachment-description &quot;The real rare and unbelievably good looking font&quot; \
+  --attachment-mime-type application/octet-stream \
+  --attach-file really_cool_font.ttf</code></pre>
+</blockquote>
+<p>If a Matroska containing attachments file is used as an input file then <strong>mkvmerge</strong>(1) will copy the attachments into the new file. The selection which attachments are copied and which are not can be changed with the options <strong>--attachments</strong> and <strong>--no-attachments</strong>.</p>
+<h1>CHAPTERS</h1>
+<p>The Matroska chapter system is more powerful than the old known system used by OGM files. The full specifications can be found at <strong>the Matroska website</strong>[1].</p>
+<p><strong>mkvmerge</strong>(1) supports two kinds of chapter files as its input. The first format, called simple chapter format, is the same format that the OGM tools expect. The second format is a XML based chapter format which supports all of Matroskas chapter functionality.</p>
+<p>Apart from dedicated chapter files <strong>mkvmerge</strong>(1) can also read chapters from other file formats (e.g. MP4, Ogg, Blu-rays or DVDs).</p>
+<h2>The simple chapter format</h2>
+<p>This format consists of pairs of lines that start with CHAPTERxx= and CHAPTERxxNAME= respectively. The first one contains the start timestamp while the second one contains the title. Heres an example:</p>
+<blockquote>
+<pre><code>CHAPTER01=00:00:00.000
+CHAPTER01NAME=Intro
+CHAPTER02=00:02:30.000
+CHAPTER02NAME=Baby prepares to rock
+CHAPTER03=00:02:42.300
+CHAPTER03NAME=Baby rocks the house</code></pre>
+</blockquote>
+<p><strong>mkvmerge</strong>(1) will transform every pair or lines into one Matroska ChapterAtom. It does not set any ChapterTrackNumber which means that the chapters all apply to all tracks in the file.</p>
+<p>As this is a text file character set conversion may need to be done. See the section about text files and character sets for an explanation how <strong>mkvmerge</strong>(1) converts between character sets.</p>
+<h2>The XML based chapter format</h2>
+<p>The XML based chapter format looks like this example:</p>
+<blockquote>
+<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;ISO-8859-1&quot;?&gt;
+&lt;!DOCTYPE Chapters SYSTEM &quot;matroskachapters.dtd&quot;&gt;
+&lt;Chapters&gt;
+  &lt;EditionEntry&gt;
+    &lt;ChapterAtom&gt;
+      &lt;ChapterTimeStart&gt;00:00:30.000&lt;/ChapterTimeStart&gt;
+      &lt;ChapterTimeEnd&gt;00:01:20.000&lt;/ChapterTimeEnd&gt;
+      &lt;ChapterDisplay&gt;
+        &lt;ChapterString&gt;A short chapter&lt;/ChapterString&gt;
+        &lt;ChapterLanguage&gt;eng&lt;/ChapterLanguage&gt;
+      &lt;/ChapterDisplay&gt;
+      &lt;ChapterAtom&gt;
+        &lt;ChapterTimeStart&gt;00:00:46.000&lt;/ChapterTimeStart&gt;
+        &lt;ChapterTimeEnd&gt;00:01:10.000&lt;/ChapterTimeEnd&gt;
+        &lt;ChapterDisplay&gt;
+          &lt;ChapterString&gt;A part of that short chapter&lt;/ChapterString&gt;
+          &lt;ChapterLanguage&gt;eng&lt;/ChapterLanguage&gt;
+        &lt;/ChapterDisplay&gt;
+      &lt;/ChapterAtom&gt;
+    &lt;/ChapterAtom&gt;
+  &lt;/EditionEntry&gt;
+&lt;/Chapters&gt;</code></pre>
+</blockquote>
+<p>With this format three things are possible that are not possible with the simple chapter format:</p>
+<blockquote>
+<p>1.</p>
+<p>The timestamp for the end of the chapter can be set,</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>chapters can be nested,</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>the language and country can be set.</p>
+</blockquote>
+<p>The mkvtoolnix distribution contains some sample files in the doc subdirectory which can be used as a basis.</p>
+<p>The following lists the supported XML tags, their data types and, where appropriate, the valid range for their values:</p>
+<blockquote>
+<pre><code>Chapters (master)
+  EditionEntry (master)
+    EditionUID (unsigned integer, valid range: 1 &lt;= value)
+    EditionFlagHidden (unsigned integer, valid range: 0 &lt;= value &lt;= 1)
+    EditionFlagDefault (unsigned integer, valid range: 0 &lt;= value &lt;= 1)
+    EditionFlagOrdered (unsigned integer, valid range: 0 &lt;= value &lt;= 1)
+    ChapterAtom (master)
+      ChapterAtom (master)
+      ChapterUID (unsigned integer, valid range: 1 &lt;= value)
+      ChapterTimeStart (unsigned integer)
+      ChapterTimeEnd (unsigned integer)
+      ChapterFlagHidden (unsigned integer, valid range: 0 &lt;= value &lt;= 1)
+      ChapterFlagEnabled (unsigned integer, valid range: 0 &lt;= value &lt;= 1)
+      ChapterSegmentUID (binary, valid range: 1 &lt;= length in bytes)
+      ChapterSegmentEditionUID (unsigned integer, valid range: 1 &lt;= value)
+      ChapterPhysicalEquiv (unsigned integer)
+      ChapterTrack (master)
+        ChapterTrackNumber (unsigned integer, valid range: 1 &lt;= value)
+      ChapterDisplay (master)
+        ChapterString (UTF-8 string)
+        ChapterLanguage (UTF-8 string)
+        ChapterCountry (UTF-8 string)
+      ChapterProcess (master)
+        ChapterProcessCodecID (unsigned integer)
+        ChapterProcessPrivate (binary)
+        ChapterProcessCommand (master)
+          ChapterProcessTime (unsigned integer)
+          ChapterProcessData (binary)</code></pre>
+</blockquote>
+<h2>Reading chapters from Blu-rays</h2>
+<p><strong>mkvmerge</strong>(1) can read chapters from unencrypted Blu-rays. For that you can use the path to one of the MPLS play lists with the <em>--chapters</em> parameter.</p>
+<p>Example: --chapters /srv/blurays/BigBuckBunny/BDMV/PLAYLIST/00001.mpls</p>
+<h2>Reading chapters from DVDs</h2>
+<p>When MKVToolNix is compiled with the libdvdread library, <strong>mkvmerge</strong>(1) can read chapters from DVDs. For that you can use the path to one of the folders or files on the DVD with the <em>--chapters</em> parameter. As DVDs can contain more than one title and each title has its own set of chapters, you can append a colon and the desired title number to the end of the file name argument. The title number defaults to 1.</p>
+<p>Example: --chapters /srv/dvds/BigBuckBunny/VIDEO_TS:2</p>
+<h2>General notes</h2>
+<p>When splitting files <strong>mkvmerge</strong>(1) will correctly adjust the chapters as well. This means that each file only includes the chapter entries that apply to it, and that the timestamps will be offset to match the new timestamps of each output file.</p>
+<p><strong>mkvmerge</strong>(1) is able to copy chapters from Matroska source files unless this is explicitly disabled with the <strong>--no-chapters</strong> option. The chapters from all sources (Matroska files, Ogg files, MP4 files, chapter text files) are usually not merged but end up in separate ChapterEditions. Only if chapters are read from several Matroska or XML files that share the same edition UIDs will chapters be merged into a single ChapterEdition. If such a merge is desired in other situations as well then the user has to extract the chapters from all sources with <strong>mkvextract</strong>(1) first, merge the XML files manually and mux them afterwards.</p>
+<h1>TAGS</h1>
+<h2>Introduction</h2>
+<p>Matroskas tag system is similar to that of other containers: a set of <em>KEY=VALUE</em> pairs. However, in Matroska these tags can also be nested, and both the <em>KEY</em> and the <em>VALUE</em> are elements of their own. The example file example-tags-2.xml shows how to use this system.</p>
+<h2>Scope of the tags</h2>
+<p>Matroska tags do not automatically apply to the complete file. They can, but they also may apply to different parts of the file: to one or more tracks, to one or more chapters, or even to a combination of both. The <strong>Matroska specification</strong>[5] gives more details about this fact.</p>
+<p>One important fact is that tags are linked to tracks or chapters with the Targets Matroska tag element, and that the UIDs used for this linking are <em>not</em> the track IDs <strong>mkvmerge</strong>(1) uses everywhere. Instead the numbers used are the UIDs which <strong>mkvmerge</strong>(1) calculates automatically (if the track is taken from a file format other than Matroska) or which are copied from the source file if the tracks source file is a Matroska file. Therefore it is difficult to know which UIDs to use in the tag file before the file is handed over to <strong>mkvmerge</strong>(1).</p>
+<p><strong>mkvmerge</strong>(1) knows two options with which you can add tags to Matroska files: The <strong>--global-tags</strong> and the <strong>--tags</strong> options. The difference is that the former option, <strong>--global-tags</strong>, will make the tags apply to the complete file by removing any of those Targets elements mentioned above. The latter option, <strong>--tags</strong>, automatically inserts the UID that <strong>mkvmerge</strong>(1) generates for the tag specified with the <em>TID</em> part of the <strong>--tags</strong> option.</p>
+<h2>Example</h2>
+<p>Lets say that you want to add tags to a video track read from an AVI. <strong>mkvmerge --identify file.avi</strong> tells you that the video tracks ID (do not mix this ID with the UID!) is 0. So you create your tag file, leave out all Targets elements and call <strong>mkvmerge</strong>(1):</p>
+<blockquote>
+<pre><code>$ mkvmerge -o file.mkv --tags 0:tags.xml file.avi</code></pre>
+</blockquote>
+<h2>Tag file format</h2>
+<p><strong>mkvmerge</strong>(1) supports a XML based tag file format. The format is very closely modeled after the <strong>Matroska specification</strong>[5]. Both the binary and the source distributions of MKVToolNix come with a sample file called example-tags-2.xml which simply lists all known tags and which can be used as a basis for real life tag files.</p>
+<p>The basics are:</p>
+<blockquote>
+<p>·</p>
+<p>The outermost element must be &lt;Tags&gt;.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>One logical tag is contained inside one pair of &lt;Tag&gt; XML tags.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>White spaces directly before and after tag contents are ignored.</p>
+</blockquote>
+<h2>Data types</h2>
+<p>The new Matroska tagging system only knows two data types, a UTF-8 string and a binary type. The first is used for the tags name and the &lt;String&gt; element while the binary type is used for the &lt;Binary&gt; element.</p>
+<p>As binary data itself would not fit into a XML file <strong>mkvmerge</strong>(1) supports two other methods of storing binary data. If the contents of a XML tag starts with @ then the following text is treated as a file name. The corresponding files content is copied into the Matroska element.</p>
+<p>Otherwise the data is expected to be Base64 encoded. This is an encoding that transforms binary data into a limited set of ASCII characters and is used e.g. in email programs. <strong>mkvextract</strong>(1) will output Base64 encoded data for binary elements.</p>
+<p>The deprecated tagging system knows some more data types which can be found in the official Matroska tag specs. As <strong>mkvmerge</strong>(1) does not support this system anymore these types arent described here.</p>
+<h2>Known tags for the XML file format</h2>
+<p>The following lists the supported XML tags, their data types and, where appropriate, the valid range for their values:</p>
+<blockquote>
+<pre><code>Tags (master)
+  Tag (master)
+    Targets (master)
+      TargetTypeValue (unsigned integer)
+      TargetType (UTF-8 string)
+      TrackUID (unsigned integer)
+      EditionUID (unsigned integer)
+      ChapterUID (unsigned integer)
+      AttachmentUID (unsigned integer)
+    Simple (master)
+      Simple (master)
+      Name (UTF-8 string)
+      TagLanguage (UTF-8 string)
+      DefaultLanguage (unsigned integer)
+      String (UTF-8 string)
+      Binary (binary)</code></pre>
+</blockquote>
+<h1>THE SEGMENT INFO XML FILES</h1>
+<p>With a segment info XML file it is possible to set certain values in the "segment information" header field of a Matroska file. All of these values cannot be set via other command line options.</p>
+<p>Other "segment information" header fields can be set via command line options but not via the XML file. This includes e.g. the <strong>--title</strong> and the <strong>--timestamp-scale</strong> options.</p>
+<p>There are other elements that can be set neither via command line options nor via the XML files. These include the following elements: <em>DateUTC</em> (also known as the "muxing date"), <em>MuxingApp</em>, <em>WritingApp</em> and <em>Duration</em>. Theyre always set by <strong>mkvmerge</strong>(1) itself.</p>
+<p>The following lists the supported XML tags, their data types and, where appropriate, the valid range for their values:</p>
+<blockquote>
+<pre><code>Info (master)
+  SegmentUID (binary, valid range: length in bytes == 16)
+  SegmentFilename (UTF-8 string)
+  PreviousSegmentUID (binary, valid range: length in bytes == 16)
+  PreviousSegmentFilename (UTF-8 string)
+  NextSegmentUID (binary, valid range: length in bytes == 16)
+  NextSegmentFilename (UTF-8 string)
+  SegmentFamily (binary, valid range: length in bytes == 16)
+  ChapterTranslate (master)
+    ChapterTranslateEditionUID (unsigned integer)
+    ChapterTranslateCodec (unsigned integer)
+    ChapterTranslateID (binary)</code></pre>
+</blockquote>
+<h1>MATROSKA FILE LAYOUT</h1>
+<p>The Matroska file layout is quite flexible. <strong>mkvmerge</strong>(1) will render a file in a predefined way. The resulting file looks like this:</p>
+<p>[EBML head] [segment {meta seek #1} [segment information] [track information] {attachments} {chapters} [cluster 1] {cluster 2} ... {cluster n} {cues} {meta seek #2} {tags}]</p>
+<p>The elements in curly braces are optional and depend on the contents and options used. A couple of notes:</p>
+<blockquote>
+<p>·</p>
+<p>meta seek #1 includes only a small number of level 1 elements, and only if they actually exist: attachments, chapters, cues, tags, meta seek #2. Older versions of <strong>mkvmerge</strong>(1) used to put the clusters into this meta seek element as well. Therefore some imprecise guessing was necessary to reserve enough space. It often failed. Now only the clusters are stored in meta seek #2, and meta seek #1 refers to the meta seek element #2.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Attachment, chapter and tag elements are only present if they were added.</p>
+</blockquote>
+<p>The shortest possible Matroska file would look like this:</p>
+<p>[EBML head] [segment [segment information] [track information] [cluster 1]]</p>
+<p>This might be the case for audio-only files.</p>
+<h1>EXTERNAL TIMESTAMP FILES</h1>
+<p><strong>mkvmerge</strong>(1) allows the user to chose the timestamps for a specific track himself. This can be used in order to create files with variable frame rate video or include gaps in audio. A frame in this case is the unit that <strong>mkvmerge</strong>(1) creates separately per Matroska block. For video this is exactly one frame, for audio this is one packet of the specific audio type. E.g. for AC-3 this would be a packet containing <strong>1536</strong> samples.</p>
+<p>Timestamp files that are used when tracks are appended to each other must only be specified for the first part in a chain of tracks. For example if you append two files, v1.avi and v2.avi, and want to use timestamps then your command line must look something like this:</p>
+<blockquote>
+<pre><code>$ mkvmerge ... --timestamps 0:my_timestamps.txt v1.avi +v2.avi</code></pre>
+</blockquote>
+<p>There are four formats that are recognized by <strong>mkvmerge</strong>(1). The first line always contains the version number. Empty lines, lines containing only whitespace and lines beginning with # are ignored.</p>
+<h2>Timestamp file format v1</h2>
+<p>This format starts with the version line. The second line declares the default number of frames per second. All following lines contain three numbers separated by commas: the start frame (<strong>0</strong> is the first frame), the end frame and the number of frames in this range. The FPS is a floating point number with the dot . as the decimal point. The ranges can contain gaps for which the default FPS is used. An example:</p>
+<blockquote>
+<pre><code># timestamp format v1
+assume 27.930
+800,1000,25
+1500,1700,30</code></pre>
+</blockquote>
+<h2>Timestamp file format v2</h2>
+<p>In this format each line contains a timestamp for the corresponding frame. This timestamp must be given in millisecond precision. It can be a floating point number, but it doesnt have to be. You <em>have to</em> give at least as many timestamp lines as there are frames in the track. The timestamps in this file must be sorted. Example for 25fps:</p>
+<blockquote>
+<pre><code># timestamp format v2
+0
+40
+80</code></pre>
+</blockquote>
+<h2>Timestamp file format v3</h2>
+<p>In this format each line contains a duration in seconds followed by an optional number of frames per second. Both can be floating point numbers. If the number of frames per second is not present the default one is used. For audio you should let the codec calculate the frame timestamps itself. For that you should be using <strong>0.0</strong> as the number of frames per second. You can also create gaps in the stream by using the gap keyword followed by the duration of the gap. Example for an audio file:</p>
+<blockquote>
+<pre><code># timestamp format v3
+assume 0.0
+25.325
+7.530,38.236
+gap, 10.050
+2.000,38.236</code></pre>
+</blockquote>
+<h2>Timestamp file format v4</h2>
+<p>This format is identical to the v2 format. The only difference is that the timestamps do not have to be sorted. This format should almost never be used.</p>
+<h1>EXIT CODES</h1>
+<p><strong>mkvmerge</strong>(1) exits with one of three exit codes:</p>
+<blockquote>
+<p>·</p>
+<p><strong>0</strong> -- This exit code means that muxing has completed successfully.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>1</strong> -- In this case <strong>mkvmerge</strong>(1) has output at least one warning, but muxing did continue. A warning is prefixed with the text Warning:. Depending on the issues involved the resulting file might be ok or not. The user is urged to check both the warning and the resulting file.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>2</strong> -- This exit code is used after an error occurred. <strong>mkvmerge</strong>(1) aborts right after outputting the error message. Error messages range from wrong command line arguments over read/write errors to broken files.</p>
+</blockquote>
+<h1>ENVIRONMENT VARIABLES</h1>
+<p><strong>mkvmerge</strong>(1) uses the default variables that determine the systems locale (e.g. <em>LANG</em> and the <em>LC_*</em> family). Additional variables:</p>
+<p><em>MKVMERGE_DEBUG</em>, <em>MKVTOOLNIX_DEBUG</em> and its short form <em>MTX_DEBUG</em></p>
+<blockquote>
+<p>The content is treated as if it had been passed via the <strong>--debug</strong> option.</p>
+</blockquote>
+<p><em>MKVMERGE_ENGAGE</em>, <em>MKVTOOLNIX_ENGAGE</em> and its short form <em>MTX_ENGAGE</em></p>
+<blockquote>
+<p>The content is treated as if it had been passed via the <strong>--engage</strong> option.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>mkvinfo</strong>(1), <strong>mkvextract</strong>(1), <strong>mkvpropedit</strong>(1), <strong>mkvtoolnix-gui</strong>(1)</p>
+<h1>WWW</h1>
+<p>The latest version can always be found at <strong>the MKVToolNix homepage</strong>[6].</p>
+<h1>AUTHOR</h1>
+<p><strong>Moritz Bunkus</strong> &lt;moritz@bunkus.org&gt;</p>
+<blockquote>
+<p>Developer</p>
+</blockquote>
+<h1>NOTES</h1>
+<ul>
+<li><p>the Matroska website</p>
+<p>https://www.matroska.org/</p></li>
+<li><p>the IANA homepage</p>
+<p>https://www.iana.org/assignments/media-types/</p></li>
+<li><p>mkvmerge-identification-output-schema-v12.json</p>
+<p>https://mkvtoolnix.download/doc/mkvmerge-identification-output-schema-v12.json</p></li>
+<li><p>RFC 7159</p>
+<p>https://tools.ietf.org/html/rfc7159</p></li>
+<li><p>Matroska specification</p>
+<p>https://www.matroska.org/technical/specs/index.html</p></li>
+<li><p>the MKVToolNix homepage</p>
+<p>https://mkvtoolnix.download/</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

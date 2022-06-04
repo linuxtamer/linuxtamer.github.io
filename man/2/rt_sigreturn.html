@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command rt_sigreturn</title><meta name="description" content="Linux command rt_sigreturn return from signal handler and cleanup stack frame"><meta name="keywords" content="linux, command, rt_sigreturn, bsd, return from signal handler and cleanup stack frame"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sigreturn, rt_sigreturn - return from signal handler and cleanup stack frame</p>
+<h1>SYNOPSIS</h1>
+<p><strong>int sigreturn(...);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>If the Linux kernel determines that an unblocked signal is pending for a process, then, at the next transition back to user mode in that process (e.g., upon return from a system call or when the process is rescheduled onto the CPU), it creates a new frame on the user-space stack where it saves various pieces of process context (processor status word, registers, signal mask, and signal stack settings).</p>
+<p>The kernel also arranges that, during the transition back to user mode, the signal handler is called, and that, upon return from the handler, control passes to a piece of user-space code commonly called the "signal trampoline". The signal trampoline code in turn calls <strong>sigreturn</strong>().</p>
+<p>This <strong>sigreturn</strong>() call undoes everything that was done—changing the process's signal mask, switching signal stacks (see <strong>sigaltstack</strong>(2))—in order to invoke the signal handler. Using the information that was earlier saved on the user-space stack <strong>sigreturn</strong>() restores the process's signal mask, switches stacks, and restores the process's context (processor flags and registers, including the stack pointer and instruction pointer), so that the process resumes execution at the point where it was interrupted by the signal.</p>
+<h1>RETURN VALUE</h1>
+<p><strong>sigreturn</strong>() never returns.</p>
+<h1>CONFORMING TO</h1>
+<p>Many UNIX-type systems have a <strong>sigreturn</strong>() system call or near equivalent. However, this call is not specified in POSIX, and details of its behavior vary across systems.</p>
+<h1>NOTES</h1>
+<p><strong>sigreturn</strong>() exists only to allow the implementation of signal handlers. It should <strong>never</strong> be called directly. (Indeed, a simple <strong>sigreturn</strong>() wrapper in the GNU C library simply returns -1, with <em>errno</em> set to <strong>ENOSYS</strong>.) Details of the arguments (if any) passed to <strong>sigreturn</strong>() vary depending on the architecture. (On some architectures, such as x86-64, <strong>sigreturn</strong>() takes no arguments, since all of the information that it requires is available in the stack frame that was previously created by the kernel on the user-space stack.)</p>
+<p>Once upon a time, UNIX systems placed the signal trampoline code onto the user stack. Nowadays, pages of the user stack are protected so as to disallow code execution. Thus, on contemporary Linux systems, depending on the architecture, the signal trampoline code lives either in the <strong>vdso</strong>(7) or in the C library. In the latter case, the C library's <strong>sigaction</strong>(2) wrapper function informs the kernel of the location of the trampoline code by placing its address in the <em>sa_restorer</em> field of the <em>sigaction</em> structure, and sets the <strong>SA_RESTORER</strong> flag in the <em>sa_flags</em> field.</p>
+<p>The saved process context information is placed in a <em>ucontext_t</em> structure (see <em>&lt;sys/ucontext.h&gt;</em>). That structure is visible within the signal handler as the third argument of a handler established via <strong>sigaction</strong>(2) with the <strong>SA_SIGINFO</strong> flag.</p>
+<p>On some other UNIX systems, the operation of the signal trampoline differs a little. In particular, on some systems, upon transitioning back to user mode, the kernel passes control to the trampoline (rather than the signal handler), and the trampoline code calls the signal handler (and then calls <strong>sigreturn</strong>() once the handler returns).</p>
+<h2>C library/kernel differences</h2>
+<p>The original Linux system call was named <strong>sigreturn</strong>(). However, with the addition of real-time signals in Linux 2.2, a new system call, <strong>rt_sigreturn</strong>() was added to support an enlarged <em>sigset_t</em> type. The GNU C library hides these details from us, transparently employing <strong>rt_sigreturn</strong>() when the kernel provides it.</p>
+<h1>SEE ALSO</h1>
+<p><strong>kill</strong>(2), <strong>restart_syscall</strong>(2), <strong>sigaltstack</strong>(2), <strong>signal</strong>(2), <strong>getcontext</strong>(3), <strong>signal</strong>(7), <strong>vdso</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

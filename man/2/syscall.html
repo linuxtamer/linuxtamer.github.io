@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command syscall</title><meta name="description" content="Linux command syscall indirect system call"><meta name="keywords" content="linux, command, syscall, bsd, indirect system call"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>syscall - indirect system call</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;sys/syscall.h&gt; /* For SYS_xxx definitions */
+
+long syscall(long number, ...);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>syscall</strong>():</p>
+<blockquote>
+<dl>
+<dt>Since glibc 2.19:</dt>
+<dd><p>_DEFAULT_SOURCE</p>
+</dd>
+<dt>Before glibc 2.19:</dt>
+<dd><p>_BSD_SOURCE || _SVID_SOURCE</p>
+</dd>
+</dl>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p><strong>syscall</strong>() is a small library function that invokes the system call whose assembly language interface has the specified <em>number</em> with the specified arguments. Employing <strong>syscall</strong>() is useful, for example, when invoking a system call that has no wrapper function in the C library.</p>
+<p><strong>syscall</strong>() saves CPU registers before making the system call, restores the registers upon return from the system call, and stores any error returned by the system call in <strong>errno</strong>(3).</p>
+<p>Symbolic constants for system call numbers can be found in the header file <em>&lt;sys/syscall.h&gt;</em>.</p>
+<h1>RETURN VALUE</h1>
+<p>The return value is defined by the system call being invoked. In general, a 0 return value indicates success. A -1 return value indicates an error, and an error number is stored in <em>errno</em>.</p>
+<h1>NOTES</h1>
+<p><strong>syscall</strong>() first appeared in 4BSD.</p>
+<h2>Architecture-specific requirements</h2>
+<p>Each architecture ABI has its own requirements on how system call arguments are passed to the kernel. For system calls that have a glibc wrapper (e.g., most system calls), glibc handles the details of copying arguments to the right registers in a manner suitable for the architecture. However, when using <strong>syscall</strong>() to make a system call, the caller might need to handle architecture-dependent details; this requirement is most commonly encountered on certain 32-bit architectures.</p>
+<p>For example, on the ARM architecture Embedded ABI (EABI), a 64-bit value (e.g., <em>long long</em>) must be aligned to an even register pair. Thus, using <strong>syscall</strong>() instead of the wrapper provided by glibc, the <strong>readahead</strong>(2) system call would be invoked as follows on the ARM architecture with the EABI in little endian mode:</p>
+<pre><code>syscall(SYS_readahead, fd, 0,
+        (unsigned int) (offset &amp; 0xFFFFFFFF),
+        (unsigned int) (offset &gt;&gt; 32),
+        count);</code></pre>
+<p>Since the offset argument is 64 bits, and the first argument (<em>fd</em>) is passed in <em>r0</em>, the caller must manually split and align the 64-bit value so that it is passed in the <em>r2</em>/<em>r3</em> register pair. That means inserting a dummy value into <em>r1</em> (the second argument of 0). Care also must be taken so that the split follows endian conventions (according to the C ABI for the platform).</p>
+<p>Similar issues can occur on MIPS with the O32 ABI, on PowerPC and parisc with the 32-bit ABI, and on Xtensa.</p>
+<p>Note that while the parisc C ABI also uses aligned register pairs, it uses a shim layer to hide the issue from user space.</p>
+<p>The affected system calls are <strong>fadvise64_64</strong>(2), <strong>ftruncate64</strong>(2), <strong>posix_fadvise</strong>(2), <strong>pread64</strong>(2), <strong>pwrite64</strong>(2), <strong>readahead</strong>(2), <strong>sync_file_range</strong>(2), and <strong>truncate64</strong>(2).</p>
+<p>This does not affect syscalls that manually split and assemble 64-bit values such as <strong>_llseek</strong>(2), <strong>preadv</strong>(2), <strong>preadv2</strong>(2), <strong>pwritev</strong>(2), and <strong>pwritev2</strong>(2). Welcome to the wonderful world of historical baggage.</p>
+<h2>Architecture calling conventions</h2>
+<p>Every architecture has its own way of invoking and passing arguments to the kernel. The details for various architectures are listed in the two tables below.</p>
+<p>The first table lists the instruction used to transition to kernel mode (which might not be the fastest or best way to transition to the kernel, so you might have to refer to <strong>vdso</strong>(7)), the register used to indicate the system call number, the register(s) used to return the system call result, and the register used to signal an error.</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Arch/ABI</td>
+<td style="text-align: left;">Instruction</td>
+<td style="text-align: left;">System</td>
+<td style="text-align: left;">Ret</td>
+<td style="text-align: left;">Ret</td>
+<td style="text-align: left;">Error</td>
+<td style="text-align: left;">Notes</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">call #</td>
+<td style="text-align: left;">val</td>
+<td style="text-align: left;">val2</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">_</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">alpha</td>
+<td style="text-align: left;">callsys</td>
+<td style="text-align: left;">v0</td>
+<td style="text-align: left;">v0</td>
+<td style="text-align: left;">a4</td>
+<td style="text-align: left;">a3</td>
+<td style="text-align: left;">1, 6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">arc</td>
+<td style="text-align: left;">trap0</td>
+<td style="text-align: left;">r8</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">arm/OABI</td>
+<td style="text-align: left;">swi NR</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">arm/EABI</td>
+<td style="text-align: left;">swi 0x0</td>
+<td style="text-align: left;">r7</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">r1</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">arm64</td>
+<td style="text-align: left;">svc #0</td>
+<td style="text-align: left;">w8</td>
+<td style="text-align: left;">x0</td>
+<td style="text-align: left;">x1</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">blackfin</td>
+<td style="text-align: left;">excpt 0x0</td>
+<td style="text-align: left;">P0</td>
+<td style="text-align: left;">R0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">i386</td>
+<td style="text-align: left;">int $0x80</td>
+<td style="text-align: left;">eax</td>
+<td style="text-align: left;">eax</td>
+<td style="text-align: left;">edx</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ia64</td>
+<td style="text-align: left;">break 0x100000</td>
+<td style="text-align: left;">r15</td>
+<td style="text-align: left;">r8</td>
+<td style="text-align: left;">r9</td>
+<td style="text-align: left;">r10</td>
+<td style="text-align: left;">1, 6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">m68k</td>
+<td style="text-align: left;">trap #0</td>
+<td style="text-align: left;">d0</td>
+<td style="text-align: left;">d0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">microblaze</td>
+<td style="text-align: left;">brki r14,8</td>
+<td style="text-align: left;">r12</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">mips</td>
+<td style="text-align: left;">syscall</td>
+<td style="text-align: left;">v0</td>
+<td style="text-align: left;">v0</td>
+<td style="text-align: left;">v1</td>
+<td style="text-align: left;">a3</td>
+<td style="text-align: left;">1, 6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nios2</td>
+<td style="text-align: left;">trap</td>
+<td style="text-align: left;">r2</td>
+<td style="text-align: left;">r2</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">r7</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">parisc</td>
+<td style="text-align: left;">ble 0x100(%sr2, %r0)</td>
+<td style="text-align: left;">r20</td>
+<td style="text-align: left;">r28</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">powerpc</td>
+<td style="text-align: left;">sc</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">powerpc64</td>
+<td style="text-align: left;">sc</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">cr0.SO</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">riscv</td>
+<td style="text-align: left;">ecall</td>
+<td style="text-align: left;">a7</td>
+<td style="text-align: left;">a0</td>
+<td style="text-align: left;">a1</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">s390</td>
+<td style="text-align: left;">svc 0</td>
+<td style="text-align: left;">r1</td>
+<td style="text-align: left;">r2</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">s390x</td>
+<td style="text-align: left;">svc 0</td>
+<td style="text-align: left;">r1</td>
+<td style="text-align: left;">r2</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">superh</td>
+<td style="text-align: left;">trap #0x17</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">r1</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">4, 6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">sparc/32</td>
+<td style="text-align: left;">t 0x10</td>
+<td style="text-align: left;">g1</td>
+<td style="text-align: left;">o0</td>
+<td style="text-align: left;">o1</td>
+<td style="text-align: left;">psr/csr</td>
+<td style="text-align: left;">1, 6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sparc/64</td>
+<td style="text-align: left;">t 0x6d</td>
+<td style="text-align: left;">g1</td>
+<td style="text-align: left;">o0</td>
+<td style="text-align: left;">o1</td>
+<td style="text-align: left;">psr/csr</td>
+<td style="text-align: left;">1, 6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">tile</td>
+<td style="text-align: left;">swint1</td>
+<td style="text-align: left;">R10</td>
+<td style="text-align: left;">R00</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">R01</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">x86-64</td>
+<td style="text-align: left;">syscall</td>
+<td style="text-align: left;">rax</td>
+<td style="text-align: left;">rax</td>
+<td style="text-align: left;">rdx</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">x32</td>
+<td style="text-align: left;">syscall</td>
+<td style="text-align: left;">rax</td>
+<td style="text-align: left;">rax</td>
+<td style="text-align: left;">rdx</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">xtensa</td>
+<td style="text-align: left;">syscall</td>
+<td style="text-align: left;">a2</td>
+<td style="text-align: left;">a2</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ul>
+<li><p>On a few architectures, a register is used as a boolean (0 indicating no error, and -1 indicating an error) to signal that the system call failed. The actual error value is still contained in the return register. On sparc, the carry bit (<em>csr</em>) in the processor status register (<em>psr</em>) is used instead of a full register. On powerpc64, the summary overflow bit (<em>SO</em>) in field 0 of the condition register (<em>cr0</em>) is used.</p></li>
+<li><p><em>NR</em> is the system call number.</p></li>
+<li><p>For s390 and s390x, <em>NR</em> (the system call number) may be passed directly with <em>svc NR</em> if it is less than 256.</p></li>
+<li><p>On SuperH, the trap number controls the maximum number of arguments passed. A <em>trap #0x10</em> can be used with only 0-argument system calls, a <em>trap #0x11</em> can be used with 0- or 1-argument system calls, and so on up to <em>trap #0x17</em> for 7-argument system calls.</p></li>
+<li><p>The x32 ABI shares syscall table with x86-64 ABI, but there are some nuances:</p>
+<ul>
+<li><p>In order to indicate that a system call is called under the x32 ABI, an additional bit, <strong>__X32_SYSCALL_BIT</strong>, is bitwise-ORed with the system call number. The ABI used by a process affects some process behaviors, including signal handling or system call restarting.</p></li>
+<li><p>Since x32 has different sizes for <em>long</em> and pointer types, layouts of some (but not all; <em>struct timeval</em> or <em>struct rlimit</em> are 64-bit, for example) structures are different. In order to handle this, additional system calls are added to the system call table, starting from number 512 (without the <strong>__X32_SYSCALL_BIT</strong>). For example, <strong>__NR_readv</strong> is defined as 19 for the x86-64 ABI and as <em>__X32_SYSCALL_BIT</em> | <em><strong>515</strong></em> for the x32 ABI. Most of these additional system calls are actually identical to the system calls used for providing i386 compat. There are some notable exceptions, however, such as <strong>preadv2</strong>(2), which uses <em>struct iovec</em> entities with 4-byte pointers and sizes ("compat_iovec" in kernel terms), but passes an 8-byte <em>pos</em> argument in a single register and not two, as is done in every other ABI.</p></li>
+</ul></li>
+<li><p>Some architectures (namely, Alpha, IA-64, MIPS, SuperH, sparc/32, and sparc/64) use an additional register ("Retval2" in the above table) to pass back a second return value from the <strong>pipe</strong>(2) system call; Alpha uses this technique in the architecture-specific <strong>getxpid</strong>(2), <strong>getxuid</strong>(2), and <strong>getxgid</strong>(2) system calls as well. Other architectures do not use the second return value register in the system call interface, even if it is defined in the System V ABI.</p></li>
+</ul>
+<p>The second table shows the registers used to pass the system call arguments.</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Arch/ABI</th>
+<th style="text-align: left;">arg1</th>
+<th style="text-align: left;">arg2</th>
+<th style="text-align: left;">arg3</th>
+<th style="text-align: left;">arg4</th>
+<th style="text-align: left;">arg5</th>
+<th style="text-align: left;">arg6</th>
+<th style="text-align: left;">arg7</th>
+<th style="text-align: left;">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">alpha</td>
+<td style="text-align: left;">a0</td>
+<td style="text-align: left;">a1</td>
+<td style="text-align: left;">a2</td>
+<td style="text-align: left;">a3</td>
+<td style="text-align: left;">a4</td>
+<td style="text-align: left;">a5</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">arc</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">r1</td>
+<td style="text-align: left;">r2</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">r4</td>
+<td style="text-align: left;">r5</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">arm/OABI</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">r1</td>
+<td style="text-align: left;">r2</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">r4</td>
+<td style="text-align: left;">r5</td>
+<td style="text-align: left;">r6</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">arm/EABI</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">r1</td>
+<td style="text-align: left;">r2</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">r4</td>
+<td style="text-align: left;">r5</td>
+<td style="text-align: left;">r6</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">arm64</td>
+<td style="text-align: left;">x0</td>
+<td style="text-align: left;">x1</td>
+<td style="text-align: left;">x2</td>
+<td style="text-align: left;">x3</td>
+<td style="text-align: left;">x4</td>
+<td style="text-align: left;">x5</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">blackfin</td>
+<td style="text-align: left;">R0</td>
+<td style="text-align: left;">R1</td>
+<td style="text-align: left;">R2</td>
+<td style="text-align: left;">R3</td>
+<td style="text-align: left;">R4</td>
+<td style="text-align: left;">R5</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">i386</td>
+<td style="text-align: left;">ebx</td>
+<td style="text-align: left;">ecx</td>
+<td style="text-align: left;">edx</td>
+<td style="text-align: left;">esi</td>
+<td style="text-align: left;">edi</td>
+<td style="text-align: left;">ebp</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ia64</td>
+<td style="text-align: left;">out0</td>
+<td style="text-align: left;">out1</td>
+<td style="text-align: left;">out2</td>
+<td style="text-align: left;">out3</td>
+<td style="text-align: left;">out4</td>
+<td style="text-align: left;">out5</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">m68k</td>
+<td style="text-align: left;">d1</td>
+<td style="text-align: left;">d2</td>
+<td style="text-align: left;">d3</td>
+<td style="text-align: left;">d4</td>
+<td style="text-align: left;">d5</td>
+<td style="text-align: left;">a0</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">microblaze</td>
+<td style="text-align: left;">r5</td>
+<td style="text-align: left;">r6</td>
+<td style="text-align: left;">r7</td>
+<td style="text-align: left;">r8</td>
+<td style="text-align: left;">r9</td>
+<td style="text-align: left;">r10</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">mips/o32</td>
+<td style="text-align: left;">a0</td>
+<td style="text-align: left;">a1</td>
+<td style="text-align: left;">a2</td>
+<td style="text-align: left;">a3</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">mips/n32,64</td>
+<td style="text-align: left;">a0</td>
+<td style="text-align: left;">a1</td>
+<td style="text-align: left;">a2</td>
+<td style="text-align: left;">a3</td>
+<td style="text-align: left;">a4</td>
+<td style="text-align: left;">a5</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nios2</td>
+<td style="text-align: left;">r4</td>
+<td style="text-align: left;">r5</td>
+<td style="text-align: left;">r6</td>
+<td style="text-align: left;">r7</td>
+<td style="text-align: left;">r8</td>
+<td style="text-align: left;">r9</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">parisc</td>
+<td style="text-align: left;">r26</td>
+<td style="text-align: left;">r25</td>
+<td style="text-align: left;">r24</td>
+<td style="text-align: left;">r23</td>
+<td style="text-align: left;">r22</td>
+<td style="text-align: left;">r21</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">powerpc</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">r4</td>
+<td style="text-align: left;">r5</td>
+<td style="text-align: left;">r6</td>
+<td style="text-align: left;">r7</td>
+<td style="text-align: left;">r8</td>
+<td style="text-align: left;">r9</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">powerpc64</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">r4</td>
+<td style="text-align: left;">r5</td>
+<td style="text-align: left;">r6</td>
+<td style="text-align: left;">r7</td>
+<td style="text-align: left;">r8</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">riscv</td>
+<td style="text-align: left;">a0</td>
+<td style="text-align: left;">a1</td>
+<td style="text-align: left;">a2</td>
+<td style="text-align: left;">a3</td>
+<td style="text-align: left;">a4</td>
+<td style="text-align: left;">a5</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">s390</td>
+<td style="text-align: left;">r2</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">r4</td>
+<td style="text-align: left;">r5</td>
+<td style="text-align: left;">r6</td>
+<td style="text-align: left;">r7</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">s390x</td>
+<td style="text-align: left;">r2</td>
+<td style="text-align: left;">r3</td>
+<td style="text-align: left;">r4</td>
+<td style="text-align: left;">r5</td>
+<td style="text-align: left;">r6</td>
+<td style="text-align: left;">r7</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">superh</td>
+<td style="text-align: left;">r4</td>
+<td style="text-align: left;">r5</td>
+<td style="text-align: left;">r6</td>
+<td style="text-align: left;">r7</td>
+<td style="text-align: left;">r0</td>
+<td style="text-align: left;">r1</td>
+<td style="text-align: left;">r2</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">sparc/32</td>
+<td style="text-align: left;">o0</td>
+<td style="text-align: left;">o1</td>
+<td style="text-align: left;">o2</td>
+<td style="text-align: left;">o3</td>
+<td style="text-align: left;">o4</td>
+<td style="text-align: left;">o5</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sparc/64</td>
+<td style="text-align: left;">o0</td>
+<td style="text-align: left;">o1</td>
+<td style="text-align: left;">o2</td>
+<td style="text-align: left;">o3</td>
+<td style="text-align: left;">o4</td>
+<td style="text-align: left;">o5</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">tile</td>
+<td style="text-align: left;">R00</td>
+<td style="text-align: left;">R01</td>
+<td style="text-align: left;">R02</td>
+<td style="text-align: left;">R03</td>
+<td style="text-align: left;">R04</td>
+<td style="text-align: left;">R05</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">x86-64</td>
+<td style="text-align: left;">rdi</td>
+<td style="text-align: left;">rsi</td>
+<td style="text-align: left;">rdx</td>
+<td style="text-align: left;">r10</td>
+<td style="text-align: left;">r8</td>
+<td style="text-align: left;">r9</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">x32</td>
+<td style="text-align: left;">rdi</td>
+<td style="text-align: left;">rsi</td>
+<td style="text-align: left;">rdx</td>
+<td style="text-align: left;">r10</td>
+<td style="text-align: left;">r8</td>
+<td style="text-align: left;">r9</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">xtensa</td>
+<td style="text-align: left;">a6</td>
+<td style="text-align: left;">a3</td>
+<td style="text-align: left;">a4</td>
+<td style="text-align: left;">a5</td>
+<td style="text-align: left;">a8</td>
+<td style="text-align: left;">a9</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ul>
+<li><p>The mips/o32 system call convention passes arguments 5 through 8 on the user stack.</p></li>
+</ul>
+<p>Note that these tables don't cover the entire calling convention—some architectures may indiscriminately clobber other registers not listed here.</p>
+<h1>EXAMPLES</h1>
+<pre><code>#define _GNU_SOURCE
+#include &lt;unistd.h&gt;
+#include &lt;sys/syscall.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;signal.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    pid_t tid;
+
+    tid = syscall(SYS_gettid);
+    syscall(SYS_tgkill, getpid(), tid, SIGHUP);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>_syscall</strong>(2), <strong>intro</strong>(2), <strong>syscalls</strong>(2), <strong>errno</strong>(3), <strong>vdso</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

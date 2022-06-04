@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-mpls</title><meta name="description" content="Linux command tc-mpls mpls manipulation module"><meta name="keywords" content="linux, command, tc-mpls, bsd, mpls manipulation module"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mpls - mpls manipulation module</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc</strong> ... <strong>action mpls</strong> { <em>POP</em> | <em>PUSH</em> | <em>MODIFY</em> | <strong>dec_ttl</strong> } [ <em>CONTROL</em> ]</p>
+<p><em>POP</em> := <strong>pop</strong> <strong>protocol</strong> <em>MPLS_PROTO</em></p>
+<p><em>PUSH</em> := { <strong>push</strong> | <strong>mac_push</strong> } [ <strong>protocol</strong> <em>MPLS_PROTO</em> ] [ <strong>tc</strong> <em>MPLS_TC</em> ] [ <strong>ttl</strong> <em>MPLS_TTL</em> ] [ <strong>bos</strong> <em>MPLS_BOS</em> ] <strong>label</strong><em> MPLS_LABEL</em></p>
+<p><em>MODIFY</em> := <strong>modify</strong> [ <strong>label</strong> <em>MPLS_LABEL</em> ] [ <strong>tc</strong> <em>MPLS_TC</em> ] [ <strong>ttl</strong> <em>MPLS_TTL</em> ]</p>
+<p><em>CONTROL</em> := { <strong>reclassify</strong> | <strong>pipe</strong> | <strong>drop</strong> | <strong>continue</strong> | <strong>pass</strong> | <strong>goto</strong> <strong>chain</strong> <strong>CHAIN_INDEX</strong> }</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>mpls</strong> action performs mpls encapsulation or decapsulation on a packet, reflected by the operation modes <em>POP</em>, <em>PUSH</em>, <em>MODIFY</em> and <em>DEC_TTL</em>. The <em>POP</em> mode requires the ethertype of the header that follows the MPLS header (e.g. IPv4 or another MPLS). It will remove the outer MPLS header and replace the ethertype in the MAC header with that passed. The <em>PUSH</em> and <em>MODIFY</em> modes update the current MPLS header information or add a new header. <em>PUSH</em> requires at least an <em>MPLS_LABEL</em>. <em>DEC_TTL</em> requires no arguments and simply subtracts 1 from the MPLS header TTL field.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>pop</strong></dt>
+<dd><p>Decapsulation mode. Requires the protocol of the next header.</p>
+</dd>
+<dt><strong>push</strong></dt>
+<dd><p>Encapsulation mode. Adds the MPLS header between the MAC and the network headers. Requires at least the <strong>label</strong> option.</p>
+</dd>
+<dt><strong>mac_push</strong></dt>
+<dd><p>Encapsulation mode. Adds the MPLS header before the MAC header. Requires at least the <strong>label</strong> option.</p>
+</dd>
+<dt><strong>modify</strong></dt>
+<dd><p>Replace mode. Existing MPLS tag is replaced. <strong>label</strong>, <strong>tc</strong>, and <strong>ttl</strong> are all optional.</p>
+</dd>
+<dt><strong>dec_ttl</strong></dt>
+<dd><p>Decrement the TTL field on the outer most MPLS header.</p>
+</dd>
+<dt><strong>label</strong><em> MPLS_LABEL</em></dt>
+<dd><p>Specify the MPLS LABEL for the outer MPLS header. <em>MPLS_LABEL</em> is an unsigned 20bit integer, the format is detected automatically (e.g. prefix with '<strong>0x</strong>' for hexadecimal interpretation, etc.).</p>
+</dd>
+<dt><strong>protocol</strong><em> MPLS_PROTO</em></dt>
+<dd><p>Choose the protocol to use. For push actions this must be <strong>mpls_uc</strong> or <strong>mpls_mc</strong> (<strong>mpls_uc</strong> is the default). For pop actions it should be the protocol of the next header. This option cannot be used with modify.</p>
+</dd>
+<dt><strong>tc</strong><em> MPLS_TC</em></dt>
+<dd><p>Choose the TC value for the outer MPLS header. Decimal number in range of 0-7. Defaults to 0.</p>
+</dd>
+<dt><strong>ttl</strong><em> MPLS_TTL</em></dt>
+<dd><p>Choose the TTL value for the outer MPLS header. Number in range of 0-255. A non-zero default value will be selected if this is not explicitly set.</p>
+</dd>
+<dt><strong>bos</strong><em> MPLS_BOS</em></dt>
+<dd><p>Manually configure the bottom of stack bit for an MPLS header push. The default is for TC to automatically set (or unset) the bit based on the next header of the packet.</p>
+</dd>
+<dt><em>CONTROL</em></dt>
+<dd><p>How to continue after executing this action.</p>
+<dl>
+<dt><strong>reclassify</strong></dt>
+<dd><p>Restarts classification by jumping back to the first filter attached to this action's parent.</p>
+</dd>
+<dt><strong>pipe</strong></dt>
+<dd><p>Continue with the next action, this is the default.</p>
+</dd>
+<dt><strong>drop</strong></dt>
+<dd><p>Packet will be dropped without running further actions.</p>
+</dd>
+<dt><strong>continue</strong></dt>
+<dd><p>Continue classification with next filter in line.</p>
+</dd>
+<dt><strong>pass</strong></dt>
+<dd><p>Return to calling qdisc for packet processing. This ends the classification process.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<p>The following example encapsulates incoming IP packets on eth0 into MPLS with a label 123 and sends them out eth1:</p>
+<blockquote>
+<pre><code>#tc qdisc add dev eth0 handle ffff: ingress
+#tc filter add dev eth0 protocol ip parent ffff: flower \
+	action mpls push protocol mpls_uc label 123  \
+	action mirred egress redirect dev eth1</code></pre>
+</blockquote>
+<p>In this example, incoming MPLS unicast packets on eth0 are decapsulated and redirected to eth1:</p>
+<blockquote>
+<pre><code>#tc qdisc add dev eth0 handle ffff: ingress
+#tc filter add dev eth0 protocol mpls_uc parent ffff: flower \
+	action mpls pop protocol ipv4  \
+	action mirred egress redirect dev eth1</code></pre>
+</blockquote>
+<p>Here is another example, where incoming Ethernet frames are encapsulated into MPLS with label 123 and TTL 64. Then, an outer Ethernet header is added and the resulting frame is finally sent on eth1:</p>
+<blockquote>
+<pre><code>#tc qdisc add dev eth0 ingress
+#tc filter add dev eth0 ingress matchall \
+	action mpls mac_push label 123 ttl 64 \
+	action vlan push_eth \
+		dst_mac 02:00:00:00:00:02 \
+		src_mac 02:00:00:00:00:01 \
+	action mirred egress redirect dev eth1</code></pre>
+</blockquote>
+<p>The following example assumes that incoming MPLS packets with label 123 transport Ethernet frames. The outer Ethernet and the MPLS headers are stripped, then the inner Ethernet frame is sent on eth1:</p>
+<blockquote>
+<pre><code>#tc qdisc add dev eth0 ingress
+#tc filter add dev eth0 ingress protocol mpls_uc \
+	flower mpls_label 123 mpls_bos 1 \
+	action vlan pop_eth \
+	action mpls pop protocol teb \
+	action mirred egress redirect dev eth1</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8), <strong>tc-mirred</strong>(8), <strong>tc-vlan</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

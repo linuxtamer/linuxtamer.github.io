@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-vlan</title><meta name="description" content="Linux command tc-vlan vlan manipulation module"><meta name="keywords" content="linux, command, tc-vlan, bsd, vlan manipulation module"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>vlan - vlan manipulation module</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc</strong> ... <strong>action vlan</strong> { <strong>pop</strong> | <strong>pop_eth</strong> | <em>PUSH</em> | <em>MODIFY</em> | <em>PUSH_ETH</em> } [ <em>CONTROL</em> ]</p>
+<p><em>PUSH</em> := <strong>push</strong> [ <strong>protocol</strong> <em>VLANPROTO</em> ] <strong> [ </strong>priority <em>VLANPRIO</em> ] <strong>id</strong><em> VLANID</em></p>
+<p><em>MODIFY</em> := <strong>modify</strong> [ <strong>protocol</strong> <em>VLANPROTO</em> ] <strong> [ </strong>priority <em>VLANPRIO</em> ] <strong>id</strong><em> VLANID</em></p>
+<p><em>PUSH_ETH</em> := <strong>push_eth</strong> <strong>dst_mac</strong><em> LLADDR </em><strong>src_mac</strong><em> LLADDR </em></p>
+<p><em>CONTROL</em> := { <strong>reclassify</strong> | <strong>pipe</strong> | <strong>drop</strong> | <strong>continue</strong> | <strong>pass</strong> | <strong>goto</strong> <strong>chain</strong> <strong>CHAIN_INDEX</strong> }</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>vlan</strong> action allows to perform 802.1Q en- or decapsulation on a packet, reflected by the operation modes <em>POP</em>, <em>PUSH</em> and <em>MODIFY</em>. The <em>POP</em> mode is simple, as no further information is required to just drop the outer-most VLAN encapsulation. The <em>PUSH</em> and <em>MODIFY</em> modes require at least a <em>VLANID</em> and allow to optionally choose the <em>VLANPROTO</em> to use.</p>
+<p>The <strong>vlan</strong> action can also be used to add or remove the base Ethernet header. The <strong>pop_eth</strong> mode, which takes no argument, is used to remove the base Ethernet header. All existing VLANs must have been previously dropped. The opposite operation, adding a base Ethernet header, is done with the <strong>push_eth</strong> mode. In that case, the packet must have no MAC header (stacking MAC headers is not permitted). This mode is mostly useful when a previous action has encapsulated the whole original frame behind a network header and one needs to prepend an Ethernet header before forwarding the resulting packet.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>pop</strong></dt>
+<dd><p>Decapsulation mode, no further arguments allowed.</p>
+</dd>
+<dt><strong>push</strong></dt>
+<dd><p>Encapsulation mode. Requires at least <strong>id</strong> option.</p>
+</dd>
+<dt><strong>modify</strong></dt>
+<dd><p>Replace mode. Existing 802.1Q tag is replaced. Requires at least <strong>id</strong> option.</p>
+</dd>
+<dt><strong>pop_eth</strong></dt>
+<dd><p>Ethernet header decapsulation mode. Only works on a plain Ethernet header: VLANs, if any, must be removed first.</p>
+</dd>
+<dt><strong>push_eth</strong></dt>
+<dd><p>Ethernet header encapsulation mode. The Ethertype is automatically set using the network header type. Chaining Ethernet headers is not allowed: the packet must have no MAC header when using this mode. Requires the <strong>dst_mac </strong>and<strong> src_mac </strong>options.</p>
+</dd>
+<dt><strong>id</strong><em> VLANID</em></dt>
+<dd><p>Specify the VLAN ID to encapsulate into. <em>VLANID</em> is an unsigned 16bit integer, the format is detected automatically (e.g. prefix with '<strong>0x</strong>' for hexadecimal interpretation, etc.).</p>
+</dd>
+<dt><strong>protocol</strong><em> VLANPROTO</em></dt>
+<dd><p>Choose the VLAN protocol to use. At the time of writing, the kernel accepts only <strong>802.1Q</strong> or <strong>802.1ad</strong>.</p>
+</dd>
+<dt><strong>priority</strong><em> VLANPRIO</em></dt>
+<dd><p>Choose the VLAN priority to use. Decimal number in range of 0-7.</p>
+</dd>
+<dt><strong>dst_mac</strong><em> LLADDR</em></dt>
+<dd><p>Choose the destination MAC address to use.</p>
+</dd>
+<dt><strong>src_mac</strong><em> LLADDR</em></dt>
+<dd><p>Choose the source MAC address to use.</p>
+</dd>
+<dt><em>CONTROL</em></dt>
+<dd><p>How to continue after executing this action.</p>
+<dl>
+<dt><strong>reclassify</strong></dt>
+<dd><p>Restarts classification by jumping back to the first filter attached to this action's parent.</p>
+</dd>
+<dt><strong>pipe</strong></dt>
+<dd><p>Continue with the next action, this is the default.</p>
+</dd>
+<dt><strong>drop</strong></dt>
+<dd><p>Packet will be dropped without running further actions.</p>
+</dd>
+<dt><strong>continue</strong></dt>
+<dd><p>Continue classification with next filter in line.</p>
+</dd>
+<dt><strong>pass</strong></dt>
+<dd><p>Return to calling qdisc for packet processing. This ends the classification process.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<p>The following example encapsulates incoming ICMP packets on eth0 from 10.0.0.2 into VLAN ID 123:</p>
+<blockquote>
+<pre><code>#tc qdisc add dev eth0 handle ffff: ingress
+#tc filter add dev eth0 parent ffff: pref 11 protocol ip \
+	u32 match ip protocol 1 0xff flowid 1:1 \
+	    match ip src 10.0.0.2 flowid 1:1 \
+	action vlan push id 123</code></pre>
+</blockquote>
+<p>Here is an example of the <strong>pop</strong> function: Incoming VLAN packets on eth0 are decapsulated and the classification process then restarted for the plain packet:</p>
+<blockquote>
+<pre><code>#tc qdisc add dev eth0 handle ffff: ingress
+#tc filter add dev $ETH parent ffff: pref 1 protocol 802.1Q \
+	u32 match u32 0 0 flowid 1:1 \
+	action vlan pop reclassify</code></pre>
+</blockquote>
+<p>For an example of the <strong>pop_eth</strong> and <strong>push_eth</strong> modes, see <strong>tc-mpls</strong>(8).</p>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8), <strong>tc-mpls</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

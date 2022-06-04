@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command backend</title><meta name="description" content="Linux command backend cups backend transmission interfaces"><meta name="keywords" content="linux, command, backend, bsd, cups backend transmission interfaces"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>backend - cups backend transmission interfaces</p>
+<h1>SYNOPSIS</h1>
+<p><strong>backend</strong><br />
+<strong>backend</strong> <em>job</em> <em>user</em> <em>title</em> <em>num-copies</em> <em>options</em> [ <em>filename</em> ]</p>
+<pre><code>
+#include &lt;cups/cups.h&gt;
+
+const char *cupsBackendDeviceURI(char **argv);
+
+void cupsBackendReport(const char *device_scheme,
+                       const char *device_uri,
+                       const char *device_make_and_model,
+                       const char *device_info,
+                       const char *device_id,
+                       const char *device_location);
+
+ssize_t cupsBackChannelWrite(const char *buffer,
+                             size_t bytes, double timeout);
+
+int cupsSideChannelRead(cups_sc_command_t *command,
+                        cups_sc_status_t *status, char *data,
+                        int *datalen, double timeout);
+
+int cupsSideChannelWrite(cups_sc_command_t command,
+                         cups_sc_status_t status, const char *data,
+                         int datalen, double timeout);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>Backends are a special type of <strong>filter</strong>(7) which is used to send print data to and discover different devices on the system.</p>
+<p>Like filters, backends must be capable of reading from a filename on the command-line or from the standard input, copying the standard input to a temporary file as required by the physical interface.</p>
+<p>The command name (<em>argv[0]</em>) is set to the device URI of the destination printer. Authentication information in <em>argv[0]</em> is removed, so backend developers are urged to use the <strong>DEVICE_URI</strong> environment variable whenever authentication information is required. The <strong>cupsBackendDeviceURI</strong>() function may be used to retrieve the correct device URI.</p>
+<p>Back-channel data from the device should be relayed to the job filters using the <em>cupsBackChannelWrite</em> function.</p>
+<p>Backends are responsible for reading side-channel requests using the <strong>cupsSideChannelRead</strong>() function and responding with the <strong>cupsSideChannelWrite</strong>() function. The <strong>CUPS_SC_FD</strong> constant defines the file descriptor that should be monitored for incoming requests.</p>
+<h2>DEVICE DISCOVERY</h2>
+<p>When run with no arguments, the backend should list the devices and schemes it supports or is advertising to the standard output. The output consists of zero or more lines consisting of any of the following forms:</p>
+<pre><code>
+    device-class scheme &quot;Unknown&quot; &quot;device-info&quot;
+    device-class device-uri &quot;device-make-and-model&quot; &quot;device-info&quot;
+    device-class device-uri &quot;device-make-and-model&quot; &quot;device-info&quot; &quot;device-id&quot;
+    device-class device-uri &quot;device-make-and-model&quot; &quot;device-info&quot; &quot;device-id&quot; &quot;device-location&quot;</code></pre>
+<p>The <strong>cupsBackendReport</strong>() function can be used to generate these lines and handle any necessary escaping of characters in the various strings.</p>
+<p>The <em>device-class</em> field is one of the following values:</p>
+<dl>
+<dt><strong>direct</strong></dt>
+<dd><p>The device-uri refers to a specific direct-access device with no options, such as a parallel, USB, or SCSI device.</p>
+</dd>
+<dt><strong>file</strong></dt>
+<dd><p>The device-uri refers to a file on disk.</p>
+</dd>
+<dt><strong>network</strong></dt>
+<dd><p>The device-uri refers to a networked device and conforms to the general form for network URIs.</p>
+</dd>
+<dt><strong>serial</strong></dt>
+<dd><p>The device-uri refers to a serial device with configurable baud rate and other options. If the device-uri contains a baud value, it represents the maximum baud rate supported by the device.</p>
+</dd>
+</dl>
+<p>The <em>scheme</em> field provides the URI scheme that is supported by the backend. Backends should use this form only when the backend supports any URI using that scheme. The <em>device-uri</em> field specifies the full URI to use when communicating with the device.</p>
+<p>The <em>device-make-and-model</em> field specifies the make and model of the device, e.g. "Example Foojet 2000". If the make and model is not known, you must report "Unknown".</p>
+<p>The <em>device-info</em> field specifies additional information about the device. Typically this includes the make and model along with the port number or network address, e.g. "Example Foojet 2000 USB #1".</p>
+<p>The optional <em>device-id</em> field specifies the IEEE-1284 device ID string for the device, which is used to select a matching driver.</p>
+<p>The optional <em>device-location</em> field specifies the physical location of the device, which is often used to pre-populate the printer-location attribute when adding a printer.</p>
+<h2>PERMISSIONS</h2>
+<p>Backends without world read and execute permissions are run as the root user. Otherwise, the backend is run using an unprivileged user account, typically "lp".</p>
+<h1>EXIT STATUS</h1>
+<p>The following exit codes are defined for backends:</p>
+<dl>
+<dt><strong>CUPS_BACKEND_OK</strong></dt>
+<dd><p>The print file was successfully transmitted to the device or remote server.</p>
+</dd>
+<dt><strong>CUPS_BACKEND_FAILED</strong></dt>
+<dd><p><br />
+The print file was not successfully transmitted to the device or remote server. The scheduler will respond to this by canceling the job, retrying the job, or stopping the queue depending on the state of the <em>printer-error-policy</em> attribute.</p>
+</dd>
+<dt><strong>CUPS_BACKEND_AUTH_REQUIRED</strong></dt>
+<dd><p>The print file was not successfully transmitted because valid authentication information is required. The scheduler will respond to this by holding the job and adding the 'cups-held-for-authentication' keyword to the "job-reasons" Job Description attribute.</p>
+</dd>
+<dt><strong>CUPS_BACKEND_HOLD</strong></dt>
+<dd><p>The print file was not successfully transmitted because it cannot be printed at this time. The scheduler will respond to this by holding the job.</p>
+</dd>
+<dt><strong>CUPS_BACKEND_STOP</strong></dt>
+<dd><p>The print file was not successfully transmitted because it cannot be printed at this time. The scheduler will respond to this by stopping the queue.</p>
+</dd>
+<dt><strong>CUPS_BACKEND_CANCEL</strong></dt>
+<dd><p>The print file was not successfully transmitted because one or more attributes are not supported or the job was canceled at the printer. The scheduler will respond to this by canceling the job.</p>
+</dd>
+<dt><strong>CUPS_BACKEND_RETRY</strong></dt>
+<dd><p>The print file was not successfully transmitted because of a temporary issue. The scheduler will retry the job at a future time - other jobs may print before this one.</p>
+</dd>
+<dt><strong>CUPS_BACKEND_RETRY_CURRENT</strong></dt>
+<dd><p>The print file was not successfully transmitted because of a temporary issue. The scheduler will retry the job immediately without allowing intervening jobs.</p>
+</dd>
+</dl>
+<p>All other exit code values are reserved.</p>
+<h1>ENVIRONMENT</h1>
+<p>In addition to the environment variables listed in <strong>cups</strong>(1) and <strong>filter</strong>(7), CUPS backends can expect the following environment variable:</p>
+<dl>
+<dt><strong>DEVICE_URI</strong></dt>
+<dd><p>The device URI associated with the printer.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<p><em>/etc/cups/cups-files.conf</em></p>
+<h1>NOTES</h1>
+<p>CUPS backends are not generally designed to be run directly by the user. Aside from the device URI issue ( <em>argv[0]</em> and <strong>DEVICE_URI</strong> environment variable contain the device URI), CUPS backends also expect specific environment variables and file descriptors, and typically run in a user session that (on macOS) has additional restrictions that affect how it runs. Backends can also be installed with restricted permissions (0500 or 0700) that tell the scheduler to run them as the "root" user instead of an unprivileged user (typically "lp") on the system.</p>
+<p>Unless you are a developer and know what you are doing, please do not run backends directly. Instead, use the <strong>lp</strong>(1) or <strong>lpr</strong>(1) programs to send print jobs or <strong>lpinfo</strong>(8) to query for available printers using the backend. The one exception is the SNMP backend - see <strong>cups-snmp</strong>(8) for more information.</p>
+<h1>NOTES</h1>
+<p>CUPS printer drivers and backends are deprecated and will no longer be supported in a future feature release of CUPS. Printers that do not support IPP can be supported using applications such as <strong>ippeveprinter</strong>(1).</p>
+<h1>SEE ALSO</h1>
+<p><em>cups</em>(1), <em>cups-files.conf</em>(5), <em>cups-snmp</em>(8), <em>cupsd</em>(8), <em>filter</em>(7), <em>lp</em>(1), <em>lpinfo</em>(8), <em>lpr</em>(1),<br />
+CUPS Online Help (http://localhost:631/help)</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright © 2007-2019 by Apple Inc.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

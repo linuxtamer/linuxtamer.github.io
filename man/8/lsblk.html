@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command lsblk</title><meta name="description" content="Linux command lsblk list block devices"><meta name="keywords" content="linux, command, lsblk, bsd, list block devices"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>lsblk - list block devices</p>
+<h1>SYNOPSIS</h1>
+<p><strong>lsblk</strong> [options] [<em>device</em>...]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>lsblk</strong> lists information about all available or the specified block devices. The <strong>lsblk</strong> command reads the <strong>sysfs</strong> filesystem and <strong>udev db</strong> to gather information. If the udev db is not available or lsblk is compiled without udev support than it tries to read LABELs, UUIDs and filesystem types from the block device. In this case root permissions are necessary.</p>
+<p>The command prints all block devices (except RAM disks) in a tree-like format by default. Use <strong>lsblk --help</strong> to get a list of all available columns.</p>
+<p>The default output, as well as the default output from options like <strong>--fs</strong> and <strong>--topology</strong>, is subject to change. So whenever possible, you should avoid using default outputs in your scripts. Always explicitly define expected columns by using <strong>--output</strong> <em>columns-list</em> and <strong>--list</strong> in environments where a stable output is required.</p>
+<p>Note that <strong>lsblk</strong> might be executed in time when <strong>udev</strong> does not have all information about recently added or modified devices yet. In this case it is recommended to use <strong>udevadm settle</strong> before lsblk to synchronize with udev.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-a</strong>,<strong> --all</strong></dt>
+<dd><p>Also list empty devices and RAM disk devices.</p>
+</dd>
+<dt><strong>-b</strong>,<strong> --bytes</strong></dt>
+<dd><p>Print the SIZE column in bytes rather than in a human-readable format.</p>
+</dd>
+<dt><strong>-D</strong>,<strong> --discard</strong></dt>
+<dd><p>Print information about the discarding capabilities (TRIM, UNMAP) for each device.</p>
+</dd>
+<dt><strong>-d</strong>,<strong> --nodeps</strong></dt>
+<dd><p>Do not print holder devices or slaves. For example, <strong>lsblk --nodeps /dev/sda</strong> prints information about the sda device only.</p>
+</dd>
+<dt><strong>-E</strong>,<strong> --dedup </strong><em>column</em></dt>
+<dd><p>Use <em>column</em> as a de-duplication key to de-duplicate output tree. If the key is not available for the device, or the device is a partition and parental whole-disk device provides the same key than the device is always printed.</p>
+</dd>
+</dl>
+<p>The usual use case is to de-duplicate output on system multi-path devices, for example by <strong>-E WWN</strong>.</p>
+<dl>
+<dt><strong>-e</strong>,<strong> --exclude </strong><em>list</em></dt>
+<dd><p>Exclude the devices specified by the comma-separated <em>list</em> of major device numbers. Note that RAM disks (major=1) are excluded by default if <strong>--all</strong> is not specified. The filter is applied to the top-level devices only. This may be confusing for <strong>--list</strong> output format where hierarchy of the devices is not obvious.</p>
+</dd>
+<dt><strong>-f</strong>,<strong> --fs</strong></dt>
+<dd><p>Output info about filesystems. This option is equivalent to <strong>-o NAME,FSTYPE,LABEL,UUID,FSAVAIL,FSUSE%,MOUNTPOINT</strong>. The authoritative information about filesystems and raids is provided by the <strong>blkid</strong>(8) command.</p>
+</dd>
+<dt><strong>-h</strong>,<strong> --help</strong></dt>
+<dd><p>Display help text and exit.</p>
+</dd>
+<dt><strong>-I</strong>,<strong> --include </strong><em>list</em></dt>
+<dd><p>Include devices specified by the comma-separated <em>list</em> of major device numbers. The filter is applied to the top-level devices only. This may be confusing for <strong>--list</strong> output format where hierarchy of the devices is not obvious.</p>
+</dd>
+<dt><strong>-i</strong>,<strong> --ascii</strong></dt>
+<dd><p>Use ASCII characters for tree formatting.</p>
+</dd>
+<dt><strong>-J</strong>,<strong> --json</strong></dt>
+<dd><p>Use JSON output format. It's strongly recommended to use <strong>--output</strong> and also <strong>--tree</strong> if necessary.</p>
+</dd>
+<dt><strong>-l</strong>,<strong> --list</strong></dt>
+<dd><p>Produce output in the form of a list. The output does not provide information about relationships between devices and since version 2.34 every device is printed only once if <strong>--pairs</strong> or <strong>--raw</strong> not specified (the parsable outputs are maintained in backwardly compatible way).</p>
+</dd>
+<dt><strong>-M</strong>,<strong> --merge</strong></dt>
+<dd><p>Group parents of sub-trees to provide more readable output for RAIDs and Multi-path devices. The tree-like output is required.</p>
+</dd>
+<dt><strong>-m</strong>,<strong> --perms</strong></dt>
+<dd><p>Output info about device owner, group and mode. This option is equivalent to <strong>-o NAME,SIZE,OWNER,GROUP,MODE</strong>.</p>
+</dd>
+<dt><strong>-n</strong>,<strong> --noheadings</strong></dt>
+<dd><p>Do not print a header line.</p>
+</dd>
+<dt><strong>-o</strong>,<strong> --output </strong><em>list</em></dt>
+<dd><p>Specify which output columns to print. Use <strong>--help</strong> to get a list of all supported columns. The columns may affect tree-like output. The default is to use tree for the column 'NAME' (see also <strong>--tree</strong>).</p>
+</dd>
+</dl>
+<p>The default list of columns may be extended if <em>list</em> is specified in the format <em>+list</em> (e.g., <strong>lsblk -o +UUID</strong>).</p>
+<dl>
+<dt><strong>-O</strong>,<strong> --output-all</strong></dt>
+<dd><p>Output all available columns.</p>
+</dd>
+<dt><strong>-P</strong>,<strong> --pairs</strong></dt>
+<dd><p>Produce output in the form of key="value" pairs. The output lines are still ordered by dependencies. All potentially unsafe characters are hex-escaped (\x&lt;code&gt;).</p>
+</dd>
+<dt><strong>-p</strong>,<strong> --paths</strong></dt>
+<dd><p>Print full device paths.</p>
+</dd>
+<dt><strong>-r</strong>,<strong> --raw</strong></dt>
+<dd><p>Produce output in raw format. The output lines are still ordered by dependencies. All potentially unsafe characters are hex-escaped (\x&lt;code&gt;) in the NAME, KNAME, LABEL, PARTLABEL and MOUNTPOINT columns.</p>
+</dd>
+<dt><strong>-S</strong>,<strong> --scsi</strong></dt>
+<dd><p>Output info about SCSI devices only. All partitions, slaves and holder devices are ignored.</p>
+</dd>
+<dt><strong>-s</strong>,<strong> --inverse</strong></dt>
+<dd><p>Print dependencies in inverse order. If the <strong>--list</strong> output is requested then the lines are still ordered by dependencies.</p>
+</dd>
+<dt><strong>-T</strong>,<strong> --tree</strong>[<strong>=<em>column</em></strong>]</dt>
+<dd><p>Force tree-like output format. If <em>column is specified, then a tree is printed in the column.</em> The default is NAME column.</p>
+</dd>
+<dt><strong>-t</strong>,<strong> --topology</strong></dt>
+<dd><p>Output info about block-device topology. This option is equivalent to <strong>-o NAME,ALIGNMENT,MIN-IO,OPT-IO,PHY-SEC,LOG-SEC,ROTA,SCHED,RQ-SIZE,RA,WSAME</strong>.</p>
+</dd>
+<dt><strong>-V</strong>,<strong> --version</strong></dt>
+<dd><p>Display version information and exit.</p>
+</dd>
+<dt><strong>-x</strong>,<strong> --sort </strong><em>column</em></dt>
+<dd><p>Sort output lines by <em>column. This option enables </em><strong>--list</strong> output format by default. It is possible to use the option <em>--tree</em> to force tree-like output and than the tree branches are sorted by the <em>column</em>.</p>
+</dd>
+<dt><strong>-z</strong>,<strong> --zoned</strong></dt>
+<dd><p>Print the zone model for each device.</p>
+</dd>
+<dt><strong> --sysroot </strong><em>directory</em></dt>
+<dd><p>Gather data for a Linux instance other than the instance from which the lsblk command is issued. The specified directory is the system root of the Linux instance to be inspected. The real device nodes in the target directory can be replaced by text files with udev attributes.</p>
+</dd>
+</dl>
+<h1>EXIT STATUS</h1>
+<ol start="0" type="1">
+<li><p>success</p></li>
+<li><p>failure</p></li>
+<li><p>none of specified devices found</p></li>
+<li><p>some specified devices found, some not found</p></li>
+</ol>
+<h1>ENVIRONMENT</h1>
+<ul>
+<li><p>enables lsblk debug output.</p></li>
+<li><p>enables libblkid debug output.</p></li>
+<li><p>enables libmount debug output.</p></li>
+<li><p>enables libsmartcols debug output.</p></li>
+<li><p>use visible padding characters. Requires enabled LIBSMARTCOLS_DEBUG.</p></li>
+</ul>
+<h1>NOTES</h1>
+<p>For partitions, some information (e.g., queue attributes) is inherited from the parent device.</p>
+<p>The <strong>lsblk</strong> command needs to be able to look up each block device by major:minor numbers, which is done by using <em>/sys/dev/block</em>. This sysfs block directory appeared in kernel 2.6.27 (October 2008). In case of problems with a new enough kernel, check that CONFIG_SYSFS was enabled at the time of the kernel build.</p>
+<h1>AUTHORS</h1>
+<pre><code>Milan Broz &lt;mbroz@redhat.com&gt;
+Karel Zak &lt;kzak@redhat.com&gt;</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>ls</strong>(1), <strong>blkid</strong>(8), <strong>findmnt</strong>(8)</p>
+<h1>AVAILABILITY</h1>
+<p>The lsblk command is part of the util-linux package and is available from https://www.kernel.org/pub/linux/utils/util-linux/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

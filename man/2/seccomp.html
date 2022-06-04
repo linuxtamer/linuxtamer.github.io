@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command seccomp</title><meta name="description" content="Linux command seccomp operate on Secure Computing state of the process"><meta name="keywords" content="linux, command, seccomp, bsd, operate on Secure Computing state of the process"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>seccomp - operate on Secure Computing state of the process</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;linux/seccomp.h&gt;
+#include &lt;linux/filter.h&gt;
+#include &lt;linux/audit.h&gt;
+#include &lt;linux/signal.h&gt;
+#include &lt;sys/ptrace.h&gt;
+
+int seccomp(unsigned int operation, unsigned int flags&quot;,void*&quot;args);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>seccomp</strong>() system call operates on the Secure Computing (seccomp) state of the calling process.</p>
+<p>Currently, Linux supports the following <em>operation</em> values:</p>
+<dl>
+<dt><strong>SECCOMP_SET_MODE_STRICT</strong></dt>
+<dd><p>The only system calls that the calling thread is permitted to make are <strong>read</strong>(2), <strong>write</strong>(2), <strong>_exit</strong>(2) (but not <strong>exit_group</strong>(2)), and <strong>sigreturn</strong>(2). Other system calls result in the delivery of a <strong>SIGKILL</strong> signal. Strict secure computing mode is useful for number-crunching applications that may need to execute untrusted byte code, perhaps obtained by reading from a pipe or socket.</p>
+<p>Note that although the calling thread can no longer call <strong>sigprocmask</strong>(2), it can use <strong>sigreturn</strong>(2) to block all signals apart from <strong>SIGKILL</strong> and <strong>SIGSTOP</strong>. This means that <strong>alarm</strong>(2) (for example) is not sufficient for restricting the process's execution time. Instead, to reliably terminate the process, <strong>SIGKILL</strong> must be used. This can be done by using <strong>timer_create</strong>(2) with <strong>SIGEV_SIGNAL</strong> and <em>sigev_signo</em> set to <strong>SIGKILL</strong>, or by using <strong>setrlimit</strong>(2) to set the hard limit for <strong>RLIMIT_CPU</strong>.</p>
+<p>This operation is available only if the kernel is configured with <strong>CONFIG_SECCOMP</strong> enabled.</p>
+<p>The value of <em>flags</em> must be 0, and <em>args</em> must be NULL.</p>
+<p>This operation is functionally identical to the call:</p>
+<pre><code>prctl(PR_SET_SECCOMP, SECCOMP_MODE_STRICT);</code></pre>
+</dd>
+<dt><strong>SECCOMP_SET_MODE_FILTER</strong></dt>
+<dd><p>The system calls allowed are defined by a pointer to a Berkeley Packet Filter (BPF) passed via <em>args</em>. This argument is a pointer to a <em>struct sock_fprog</em>; it can be designed to filter arbitrary system calls and system call arguments. If the filter is invalid, <strong>seccomp</strong>() fails, returning <strong>EINVAL</strong> in <em>errno</em>.</p>
+<p>If <strong>fork</strong>(2) or <strong>clone</strong>(2) is allowed by the filter, any child processes will be constrained to the same system call filters as the parent. If <strong>execve</strong>(2) is allowed, the existing filters will be preserved across a call to <strong>execve</strong>(2).</p>
+<p>In order to use the <strong>SECCOMP_SET_MODE_FILTER</strong> operation, either the calling thread must have the <strong>CAP_SYS_ADMIN</strong> capability in its user namespace, or the thread must already have the <em>no_new_privs</em> bit set. If that bit was not already set by an ancestor of this thread, the thread must make the following call:</p>
+<pre><code>prctl(PR_SET_NO_NEW_PRIVS, 1);</code></pre>
+<p>Otherwise, the <strong>SECCOMP_SET_MODE_FILTER</strong> operation fails and returns <strong>EACCES</strong> in <em>errno</em>. This requirement ensures that an unprivileged process cannot apply a malicious filter and then invoke a set-user-ID or other privileged program using <strong>execve</strong>(2), thus potentially compromising that program. (Such a malicious filter might, for example, cause an attempt to use <strong>setuid</strong>(2) to set the caller's user IDs to nonzero values to instead return 0 without actually making the system call. Thus, the program might be tricked into retaining superuser privileges in circumstances where it is possible to influence it to do dangerous things because it did not actually drop privileges.)</p>
+<p>If <strong>prctl</strong>(2) or <strong>seccomp</strong>() is allowed by the attached filter, further filters may be added. This will increase evaluation time, but allows for further reduction of the attack surface during execution of a thread.</p>
+<p>The <strong>SECCOMP_SET_MODE_FILTER</strong> operation is available only if the kernel is configured with <strong>CONFIG_SECCOMP_FILTER</strong> enabled.</p>
+<p>When <em>flags</em> is 0, this operation is functionally identical to the call:</p>
+<pre><code>prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, args);</code></pre>
+<p>The recognized <em>flags</em> are:</p>
+<dl>
+<dt><strong>SECCOMP_FILTER_FLAG_TSYNC</strong></dt>
+<dd><p>When adding a new filter, synchronize all other threads of the calling process to the same seccomp filter tree. A "filter tree" is the ordered list of filters attached to a thread. (Attaching identical filters in separate <strong>seccomp</strong>() calls results in different filters from this perspective.)</p>
+<p>If any thread cannot synchronize to the same filter tree, the call will not attach the new seccomp filter, and will fail, returning the first thread ID found that cannot synchronize. Synchronization will fail if another thread in the same process is in <strong>SECCOMP_MODE_STRICT</strong> or if it has attached new seccomp filters to itself, diverging from the calling thread's filter tree.</p>
+</dd>
+<dt><strong>SECCOMP_FILTER_FLAG_LOG</strong> (since Linux 4.14)</dt>
+<dd><p>All filter return actions except <strong>SECCOMP_RET_ALLOW</strong> should be logged. An administrator may override this filter flag by preventing specific actions from being logged via the <em>/proc/sys/kernel/seccomp/actions_logged</em> file.</p>
+</dd>
+<dt><strong>SECCOMP_FILTER_FLAG_SPEC_ALLOW</strong> (since Linux 4.17)</dt>
+<dd><p>Disable Speculative Store Bypass mitigation.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>SECCOMP_GET_ACTION_AVAIL</strong> (since Linux 4.14)</dt>
+<dd><p>Test to see if an action is supported by the kernel. This operation is helpful to confirm that the kernel knows of a more recently added filter return action since the kernel treats all unknown actions as <strong>SECCOMP_RET_KILL_PROCESS</strong>.</p>
+<p>The value of <em>flags</em> must be 0, and <em>args</em> must be a pointer to an unsigned 32-bit filter return action.</p>
+</dd>
+</dl>
+<h2>Filters</h2>
+<p>When adding filters via <strong>SECCOMP_SET_MODE_FILTER</strong>, <em>args</em> points to a filter program:</p>
+<pre><code>struct sock_fprog {
+    unsigned short      len;    /* Number of BPF instructions */
+    struct sock_filter *filter; /* Pointer to array of
+                                   BPF instructions */
+};</code></pre>
+<p>Each program must contain one or more BPF instructions:</p>
+<pre><code>struct sock_filter {            /* Filter block */
+    __u16 code;                 /* Actual filter code */
+    __u8  jt;                   /* Jump true */
+    __u8  jf;                   /* Jump false */
+    __u32 k;                    /* Generic multiuse field */
+};</code></pre>
+<p>When executing the instructions, the BPF program operates on the system call information made available (i.e., use the <strong>BPF_ABS</strong> addressing mode) as a (read-only) buffer of the following form:</p>
+<pre><code>struct seccomp_data {
+    int   nr;                   /* System call number */
+    __u32 arch;                 /* AUDIT_ARCH_* value
+                                   (see &lt;linux/audit.h&gt;) */
+    __u64 instruction_pointer;  /* CPU instruction pointer */
+    __u64 args[6];              /* Up to 6 system call arguments */
+};</code></pre>
+<p>Because numbering of system calls varies between architectures and some architectures (e.g., x86-64) allow user-space code to use the calling conventions of multiple architectures (and the convention being used may vary over the life of a process that uses <strong>execve</strong>(2) to execute binaries that employ the different conventions), it is usually necessary to verify the value of the <em>arch</em> field.</p>
+<p>It is strongly recommended to use an allow-list approach whenever possible because such an approach is more robust and simple. A deny-list will have to be updated whenever a potentially dangerous system call is added (or a dangerous flag or option if those are deny-listed), and it is often possible to alter the representation of a value without altering its meaning, leading to a deny-list bypass. See also <em>Caveats</em> below.</p>
+<p>The <em>arch</em> field is not unique for all calling conventions. The x86-64 ABI and the x32 ABI both use <strong>AUDIT_ARCH_X86_64</strong> as <em>arch</em>, and they run on the same processors. Instead, the mask <strong>__X32_SYSCALL_BIT</strong> is used on the system call number to tell the two ABIs apart.</p>
+<p>This means that a policy must either deny all syscalls with <strong>__X32_SYSCALL_BIT</strong> or it must recognize syscalls with and without <strong>__X32_SYSCALL_BIT</strong> set. A list of system calls to be denied based on <em>nr</em> that does not also contain <em>nr</em> values with <strong>__X32_SYSCALL_BIT</strong> set can be bypassed by a malicious program that sets <strong>__X32_SYSCALL_BIT</strong>.</p>
+<p>Additionally, kernels prior to Linux 5.4 incorrectly permitted <em>nr</em> in the ranges 512-547 as well as the corresponding non-x32 syscalls ORed with <strong>__X32_SYSCALL_BIT</strong>. For example, <em>nr</em> == 521 and <em>nr</em> == (101 | <strong>__X32_SYSCALL_BIT</strong>) would result in invocations of <strong>ptrace</strong>(2) with potentially confused x32-vs-x86_64 semantics in the kernel. Policies intended to work on kernels before Linux 5.4 must ensure that they deny or otherwise correctly handle these system calls. On Linux 5.4 and newer, such system calls will fail with the error <strong>ENOSYS</strong>, without doing anything.</p>
+<p>The <em>instruction_pointer</em> field provides the address of the machine-language instruction that performed the system call. This might be useful in conjunction with the use of <em>/proc/[pid]/maps</em> to perform checks based on which region (mapping) of the program made the system call. (Probably, it is wise to lock down the <strong>mmap</strong>(2) and <strong>mprotect</strong>(2) system calls to prevent the program from subverting such checks.)</p>
+<p>When checking values from <em>args</em>, keep in mind that arguments are often silently truncated before being processed, but after the seccomp check. For example, this happens if the i386 ABI is used on an x86-64 kernel: although the kernel will normally not look beyond the 32 lowest bits of the arguments, the values of the full 64-bit registers will be present in the seccomp data. A less surprising example is that if the x86-64 ABI is used to perform a system call that takes an argument of type <em>int</em>, the more-significant half of the argument register is ignored by the system call, but visible in the seccomp data.</p>
+<p>A seccomp filter returns a 32-bit value consisting of two parts: the most significant 16 bits (corresponding to the mask defined by the constant <strong>SECCOMP_RET_ACTION_FULL</strong>) contain one of the "action" values listed below; the least significant 16-bits (defined by the constant <strong>SECCOMP_RET_DATA</strong>) are "data" to be associated with this return value.</p>
+<p>If multiple filters exist, they are <em>all</em> executed, in reverse order of their addition to the filter tree—that is, the most recently installed filter is executed first. (Note that all filters will be called even if one of the earlier filters returns <strong>SECCOMP_RET_KILL</strong>. This is done to simplify the kernel code and to provide a tiny speed-up in the execution of sets of filters by avoiding a check for this uncommon case.) The return value for the evaluation of a given system call is the first-seen action value of highest precedence (along with its accompanying data) returned by execution of all of the filters.</p>
+<p>In decreasing order of precedence, the action values that may be returned by a seccomp filter are:</p>
+<dl>
+<dt><strong>SECCOMP_RET_KILL_PROCESS</strong> (since Linux 4.14)</dt>
+<dd><p>This value results in immediate termination of the process, with a core dump. The system call is not executed. By contrast with <strong>SECCOMP_RET_KILL_THREAD</strong> below, all threads in the thread group are terminated. (For a discussion of thread groups, see the description of the <strong>CLONE_THREAD</strong> flag in <strong>clone</strong>(2).)</p>
+<p>The process terminates <em>as though</em> killed by a <strong>SIGSYS</strong> signal. Even if a signal handler has been registered for <strong>SIGSYS</strong>, the handler will be ignored in this case and the process always terminates. To a parent process that is waiting on this process (using <strong>waitpid</strong>(2) or similar), the returned <em>wstatus</em> will indicate that its child was terminated as though by a <strong>SIGSYS</strong> signal.</p>
+</dd>
+<dt><strong>SECCOMP_RET_KILL_THREAD</strong> (or <strong>SECCOMP_RET_KILL</strong>)</dt>
+<dd><p>This value results in immediate termination of the thread that made the system call. The system call is not executed. Other threads in the same thread group will continue to execute.</p>
+<p>The thread terminates <em>as though</em> killed by a <strong>SIGSYS</strong> signal. See <strong>SECCOMP_RET_KILL_PROCESS</strong> above.</p>
+<p>Before Linux 4.11, any process terminated in this way would not trigger a coredump (even though <strong>SIGSYS</strong> is documented in <strong>signal</strong>(7) as having a default action of termination with a core dump). Since Linux 4.11, a single-threaded process will dump core if terminated in this way.</p>
+<p>With the addition of <strong>SECCOMP_RET_KILL_PROCESS</strong> in Linux 4.14, <strong>SECCOMP_RET_KILL_THREAD</strong> was added as a synonym for <strong>SECCOMP_RET_KILL</strong>, in order to more clearly distinguish the two actions.</p>
+<p><strong>Note</strong>: the use of <strong>SECCOMP_RET_KILL_THREAD</strong> to kill a single thread in a multithreaded process is likely to leave the process in a permanently inconsistent and possibly corrupt state.</p>
+</dd>
+<dt><strong>SECCOMP_RET_TRAP</strong></dt>
+<dd><p>This value results in the kernel sending a thread-directed <strong>SIGSYS</strong> signal to the triggering thread. (The system call is not executed.) Various fields will be set in the <em>siginfo_t</em> structure (see <strong>sigaction</strong>(2)) associated with signal:</p>
+<ul>
+<li><p><em>si_signo</em> will contain <strong>SIGSYS</strong>.</p></li>
+<li><p><em>si_call_addr</em> will show the address of the system call instruction.</p></li>
+<li><p><em>si_syscall</em> and <em>si_arch</em> will indicate which system call was attempted.</p></li>
+<li><p><em>si_code</em> will contain <strong>SYS_SECCOMP</strong>.</p></li>
+<li><p><em>si_errno</em> will contain the <strong>SECCOMP_RET_DATA</strong> portion of the filter return value.</p></li>
+</ul>
+<p>The program counter will be as though the system call happened (i.e., the program counter will not point to the system call instruction). The return value register will contain an architecture-dependent value; if resuming execution, set it to something appropriate for the system call. (The architecture dependency is because replacing it with <strong>ENOSYS</strong> could overwrite some useful information.)</p>
+</dd>
+<dt><strong>SECCOMP_RET_ERRNO</strong></dt>
+<dd><p>This value results in the <strong>SECCOMP_RET_DATA</strong> portion of the filter's return value being passed to user space as the <em>errno</em> value without executing the system call.</p>
+</dd>
+<dt><strong>SECCOMP_RET_TRACE</strong></dt>
+<dd><p>When returned, this value will cause the kernel to attempt to notify a <strong>ptrace</strong>(2)-based tracer prior to executing the system call. If there is no tracer present, the system call is not executed and returns a failure status with <em>errno</em> set to <strong>ENOSYS</strong>.</p>
+<p>A tracer will be notified if it requests <strong>PTRACE_O_TRACESECCOMP</strong> using <em>ptrace(PTRACE_SETOPTIONS)</em>. The tracer will be notified of a <strong>PTRACE_EVENT_SECCOMP</strong> and the <strong>SECCOMP_RET_DATA</strong> portion of the filter's return value will be available to the tracer via <strong>PTRACE_GETEVENTMSG</strong>.</p>
+<p>The tracer can skip the system call by changing the system call number to -1. Alternatively, the tracer can change the system call requested by changing the system call to a valid system call number. If the tracer asks to skip the system call, then the system call will appear to return the value that the tracer puts in the return value register.</p>
+<p>Before kernel 4.8, the seccomp check will not be run again after the tracer is notified. (This means that, on older kernels, seccomp-based sandboxes <strong>must not</strong> allow use of <strong>ptrace</strong>(2)—even of other sandboxed processes—without extreme care; ptracers can use this mechanism to escape from the seccomp sandbox.)</p>
+<p>Note that a tracer process will not be notified if another filter returns an action value with a precedence greater than <strong>SECCOMP_RET_TRACE</strong>.</p>
+</dd>
+<dt><strong>SECCOMP_RET_LOG</strong> (since Linux 4.14)</dt>
+<dd><p>This value results in the system call being executed after the filter return action is logged. An administrator may override the logging of this action via the <em>/proc/sys/kernel/seccomp/actions_logged</em> file.</p>
+</dd>
+<dt><strong>SECCOMP_RET_ALLOW</strong></dt>
+<dd><p>This value results in the system call being executed.</p>
+</dd>
+</dl>
+<p>If an action value other than one of the above is specified, then the filter action is treated as either <strong>SECCOMP_RET_KILL_PROCESS</strong> (since Linux 4.14) or <strong>SECCOMP_RET_KILL_THREAD</strong> (in Linux 4.13 and earlier).</p>
+<h2>/proc interfaces</h2>
+<p>The files in the directory <em>/proc/sys/kernel/seccomp</em> provide additional seccomp information and configuration:</p>
+<dl>
+<dt><em>actions_avail</em> (since Linux 4.14)</dt>
+<dd><p>A read-only ordered list of seccomp filter return actions in string form. The ordering, from left-to-right, is in decreasing order of precedence. The list represents the set of seccomp filter return actions supported by the kernel.</p>
+</dd>
+<dt><em>actions_logged</em> (since Linux 4.14)</dt>
+<dd><p>A read-write ordered list of seccomp filter return actions that are allowed to be logged. Writes to the file do not need to be in ordered form but reads from the file will be ordered in the same way as the <em>actions_avail</em> file.</p>
+<p>It is important to note that the value of <em>actions_logged</em> does not prevent certain filter return actions from being logged when the audit subsystem is configured to audit a task. If the action is not found in the <em>actions_logged</em> file, the final decision on whether to audit the action for that task is ultimately left up to the audit subsystem to decide for all filter return actions other than <strong>SECCOMP_RET_ALLOW</strong>.</p>
+<p>The "allow" string is not accepted in the <em>actions_logged</em> file as it is not possible to log <strong>SECCOMP_RET_ALLOW</strong> actions. Attempting to write "allow" to the file will fail with the error <strong>EINVAL</strong>.</p>
+</dd>
+</dl>
+<h2>Audit logging of seccomp actions</h2>
+<p>Since Linux 4.14, the kernel provides the facility to log the actions returned by seccomp filters in the audit log. The kernel makes the decision to log an action based on the action type, whether or not the action is present in the <em>actions_logged</em> file, and whether kernel auditing is enabled (e.g., via the kernel boot option <em>audit=1</em>). The rules are as follows:</p>
+<ul>
+<li><p>If the action is <strong>SECCOMP_RET_ALLOW</strong>, the action is not logged.</p></li>
+<li><p>Otherwise, if the action is either <strong>SECCOMP_RET_KILL_PROCESS</strong> or <strong>SECCOMP_RET_KILL_THREAD</strong>, and that action appears in the <em>actions_logged</em> file, the action is logged.</p></li>
+<li><p>Otherwise, if the filter has requested logging (the <strong>SECCOMP_FILTER_FLAG_LOG</strong> flag) and the action appears in the <em>actions_logged</em> file, the action is logged.</p></li>
+<li><p>Otherwise, if kernel auditing is enabled and the process is being audited (<strong>autrace</strong>(8)), the action is logged.</p></li>
+<li><p>Otherwise, the action is not logged.</p></li>
+</ul>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>seccomp</strong>() returns 0. On error, if <strong>SECCOMP_FILTER_FLAG_TSYNC</strong> was used, the return value is the ID of the thread that caused the synchronization failure. (This ID is a kernel thread ID of the type returned by <strong>clone</strong>(2) and <strong>gettid</strong>(2).) On other errors, -1 is returned, and <em>errno</em> is set to indicate the cause of the error.</p>
+<h1>ERRORS</h1>
+<p><strong>seccomp</strong>() can fail for the following reasons:</p>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>The caller did not have the <strong>CAP_SYS_ADMIN</strong> capability in its user namespace, or had not set <em>no_new_privs</em> before using <strong>SECCOMP_SET_MODE_FILTER</strong>.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>args</em> was not a valid address.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>operation</em> is unknown or is not supported by this kernel version or configuration.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The specified <em>flags</em> are invalid for the given <em>operation</em>.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>operation</em> included <strong>BPF_ABS</strong>, but the specified offset was not aligned to a 32-bit boundary or exceeded <em>sizeof(struct seccomp_data)</em>.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>A secure computing mode has already been set, and <em>operation</em> differs from the existing setting.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>operation</em> specified <strong>SECCOMP_SET_MODE_FILTER</strong>, but the filter program pointed to by <em>args</em> was not valid or the length of the filter program was zero or exceeded <strong>BPF_MAXINSNS</strong> (4096) instructions.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Out of memory.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>The total length of all filter programs attached to the calling thread would exceed <strong>MAX_INSNS_PER_PATH</strong> (32768) instructions. Note that for the purposes of calculating this limit, each already existing filter program incurs an overhead penalty of 4 instructions.</p>
+</dd>
+<dt><strong>EOPNOTSUPP</strong></dt>
+<dd><p><em>operation</em> specified <strong>SECCOMP_GET_ACTION_AVAIL</strong>, but the kernel does not support the filter return action specified by <em>args</em>.</p>
+</dd>
+<dt><strong>ESRCH</strong></dt>
+<dd><p>Another thread caused a failure during thread sync, but its ID could not be determined.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The <strong>seccomp</strong>() system call first appeared in Linux 3.17.</p>
+<h1>CONFORMING TO</h1>
+<p>The <strong>seccomp</strong>() system call is a nonstandard Linux extension.</p>
+<h1>NOTES</h1>
+<p>Rather than hand-coding seccomp filters as shown in the example below, you may prefer to employ the <em>libseccomp</em> library, which provides a front-end for generating seccomp filters.</p>
+<p>The <em>Seccomp</em> field of the <em>/proc/[pid]/status</em> file provides a method of viewing the seccomp mode of a process; see <strong>proc</strong>(5).</p>
+<p><strong>seccomp</strong>() provides a superset of the functionality provided by the <strong>prctl</strong>(2) <strong>PR_SET_SECCOMP</strong> operation (which does not support <em>flags</em>).</p>
+<p>Since Linux 4.4, the <strong>ptrace</strong>(2) <strong>PTRACE_SECCOMP_GET_FILTER</strong> operation can be used to dump a process's seccomp filters.</p>
+<h2>Architecture support for seccomp BPF</h2>
+<p>Architecture support for seccomp BPF filtering is available on the following architectures:</p>
+<ul>
+<li><p>x86-64, i386, x32 (since Linux 3.5)</p></li>
+</ul>
+<ul>
+<li><p>ARM (since Linux 3.8)</p></li>
+<li><p>s390 (since Linux 3.8)</p></li>
+<li><p>MIPS (since Linux 3.16)</p></li>
+<li><p>ARM-64 (since Linux 3.19)</p></li>
+<li><p>PowerPC (since Linux 4.3)</p></li>
+<li><p>Tile (since Linux 4.3)</p></li>
+<li><p>PA-RISC (since Linux 4.6)</p></li>
+</ul>
+<h2>Caveats</h2>
+<p>There are various subtleties to consider when applying seccomp filters to a program, including the following:</p>
+<ul>
+<li><p>Some traditional system calls have user-space implementations in the <strong>vdso</strong>(7) on many architectures. Notable examples include <strong>clock_gettime</strong>(2), <strong>gettimeofday</strong>(2), and <strong>time</strong>(2). On such architectures, seccomp filtering for these system calls will have no effect. (However, there are cases where the <strong>vdso</strong>(7) implementations may fall back to invoking the true system call, in which case seccomp filters would see the system call.)</p></li>
+<li><p>Seccomp filtering is based on system call numbers. However, applications typically do not directly invoke system calls, but instead call wrapper functions in the C library which in turn invoke the system calls. Consequently, one must be aware of the following:</p>
+<ul>
+<li><p>The glibc wrappers for some traditional system calls may actually employ system calls with different names in the kernel. For example, the <strong>exit</strong>(2) wrapper function actually employs the <strong>exit_group</strong>(2) system call, and the <strong>fork</strong>(2) wrapper function actually calls <strong>clone</strong>(2).</p></li>
+<li><p>The behavior of wrapper functions may vary across architectures, according to the range of system calls provided on those architectures. In other words, the same wrapper function may invoke different system calls on different architectures.</p></li>
+<li><p>Finally, the behavior of wrapper functions can change across glibc versions. For example, in older versions, the glibc wrapper function for <strong>open</strong>(2) invoked the system call of the same name, but starting in glibc 2.26, the implementation switched to calling <strong>openat</strong>(2) on all architectures.</p></li>
+</ul></li>
+</ul>
+<p>The consequence of the above points is that it may be necessary to filter for a system call other than might be expected. Various manual pages in Section 2 provide helpful details about the differences between wrapper functions and the underlying system calls in subsections entitled <em>C library/kernel differences</em>.</p>
+<p>Furthermore, note that the application of seccomp filters even risks causing bugs in an application, when the filters cause unexpected failures for legitimate operations that the application might need to perform. Such bugs may not easily be discovered when testing the seccomp filters if the bugs occur in rarely used application code paths.</p>
+<h2>Seccomp-specific BPF details</h2>
+<p>Note the following BPF details specific to seccomp filters:</p>
+<ul>
+<li><p>The <strong>BPF_H</strong> and <strong>BPF_B</strong> size modifiers are not supported: all operations must load and store (4-byte) words (<strong>BPF_W</strong>).</p></li>
+<li><p>To access the contents of the <em>seccomp_data</em> buffer, use the <strong>BPF_ABS</strong> addressing mode modifier.</p></li>
+<li><p>The <strong>BPF_LEN</strong> addressing mode modifier yields an immediate mode operand whose value is the size of the <em>seccomp_data</em> buffer.</p></li>
+</ul>
+<h1>EXAMPLES</h1>
+<p>The program below accepts four or more arguments. The first three arguments are a system call number, a numeric architecture identifier, and an error number. The program uses these values to construct a BPF filter that is used at run time to perform the following checks:</p>
+<ul>
+<li><p>If the program is not running on the specified architecture, the BPF filter causes system calls to fail with the error <strong>ENOSYS</strong>.</p></li>
+<li><p>If the program attempts to execute the system call with the specified number, the BPF filter causes the system call to fail, with <em>errno</em> being set to the specified error number.</p></li>
+</ul>
+<p>The remaining command-line arguments specify the pathname and additional arguments of a program that the example program should attempt to execute using <strong>execv</strong>(3) (a library function that employs the <strong>execve</strong>(2) system call). Some example runs of the program are shown below.</p>
+<p>First, we display the architecture that we are running on (x86-64) and then construct a shell function that looks up system call numbers on this architecture:</p>
+<pre><code>$ uname -m
+x86_64
+$ syscall_nr() {
+    cat /usr/src/linux/arch/x86/syscalls/syscall_64.tbl | \
+    awk &#39;$2 != &quot;x32&quot; &amp;&amp; $3 == &quot;&#39;$1&#39;&quot; { print $1 }&#39;
+}</code></pre>
+<p>When the BPF filter rejects a system call (case [2] above), it causes the system call to fail with the error number specified on the command line. In the experiments shown here, we'll use error number 99:</p>
+<pre><code>$ errno 99
+EADDRNOTAVAIL 99 Cannot assign requested address</code></pre>
+<p>In the following example, we attempt to run the command <strong>whoami</strong>(1), but the BPF filter rejects the <strong>execve</strong>(2) system call, so that the command is not even executed:</p>
+<pre><code>$ syscall_nr execve
+59
+$ ./a.out
+Usage: ./a.out &lt;syscall_nr&gt; &lt;arch&gt; &lt;errno&gt; &lt;prog&gt; [&lt;args&gt;]
+Hint for &lt;arch&gt;: AUDIT_ARCH_I386: 0x40000003
+                 AUDIT_ARCH_X86_64: 0xC000003E
+$ ./a.out 59 0xC000003E 99 /bin/whoami
+execv: Cannot assign requested address</code></pre>
+<p>In the next example, the BPF filter rejects the <strong>write</strong>(2) system call, so that, although it is successfully started, the <strong>whoami</strong>(1) command is not able to write output:</p>
+<pre><code>$ syscall_nr write
+1
+$ ./a.out 1 0xC000003E 99 /bin/whoami</code></pre>
+<p>In the final example, the BPF filter rejects a system call that is not used by the <strong>whoami</strong>(1) command, so it is able to successfully execute and produce output:</p>
+<pre><code>$ syscall_nr preadv
+295
+$ ./a.out 295 0xC000003E 99 /bin/whoami
+cecilia</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;errno.h&gt;
+#include &lt;stddef.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;linux/audit.h&gt;
+#include &lt;linux/filter.h&gt;
+#include &lt;linux/seccomp.h&gt;
+#include &lt;sys/prctl.h&gt;
+
+#define X32_SYSCALL_BIT 0x40000000
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+static int
+install_filter(int syscall_nr, int t_arch, int f_errno)
+{
+    unsigned int upper_nr_limit = 0xffffffff;
+
+    /* Assume that AUDIT_ARCH_X86_64 means the normal x86-64 ABI
+       (in the x32 ABI, all system calls have bit 30 set in the
+       &#39;nr&#39; field, meaning the numbers are &gt;= X32_SYSCALL_BIT) */
+    if (t_arch == AUDIT_ARCH_X86_64)
+        upper_nr_limit = X32_SYSCALL_BIT - 1;
+
+    struct sock_filter filter[] = {
+        /* [0] Load architecture from &#39;seccomp_data&#39; buffer into
+               accumulator */
+        BPF_STMT(BPF_LD | BPF_W | BPF_ABS,
+                 (offsetof(struct seccomp_data, arch))),
+
+        /* [1] Jump forward 5 instructions if architecture does not
+               match &#39;t_arch&#39; */
+        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, t_arch, 0, 5),
+
+        /* [2] Load system call number from &#39;seccomp_data&#39; buffer into
+               accumulator */
+        BPF_STMT(BPF_LD | BPF_W | BPF_ABS,
+                 (offsetof(struct seccomp_data, nr))),
+
+        /* [3] Check ABI - only needed for x86-64 in deny-list use
+               cases.  Use BPF_JGT instead of checking against the bit
+               mask to avoid having to reload the syscall number. */
+        BPF_JUMP(BPF_JMP | BPF_JGT | BPF_K, upper_nr_limit, 3, 0),
+
+        /* [4] Jump forward 1 instruction if system call number
+               does not match &#39;syscall_nr&#39; */
+        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, syscall_nr, 0, 1),
+
+        /* [5] Matching architecture and system call: don&#39;t execute
+           the system call, and return &#39;f_errno&#39; in &#39;errno&#39; */
+        BPF_STMT(BPF_RET | BPF_K,
+                 SECCOMP_RET_ERRNO | (f_errno &amp; SECCOMP_RET_DATA)),
+
+        /* [6] Destination of system call number mismatch: allow other
+               system calls */
+        BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ALLOW),
+
+        /* [7] Destination of architecture mismatch: kill process */
+        BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_KILL_PROCESS),
+    };
+
+    struct sock_fprog prog = {
+        .len = ARRAY_SIZE(filter),
+        .filter = filter,
+    };
+
+    if (seccomp(SECCOMP_SET_MODE_FILTER, 0, &amp;prog)) {
+        perror(&quot;seccomp&quot;);
+        return 1;
+    }
+
+    return 0;
+}
+
+int
+main(int argc, char **argv)
+{
+    if (argc &lt; 5) {
+        fprintf(stderr, &quot;Usage: &quot;
+                &quot;%s &lt;syscall_nr&gt; &lt;arch&gt; &lt;errno&gt; &lt;prog&gt; [&lt;args&gt;]\n&quot;
+                &quot;Hint for &lt;arch&gt;: AUDIT_ARCH_I386: 0x%X\n&quot;
+                &quot;                 AUDIT_ARCH_X86_64: 0x%X\n&quot;
+                &quot;\n&quot;, argv[0], AUDIT_ARCH_I386, AUDIT_ARCH_X86_64);
+        exit(EXIT_FAILURE);
+    }
+
+    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {
+        perror(&quot;prctl&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    if (install_filter(strtol(argv[1], NULL, 0),
+                       strtol(argv[2], NULL, 0),
+                       strtol(argv[3], NULL, 0)))
+        exit(EXIT_FAILURE);
+
+    execv(argv[4], &amp;argv[4]);
+    perror(&quot;execv&quot;);
+    exit(EXIT_FAILURE);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>bpfc</strong>(1), <strong>strace</strong>(1), <strong>bpf</strong>(2), <strong>prctl</strong>(2), <strong>ptrace</strong>(2), <strong>sigaction</strong>(2), <strong>proc</strong>(5), <strong>signal</strong>(7), <strong>socket</strong>(7)</p>
+<p>Various pages from the <em>libseccomp</em> library, including: <strong>scmp_sys_resolver</strong>(1), <strong>seccomp_export_bpf</strong>(3), <strong>seccomp_init</strong>(3), <strong>seccomp_load</strong>(3), and <strong>seccomp_rule_add</strong>(3).</p>
+<p>The kernel source files <em>Documentation/networking/filter.txt</em> and <em>Documentation/userspace-api/seccomp_filter.rst</em> (or <em>Documentation/prctl/seccomp_filter.txt</em> before Linux 4.13).</p>
+<p>McCanne, S. and Jacobson, V. (1992) <em>The BSD Packet Filter: A New Architecture for User-level Packet Capture</em>, Proceedings of the USENIX Winter 1993 Conference <a href="http://www.tcpdump.org/papers/bpf-usenix93.pdf"></a></p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

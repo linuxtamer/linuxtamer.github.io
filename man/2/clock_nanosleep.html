@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command clock_nanosleep</title><meta name="description" content="Linux command clock_nanosleep high-resolution sleep with specifiable clock"><meta name="keywords" content="linux, command, clock_nanosleep, bsd, high-resolution sleep with specifiable clock"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>clock_nanosleep - high-resolution sleep with specifiable clock</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;time.h&gt;</strong></p>
+<pre><code>
+int clock_nanosleep(clockid_t clockid, int flags,
+ const struct timespec *request,
+ struct timespec *remain);</code></pre>
+<p>Link with <em>-lrt</em> (only for glibc versions before 2.17).</p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>clock_nanosleep</strong>():</p>
+<blockquote>
+<p>_POSIX_C_SOURCE &gt;= 200112L</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>Like <strong>nanosleep</strong>(2), <strong>clock_nanosleep</strong>() allows the calling thread to sleep for an interval specified with nanosecond precision. It differs in allowing the caller to select the clock against which the sleep interval is to be measured, and in allowing the sleep interval to be specified as either an absolute or a relative value.</p>
+<p>The time values passed to and returned by this call are specified using <em>timespec</em> structures, defined as follows:</p>
+<pre><code>struct timespec {
+    time_t tv_sec;        /* seconds */
+    long   tv_nsec;       /* nanoseconds [0 .. 999999999] */
+};</code></pre>
+<p>The <em>clockid</em> argument specifies the clock against which the sleep interval is to be measured. This argument can have one of the following values:</p>
+<dl>
+<dt><strong>CLOCK_REALTIME</strong></dt>
+<dd><p>A settable system-wide real-time clock.</p>
+</dd>
+<dt><strong>CLOCK_TAI</strong> (since Linux 3.10)</dt>
+<dd><p>A system-wide clock derived from wall-clock time but ignoring leap seconds.</p>
+</dd>
+<dt><strong>CLOCK_MONOTONIC</strong></dt>
+<dd><p>A nonsettable, monotonically increasing clock that measures time since some unspecified point in the past that does not change after system startup.</p>
+</dd>
+<dt><strong>CLOCK_BOOTIME</strong> (since Linux 2.6.39)</dt>
+<dd><p>Identical to <strong>CLOCK_MONOTONIC</strong>, except that it also includes any time that the system is suspended.</p>
+</dd>
+<dt><strong>CLOCK_PROCESS_CPUTIME_ID</strong></dt>
+<dd><p>A settable per-process clock that measures CPU time consumed by all threads in the process.</p>
+</dd>
+</dl>
+<p>See <strong>clock_getres</strong>(2) for further details on these clocks. In addition, the CPU clock IDs returned by <strong>clock_getcpuclockid</strong>(3) and <strong>pthread_getcpuclockid</strong>(3) can also be passed in <em>clockid</em>.</p>
+<p>If <em>flags</em> is 0, then the value specified in <em>request</em> is interpreted as an interval relative to the current value of the clock specified by <em>clockid</em>.</p>
+<p>If <em>flags</em> is <strong>TIMER_ABSTIME</strong>, then <em>request</em> is interpreted as an absolute time as measured by the clock, <em>clockid</em>. If <em>request</em> is less than or equal to the current value of the clock, then <strong>clock_nanosleep</strong>() returns immediately without suspending the calling thread.</p>
+<p><strong>clock_nanosleep</strong>() suspends the execution of the calling thread until either at least the time specified by <em>request</em> has elapsed, or a signal is delivered that causes a signal handler to be called or that terminates the process.</p>
+<p>If the call is interrupted by a signal handler, <strong>clock_nanosleep</strong>() fails with the error <strong>EINTR</strong>. In addition, if <em>remain</em> is not NULL, and <em>flags</em> was not <strong>TIMER_ABSTIME</strong>, it returns the remaining unslept time in <em>remain</em>. This value can then be used to call <strong>clock_nanosleep</strong>() again and complete a (relative) sleep.</p>
+<h1>RETURN VALUE</h1>
+<p>On successfully sleeping for the requested interval, <strong>clock_nanosleep</strong>() returns 0. If the call is interrupted by a signal handler or encounters an error, then it returns one of the positive error number listed in ERRORS.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>request</em> or <em>remain</em> specified an invalid address.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>The sleep was interrupted by a signal handler; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The value in the <em>tv_nsec</em> field was not in the range 0 to 999999999 or <em>tv_sec</em> was negative.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>clockid</em> was invalid. (<strong>CLOCK_THREAD_CPUTIME_ID</strong> is not a permitted value for <em>clockid</em>.)</p>
+</dd>
+<dt><strong>ENOTSUP</strong></dt>
+<dd><p>The kernel does not support sleeping against this <em>clockid</em>.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The <strong>clock_nanosleep</strong>() system call first appeared in Linux 2.6. Support is available in glibc since version 2.1.</p>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>If the interval specified in <em>request</em> is not an exact multiple of the granularity underlying clock (see <strong>time</strong>(7)), then the interval will be rounded up to the next multiple. Furthermore, after the sleep completes, there may still be a delay before the CPU becomes free to once again execute the calling thread.</p>
+<p>Using an absolute timer is useful for preventing timer drift problems of the type described in <strong>nanosleep</strong>(2). (Such problems are exacerbated in programs that try to restart a relative sleep that is repeatedly interrupted by signals.) To perform a relative sleep that avoids these problems, call <strong>clock_gettime</strong>(2) for the desired clock, add the desired interval to the returned time value, and then call <strong>clock_nanosleep</strong>() with the <strong>TIMER_ABSTIME</strong> flag.</p>
+<p><strong>clock_nanosleep</strong>() is never restarted after being interrupted by a signal handler, regardless of the use of the <strong>sigaction</strong>(2) <strong>SA_RESTART</strong> flag.</p>
+<p>The <em>remain</em> argument is unused, and unnecessary, when <em>flags</em> is <strong>TIMER_ABSTIME</strong>. (An absolute sleep can be restarted using the same <em>request</em> argument.)</p>
+<p>POSIX.1 specifies that <strong>clock_nanosleep</strong>() has no effect on signals dispositions or the signal mask.</p>
+<p>POSIX.1 specifies that after changing the value of the <strong>CLOCK_REALTIME</strong> clock via <strong>clock_settime</strong>(2), the new clock value shall be used to determine the time at which a thread blocked on an absolute <strong>clock_nanosleep</strong>() will wake up; if the new clock value falls past the end of the sleep interval, then the <strong>clock_nanosleep</strong>() call will return immediately.</p>
+<p>POSIX.1 specifies that changing the value of the <strong>CLOCK_REALTIME</strong> clock via <strong>clock_settime</strong>(2) shall have no effect on a thread that is blocked on a relative <strong>clock_nanosleep</strong>().</p>
+<h1>SEE ALSO</h1>
+<p><strong>clock_getres</strong>(2), <strong>nanosleep</strong>(2), <strong>restart_syscall</strong>(2), <strong>timer_create</strong>(2), <strong>sleep</strong>(3), <strong>usleep</strong>(3), <strong>time</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

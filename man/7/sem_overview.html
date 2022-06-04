@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sem_overview</title><meta name="description" content="Linux command sem_overview overview of POSIX semaphores"><meta name="keywords" content="linux, command, sem_overview, bsd, overview of POSIX semaphores"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sem_overview - overview of POSIX semaphores</p>
+<h1>DESCRIPTION</h1>
+<p>POSIX semaphores allow processes and threads to synchronize their actions.</p>
+<p>A semaphore is an integer whose value is never allowed to fall below zero. Two operations can be performed on semaphores: increment the semaphore value by one (<strong>sem_post</strong>(3)); and decrement the semaphore value by one (<strong>sem_wait</strong>(3)). If the value of a semaphore is currently zero, then a <strong>sem_wait</strong>(3) operation will block until the value becomes greater than zero.</p>
+<p>POSIX semaphores come in two forms: named semaphores and unnamed semaphores.</p>
+<dl>
+<dt><strong>Named semaphores</strong></dt>
+<dd><p>A named semaphore is identified by a name of the form <em>/somename</em>; that is, a null-terminated string of up to <strong>NAME_MAX</strong><em>-4</em> (i.e., 251) characters consisting of an initial slash, followed by one or more characters, none of which are slashes. Two processes can operate on the same named semaphore by passing the same name to <strong>sem_open</strong>(3).</p>
+<p>The <strong>sem_open</strong>(3) function creates a new named semaphore or opens an existing named semaphore. After the semaphore has been opened, it can be operated on using <strong>sem_post</strong>(3) and <strong>sem_wait</strong>(3). When a process has finished using the semaphore, it can use <strong>sem_close</strong>(3) to close the semaphore. When all processes have finished using the semaphore, it can be removed from the system using <strong>sem_unlink</strong>(3).</p>
+</dd>
+<dt><strong>Unnamed semaphores (memory-based semaphores)</strong></dt>
+<dd><p>An unnamed semaphore does not have a name. Instead the semaphore is placed in a region of memory that is shared between multiple threads (a <em>thread-shared semaphore</em>) or processes (a <em>process-shared semaphore</em>). A thread-shared semaphore is placed in an area of memory shared between the threads of a process, for example, a global variable. A process-shared semaphore must be placed in a shared memory region (e.g., a System V shared memory segment created using <strong>shmget</strong>(2), or a POSIX shared memory object built created using <strong>shm_open</strong>(3)).</p>
+<p>Before being used, an unnamed semaphore must be initialized using <strong>sem_init</strong>(3). It can then be operated on using <strong>sem_post</strong>(3) and <strong>sem_wait</strong>(3). When the semaphore is no longer required, and before the memory in which it is located is deallocated, the semaphore should be destroyed using <strong>sem_destroy</strong>(3).</p>
+</dd>
+</dl>
+<p>The remainder of this section describes some specific details of the Linux implementation of POSIX semaphores.</p>
+<h2>Versions</h2>
+<p>Prior to kernel 2.6, Linux supported only unnamed, thread-shared semaphores. On a system with Linux 2.6 and a glibc that provides the NPTL threading implementation, a complete implementation of POSIX semaphores is provided.</p>
+<h2>Persistence</h2>
+<p>POSIX named semaphores have kernel persistence: if not removed by <strong>sem_unlink</strong>(3), a semaphore will exist until the system is shut down.</p>
+<h2>Linking</h2>
+<p>Programs using the POSIX semaphores API must be compiled with <em>cc -pthread</em> to link against the real-time library, <em>librt</em>.</p>
+<h2>Accessing named semaphores via the filesystem</h2>
+<p>On Linux, named semaphores are created in a virtual filesystem, normally mounted under <em>/dev/shm</em>, with names of the form <em><strong>sem.</strong>somename</em>. (This is the reason that semaphore names are limited to <strong>NAME_MAX</strong><em>-4</em> rather than <strong>NAME_MAX</strong> characters.)</p>
+<p>Since Linux 2.6.19, ACLs can be placed on files under this directory, to control object permissions on a per-user and per-group basis.</p>
+<h1>NOTES</h1>
+<p>System V semaphores (<strong>semget</strong>(2), <strong>semop</strong>(2), etc.) are an older semaphore API. POSIX semaphores provide a simpler, and better designed interface than System V semaphores; on the other hand POSIX semaphores are less widely available (especially on older systems) than System V semaphores.</p>
+<h1>EXAMPLES</h1>
+<p>An example of the use of various POSIX semaphore functions is shown in <strong>sem_wait</strong>(3).</p>
+<h1>SEE ALSO</h1>
+<p><strong>sem_close</strong>(3), <strong>sem_destroy</strong>(3), <strong>sem_getvalue</strong>(3), <strong>sem_init</strong>(3), <strong>sem_open</strong>(3), <strong>sem_post</strong>(3), <strong>sem_unlink</strong>(3), <strong>sem_wait</strong>(3), <strong>pthreads</strong>(7), <strong>shm_overview</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

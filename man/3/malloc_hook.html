@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command malloc_hook</title><meta name="description" content="Linux command malloc_hook malloc debugging variables"><meta name="keywords" content="linux, command, malloc_hook, bsd, malloc debugging variables"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>__malloc_hook, __malloc_initialize_hook, __memalign_hook, __free_hook, __realloc_hook, __after_morecore_hook - malloc debugging variables</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;malloc.h&gt;
+
+void *(*__malloc_hook)(size_t size, const void *caller);
+
+void *(*__realloc_hook)(void *ptr, size_t size&quot;,constvoid*&quot;caller);
+
+void *(*__memalign_hook)(size_t alignment, size_t size,
+ const void *caller);
+
+void (*__free_hook)(void *ptr, const void *caller);
+
+void (*__malloc_initialize_hook)(void);
+
+void (*__after_morecore_hook)(void);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The GNU C library lets you modify the behavior of <strong>malloc</strong>(3), <strong>realloc</strong>(3), and <strong>free</strong>(3) by specifying appropriate hook functions. You can use these hooks to help you debug programs that use dynamic memory allocation, for example.</p>
+<p>The variable <strong>__malloc_initialize_hook</strong> points at a function that is called once when the malloc implementation is initialized. This is a weak variable, so it can be overridden in the application with a definition like the following:</p>
+<pre><code>void (*__malloc_initialize_hook)(void) = my_init_hook;</code></pre>
+<p>Now the function <em>my_init_hook</em>() can do the initialization of all hooks.</p>
+<p>The four functions pointed to by <strong>__malloc_hook</strong>, <strong>__realloc_hook</strong>, <strong>__memalign_hook</strong>, <strong>__free_hook</strong> have a prototype like the functions <strong>malloc</strong>(3), <strong>realloc</strong>(3), <strong>memalign</strong>(3), <strong>free</strong>(3), respectively, except that they have a final argument <em>caller</em> that gives the address of the caller of <strong>malloc</strong>(3), etc.</p>
+<p>The variable <strong>__after_morecore_hook</strong> points at a function that is called each time after <strong>sbrk</strong>(2) was asked for more memory.</p>
+<h1>CONFORMING TO</h1>
+<p>These functions are GNU extensions.</p>
+<h1>NOTES</h1>
+<p>The use of these hook functions is not safe in multithreaded programs, and they are now deprecated. From glibc 2.24 onwards, the <strong>__malloc_initialize_hook</strong> variable has been removed from the API. Programmers should instead preempt calls to the relevant functions by defining and exporting functions such as "malloc" and "free".</p>
+<h1>EXAMPLES</h1>
+<p>Here is a short example of how to use these variables.</p>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;malloc.h&gt;
+
+/* Prototypes for our hooks.  */
+static void my_init_hook(void);
+static void *my_malloc_hook(size_t, const void *);
+
+/* Variables to save original hooks. */
+static void *(*old_malloc_hook)(size_t, const void *);
+
+/* Override initializing hook from the C library. */
+void (*__malloc_initialize_hook) (void) = my_init_hook;
+
+static void
+my_init_hook(void)
+{
+    old_malloc_hook = __malloc_hook;
+    __malloc_hook = my_malloc_hook;
+}
+
+static void *
+my_malloc_hook(size_t size, const void *caller)
+{
+    void *result;
+
+    /* Restore all old hooks */
+    __malloc_hook = old_malloc_hook;
+
+    /* Call recursively */
+    result = malloc(size);
+
+    /* Save underlying hooks */
+    old_malloc_hook = __malloc_hook;
+
+    /* printf() might call malloc(), so protect it too. */
+    printf(&quot;malloc(%zu) called from %p returns %p\n&quot;,
+            size, caller, result);
+
+    /* Restore our own hooks */
+    __malloc_hook = my_malloc_hook;
+
+    return result;
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>mallinfo</strong>(3), <strong>malloc</strong>(3), <strong>mcheck</strong>(3), <strong>mtrace</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

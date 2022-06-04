@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command reboot</title><meta name="description" content="Linux command reboot reboot or enable/disable Ctrl-Alt-Del"><meta name="keywords" content="linux, command, reboot, bsd, reboot or enable/disable Ctrl-Alt-Del"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>reboot - reboot or enable/disable Ctrl-Alt-Del</p>
+<h1>SYNOPSIS</h1>
+<p>/* Since kernel version 2.1.30 there are symbolic names LINUX_REBOOT_* for the constants and a fourth argument to the call: */</p>
+<p><strong>#include &lt;unistd.h&gt;</strong><br />
+<strong>#include &lt;linux/reboot.h&gt;</strong></p>
+<p><strong>int reboot(int </strong><em>magic</em><strong>, int </strong><em>magic2</em><strong>, int </strong><em>cmd</em><strong>, void *</strong><em>arg</em><strong>);</strong></p>
+<p>/* Under glibc and most alternative libc's (including uclibc, dietlibc, musl and a few others), some of the constants involved have gotten symbolic names RB_*, and the library call is a 1-argument wrapper around the system call: */</p>
+<p><strong>#include &lt;unistd.h&gt;</strong><br />
+<strong>#include &lt;sys/reboot.h&gt;</strong></p>
+<p><strong>int reboot(int </strong><em>cmd</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>reboot</strong>() call reboots the system, or enables/disables the reboot keystroke (abbreviated CAD, since the default is Ctrl-Alt-Delete; it can be changed using <strong>loadkeys</strong>(1)).</p>
+<p>This system call fails (with the error <strong>EINVAL</strong>) unless <em>magic</em> equals <strong>LINUX_REBOOT_MAGIC1</strong> (that is, 0xfee1dead) and <em>magic2</em> equals <strong>LINUX_REBOOT_MAGIC2</strong> (that is, 672274793). However, since 2.1.17 also <strong>LINUX_REBOOT_MAGIC2A</strong> (that is, 85072278) and since 2.1.97 also <strong>LINUX_REBOOT_MAGIC2B</strong> (that is, 369367448) and since 2.5.71 also <strong>LINUX_REBOOT_MAGIC2C</strong> (that is, 537993216) are permitted as values for <em>magic2</em>. (The hexadecimal values of these constants are meaningful.)</p>
+<p>The <em>cmd</em> argument can have the following values:</p>
+<dl>
+<dt><strong>LINUX_REBOOT_CMD_CAD_OFF</strong></dt>
+<dd><p>(<strong>RB_DISABLE_CAD</strong>, 0). CAD is disabled. This means that the CAD keystroke will cause a <strong>SIGINT</strong> signal to be sent to init (process 1), whereupon this process may decide upon a proper action (maybe: kill all processes, sync, reboot).</p>
+</dd>
+<dt><strong>LINUX_REBOOT_CMD_CAD_ON</strong></dt>
+<dd><p>(<strong>RB_ENABLE_CAD</strong>, 0x89abcdef). CAD is enabled. This means that the CAD keystroke will immediately cause the action associated with <strong>LINUX_REBOOT_CMD_RESTART</strong>.</p>
+</dd>
+<dt><strong>LINUX_REBOOT_CMD_HALT</strong></dt>
+<dd><p>(<strong>RB_HALT_SYSTEM</strong>, 0xcdef0123; since Linux 1.1.76). The message "System halted." is printed, and the system is halted. Control is given to the ROM monitor, if there is one. If not preceded by a <strong>sync</strong>(2), data will be lost.</p>
+</dd>
+<dt><strong>LINUX_REBOOT_CMD_KEXEC</strong></dt>
+<dd><p>(<strong>RB_KEXEC</strong>, 0x45584543, since Linux 2.6.13). Execute a kernel that has been loaded earlier with <strong>kexec_load</strong>(2). This option is available only if the kernel was configured with <strong>CONFIG_KEXEC</strong>.</p>
+</dd>
+<dt><strong>LINUX_REBOOT_CMD_POWER_OFF</strong></dt>
+<dd><p>(<strong>RB_POWER_OFF</strong>, 0x4321fedc; since Linux 2.1.30). The message "Power down." is printed, the system is stopped, and all power is removed from the system, if possible. If not preceded by a <strong>sync</strong>(2), data will be lost.</p>
+</dd>
+<dt><strong>LINUX_REBOOT_CMD_RESTART</strong></dt>
+<dd><p>(<strong>RB_AUTOBOOT</strong>, 0x1234567). The message "Restarting system." is printed, and a default restart is performed immediately. If not preceded by a <strong>sync</strong>(2), data will be lost.</p>
+</dd>
+<dt><strong>LINUX_REBOOT_CMD_RESTART2</strong></dt>
+<dd><p>(0xa1b2c3d4; since Linux 2.1.30). The message "Restarting system with command '%s'" is printed, and a restart (using the command string given in <em>arg</em>) is performed immediately. If not preceded by a <strong>sync</strong>(2), data will be lost.</p>
+</dd>
+<dt><strong>LINUX_REBOOT_CMD_SW_SUSPEND</strong></dt>
+<dd><p>(<strong>RB_SW_SUSPEND</strong>, 0xd000fce1; since Linux 2.5.18). The system is suspended (hibernated) to disk. This option is available only if the kernel was configured with <strong>CONFIG_HIBERNATION</strong>.</p>
+</dd>
+</dl>
+<p>Only the superuser may call <strong>reboot</strong>().</p>
+<p>The precise effect of the above actions depends on the architecture. For the i386 architecture, the additional argument does not do anything at present (2.1.122), but the type of reboot can be determined by kernel command-line arguments ("reboot=...") to be either warm or cold, and either hard or through the BIOS.</p>
+<h2>Behavior inside PID namespaces</h2>
+<p>Since Linux 3.4, if <strong>reboot</strong>() is called from a PID namespace other than the initial PID namespace with one of the <em>cmd</em> values listed below, it performs a "reboot" of that namespace: the "init" process of the PID namespace is immediately terminated, with the effects described in <strong>pid_namespaces</strong>(7).</p>
+<p>The values that can be supplied in <em>cmd</em> when calling <strong>reboot</strong>() in this case are as follows:</p>
+<dl>
+<dt><strong>LINUX_REBOOT_CMD_RESTART</strong>, <strong>LINUX_REBOOT_CMD_RESTART2</strong></dt>
+<dd><p>The "init" process is terminated, and <strong>wait</strong>(2) in the parent process reports that the child was killed with a <strong>SIGHUP</strong> signal.</p>
+</dd>
+<dt><strong>LINUX_REBOOT_CMD_POWER_OFF</strong>, <strong>LINUX_REBOOT_CMD_HALT</strong></dt>
+<dd><p>The "init" process is terminated, and <strong>wait</strong>(2) in the parent process reports that the child was killed with a <strong>SIGINT</strong> signal.</p>
+</dd>
+</dl>
+<p>For the other <em>cmd</em> values, <strong>reboot</strong>() returns -1 and <em>errno</em> is set to <strong>EINVAL</strong>.</p>
+<h1>RETURN VALUE</h1>
+<p>For the values of <em>cmd</em> that stop or restart the system, a successful call to <strong>reboot</strong>() does not return. For the other <em>cmd</em> values, zero is returned on success. In all cases, -1 is returned on failure, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>Problem with getting user-space data under <strong>LINUX_REBOOT_CMD_RESTART2</strong>.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Bad magic numbers or <em>cmd</em>.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The calling process has insufficient privilege to call <strong>reboot</strong>(); the caller must have the <strong>CAP_SYS_BOOT</strong> inside its user namespace.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p><strong>reboot</strong>() is Linux-specific, and should not be used in programs intended to be portable.</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemctl</strong>(1), <strong>systemd</strong>(1), <strong>kexec_load</strong>(2), <strong>sync</strong>(2), <strong>bootparam</strong>(7), <strong>capabilities</strong>(7), <strong>ctrlaltdel</strong>(8), <strong>halt</strong>(8), <strong>shutdown</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

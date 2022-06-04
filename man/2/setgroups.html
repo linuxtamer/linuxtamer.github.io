@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command setgroups</title><meta name="description" content="Linux command setgroups get/set list of supplementary group IDs"><meta name="keywords" content="linux, command, setgroups, bsd, get/set list of supplementary group IDs"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getgroups, setgroups - get/set list of supplementary group IDs</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/types.h&gt;</strong><br />
+<strong>#include &lt;unistd.h&gt;</strong></p>
+<p><strong>int getgroups(int </strong><em>size</em><strong>, gid_t </strong><em>list</em><strong>[]);</strong></p>
+<p><strong>#include &lt;grp.h&gt;</strong></p>
+<p><strong>int setgroups(size_t </strong><em>size</em><strong>, const gid_t *</strong><em>list</em><strong>);</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>setgroups</strong>(): Since glibc 2.19: _DEFAULT_SOURCE Glibc 2.19 and earlier: _BSD_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p><strong>getgroups</strong>() returns the supplementary group IDs of the calling process in <em>list</em>. The argument <em>size</em> should be set to the maximum number of items that can be stored in the buffer pointed to by <em>list</em>. If the calling process is a member of more than <em>size</em> supplementary groups, then an error results.</p>
+<p>It is unspecified whether the effective group ID of the calling process is included in the returned list. (Thus, an application should also call <strong>getegid</strong>(2) and add or remove the resulting value.)</p>
+<p>If <em>size</em> is zero, <em>list</em> is not modified, but the total number of supplementary group IDs for the process is returned. This allows the caller to determine the size of a dynamically allocated <em>list</em> to be used in a further call to <strong>getgroups</strong>().</p>
+<p><strong>setgroups</strong>() sets the supplementary group IDs for the calling process. Appropriate privileges are required (see the description of the <strong>EPERM</strong> error, below). The <em>size</em> argument specifies the number of supplementary group IDs in the buffer pointed to by <em>list</em>. A process can drop all of its supplementary groups with the call:</p>
+<pre><code>setgroups(0, NULL);</code></pre>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>getgroups</strong>() returns the number of supplementary group IDs. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<p>On success, <strong>setgroups</strong>() returns 0. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>list</em> has an invalid address.</p>
+</dd>
+</dl>
+<p><strong>getgroups</strong>() can additionally fail with the following error:</p>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>size</em> is less than the number of supplementary group IDs, but is not zero.</p>
+</dd>
+</dl>
+<p><strong>setgroups</strong>() can additionally fail with the following errors:</p>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>size</em> is greater than <strong>NGROUPS_MAX</strong> (32 before Linux 2.6.4; 65536 since Linux 2.6.4).</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Out of memory.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The calling process has insufficient privilege (the caller does not have the <strong>CAP_SETGID</strong> capability in the user namespace in which it resides).</p>
+</dd>
+<dt><strong>EPERM</strong> (since Linux 3.19)</dt>
+<dd><p>The use of <strong>setgroups</strong>() is denied in this user namespace. See the description of <em>/proc/[pid]/setgroups</em> in <strong>user_namespaces</strong>(7).</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p><strong>getgroups</strong>(): SVr4, 4.3BSD, POSIX.1-2001, POSIX.1-2008.</p>
+<p><strong>setgroups</strong>(): SVr4, 4.3BSD. Since <strong>setgroups</strong>() requires privilege, it is not covered by POSIX.1.</p>
+<h1>NOTES</h1>
+<p>A process can have up to <strong>NGROUPS_MAX</strong> supplementary group IDs in addition to the effective group ID. The constant <strong>NGROUPS_MAX</strong> is defined in <em>&lt;limits.h&gt;</em>. The set of supplementary group IDs is inherited from the parent process, and preserved across an <strong>execve</strong>(2).</p>
+<p>The maximum number of supplementary group IDs can be found at run time using <strong>sysconf</strong>(3):</p>
+<pre><code>long ngroups_max;
+ngroups_max = sysconf(_SC_NGROUPS_MAX);</code></pre>
+<p>The maximum return value of <strong>getgroups</strong>() cannot be larger than one more than this value. Since Linux 2.6.4, the maximum number of supplementary group IDs is also exposed via the Linux-specific read-only file, <em>/proc/sys/kernel/ngroups_max</em>.</p>
+<p>The original Linux <strong>getgroups</strong>() system call supported only 16-bit group IDs. Subsequently, Linux 2.4 added <strong>getgroups32</strong>(), supporting 32-bit IDs. The glibc <strong>getgroups</strong>() wrapper function transparently deals with the variation across kernel versions.</p>
+<h2>C library/kernel differences</h2>
+<p>At the kernel level, user IDs and group IDs are a per-thread attribute. However, POSIX requires that all threads in a process share the same credentials. The NPTL threading implementation handles the POSIX requirements by providing wrapper functions for the various system calls that change process UIDs and GIDs. These wrapper functions (including the one for <strong>setgroups</strong>()) employ a signal-based technique to ensure that when one thread changes credentials, all of the other threads in the process also change their credentials. For details, see <strong>nptl</strong>(7).</p>
+<h1>SEE ALSO</h1>
+<p><strong>getgid</strong>(2), <strong>setgid</strong>(2), <strong>getgrouplist</strong>(3), <strong>group_member</strong>(3), <strong>initgroups</strong>(3), <strong>capabilities</strong>(7), <strong>credentials</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

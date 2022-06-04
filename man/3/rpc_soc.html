@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command rpc_soc</title><meta name="description" content="Linux command rpc_soc "library routines for remote procedure calls""><meta name="keywords" content="linux, command, rpc_soc, bsd, "library routines for remote procedure calls""><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<p>See</p>
+<p>for function declarations.</p>
+<p>The</p>
+<p>and</p>
+<p>functions described in this page are the old, TS-RPC interface to the XDR and RPC library, and exist for backward compatibility. The new interface is described in the pages referenced from</p>
+<p>These routines allow C programs to make procedure calls on other machines across the network. First, the client calls a procedure to send a data packet to the server. Upon receipt of the packet, the server calls a dispatch routine to perform the requested service, and then sends back a reply. Finally, the procedure call returns to the client.</p>
+<p>Routines that are used for Secure</p>
+<p>authentication) are described in</p>
+<p>Secure</p>
+<p>can be used only if</p>
+<p>encryption is available.</p>
+<p>A macro that destroys the authentication information associated with</p>
+<p>Destruction usually involves deallocation of private data structures. The use of</p>
+<p>is undefined after calling</p>
+<p>Create and return an</p>
+<p>authentication handle that passes nonusable authentication information with each remote procedure call. This is the default authentication used by</p>
+<p>Create and return an</p>
+<p>authentication handle that contains</p>
+<p>authentication information. The</p>
+<p>argument is the name of the machine on which the information was created;</p>
+<p>is the user's user ID;</p>
+<p>is the user's current group ID;</p>
+<p>and</p>
+<p>refer to a counted array of groups to which the user belongs. It is easy to impersonate a user.</p>
+<p>Calls</p>
+<p>with the appropriate arguments.</p>
+<p>Call the remote procedure associated with</p>
+<p>and</p>
+<p>on the machine</p>
+<p>The</p>
+<p>argument is the address of the procedure's argument(s), and</p>
+<p>is the address of where to place the result(s);</p>
+<p>is used to encode the procedure's arguments, and</p>
+<p>is used to decode the procedure's results. This routine returns zero if it succeeds, or the value of</p>
+<p>cast to an integer if it fails. The routine</p>
+<p>is handy for translating failure statuses into messages.</p>
+<p>Warning: calling remote procedures with this routine uses</p>
+<p>as a transport; see</p>
+<p>for restrictions. You do not have control of timeouts or authentication using this routine.</p>
+<p>Like</p>
+<p>except the call message is broadcast to all locally connected broadcast nets. Each time it receives a response, this routine calls</p>
+<p>whose form is:</p>
+<p>where</p>
+<p>is the same as</p>
+<p>passed to</p>
+<p>except that the remote procedure's output is decoded there;</p>
+<p>points to the address of the machine that sent the results. If</p>
+<p>returns zero,</p>
+<p>waits for more replies; otherwise it returns with appropriate status.</p>
+<p>Warning: broadcast sockets are limited in size to the maximum transfer unit of the data link. For ethernet, this value is 1500 bytes.</p>
+<p>A macro that calls the remote procedure</p>
+<p>associated with the client handle,</p>
+<p>which is obtained with an</p>
+<p>client creation routine such as</p>
+<p>The</p>
+<p>argument is the address of the procedure's argument(s), and</p>
+<p>is the address of where to place the result(s);</p>
+<p>is used to encode the procedure's arguments, and</p>
+<p>is used to decode the procedure's results;</p>
+<p>is the time allowed for results to come back.</p>
+<p>A macro that destroys the client's</p>
+<p>handle. Destruction usually involves deallocation of private data structures, including</p>
+<p>itself. Use of</p>
+<p>is undefined after calling</p>
+<p>If the</p>
+<p>library opened the associated socket, it will close it also. Otherwise, the socket remains open.</p>
+<p>Generic client creation routine. The</p>
+<p>argument identifies the name of the remote host where the server is located. The</p>
+<p>argument indicates which kind of transport protocol to use. The currently supported values for this field are</p>
+<p>and</p>
+<p>Default timeouts are set, but can be modified using</p>
+<p>Warning: Using</p>
+<p>has its shortcomings. Since</p>
+<p>messages can only hold up to 8 Kbytes of encoded data, this transport cannot be used for procedures that take large arguments or return huge results.</p>
+<p>A macro used to change or retrieve various information about a client object. The</p>
+<p>argument indicates the type of operation, and</p>
+<p>is a pointer to the information. For both</p>
+<p>and</p>
+<p>the supported values of</p>
+<p>and their argument types and what they do are:</p>
+<p>Note: if you set the timeout using</p>
+<p>the timeout argument passed to</p>
+<p>will be ignored in all future calls.</p>
+<p>The following operations are valid for</p>
+<p>only:</p>
+<p>The retry timeout is the time that</p>
+<p>waits for the server to reply before retransmitting the request.</p>
+<p>A macro that frees any data allocated by the</p>
+<p>system when it decoded the results of an</p>
+<p>call. The</p>
+<p>argument is the address of the results, and</p>
+<p>is the</p>
+<p>routine describing the results. This routine returns one if the results were successfully freed, and zero otherwise.</p>
+<p>A macro that copies the error structure out of the client handle to the structure at address</p>
+<p>prints a message to standard error indicating why a client</p>
+<p>handle could not be created. The message is prepended with string</p>
+<p>and a colon. A newline is appended at the end of the message. Used when a</p>
+<p>or</p>
+<p>call fails.</p>
+<p>Print a message to standard error corresponding to the condition indicated by</p>
+<p>A newline is appended at the end of the message. Used after</p>
+<p>Print a message to standard error indicating why an</p>
+<p>call failed;</p>
+<p>is the handle used to do the call. The message is prepended with string</p>
+<p>and a colon. A newline is appended at the end of the message. Used after</p>
+<p>Like</p>
+<p>except that it returns a string instead of printing to the standard error.</p>
+<p>Bugs: returns pointer to static data that is overwritten on each call.</p>
+<p>Take the same arguments as</p>
+<p>but instead of sending a message to the standard error indicating why an</p>
+<p>call failed, return a pointer to a string which contains the message.</p>
+<p>The</p>
+<p>function is used instead of</p>
+<p>if the program does not have a standard error (as a program running as a server quite likely does not), or if the programmer does not want the message to be output with</p>
+<p>or if a message format different from that supported by</p>
+<p>is to be used.</p>
+<p>Note: unlike</p>
+<p>and</p>
+<p>returns pointer to static data, but the result will not get overwritten on each call.</p>
+<p>Like</p>
+<p>except that (like</p>
+<p>it returns a string instead of printing to standard error.</p>
+<p>Bugs: returns pointer to static data that is overwritten on each call.</p>
+<p>This routine creates a toy</p>
+<p>client for the remote program</p>
+<p>version</p>
+<p>The transport used to pass messages to the service is actually a buffer within the process's address space, so the corresponding</p>
+<p>server should live in the same address space; see</p>
+<p>This allows simulation of</p>
+<p>and acquisition of</p>
+<p>overheads, such as round trip times, without any kernel interference. This routine returns</p>
+<p>if it fails.</p>
+<p>This routine creates an</p>
+<p>client for the remote program</p>
+<p>version</p>
+<p>the client uses</p>
+<p>as a transport. The remote program is located at Internet address</p>
+<p>If</p>
+<p>is zero, then it is set to the actual port that the remote program is listening on (the remote</p>
+<p>service is consulted for this information). The</p>
+<p>argument is a socket; if it is</p>
+<p>then this routine opens a new one and sets</p>
+<p>Since</p>
+<p>uses buffered</p>
+<p>the user may specify the size of the send and receive buffers with the</p>
+<p>and</p>
+<p>arguments; values of zero choose suitable defaults. This routine returns</p>
+<p>if it fails.</p>
+<p>This routine creates an</p>
+<p>client for the remote program</p>
+<p>version</p>
+<p>the client uses</p>
+<p>as a transport. The remote program is located at Internet address</p>
+<p>If</p>
+<p>is zero, then it is set to actual port that the remote program is listening on (the remote</p>
+<p>service is consulted for this information). The</p>
+<p>argument is a socket; if it is</p>
+<p>then this routine opens a new one and sets</p>
+<p>The</p>
+<p>transport resends the call message in intervals of</p>
+<p>time until a response is received or until the call times out. The total time for the call to time out is specified by</p>
+<p>Warning: since</p>
+<p>messages can only hold up to 8 Kbytes of encoded data, this transport cannot be used for procedures that take large arguments or return huge results.</p>
+<p>This routine creates an</p>
+<p>client for the remote program</p>
+<p>on</p>
+<p>the client uses</p>
+<p>as a transport. The remote program is located at Internet address</p>
+<p>If</p>
+<p>is zero, then it is set to actual port that the remote program is listening on (the remote</p>
+<p>service is consulted for this information). The</p>
+<p>argument is a socket; if it is</p>
+<p>then this routine opens a new one and sets</p>
+<p>The</p>
+<p>transport resends the call message in intervals of</p>
+<p>time until a response is received or until the call times out. The total time for the call to time out is specified by</p>
+<p>This allows the user to specify the maximum packet size for sending and receiving</p>
+<p>messages.</p>
+<p>This routine creates an</p>
+<p>client for the local program</p>
+<p>version</p>
+<p>the client uses</p>
+<p>sockets as a transport. The local program is located at the</p>
+<p>The</p>
+<p>argument is a socket; if it is</p>
+<p>then this routine opens a new one and sets</p>
+<p>Since</p>
+<p>uses buffered</p>
+<p>the user may specify the size of the send and receive buffers with the</p>
+<p>and</p>
+<p>arguments; values of zero choose suitable defaults. This routine returns</p>
+<p>if it fails.</p>
+<p>Stuff the machine's</p>
+<p>address into</p>
+<p>without consulting the library routines that deal with</p>
+<p>The port number is always set to</p>
+<p>Returns zero on success, non-zero on failure.</p>
+<p>A user interface to the</p>
+<p>service, which returns a list of the current</p>
+<p>program-to-port mappings on the host located at</p>
+<p>address</p>
+<p>This routine can return</p>
+<p>The command</p>
+<p>uses this routine.</p>
+<p>A user interface to the</p>
+<p>service, which returns the port number on which waits a service that supports program number</p>
+<p>version</p>
+<p>and speaks the transport protocol associated with</p>
+<p>The value of</p>
+<p>is most likely</p>
+<p>or</p>
+<p>A return value of zero means that the mapping does not exist or that the</p>
+<p>system failed to contact the remote</p>
+<p>service. In the latter case, the global variable</p>
+<p>contains the</p>
+<p>status.</p>
+<p>A user interface to the</p>
+<p>service, which instructs</p>
+<p>on the host at</p>
+<p>address</p>
+<p>to make an</p>
+<p>call on your behalf to a procedure on that host. The</p>
+<p>argument will be modified to the program's port number if the procedure succeeds. The definitions of other arguments are discussed in</p>
+<p>and</p>
+<p>This procedure should be used for a</p>
+<p>and nothing else. See also</p>
+<p>A user interface to the</p>
+<p>service, which establishes a mapping between the triple</p>
+<p>and</p>
+<p>on the machine's</p>
+<p>service. The value of</p>
+<p>is most likely</p>
+<p>or</p>
+<p>This routine returns one if it succeeds, zero otherwise. Automatically done by</p>
+<p>A user interface to the</p>
+<p>service, which destroys all mapping between the triple</p>
+<p>and</p>
+<p>on the machine's</p>
+<p>service. This routine returns one if it succeeds, zero otherwise.</p>
+<p>Register procedure</p>
+<p>with the</p>
+<p>service package. If a request arrives for program</p>
+<p>version</p>
+<p>and procedure</p>
+<p>is called with a pointer to its argument(s);</p>
+<p>should return a pointer to its static result(s);</p>
+<p>is used to decode the arguments while</p>
+<p>is used to encode the results. This routine returns zero if the registration succeeded, -1 otherwise.</p>
+<p>Warning: remote procedures registered in this form are accessed using the</p>
+<p>transport; see</p>
+<p>for restrictions.</p>
+<p>A global variable whose value is set by any</p>
+<p>client creation routine that does not succeed. Use the routine</p>
+<p>to print the reason why.</p>
+<p>A macro that destroys the</p>
+<p>service transport handle,</p>
+<p>Destruction usually involves deallocation of private data structures, including</p>
+<p>itself. Use of</p>
+<p>is undefined after calling this routine.</p>
+<p>A global variable reflecting the</p>
+<p>service side's read file descriptor bit mask; it is suitable as a template argument to the</p>
+<p>system call. This is only of interest if a service implementor does not call</p>
+<p>but rather does his own asynchronous event processing. This variable is read-only (do not pass its address to</p>
+<p>yet it may change after calls to</p>
+<p>or any creation routines. As well, note that if the process has descriptor limits which are extended beyond</p>
+<p>this variable will only be usable for the first</p>
+<p>descriptors.</p>
+<p>Similar to</p>
+<p>but limited to 32 descriptors. This interface is obsoleted by</p>
+<p>A macro that frees any data allocated by the</p>
+<p>system when it decoded the arguments to a service procedure using</p>
+<p>This routine returns 1 if the results were successfully freed, and zero otherwise.</p>
+<p>A macro that decodes the arguments of an</p>
+<p>request associated with the</p>
+<p>service transport handle,</p>
+<p>The</p>
+<p>argument is the address where the arguments will be placed;</p>
+<p>is the</p>
+<p>routine used to decode the arguments. This routine returns one if decoding succeeds, and zero otherwise.</p>
+<p>The approved way of getting the network address of the caller of a procedure associated with the</p>
+<p>service transport handle,</p>
+<p>This routine is only of interest if a service implementor does not call</p>
+<p>but instead implements custom asynchronous event processing. It is called when the</p>
+<p>system call has determined that an</p>
+<p>request has arrived on some</p>
+<p>socket(s);</p>
+<p>is the resultant read file descriptor bit mask. The routine returns when all sockets associated with the value of</p>
+<p>have been serviced.</p>
+<p>Similar to</p>
+<p>but limited to 32 descriptors. This interface is obsoleted by</p>
+<p>Associates</p>
+<p>and</p>
+<p>with the service dispatch procedure,</p>
+<p>If</p>
+<p>is zero, the service is not registered with the</p>
+<p>service. If</p>
+<p>is non-zero, then a mapping of the triple</p>
+<p>to</p>
+<p>is established with the local</p>
+<p>service (generally</p>
+<p>is zero,</p>
+<p>or</p>
+<p>The procedure</p>
+<p>has the following form:</p>
+<p>The</p>
+<p>routine returns one if it succeeds, and zero otherwise.</p>
+<p>This routine never returns. It waits for</p>
+<p>requests to arrive, and calls the appropriate service procedure using</p>
+<p>when one arrives. This procedure is usually waiting for a</p>
+<p>system call to return.</p>
+<p>Called by an</p>
+<p>service's dispatch routine to send the results of a remote procedure call. The</p>
+<p>argument is the request's associated transport handle;</p>
+<p>is the</p>
+<p>routine which is used to encode the results; and</p>
+<p>is the address of the results. This routine returns one if it succeeds, zero otherwise.</p>
+<p>Remove all mapping of the double</p>
+<p>to dispatch routines, and of the triple</p>
+<p>to port number.</p>
+<p>Called by a service dispatch routine that refuses to perform a remote procedure call due to an authentication error.</p>
+<p>Called by a service dispatch routine that cannot successfully decode its arguments. See also</p>
+<p>Called by a service dispatch routine that does not implement the procedure number that the caller requests.</p>
+<p>Called when the desired program is not registered with the</p>
+<p>package. Service implementors usually do not need this routine.</p>
+<p>Called when the desired version of a program is not registered with the</p>
+<p>package. Service implementors usually do not need this routine.</p>
+<p>Called by a service dispatch routine when it detects a system error not covered by any particular protocol. For example, if a service can no longer allocate storage, it may call this routine.</p>
+<p>Called by a service dispatch routine that refuses to perform a remote procedure call due to insufficient authentication arguments. The routine calls</p>
+<p>This routine creates a toy</p>
+<p>service transport, to which it returns a pointer. The transport is really a buffer within the process's address space, so the corresponding</p>
+<p>client should live in the same address space; see</p>
+<p>This routine allows simulation of</p>
+<p>and acquisition of</p>
+<p>overheads (such as round trip times), without any kernel interference. This routine returns</p>
+<p>if it fails.</p>
+<p>This routine creates a</p>
+<p>service transport, to which it returns a pointer. The transport is associated with the socket</p>
+<p>which may be</p>
+<p>in which case a new socket is created. If the socket is not bound to a local</p>
+<p>port, then this routine binds it to an arbitrary port. Upon completion,</p>
+<p>is the transport's socket descriptor, and</p>
+<p>is the transport's port number. This routine returns</p>
+<p>if it fails. Since</p>
+<p>uses buffered</p>
+<p>users may specify the size of buffers; values of zero choose suitable defaults.</p>
+<p>This routine creates a</p>
+<p>service transport, to which it returns a pointer. The transport is associated with the socket</p>
+<p>which may be</p>
+<p>in which case a new socket is created. The</p>
+<p>argument is a variable-length file system pathname of at most 104 characters. This file is</p>
+<p>removed when the socket is closed. The</p>
+<p>system call must be used to remove the file. Upon completion,</p>
+<p>is the transport's socket descriptor. This routine returns</p>
+<p>if it fails. Since</p>
+<p>uses buffered</p>
+<p>users may specify the size of buffers; values of zero choose suitable defaults.</p>
+<p>Create a service on top of any open descriptor. The</p>
+<p>and</p>
+<p>arguments indicate sizes for the send and receive buffers. If they are zero, a reasonable default is chosen.</p>
+<p>Create a service on top of any open descriptor. Typically, this descriptor is a connected socket for a stream protocol such as</p>
+<p>The</p>
+<p>and</p>
+<p>arguments indicate sizes for the send and receive buffers. If they are zero, a reasonable default is chosen.</p>
+<p>This routine creates a</p>
+<p>service transport, to which it returns a pointer. The transport is associated with the socket</p>
+<p>which may be</p>
+<p>in which case a new socket is created. If the socket is not bound to a local</p>
+<p>port, then this routine binds it to an arbitrary port. Upon completion,</p>
+<p>is the transport's socket descriptor, and</p>
+<p>is the transport's port number. This routine returns</p>
+<p>if it fails.</p>
+<p>This allows the user to specify the maximum packet size for sending and receiving</p>
+<p>messages.</p>
+<p>Used for encoding</p>
+<p>reply messages. This routine is useful for users who wish to generate</p>
+<p>messages without using the</p>
+<p>package.</p>
+<p>Used for describing</p>
+<p>credentials. This routine is useful for users who wish to generate these credentials without using the</p>
+<p>authentication package.</p>
+<p>Used for describing</p>
+<p>call header messages. This routine is useful for users who wish to generate</p>
+<p>messages without using the</p>
+<p>package.</p>
+<p>Used for describing</p>
+<p>call messages. This routine is useful for users who wish to generate</p>
+<p>messages without using the</p>
+<p>package.</p>
+<p>Used for describing</p>
+<p>authentication information messages. This routine is useful for users who wish to generate</p>
+<p>messages without using the</p>
+<p>package.</p>
+<p>Used for describing arguments to various</p>
+<p>procedures, externally. This routine is useful for users who wish to generate these arguments without using the</p>
+<p>interface.</p>
+<p>Used for describing a list of port mappings, externally. This routine is useful for users who wish to generate these arguments without using the</p>
+<p>interface.</p>
+<p>Used for describing</p>
+<p>reply messages. This routine is useful for users who wish to generate</p>
+<p>messages without using the</p>
+<p>package.</p>
+<p>Used for describing</p>
+<p>reply messages. This routine is useful for users who wish to generate</p>
+<p>style messages without using the</p>
+<p>package.</p>
+<p>After</p>
+<p>service transport handles are created, they should register themselves with the</p>
+<p>service package. This routine modifies the global variable</p>
+<p>Service implementors usually do not need this routine.</p>
+<p>Before an</p>
+<p>service transport handle is destroyed, it should unregister itself with the</p>
+<p>service package. This routine modifies the global variable</p>
+<p>Service implementors usually do not need this routine.</p>
+<p>These functions are part of libtirpc.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

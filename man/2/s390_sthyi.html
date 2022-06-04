@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command s390_sthyi</title><meta name="description" content="Linux command s390_sthyi emulate STHYI instruction"><meta name="keywords" content="linux, command, s390_sthyi, bsd, emulate STHYI instruction"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>s390_sthyi - emulate STHYI instruction</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;asm/unistd.h&gt;
+
+int s390_sthyi(unsigned long function_code, void *resp_buffer,
+ uint64_t *return_code, unsigned long flags);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>s390_sthyi</strong>() system call emulates the STHYI (Store Hypervisor Information) instruction. It provides hardware resource information for the machine and its virtualization levels. This includes CPU type and capacity, as well as the machine model and other metrics.</p>
+<p>The <em>function_code</em> argument indicates which function to perform. The following code(s) are supported:</p>
+<dl>
+<dt>0</dt>
+<dd><p>Return CP (Central Processor) and IFL (Integrated Facility for Linux) capacity information.</p>
+</dd>
+</dl>
+<p>The <em>resp_buffer</em> argument specifies the address of a response buffer. When the <em>function_code</em> is 0, the buffer must be one page (4K) in size. If the system call returns 0, the response buffer will be filled with CPU capacity information. Otherwise, the response buffer's content is unchanged.</p>
+<p>The <em>return_code</em> argument stores the return code of the STHYI instruction, using one of the following values:</p>
+<dl>
+<dt>0</dt>
+<dd><p>Success.</p>
+</dd>
+<dt>4</dt>
+<dd><p>Unsupported function code.</p>
+</dd>
+</dl>
+<p>For further details about <em>return_code</em>, <em>function_code</em>, and <em>resp_buffer</em>, see the reference given in NOTES.</p>
+<p>The <em>flags</em> argument is provided to allow for future extensions and currently must be set to 0.</p>
+<h1>RETURN VALUE</h1>
+<p>On success (that is: emulation succeeded), the return value of <strong>s390_sthyi</strong>() matches the condition code of the STHYI instructions, which is a value in the range [0..3]. A return value of 0 indicates that CPU capacity information is stored in <em>*resp_buffer</em>. A return value of 3 indicates "unsupported function code" and the content of <em>*resp_buffer</em> is unchanged. The return values 1 and 2 are reserved.</p>
+<p>On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>The value specified in <em>resp_buffer</em> or <em>return_code</em> is not a valid address.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The value specified in <em>flags</em> is nonzero.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Allocating memory for handling the CPU capacity information failed.</p>
+</dd>
+<dt><strong>EOPNOTSUPP</strong></dt>
+<dd><p>The value specified in <em>function_code</em> is not valid.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>This system call is available since Linux 4.15.</p>
+<h1>CONFORMING TO</h1>
+<p>This Linux-specific system call is available only on the s390 architecture.</p>
+<h1>NOTES</h1>
+<p>Glibc does not provide a wrapper for this system call, use <strong>syscall</strong>(2) to call it.</p>
+<p>For details of the STHYI instruction, see <a href="https://www.ibm.com/support/knowledgecenter/SSB27U_6.3.0/com.ibm.zvm.v630.hcpb4/hcpb4sth.htm">the documentation page</a>.</p>
+<p>When the system call interface is used, the response buffer doesn't have to fulfill alignment requirements described in the STHYI instruction definition.</p>
+<p>The kernel caches the response (for up to one second, as of Linux 4.16). Subsequent system call invocations may return the cached response.</p>
+<h1>SEE ALSO</h1>
+<p><strong>syscall</strong>(2)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

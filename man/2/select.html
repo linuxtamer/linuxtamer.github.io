@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command select</title><meta name="description" content="Linux command select synchronous I/O multiplexing"><meta name="keywords" content="linux, command, select, bsd, synchronous I/O multiplexing"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>select, pselect, FD_CLR, FD_ISSET, FD_SET, FD_ZERO - synchronous I/O multiplexing</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/select.h&gt;
+
+int select(int nfds, fd_set *readfds, fd_set *writefds,
+ fd_set *exceptfds, struct timeval *timeout);
+
+void FD_CLR(int fd, fd_set *set);
+int FD_ISSET(int fd, fd_set *set);
+void FD_SET(int fd, fd_set *set);
+void FD_ZERO(fd_set *set);
+
+int pselect(int nfds, fd_set *readfds, fd_set *writefds,
+ fd_set *exceptfds, const struct timespec *timeout,
+ const sigset_t *sigmask);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>pselect</strong>(): _POSIX_C_SOURCE &gt;= 200112L</p>
+<h1>DESCRIPTION</h1>
+<p><strong>select</strong>() allows a program to monitor multiple file descriptors, waiting until one or more of the file descriptors become "ready" for some class of I/O operation (e.g., input possible). A file descriptor is considered ready if it is possible to perform a corresponding I/O operation (e.g., <strong>read</strong>(2), or a sufficiently small <strong>write</strong>(2)) without blocking.</p>
+<p><strong>select</strong>() can monitor only file descriptors numbers that are less than <strong>FD_SETSIZE</strong>; <strong>poll</strong>(2) and <strong>epoll</strong>(7) do not have this limitation. See BUGS.</p>
+<h2>File descriptor sets</h2>
+<p>The principal arguments of <strong>select</strong>() are three "sets" of file descriptors (declared with the type <em>fd_set</em>), which allow the caller to wait for three classes of events on the specified set of file descriptors. Each of the <em>fd_set</em> arguments may be specified as NULL if no file descriptors are to be watched for the corresponding class of events.</p>
+<p><strong>Note well</strong>: Upon return, each of the file descriptor sets is modified in place to indicate which file descriptors are currently "ready". Thus, if using <strong>select</strong>() within a loop, the sets <em>must be reinitialized</em> before each call. The implementation of the <em>fd_set</em> arguments as value-result arguments is a design error that is avoided in <strong>poll</strong>(2) and <strong>epoll</strong>(7).</p>
+<p>The contents of a file descriptor set can be manipulated using the following macros:</p>
+<dl>
+<dt><strong>FD_ZERO</strong>()</dt>
+<dd><p>This macro clears (removes all file descriptors from) <em>set</em>. It should be employed as the first step in initializing a file descriptor set.</p>
+</dd>
+<dt><strong>FD_SET</strong>()</dt>
+<dd><p>This macro adds the file descriptor <em>fd</em> to <em>set</em>. Adding a file descriptor that is already present in the set is a no-op, and does not produce an error.</p>
+</dd>
+<dt><strong>FD_CLR</strong>()</dt>
+<dd><p>This macro removes the file descriptor <em>fd</em> from <em>set</em>. Removing a file descriptor that is not present in the set is a no-op, and does not produce an error.</p>
+</dd>
+<dt><strong>FD_ISSET</strong>()</dt>
+<dd><p><strong>select</strong>() modifies the contents of the sets according to the rules described below. After calling <strong>select</strong>(), the <strong>FD_ISSET</strong>() macro can be used to test if a file descriptor is still present in a set. <strong>FD_ISSET</strong>() returns nonzero if the file descriptor <em>fd</em> is present in <em>set</em>, and zero if it is not.</p>
+</dd>
+</dl>
+<h2>Arguments</h2>
+<p>The arguments of <strong>select</strong>() are as follows:</p>
+<dl>
+<dt><em>readfds</em></dt>
+<dd><p>The file descriptors in this set are watched to see if they are ready for reading. A file descriptor is ready for reading if a read operation will not block; in particular, a file descriptor is also ready on end-of-file.</p>
+<p>After <strong>select</strong>() has returned, <em>readfds</em> will be cleared of all file descriptors except for those that are ready for reading.</p>
+</dd>
+<dt><em>writefds</em></dt>
+<dd><p>The file descriptors in this set are watched to see if they are ready for writing. A file descriptor is ready for writing if a write operation will not block. However, even if a file descriptor indicates as writable, a large write may still block.</p>
+<p>After <strong>select</strong>() has returned, <em>writefds</em> will be cleared of all file descriptors except for those that are ready for writing.</p>
+</dd>
+<dt><em>exceptfds</em></dt>
+<dd><p>The file descriptors in this set are watched for "exceptional conditions". For examples of some exceptional conditions, see the discussion of <strong>POLLPRI</strong> in <strong>poll</strong>(2).</p>
+<p>After <strong>select</strong>() has returned, <em>exceptfds</em> will be cleared of all file descriptors except for those for which an exceptional condition has occurred.</p>
+</dd>
+<dt><em>nfds</em></dt>
+<dd><p>This argument should be set to the highest-numbered file descriptor in any of the three sets, plus 1. The indicated file descriptors in each set are checked, up to this limit (but see BUGS).</p>
+</dd>
+<dt><em>timeout</em></dt>
+<dd><p>The <em>timeout</em> argument is a <em>timeval</em> structure (shown below) that specifies the interval that <strong>select</strong>() should block waiting for a file descriptor to become ready. The call will block until either:</p>
+<ul>
+<li><p>a file descriptor becomes ready;</p></li>
+<li><p>the call is interrupted by a signal handler; or</p></li>
+<li><p>the timeout expires.</p></li>
+</ul>
+<p>Note that the <em>timeout</em> interval will be rounded up to the system clock granularity, and kernel scheduling delays mean that the blocking interval may overrun by a small amount.</p>
+<p>If both fields of the <em>timeval</em> structure are zero, then <strong>select</strong>() returns immediately. (This is useful for polling.)</p>
+<p>If <em>timeout</em> is specified as NULL, <strong>select</strong>() blocks indefinitely waiting for a file descriptor to become ready.</p>
+</dd>
+</dl>
+<h2>pselect()</h2>
+<p>The <strong>pselect</strong>() system call allows an application to safely wait until either a file descriptor becomes ready or until a signal is caught.</p>
+<p>The operation of <strong>select</strong>() and <strong>pselect</strong>() is identical, other than these three differences:</p>
+<ul>
+<li><p><strong>select</strong>() uses a timeout that is a <em>struct timeval</em> (with seconds and microseconds), while <strong>pselect</strong>() uses a <em>struct timespec</em> (with seconds and nanoseconds).</p></li>
+<li><p><strong>select</strong>() may update the <em>timeout</em> argument to indicate how much time was left. <strong>pselect</strong>() does not change this argument.</p></li>
+<li><p><strong>select</strong>() has no <em>sigmask</em> argument, and behaves as <strong>pselect</strong>() called with NULL <em>sigmask</em>.</p></li>
+</ul>
+<p><em>sigmask</em> is a pointer to a signal mask (see <strong>sigprocmask</strong>(2)); if it is not NULL, then <strong>pselect</strong>() first replaces the current signal mask by the one pointed to by <em>sigmask</em>, then does the "select" function, and then restores the original signal mask. (If <em>sigmask</em> is NULL, the signal mask is not modified during the <strong>pselect</strong>() call.)</p>
+<p>Other than the difference in the precision of the <em>timeout</em> argument, the following <strong>pselect</strong>() call:</p>
+<pre><code>ready = pselect(nfds, &amp;readfds, &amp;writefds, &amp;exceptfds,
+                timeout, &amp;sigmask);</code></pre>
+<p>is equivalent to <em>atomically</em> executing the following calls:</p>
+<pre><code>sigset_t origmask;
+
+pthread_sigmask(SIG_SETMASK, &amp;sigmask, &amp;origmask);
+ready = select(nfds, &amp;readfds, &amp;writefds, &amp;exceptfds, timeout);
+pthread_sigmask(SIG_SETMASK, &amp;origmask, NULL);</code></pre>
+<p>The reason that <strong>pselect</strong>() is needed is that if one wants to wait for either a signal or for a file descriptor to become ready, then an atomic test is needed to prevent race conditions. (Suppose the signal handler sets a global flag and returns. Then a test of this global flag followed by a call of <strong>select</strong>() could hang indefinitely if the signal arrived just after the test but just before the call. By contrast, <strong>pselect</strong>() allows one to first block signals, handle the signals that have come in, then call <strong>pselect</strong>() with the desired <em>sigmask</em>, avoiding the race.)</p>
+<h2>The timeout</h2>
+<p>The <em>timeout</em> argument for <strong>select</strong>() is a structure of the following type:</p>
+<pre><code>struct timeval {
+    time_t      tv_sec;         /* seconds */
+    suseconds_t tv_usec;        /* microseconds */
+};</code></pre>
+<p>The corresponding argument for <strong>pselect</strong>() has the following type:</p>
+<pre><code>struct timespec {
+    time_t      tv_sec;         /* seconds */
+    long        tv_nsec;        /* nanoseconds */
+};</code></pre>
+<p>On Linux, <strong>select</strong>() modifies <em>timeout</em> to reflect the amount of time not slept; most other implementations do not do this. (POSIX.1 permits either behavior.) This causes problems both when Linux code which reads <em>timeout</em> is ported to other operating systems, and when code is ported to Linux that reuses a <em>struct timeval</em> for multiple <strong>select</strong>()s in a loop without reinitializing it. Consider <em>timeout</em> to be undefined after <strong>select</strong>() returns.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>select</strong>() and <strong>pselect</strong>() return the number of file descriptors contained in the three returned descriptor sets (that is, the total number of bits that are set in <em>readfds</em>, <em>writefds</em>, <em>exceptfds</em>). The return value may be zero if the timeout expired before any file descriptors became ready.</p>
+<p>On error, -1 is returned, and <em>errno</em> is set to indicate the error; the file descriptor sets are unmodified, and <em>timeout</em> becomes undefined.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p>An invalid file descriptor was given in one of the sets. (Perhaps a file descriptor that was already closed, or one on which an error has occurred.) However, see BUGS.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>A signal was caught; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>nfds</em> is negative or exceeds the <strong>RLIMIT_NOFILE</strong> resource limit (see <strong>getrlimit</strong>(2)).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The value contained within <em>timeout</em> is invalid.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Unable to allocate memory for internal tables.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>pselect</strong>() was added to Linux in kernel 2.6.16. Prior to this, <strong>pselect</strong>() was emulated in glibc (but see BUGS).</p>
+<h1>CONFORMING TO</h1>
+<p><strong>select</strong>() conforms to POSIX.1-2001, POSIX.1-2008, and 4.4BSD (<strong>select</strong>() first appeared in 4.2BSD). Generally portable to/from non-BSD systems supporting clones of the BSD socket layer (including System V variants). However, note that the System V variant typically sets the timeout variable before returning, but the BSD variant does not.</p>
+<p><strong>pselect</strong>() is defined in POSIX.1g, and in POSIX.1-2001 and POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>An <em>fd_set</em> is a fixed size buffer. Executing <strong>FD_CLR</strong>() or <strong>FD_SET</strong>() with a value of <em>fd</em> that is negative or is equal to or larger than <strong>FD_SETSIZE</strong> will result in undefined behavior. Moreover, POSIX requires <em>fd</em> to be a valid file descriptor.</p>
+<p>The operation of <strong>select</strong>() and <strong>pselect</strong>() is not affected by the <strong>O_NONBLOCK</strong> flag.</p>
+<p>On some other UNIX systems, <strong>select</strong>() can fail with the error <strong>EAGAIN</strong> if the system fails to allocate kernel-internal resources, rather than <strong>ENOMEM</strong> as Linux does. POSIX specifies this error for <strong>poll</strong>(2), but not for <strong>select</strong>(). Portable programs may wish to check for <strong>EAGAIN</strong> and loop, just as with <strong>EINTR</strong>.</p>
+<h2>The self-pipe trick</h2>
+<p>On systems that lack <strong>pselect</strong>(), reliable (and more portable) signal trapping can be achieved using the self-pipe trick. In this technique, a signal handler writes a byte to a pipe whose other end is monitored by <strong>select</strong>() in the main program. (To avoid possibly blocking when writing to a pipe that may be full or reading from a pipe that may be empty, nonblocking I/O is used when reading from and writing to the pipe.)</p>
+<h2>Emulating usleep(3)</h2>
+<p>Before the advent of <strong>usleep</strong>(3), some code employed a call to <strong>select</strong>() with all three sets empty, <em>nfds</em> zero, and a non-NULL <em>timeout</em> as a fairly portable way to sleep with subsecond precision.</p>
+<h2>Correspondence between select() and poll() notifications</h2>
+<p>Within the Linux kernel source, we find the following definitions which show the correspondence between the readable, writable, and exceptional condition notifications of <strong>select</strong>() and the event notifications provided by <strong>poll</strong>(2) and <strong>epoll</strong>(7):</p>
+<pre><code>#define POLLIN_SET  (EPOLLRDNORM | EPOLLRDBAND | EPOLLIN |
+                     EPOLLHUP | EPOLLERR)
+                   /* Ready for reading */
+#define POLLOUT_SET (EPOLLWRBAND | EPOLLWRNORM | EPOLLOUT |
+                     EPOLLERR)
+                   /* Ready for writing */
+#define POLLEX_SET  (EPOLLPRI)
+                   /* Exceptional condition */</code></pre>
+<h2>Multithreaded applications</h2>
+<p>If a file descriptor being monitored by <strong>select</strong>() is closed in another thread, the result is unspecified. On some UNIX systems, <strong>select</strong>() unblocks and returns, with an indication that the file descriptor is ready (a subsequent I/O operation will likely fail with an error, unless another process reopens file descriptor between the time <strong>select</strong>() returned and the I/O operation is performed). On Linux (and some other systems), closing the file descriptor in another thread has no effect on <strong>select</strong>(). In summary, any application that relies on a particular behavior in this scenario must be considered buggy.</p>
+<h2>C library/kernel differences</h2>
+<p>The Linux kernel allows file descriptor sets of arbitrary size, determining the length of the sets to be checked from the value of <em>nfds</em>. However, in the glibc implementation, the <em>fd_set</em> type is fixed in size. See also BUGS.</p>
+<p>The <strong>pselect</strong>() interface described in this page is implemented by glibc. The underlying Linux system call is named <strong>pselect6</strong>(). This system call has somewhat different behavior from the glibc wrapper function.</p>
+<p>The Linux <strong>pselect6</strong>() system call modifies its <em>timeout</em> argument. However, the glibc wrapper function hides this behavior by using a local variable for the timeout argument that is passed to the system call. Thus, the glibc <strong>pselect</strong>() function does not modify its <em>timeout</em> argument; this is the behavior required by POSIX.1-2001.</p>
+<p>The final argument of the <strong>pselect6</strong>() system call is not a <em>sigset_t *</em> pointer, but is instead a structure of the form:</p>
+<pre><code>struct {
+    const kernel_sigset_t *ss;   /* Pointer to signal set */
+    size_t ss_len;               /* Size (in bytes) of object
+                                    pointed to by &#39;ss&#39; */
+};</code></pre>
+<p>This allows the system call to obtain both a pointer to the signal set and its size, while allowing for the fact that most architectures support a maximum of 6 arguments to a system call. See <strong>sigprocmask</strong>(2) for a discussion of the difference between the kernel and libc notion of the signal set.</p>
+<h2>Historical glibc details</h2>
+<p>Glibc 2.0 provided an incorrect version of <strong>pselect</strong>() that did not take a <em>sigmask</em> argument.</p>
+<p>In glibc versions 2.1 to 2.2.1, one must define <strong>_GNU_SOURCE</strong> in order to obtain the declaration of <strong>pselect</strong>() from <em>&lt;sys/select.h&gt;</em>.</p>
+<h1>BUGS</h1>
+<p>POSIX allows an implementation to define an upper limit, advertised via the constant <strong>FD_SETSIZE</strong>, on the range of file descriptors that can be specified in a file descriptor set. The Linux kernel imposes no fixed limit, but the glibc implementation makes <em>fd_set</em> a fixed-size type, with <strong>FD_SETSIZE</strong> defined as 1024, and the <strong>FD_*</strong>() macros operating according to that limit. To monitor file descriptors greater than 1023, use <strong>poll</strong>(2) or <strong>epoll</strong>(7) instead.</p>
+<p>According to POSIX, <strong>select</strong>() should check all specified file descriptors in the three file descriptor sets, up to the limit <em>nfds-1</em>. However, the current implementation ignores any file descriptor in these sets that is greater than the maximum file descriptor number that the process currently has open. According to POSIX, any such file descriptor that is specified in one of the sets should result in the error <strong>EBADF</strong>.</p>
+<p>Starting with version 2.1, glibc provided an emulation of <strong>pselect</strong>() that was implemented using <strong>sigprocmask</strong>(2) and <strong>select</strong>(). This implementation remained vulnerable to the very race condition that <strong>pselect</strong>() was designed to prevent. Modern versions of glibc use the (race-free) <strong>pselect</strong>() system call on kernels where it is provided.</p>
+<p>On Linux, <strong>select</strong>() may report a socket file descriptor as "ready for reading", while nevertheless a subsequent read blocks. This could for example happen when data has arrived but upon examination has the wrong checksum and is discarded. There may be other circumstances in which a file descriptor is spuriously reported as ready. Thus it may be safer to use <strong>O_NONBLOCK</strong> on sockets that should not block.</p>
+<p>On Linux, <strong>select</strong>() also modifies <em>timeout</em> if the call is interrupted by a signal handler (i.e., the <strong>EINTR</strong> error return). This is not permitted by POSIX.1. The Linux <strong>pselect</strong>() system call has the same behavior, but the glibc wrapper hides this behavior by internally copying the <em>timeout</em> to a local variable and passing that variable to the system call.</p>
+<h1>EXAMPLES</h1>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/select.h&gt;
+
+int
+main(void)
+{
+    fd_set rfds;
+    struct timeval tv;
+    int retval;
+
+    /* Watch stdin (fd 0) to see when it has input. */
+
+    FD_ZERO(&amp;rfds);
+    FD_SET(0, &amp;rfds);
+
+    /* Wait up to five seconds. */
+
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+
+    retval = select(1, &amp;rfds, NULL, NULL, &amp;tv);
+    /* Don&#39;t rely on the value of tv now! */
+
+    if (retval == -1)
+        perror(&quot;select()&quot;);
+    else if (retval)
+        printf(&quot;Data is available now.\n&quot;);
+        /* FD_ISSET(0, &amp;rfds) will be true. */
+    else
+        printf(&quot;No data within five seconds.\n&quot;);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>accept</strong>(2), <strong>connect</strong>(2), <strong>poll</strong>(2), <strong>read</strong>(2), <strong>recv</strong>(2), <strong>restart_syscall</strong>(2), <strong>send</strong>(2), <strong>sigprocmask</strong>(2), <strong>write</strong>(2), <strong>epoll</strong>(7), <strong>time</strong>(7)</p>
+<p>For a tutorial with discussion and examples, see <strong>select_tut</strong>(2).</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

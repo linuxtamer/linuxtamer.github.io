@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command shm_unlink</title><meta name="description" content="Linux command shm_unlink create/open or unlink POSIX shared memory objects"><meta name="keywords" content="linux, command, shm_unlink, bsd, create/open or unlink POSIX shared memory objects"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>shm_open, shm_unlink - create/open or unlink POSIX shared memory objects</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/mman.h&gt;</strong><br />
+<strong>#include &lt;sys/stat.h&gt;</strong> /* For mode constants */<br />
+<strong>#include &lt;fcntl.h&gt;</strong> /* For O_* constants */</p>
+<p><strong>int shm_open(const char *</strong><em>name</em><strong>, int </strong><em>oflag</em><strong>, mode_t </strong><em>mode</em><strong>);</strong></p>
+<p><strong>int shm_unlink(const char *</strong><em>name</em><strong>);</strong></p>
+<p>Link with <em>-lrt</em>.</p>
+<h1>DESCRIPTION</h1>
+<p><strong>shm_open</strong>() creates and opens a new, or opens an existing, POSIX shared memory object. A POSIX shared memory object is in effect a handle which can be used by unrelated processes to <strong>mmap</strong>(2) the same region of shared memory. The <strong>shm_unlink</strong>() function performs the converse operation, removing an object previously created by <strong>shm_open</strong>().</p>
+<p>The operation of <strong>shm_open</strong>() is analogous to that of <strong>open</strong>(2). <em>name</em> specifies the shared memory object to be created or opened. For portable use, a shared memory object should be identified by a name of the form <em>/somename</em>; that is, a null-terminated string of up to <strong>NAME_MAX</strong> (i.e., 255) characters consisting of an initial slash, followed by one or more characters, none of which are slashes.</p>
+<p><em>oflag</em> is a bit mask created by ORing together exactly one of <strong>O_RDONLY</strong> or <strong>O_RDWR</strong> and any of the other flags listed here:</p>
+<dl>
+<dt><strong>O_RDONLY</strong></dt>
+<dd><p>Open the object for read access. A shared memory object opened in this way can be <strong>mmap</strong>(2)ed only for read (<strong>PROT_READ</strong>) access.</p>
+</dd>
+<dt><strong>O_RDWR</strong></dt>
+<dd><p>Open the object for read-write access.</p>
+</dd>
+<dt><strong>O_CREAT</strong></dt>
+<dd><p>Create the shared memory object if it does not exist. The user and group ownership of the object are taken from the corresponding effective IDs of the calling process, and the object's permission bits are set according to the low-order 9 bits of <em>mode</em>, except that those bits set in the process file mode creation mask (see <strong>umask</strong>(2)) are cleared for the new object. A set of macro constants which can be used to define <em>mode</em> is listed in <strong>open</strong>(2). (Symbolic definitions of these constants can be obtained by including <em>&lt;sys/stat.h&gt;</em>.)</p>
+<p>A new shared memory object initially has zero length—the size of the object can be set using <strong>ftruncate</strong>(2). The newly allocated bytes of a shared memory object are automatically initialized to 0.</p>
+</dd>
+<dt><strong>O_EXCL</strong></dt>
+<dd><p>If <strong>O_CREAT</strong> was also specified, and a shared memory object with the given <em>name</em> already exists, return an error. The check for the existence of the object, and its creation if it does not exist, are performed atomically.</p>
+</dd>
+<dt><strong>O_TRUNC</strong></dt>
+<dd><p>If the shared memory object already exists, truncate it to zero bytes.</p>
+</dd>
+</dl>
+<p>Definitions of these flag values can be obtained by including <em>&lt;fcntl.h&gt;</em>.</p>
+<p>On successful completion <strong>shm_open</strong>() returns a new file descriptor referring to the shared memory object. This file descriptor is guaranteed to be the lowest-numbered file descriptor not previously opened within the process. The <strong>FD_CLOEXEC</strong> flag (see <strong>fcntl</strong>(2)) is set for the file descriptor.</p>
+<p>The file descriptor is normally used in subsequent calls to <strong>ftruncate</strong>(2) (for a newly created object) and <strong>mmap</strong>(2). After a call to <strong>mmap</strong>(2) the file descriptor may be closed without affecting the memory mapping.</p>
+<p>The operation of <strong>shm_unlink</strong>() is analogous to <strong>unlink</strong>(2): it removes a shared memory object name, and, once all processes have unmapped the object, de-allocates and destroys the contents of the associated memory region. After a successful <strong>shm_unlink</strong>(), attempts to <strong>shm_open</strong>() an object with the same <em>name</em> fail (unless <strong>O_CREAT</strong> was specified, in which case a new, distinct object is created).</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>shm_open</strong>() returns a file descriptor (a nonnegative integer). On failure, <strong>shm_open</strong>() returns -1. <strong>shm_unlink</strong>() returns 0 on success, or -1 on error.</p>
+<h1>ERRORS</h1>
+<p>On failure, <em>errno</em> is set to indicate the cause of the error. Values which may appear in <em>errno</em> include the following:</p>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>Permission to <strong>shm_unlink</strong>() the shared memory object was denied.</p>
+</dd>
+<dt><strong>EACCES</strong></dt>
+<dd><p>Permission was denied to <strong>shm_open</strong>() <em>name</em> in the specified <em>mode</em>, or <strong>O_TRUNC</strong> was specified and the caller does not have write permission on the object.</p>
+</dd>
+<dt><strong>EEXIST</strong></dt>
+<dd><p>Both <strong>O_CREAT</strong> and <strong>O_EXCL</strong> were specified to <strong>shm_open</strong>() and the shared memory object specified by <em>name</em> already exists.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The <em>name</em> argument to <strong>shm_open</strong>() was invalid.</p>
+</dd>
+<dt><strong>EMFILE</strong></dt>
+<dd><p>The per-process limit on the number of open file descriptors has been reached.</p>
+</dd>
+<dt><strong>ENAMETOOLONG</strong></dt>
+<dd><p>The length of <em>name</em> exceeds <strong>PATH_MAX</strong>.</p>
+</dd>
+<dt><strong>ENFILE</strong></dt>
+<dd><p>The system-wide limit on the total number of open files has been reached.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>An attempt was made to <strong>shm_open</strong>() a <em>name</em> that did not exist, and <strong>O_CREAT</strong> was not specified.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>An attempt was to made to <strong>shm_unlink</strong>() a <em>name</em> that does not exist.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>These functions are provided in glibc 2.2 and later.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>shm_open</strong>(), <strong>shm_unlink</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<p>POSIX.1-2001 says that the group ownership of a newly created shared memory object is set to either the calling process's effective group ID or "a system default group ID". POSIX.1-2008 says that the group ownership may be set to either the calling process's effective group ID or, if the object is visible in the filesystem, the group ID of the parent directory.</p>
+<h1>NOTES</h1>
+<p>POSIX leaves the behavior of the combination of <strong>O_RDONLY</strong> and <strong>O_TRUNC</strong> unspecified. On Linux, this will successfully truncate an existing shared memory object—this may not be so on other UNIX systems.</p>
+<p>The POSIX shared memory object implementation on Linux makes use of a dedicated <strong>tmpfs</strong>(5) filesystem that is normally mounted under <em>/dev/shm</em>.</p>
+<h1>EXAMPLES</h1>
+<p>The programs below employ POSIX shared memory and POSIX unnamed semaphores to exchange a piece of data. The "bounce" program (which must be run first) raises the case of a string that is placed into the shared memory by the "send" program. Once the data has been modified, the "send" program then prints the contents of the modified shared memory. An example execution of the two programs is the following:</p>
+<pre><code>$ ./pshm_ucase_bounce /myshm &amp;
+[1] 270171
+$ ./pshm_ucase_send /myshm hello
+HELLO</code></pre>
+<p>Further detail about these programs is provided below.</p>
+<h2>Program source: pshm_ucase.h</h2>
+<p>The following header file is included by both programs below. Its primary purpose is to define a structure that will be imposed on the memory object that is shared between the two programs.</p>
+<pre><code>#include &lt;sys/mman.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;semaphore.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+#define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
+                        } while (0)
+
+#define BUF_SIZE 1024   /* Maximum size for exchanged string */
+
+/* Define a structure that will be imposed on the shared
+   memory object */
+
+struct shmbuf {
+    sem_t  sem1;            /* POSIX unnamed semaphore */
+    sem_t  sem2;            /* POSIX unnamed semaphore */
+    size_t cnt;             /* Number of bytes used in &#39;buf&#39; */
+    char   buf[BUF_SIZE];   /* Data being transferred */
+};</code></pre>
+<h2>Program source: pshm_ucase_bounce.c</h2>
+<p>The "bounce" program creates a new shared memory object with the name given in its command-line argument and sizes the object to match the size of the <em>shmbuf</em> structure defined in the header file. It then maps the object into the process's address space, and initializes two POSIX semaphores inside the object to 0.</p>
+<p>After the "send" program has posted the first of the semaphores, the "bounce" program upper cases the data that has been placed in the memory by the "send" program and then posts the second semaphore to tell the "send" program that it may now access the shared memory.</p>
+<pre><code>/* pshm_ucase_bounce.c
+
+   Licensed under GNU General Public License v2 or later.
+*/
+#include &lt;ctype.h&gt;
+#include &quot;pshm_ucase.h&quot;
+
+int
+main(int argc, char *argv[])
+{
+    if (argc != 2) {
+        fprintf(stderr, &quot;Usage: %s /shm-path\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    char *shmpath = argv[1];
+
+    /* Create shared memory object and set its size to the size
+       of our structure */
+
+    int fd = shm_open(shmpath, O_CREAT | O_EXCL | O_RDWR,
+                      S_IRUSR | S_IWUSR);
+    if (fd == -1)
+        errExit(&quot;shm_open&quot;);
+
+    if (ftruncate(fd, sizeof(struct shmbuf)) == -1)
+        errExit(&quot;ftruncate&quot;);
+
+    /* Map the object into the caller&#39;s address space */
+
+    struct shmbuf *shmp = mmap(NULL, sizeof(*shmp),
+                               PROT_READ | PROT_WRITE,
+                               MAP_SHARED, fd, 0);
+    if (shmp == MAP_FAILED)
+        errExit(&quot;mmap&quot;);
+
+    /* Initialize semaphores as process-shared, with value 0 */
+
+    if (sem_init(&amp;shmp-&gt;sem1, 1, 0) == -1)
+        errExit(&quot;sem_init-sem1&quot;);
+    if (sem_init(&amp;shmp-&gt;sem2, 1, 0) == -1)
+        errExit(&quot;sem_init-sem2&quot;);
+
+    /* Wait for &#39;sem1&#39; to be posted by peer before touching
+       shared memory */
+
+    if (sem_wait(&amp;shmp-&gt;sem1) == -1)
+        errExit(&quot;sem_wait&quot;);
+
+    /* Convert data in shared memory into upper case */
+
+    for (int j = 0; j &lt; shmp-&gt;cnt; j++)
+        shmp-&gt;buf[j] = toupper((unsigned char) shmp-&gt;buf[j]);
+
+    /* Post &#39;sem2&#39; to tell the to tell peer that it can now
+       access the modified data in shared memory */
+
+    if (sem_post(&amp;shmp-&gt;sem2) == -1)
+        errExit(&quot;sem_post&quot;);
+
+    /* Unlink the shared memory object. Even if the peer process
+       is still using the object, this is okay. The object will
+       be removed only after all open references are closed. */
+
+    shm_unlink(shmpath);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h2>Program source: pshm_ucase_send.c</h2>
+<p>The "send" program takes two command-line arguments: the pathname of a shared memory object previously created by the "bounce" program and a string that is to be copied into that object.</p>
+<p>The program opens the shared memory object and maps the object into its address space. It then copies the data specified in its second argument into the shared memory, and posts the first semaphore, which tells the "bounce" program that it can now access that data. After the "bounce" program posts the second semaphore, the "send" program prints the contents of the shared memory on standard output.</p>
+<pre><code>/* pshm_ucase_send.c
+
+   Licensed under GNU General Public License v2 or later.
+*/
+#include &lt;string.h&gt;
+#include &quot;pshm_ucase.h&quot;
+
+int
+main(int argc, char *argv[])
+{
+    if (argc != 3) {
+        fprintf(stderr, &quot;Usage: %s /shm-path string\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    char *shmpath = argv[1];
+    char *string = argv[2];
+    size_t len = strlen(string);
+
+    if (len &gt; BUF_SIZE) {
+        fprintf(stderr, &quot;String is too long\n&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Open the existing shared memory object and map it
+       into the caller&#39;s address space */
+
+    int fd = shm_open(shmpath, O_RDWR, 0);
+    if (fd == -1)
+        errExit(&quot;shm_open&quot;);
+
+    struct shmbuf *shmp = mmap(NULL, sizeof(*shmp),
+                               PROT_READ | PROT_WRITE,
+                               MAP_SHARED, fd, 0);
+    if (shmp == MAP_FAILED)
+        errExit(&quot;mmap&quot;);
+
+    /* Copy data into the shared memory object */
+
+    shmp-&gt;cnt = len;
+    memcpy(&amp;shmp-&gt;buf, string, len);
+
+    /* Tell peer that it can now access shared memory */
+
+    if (sem_post(&amp;shmp-&gt;sem1) == -1)
+        errExit(&quot;sem_post&quot;);
+
+    /* Wait until peer says that it has finished accessing
+       the shared memory */
+
+    if (sem_wait(&amp;shmp-&gt;sem2) == -1)
+        errExit(&quot;sem_wait&quot;);
+
+    /* Write modified data in shared memory to standard output */
+
+    write(STDOUT_FILENO, &amp;shmp-&gt;buf, len);
+    write(STDOUT_FILENO, &quot;\n&quot;, 1);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>close</strong>(2), <strong>fchmod</strong>(2), <strong>fchown</strong>(2), <strong>fcntl</strong>(2), <strong>fstat</strong>(2), <strong>ftruncate</strong>(2), <strong>memfd_create</strong>(2), <strong>mmap</strong>(2), <strong>open</strong>(2), <strong>umask</strong>(2), <strong>shm_overview</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

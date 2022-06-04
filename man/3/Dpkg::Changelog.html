@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command Dpkg::Changelog</title><meta name="description" content="Linux command Dpkg::Changelog base class to implement a changelog parser"><meta name="keywords" content="linux, command, Dpkg::Changelog, bsd, base class to implement a changelog parser"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>Dpkg::Changelog - base class to implement a changelog parser</p>
+<h1>DESCRIPTION</h1>
+<p>Dpkg::Changelog is a class representing a changelog file as an array of changelog entries (Dpkg::Changelog::Entry). By deriving this class and implementing its parse method, you add the ability to fill this object with changelog entries.</p>
+<h1>METHODS</h1>
+<ul>
+<li><p>Creates a new changelog object.</p></li>
+<li><p>Change the value of some options. verbose (defaults to 1) defines whether parse errors are displayed as warnings by default. reportfile is a string to use instead of the name of the file parsed, in particular in error messages. range defines the range of entries that we want to parse, the parser will stop as soon as it has parsed enough data to satisfy <code>$c</code>-&gt;get_range($opts{range}).</p></li>
+<li><p>Read the filehandle and parse a changelog in it. The data in the object is reset before parsing new data. Returns the number of changelog entries that have been parsed with success. This method needs to be implemented by one of the specialized changelog format subclasses.</p></li>
+<li><p>Parse <code>$filename</code> contents for a changelog. Returns the number of changelog entries that have been parsed with success.</p></li>
+<li><p>Can be used to delete all information about errors occurred during previous parse runs.</p></li>
+<li><p>Record a new parse error in <code>$file</code> at line <code>$line_nr</code>. The error message is specified with <code>$error</code> and a copy of the line can be recorded in <code>$line</code>.</p></li>
+<li><p>Returns all error messages from the last parse run. If called in scalar context returns a human readable string representation. If called in list context returns an array of arrays. Each of these arrays contains</p>
+<ol type="1">
+<li><p>a string describing the origin of the data (a filename usually). If the reportfile configuration option was given, its value will be used instead.</p></li>
+<li><p>the line number where the error occurred</p></li>
+<li><p>an error description</p></li>
+<li><p>the original line</p></li>
+</ol></li>
+<li><p>Add a string representing unparsed lines after the changelog entries. Use undef as <code>$tail</code> to remove the unparsed lines currently set.</p></li>
+<li><p>Return a string representing the unparsed lines after the changelog entries. Returns undef if there's no such thing.</p></li>
+<li><p>Returns all the Dpkg::Changelog::Entry objects contained in this changelog in the order in which they have been parsed.</p></li>
+<li><p>Returns an array (if called in list context) or a reference to an array of Dpkg::Changelog::Entry objects which each represent one entry of the changelog. <code>$range</code> is a hash reference describing the range of entries to return. See section RANGE SELECTION.</p></li>
+<li><p>Returns true if enough data have been parsed to be able to return all entries selected by the range set at creation (or with set_options).</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Returns a string representation of the changelog (it's a concatenation of the string representation of the individual changelog entries).</p>
+<ul>
+<li><p>Output the changelog to the given filehandle.</p></li>
+<li><p>Save the changelog in the given file.</p></li>
+<li><p>Formats the changelog into Dpkg::Control::Changelog objects representing the entries selected by the optional range specifier (see RANGE SELECTION for details). In scalar context returns a Dpkg::Index object containing the selected entries, in list context returns an array of Dpkg::Control::Changelog objects. With format <strong>dpkg</strong> the returned Dpkg::Control::Changelog object is coalesced from the entries in the changelog that are part of the range requested, with the fields described below, but considering that selected entry means the first entry of the selected range. With format <strong>rfc822</strong> each returned Dpkg::Control::Changelog objects represents one entry in the changelog that is part of the range requested, with the fields described below, but considering that selected entry means for each entry. The different formats return undef if no entries are matched. The following fields are contained in the object(s) returned:</p>
+<ul>
+<li><p>package name (selected entry)</p></li>
+<li><p>packages' version (selected entry)</p></li>
+<li><p>target distribution (selected entry)</p></li>
+<li><p>urgency (highest of all entries in range)</p></li>
+<li><p>person that created the (selected) entry</p></li>
+<li><p>date of the (selected) entry</p></li>
+<li><p>date of the (selected) entry as a timestamp in seconds since the epoch</p></li>
+<li><p>bugs closed by the (selected) entry/entries, sorted by bug number</p></li>
+<li><p>content of the (selected) entry/entries</p></li>
+</ul></li>
+</ul>
+<h1>RANGE SELECTION</h1>
+<p>A range selection is described by a hash reference where the allowed keys and values are described below.</p>
+<p>The following options take a version number as value.</p>
+<ul>
+<li><p>Causes changelog information from all versions strictly later than <strong>version</strong> to be used.</p></li>
+<li><p>Causes changelog information from all versions strictly earlier than <strong>version</strong> to be used.</p></li>
+<li><p>Similar to <code>since</code> but also includes the information for the specified <strong>version</strong> itself.</p></li>
+<li><p>Similar to <code>until</code> but also includes the information for the specified <strong>version</strong> itself.</p></li>
+</ul>
+<p>The following options don't take version numbers as values:</p>
+<ul>
+<li><p>If set to a true value, all entries of the changelog are returned, this overrides all other options.</p></li>
+<li><p>Expects a signed integer as value. Returns <code>value</code> entries from the top of the changelog if set to a positive integer, and <code>abs(value)</code> entries from the tail if set to a negative integer.</p></li>
+<li><p>Expects a signed integer as value. Changes the starting point for <code>count</code>, either counted from the top (positive integer) or from the tail (negative integer). <code>offset</code> has no effect if <code>count</code> wasn't given as well.</p></li>
+</ul>
+<p>Some examples for the above options. Imagine an example changelog with entries for the versions 1.2, 1.3, 2.0, 2.1, 2.2, 3.0 and 3.1.</p>
+<p>Range Included entries ----- ---------------- since =&gt; 2.0 3.1, 3.0, 2.2 until =&gt; 2.0 1.3, 1.2 from =&gt; 2.0 3.1, 3.0, 2.2, 2.1, 2.0 to =&gt; 2.0 2.0, 1.3, 1.2 count =&gt; 2 3.1, 3.0 count =&gt; -2 1.3, 1.2 count =&gt; 3, offset =&gt; 2 2.2, 2.1, 2.0 count =&gt; 2, offset =&gt; -3 2.0, 1.3 count =&gt; -2, offset =&gt; 3 3.0, 2.2 count =&gt; -2, offset =&gt; -3 2.2, 2.1</p>
+<p>Any combination of one option of <code>since</code> and <code>from</code> and one of <code>until</code> and <code>to</code> returns the intersection of the two results with only one of the options specified.</p>
+<h1>CHANGES</h1>
+<h2>Version 2.00 (dpkg 1.20.0)</h2>
+<p>Remove methods: <code>$c</code>-&gt;<strong>dpkg()</strong>, <code>$c</code>-&gt;<strong>rfc822()</strong>.</p>
+<h2>Version 1.01 (dpkg 1.18.8)</h2>
+<p>New method: <code>$c</code>-&gt;<strong>format_range()</strong>.</p>
+<p>Deprecated methods: <code>$c</code>-&gt;<strong>dpkg()</strong>, <code>$c</code>-&gt;<strong>rfc822()</strong>.</p>
+<p>New field Timestamp in output formats.</p>
+<h2>Version 1.00 (dpkg 1.15.6)</h2>
+<p>Mark the module as public.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

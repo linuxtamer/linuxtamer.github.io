@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command scandirat</title><meta name="description" content="Linux command scandirat scan a directory for matching entries"><meta name="keywords" content="linux, command, scandirat, bsd, scan a directory for matching entries"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>scandir, scandirat, alphasort, versionsort - scan a directory for matching entries</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;dirent.h&gt;
+
+int scandir(const char *dirp, struct dirent ***namelist,
+int (*filter)(const struct dirent *),
+int (*compar)(const struct dirent **, const struct dirent **));
+
+int alphasort(const struct dirent **a, const struct dirent **b);
+
+int versionsort(const struct dirent **a, const struct dirent **b);
+
+#include &lt;fcntl.h&gt; /* Definition of AT_* constants */
+#include &lt;dirent.h&gt;
+
+int scandirat(int dirfd, const char *dirp,
+struct dirent ***namelist,
+int (*filter)(const struct dirent *),
+int (*compar)(const struct dirent **, const struct dirent **));</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>scandir</strong>(), <strong>alphasort</strong>():<br />
+</p>
+<blockquote>
+<p>/* Since glibc 2.10: */ _POSIX_C_SOURCE &gt;= 200809L || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE || _SVID_SOURCE</p>
+</blockquote>
+<p><strong>versionsort</strong>(): _GNU_SOURCE</p>
+<p><strong>scandirat</strong>(): _GNU_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>scandir</strong>() function scans the directory <em>dirp</em>, calling <em>filter</em>() on each directory entry. Entries for which <em>filter</em>() returns nonzero are stored in strings allocated via <strong>malloc</strong>(3), sorted using <strong>qsort</strong>(3) with the comparison function <em>compar</em>(), and collected in array <em>namelist</em> which is allocated via <strong>malloc</strong>(3). If <em>filter</em> is NULL, all entries are selected.</p>
+<p>The <strong>alphasort</strong>() and <strong>versionsort</strong>() functions can be used as the comparison function <em>compar</em>(). The former sorts directory entries using <strong>strcoll</strong>(3), the latter using <strong>strverscmp</strong>(3) on the strings <em>(*a)-&gt;d_name</em> and <em>(*b)-&gt;d_name</em>.</p>
+<h2>scandirat()</h2>
+<p>The <strong>scandirat</strong>() function operates in exactly the same way as <strong>scandir</strong>(), except for the differences described here.</p>
+<p>If the pathname given in <em>dirp</em> is relative, then it is interpreted relative to the directory referred to by the file descriptor <em>dirfd</em> (rather than relative to the current working directory of the calling process, as is done by <strong>scandir</strong>() for a relative pathname).</p>
+<p>If <em>dirp</em> is relative and <em>dirfd</em> is the special value <strong>AT_FDCWD</strong>, then <em>dirp</em> is interpreted relative to the current working directory of the calling process (like <strong>scandir</strong>()).</p>
+<p>If <em>dirp</em> is absolute, then <em>dirfd</em> is ignored.</p>
+<p>See <strong>openat</strong>(2) for an explanation of the need for <strong>scandirat</strong>().</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>scandir</strong>() function returns the number of directory entries selected. On error, -1 is returned, with <em>errno</em> set to indicate the cause of the error.</p>
+<p>The <strong>alphasort</strong>() and <strong>versionsort</strong>() functions return an integer less than, equal to, or greater than zero if the first argument is considered to be respectively less than, equal to, or greater than the second.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>The path in <em>dirp</em> does not exist.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient memory to complete the operation.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p>The path in <em>dirp</em> is not a directory.</p>
+</dd>
+</dl>
+<p>The following additional errors can occur for <strong>scandirat</strong>():</p>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>dirfd</em> is not a valid file descriptor.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p><em>dirp</em> is a relative path and <em>dirfd</em> is a file descriptor referring to a file other than a directory.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>versionsort</strong>() was added to glibc in version 2.1.</p>
+<p><strong>scandirat</strong>() was added to glibc in version 2.15.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>scandir</strong>(), <strong>scandirat</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>alphasort</strong>(), <strong>versionsort</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p><strong>alphasort</strong>(), <strong>scandir</strong>(): 4.3BSD, POSIX.1-2008.</p>
+<p><strong>versionsort</strong>() and <strong>scandirat</strong>() are GNU extensions.</p>
+<h1>NOTES</h1>
+<p>Since glibc 2.1, <strong>alphasort</strong>() calls <strong>strcoll</strong>(3); earlier it used <strong>strcmp</strong>(3).</p>
+<p>Before glibc 2.10, the two arguments of <strong>alphasort</strong>() and <strong>versionsort</strong>() were typed as <em>const void *</em>. When <strong>alphasort</strong>() was standardized in POSIX.1-2008, the argument type was specified as the type-safe <em>const struct dirent **</em>, and glibc 2.10 changed the definition of <strong>alphasort</strong>() (and the nonstandard <strong>versionsort</strong>()) to match the standard.</p>
+<h1>EXAMPLES</h1>
+<p>The program below prints a list of the files in the current directory in reverse order.</p>
+<h2>Program source</h2>
+<pre><code>#define _DEFAULT_SOURCE
+#include &lt;dirent.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int
+main(void)
+{
+    struct dirent **namelist;
+    int n;
+
+    n = scandir(&quot;.&quot;, &amp;namelist, NULL, alphasort);
+    if (n == -1) {
+        perror(&quot;scandir&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    while (n--) {
+        printf(&quot;%s\n&quot;, namelist[n]-&gt;d_name);
+        free(namelist[n]);
+    }
+    free(namelist);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>closedir</strong>(3), <strong>fnmatch</strong>(3), <strong>opendir</strong>(3), <strong>readdir</strong>(3), <strong>rewinddir</strong>(3), <strong>seekdir</strong>(3), <strong>strcmp</strong>(3), <strong>strcoll</strong>(3), <strong>strverscmp</strong>(3), <strong>telldir</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

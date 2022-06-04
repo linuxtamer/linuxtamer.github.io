@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tsget</title><meta name="description" content="Linux command tsget Time Stamping HTTP/HTTPS client"><meta name="keywords" content="linux, command, tsget, bsd, Time Stamping HTTP/HTTPS client"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>openssl-tsget, tsget - Time Stamping HTTP/HTTPS client</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tsget</strong> <strong>-h</strong> server_url [<strong>-e</strong> extension] [<strong>-o</strong> output] [<strong>-v</strong>] [<strong>-d</strong>] [<strong>-k</strong> private_key.pem] [<strong>-p</strong> key_password] [<strong>-c</strong> client_cert.pem] [<strong>-C</strong> CA_certs.pem] [<strong>-P</strong> CA_path] [<strong>-r</strong> file:file...] [<strong>-g</strong> EGD_socket] [request]...</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>tsget</strong> command can be used for sending a timestamp request, as specified in <strong>RFC 3161</strong>, to a timestamp server over HTTP or HTTPS and storing the timestamp response in a file. This tool cannot be used for creating the requests and verifying responses, you can use the OpenSSL <strong>ts (1)</strong> command to do that. <strong>tsget</strong> can send several requests to the server without closing the TCP connection if more than one requests are specified on the command line.</p>
+<p>The tool sends the following HTTP request for each timestamp request:</p>
+<p>POST url HTTP/1.1 User-Agent: OpenTSA tsget.pl/&lt;version&gt; Host: &lt;host&gt;:&lt;port&gt; Pragma: no-cache Content-Type: application/timestamp-query Accept: application/timestamp-reply Content-Length: length of body ...binary request specified by the user...</p>
+<p><strong>tsget</strong> expects a response of type application/timestamp-reply, which is written to a file without any interpretation.</p>
+<h1>OPTIONS</h1>
+<ul>
+<li><p>The URL of the HTTP/HTTPS server listening for timestamp requests.</p></li>
+<li><p>If the <strong>-o</strong> option is not given this argument specifies the extension of the output files. The base name of the output file will be the same as those of the input files. Default extension is '.tsr'. (Optional)</p></li>
+<li><p>This option can be specified only when just one request is sent to the server. The timestamp response will be written to the given output file. '-' means standard output. In case of multiple timestamp requests or the absence of this argument the names of the output files will be derived from the names of the input files and the default or specified extension argument. (Optional)</p></li>
+<li><p>The name of the currently processed request is printed on standard error. (Optional)</p></li>
+<li><p>Switches on verbose mode for the underlying <strong>curl</strong> library. You can see detailed debug messages for the connection. (Optional)</p></li>
+<li><p>(HTTPS) In case of certificate-based client authentication over HTTPS &lt;private_key.pem&gt; must contain the private key of the user. The private key file can optionally be protected by a passphrase. The <strong>-c</strong> option must also be specified. (Optional)</p></li>
+<li><p>(HTTPS) Specifies the passphrase for the private key specified by the <strong>-k</strong> argument. If this option is omitted and the key is passphrase protected <strong>tsget</strong> will ask for it. (Optional)</p></li>
+<li><p>(HTTPS) In case of certificate-based client authentication over HTTPS &lt;client_cert.pem&gt; must contain the X.509 certificate of the user. The <strong>-k</strong> option must also be specified. If this option is not specified no certificate-based client authentication will take place. (Optional)</p></li>
+<li><p>(HTTPS) The trusted CA certificate store. The certificate chain of the peer's certificate must include one of the CA certificates specified in this file. Either option <strong>-C</strong> or option <strong>-P</strong> must be given in case of HTTPS. (Optional)</p></li>
+<li><p>(HTTPS) The path containing the trusted CA certificates to verify the peer's certificate. The directory must be prepared with the <strong>c_rehash</strong> OpenSSL utility. Either option <strong>-C</strong> or option <strong>-P</strong> must be given in case of HTTPS. (Optional)</p></li>
+<li><p>The files containing random data for seeding the random number generator. Multiple files can be specified, the separator is <strong>;</strong> for MS-Windows, <strong>,</strong> for VMS and <strong>:</strong> for all other platforms. (Optional)</p></li>
+<li><p>The name of an EGD socket to get random data from. (Optional)</p></li>
+<li><p>List of files containing <strong>RFC 3161</strong> DER-encoded timestamp requests. If no requests are specified only one request will be sent to the server and it will be read from the standard input. (Optional)</p></li>
+</ul>
+<h1>ENVIRONMENT VARIABLES</h1>
+<p>The <strong>TSGET</strong> environment variable can optionally contain default arguments. The content of this variable is added to the list of command line arguments.</p>
+<h1>EXAMPLES</h1>
+<p>The examples below presume that <strong>file1.tsq</strong> and <strong>file2.tsq</strong> contain valid timestamp requests, tsa.opentsa.org listens at port 8080 for HTTP requests and at port 8443 for HTTPS requests, the TSA service is available at the /tsa absolute path.</p>
+<p>Get a timestamp response for file1.tsq over HTTP, output is written to file1.tsr:</p>
+<p>tsget -h http://tsa.opentsa.org:8080/tsa file1.tsq</p>
+<p>Get a timestamp response for file1.tsq and file2.tsq over HTTP showing progress, output is written to file1.reply and file2.reply respectively:</p>
+<p>tsget -h http://tsa.opentsa.org:8080/tsa -v -e .reply \ file1.tsq file2.tsq</p>
+<p>Create a timestamp request, write it to file3.tsq, send it to the server and write the response to file3.tsr:</p>
+<p>openssl ts -query -data file3.txt -cert | tee file3.tsq \ | tsget -h http://tsa.opentsa.org:8080/tsa \ -o file3.tsr</p>
+<p>Get a timestamp response for file1.tsq over HTTPS without client authentication:</p>
+<p>tsget -h https://tsa.opentsa.org:8443/tsa \ -C cacerts.pem file1.tsq</p>
+<p>Get a timestamp response for file1.tsq over HTTPS with certificate-based client authentication (it will ask for the passphrase if client_key.pem is protected):</p>
+<p>tsget -h https://tsa.opentsa.org:8443/tsa -C cacerts.pem \ -k client_key.pem -c client_cert.pem file1.tsq</p>
+<p>You can shorten the previous command line if you make use of the <strong>TSGET</strong> environment variable. The following commands do the same as the previous example:</p>
+<p>TSGET=-h https://tsa.opentsa.org:8443/tsa -C cacerts.pem \ -k client_key.pem -c client_cert.pem export TSGET tsget file1.tsq</p>
+<h1>SEE ALSO</h1>
+<p><strong>openssl</strong> (1), <strong>ts</strong> (1), <strong>curl</strong> (1), <strong>RFC 3161</strong></p>
+<h1>COPYRIGHT</h1>
+<p>Copyright 2006-2020 The OpenSSL Project Authors. All Rights Reserved.</p>
+<p>Licensed under the OpenSSL license (the License). You may not use this file except in compliance with the License. You can obtain a copy in the file LICENSE in the source distribution or at &lt;https://www.openssl.org/source/license.html&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

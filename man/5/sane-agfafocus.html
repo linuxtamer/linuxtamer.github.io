@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sane-agfafocus</title><meta name="description" content="Linux command sane-agfafocus SANE backend for AGFA Focus flatbed scanners"><meta name="keywords" content="linux, command, sane-agfafocus, bsd, SANE backend for AGFA Focus flatbed scanners"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sane-agfafocus - SANE backend for AGFA Focus flatbed scanners</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sane-agfafocus</strong> library implements a SANE (Scanner Access Now Easy) backend that provides access to AGFA Focus flatbed scanners. At present, the following scanners are supported from this backend:</p>
+<blockquote>
+<p>AGFA Focus GS Scanner (6 bit gray scale) (untested)<br />
+AGFA Focus Lineart Scanner (lineart) (untested)<br />
+AGFA Focus II (8 bit gray scale) (untested)<br />
+AGFA Focus Color (24 bit color 3-pass)<br />
+AGFA Focus Color Plus (24 bit color 3-pass)<br />
+</p>
+<p>Siemens S9036 (8 bit gray scale) (untested)<br />
+</p>
+</blockquote>
+<p>The driver supports line art, 6bpp and 8bpp gray, 18bpp and 24bpp color scans.</p>
+<p>If you own a scanner other than the ones listed above that works with this backend, please let us know by sending the scanner's model name, SCSI id, and firmware revision to <em>sane-devel@alioth-lists.debian.net</em>. Have a look at http://www.sane-project.org/mailing-lists.html concerning subscription to sane-devel.</p>
+<p>All of these scanners are pre-SCSI-2, and do not even report properly to SCSI Inquiry. This is typically evident in SCSI bus scans, where the scanner will come up with only garbage as vendor and models strings.</p>
+<h1>DEVICE NAMES</h1>
+<p>This backend expects device names of the form:</p>
+<blockquote>
+<p><em>special</em></p>
+</blockquote>
+<p>Where <em>special</em> is either the path-name for the special device that corresponds to a SCSI scanner. For SCSI scanners, the special device name must be a generic SCSI device or a symlink to such a device. Under Linux, such a device name could be <em>/dev/sga</em> or <em>/dev/sge</em>, for example. See sane-scsi(5) for details.</p>
+<h1>CONFIGURATION</h1>
+<p>The contents of the <em>agfafocus.conf</em> file is a list of device names that correspond to AGFA Focus scanners. Empty lines and lines starting with a hash mark (#) are ignored. A sample configuration file is shown below:</p>
+<blockquote>
+<p>/dev/scanner<br />
+# this is a comment<br />
+/dev/sge</p>
+</blockquote>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/sane.d/agfafocus.conf</em></dt>
+<dd><p>The backend configuration file (see also description of <strong>SANE_CONFIG_DIR</strong> below).</p>
+</dd>
+<dt><em>/usr/lib/libsane-agfafocus.a</em></dt>
+<dd><p>The static library implementing this backend.</p>
+</dd>
+<dt><em>/usr/lib/libsane-agfafocus.so</em></dt>
+<dd><p>The shared library implementing this backend (present on systems that support dynamic loading).</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>SANE_CONFIG_DIR</strong></dt>
+<dd><p>This environment variable specifies the list of directories that may contain the configuration file. Under UNIX, the directories are separated by a colon (`:'), under OS/2, they are separated by a semi-colon (`;'). If this variable is not set, the configuration file is searched in two default directories: first, the current working directory (".") and then in /etc/sane.d. If the value of the environment variable ends with the directory separator character, then the default directories are searched after the explicitly specified directories. For example, setting <strong>SANE_CONFIG_DIR</strong> to "/tmp/config:" would result in directories "tmp/config", ".", and "/etc/sane.d" being searched (in this order).</p>
+</dd>
+<dt><strong>SANE_DEBUG_AGFAFOCUS</strong></dt>
+<dd><p>If the library was compiled with debug support enabled, this environment variable controls the debug level for this backend. E.g., a value of 128 requests all debug output to be printed. Smaller levels reduce verbosity. SANE_DEBUG_AGFAFOCUS values:</p>
+</dd>
+</dl>
+<pre><code>Number  Remark
+ 0       print important errors (printed each time)
+ 1       print errors
+ 2       print sense
+ 3       print warnings
+ 4       print scanner-inquiry
+ 5       print information
+ 6       print less important information
+ 7       print called procedures
+ 8       print reader_process messages
+ 10      print called sane-init-routines
+ 11      print called sane-procedures
+ 12      print sane infos
+ 13      print sane option-control messages</code></pre>
+<h1>MISSING FUNCTIONALITY</h1>
+<p>Uploading of dither matrices and tonecurves has been implemented, but so far has not proven to be useful for anything. For this reason these options have been disabled.</p>
+<h1>BUGS</h1>
+<p>The scanners that do not support disconnect have problems with SCSI timeouts if the SCSI bus gets loaded, eg. if you do a kernel build at the same time as scanning. To see if your scanner supports disconnect, run "SANE_DEBUG_AGFAFOCUS=128 scanimage -L" in sh and look for the "disconnect:" line)</p>
+<h1>DEBUG</h1>
+<p>If you have problems with SANE not detecting your scanner, make sure the Artec backend is disabled. Somehow, this backend causes at least my scanner not to respond correctly to SCSI inquiry commands.</p>
+<p>If you encounter a bug please set the environment variable SANE_DEBUG_AGFAFOCUS to 128 and try to regenerate the problem. Then send me a report with the log attached.</p>
+<p>If you encounter a SCSI bus error or trimmed and/or displaced images please also set the environment variable SANE_DEBUG_SANEI_SCSI to 128 before sending me the report.</p>
+<h1>TODO</h1>
+<dl>
+<dt><strong>More scanners?</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>The AGFA ACS and ARCUS scanners are similar to the FOCUS scanners. The driver could probably be extended to support these scanners without too many changes. I do not have access to such scanners, and cannot add support for it. However, if you are in possession of such a scanner, I could be helpful in adding support for these scanners.</p>
+<p>The AGFA HORIZON scanners are SCSI-2 scanners, and it would probably be easier to support these scanners in a SCSI-2 compliant backend.</p>
+<h1>SEE ALSO</h1>
+<p>sane(7), sane-scsi(5)</p>
+<h1>AUTHOR</h1>
+<p>Ingo Schneider and Karl Anders Øygard.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

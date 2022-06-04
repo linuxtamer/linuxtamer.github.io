@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command apt-listchanges</title><meta name="description" content="Linux command apt-listchanges Show new changelog entries from Debian package archives"><meta name="keywords" content="linux, command, apt-listchanges, bsd, Show new changelog entries from Debian package archives"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>apt-listchanges - Show new changelog entries from Debian package archives</p>
+<h1>SYNOPSIS</h1>
+<p><strong>apt-listchanges</strong> [[<em>options</em>...]] {[<strong>--apt</strong>] | [<em>package.deb</em>...]}</p>
+<h1>DESCRIPTION</h1>
+<p><strong>apt-listchanges</strong> is a tool to show what has been changed in a new version of a Debian package, as compared to the version currently installed on the system.</p>
+<p>It does this by extracting the relevant entries from both the NEWS.Debian and changelog[.Debian] files, usually found in /usr/share/doc/<em>package</em>, from Debian package archives.</p>
+<p>Please note that in the default installation if <strong>apt-listchanges</strong> is run during upgrades as an APT plugin, it displays NEWS.Debian entries only. This can be changed with the <strong>--which</strong> option.</p>
+<p>If changelog entries are displayed and the <em>package</em> does not contain changelog[.Debian] file, <strong>apt-listchanges</strong> calls <strong>apt-get changelog</strong> command to download the changelog from network. This behavior can be disabled with the <strong>--no-network</strong> option.</p>
+<p>Given a set of filenames as arguments (or read from apt when using <strong>--apt</strong>), <strong>apt-listchanges</strong> will scan the files (assumed to be Debian package archives) for the relevant changelog entries, and display them all in a summary grouped by source package. The groups are sorted by the urgency of the most urgent change, and than by the package name. Changes within each package group are displayed in the order of their appearance in the changelog files, i.e. starting from the latest to the oldest; the <strong>--reverse</strong> option can be used to alter this order.</p>
+<h1>OPTIONS</h1>
+<p><strong>apt-listchanges</strong> provides the following options to control its behavior. Most of them have their equivalent entries in the configuration file, see the "CONFIGURATION FILE" below for details.</p>
+<p><strong>--apt</strong></p>
+<blockquote>
+<p>Read filenames from a specially-formatted pipeline (as provided by apt), rather than from command line arguments, and honor certain apt-specific options in the config file. This pipeline must be in "version 2" format, specified in the apt configuration.</p>
+</blockquote>
+<p><strong>-v, --verbose</strong></p>
+<blockquote>
+<p>Display additional (usually unwanted) information. For instance, print a message when a package of the same or older version is to be installed, or when a package is to be newly installed.</p>
+</blockquote>
+<p><strong>-f, --frontend</strong></p>
+<blockquote>
+<p>Select which frontend to use to display information to the user. Current frontends include:</p>
+<p>pager</p>
+<blockquote>
+<p>Uses <strong>sensible-pager</strong>(1) command to display output. The command uses PAGER environment variable to choose your favourite pager. The "pager" option may be specified in the configuration file to select a specific pager for use with apt-listchanges.</p>
+</blockquote>
+<p>browser</p>
+<blockquote>
+<p>Displays an HTML-formatted changelog with hyperlinks for bugs and email addresses using the <strong>sensible-browser</strong>(1) command that examines BROWSER environment variable to choose your favourite browser. The "browser" option may be specified in the configuration file to select a specific browser for use with apt-listchanges.</p>
+</blockquote>
+<p>xterm-pager</p>
+<blockquote>
+<p>Uses your favorite pager to display output, but does so in an xterm (using the x-terminal-emulator alternative) in the background. This allows you to go on with the upgrade if you like, and continue to browse the changelogs. You can override the terminal emulator to be used with the "xterm" configuration option.</p>
+</blockquote>
+<p>xterm-browser</p>
+<blockquote>
+<p>The logical combination of xterm-pager and browser. Only appropriate for text-mode browsers.</p>
+</blockquote>
+<p>text</p>
+<blockquote>
+<p>Dumps output to stdout, with no pauses.</p>
+</blockquote>
+<p>syslog</p>
+<blockquote>
+<p>Dumps output to syslog. Disabling the titled option is recommended.</p>
+</blockquote>
+<p>log</p>
+<blockquote>
+<p>Appends output to a log file, with an optional filter process. Disabling the titled option is recommended.</p>
+</blockquote>
+<p>mail</p>
+<blockquote>
+<p>Sends mail to the address specified with --email-address, and does not display changelogs.</p>
+</blockquote>
+<p>gtk</p>
+<blockquote>
+<p>Spawns a gtk window to display the changelogs. Needs python3-gi to be installed.</p>
+</blockquote>
+<p>none</p>
+<blockquote>
+<p>Does nothing. Can be used to prevent apt-listchanges from running when configured to run automatically from apt.</p>
+</blockquote>
+<p>Please note that apt-listchanges will try to switch to an unprivileged user before spawning commands in "browser", "xterm-browser", and "xterm-pager" frontends. However this currently does not apply to the "pager" frontend. See also "ENVIRONMENT VARIABLES" below.</p>
+</blockquote>
+<p><strong>--email-address=</strong><em>address</em></p>
+<blockquote>
+<p>In addition to displaying it, mail a copy of the changelog data to the specified address. To only mail changelog entries, use this option with the special frontend mail.</p>
+</blockquote>
+<p><strong>--email-format={text|html}</strong></p>
+<blockquote>
+<p>If sending mail copies is enabled (see <strong>--email-address</strong> above), this option selects whether the mail should be sent as an old good plain text data (which is the default behavior), or as html data with clickable links, which might be more convenient for people using graphical mail clients.</p>
+</blockquote>
+<p><strong>-c, --confirm</strong></p>
+<blockquote>
+<p>Once changelogs have been displayed, ask the user whether or not to proceed. If the user chooses not to proceed, a nonzero exit status will be returned, and apt will abort.</p>
+</blockquote>
+<p><strong>-a, --show-all</strong></p>
+<blockquote>
+<p>Rather than trying to display changelog entries that are newer than the currently installed version of the package, simply display all changelog entries for all packages. This is useful for viewing the entire changelog of a .deb before extracting it.</p>
+</blockquote>
+<p><strong>-n, --no-network</strong></p>
+<blockquote>
+<p>In rare cases when a binary package (or to be more precise: none of the binary packages built from the same source package that are processed together as a group) does not contain a changelog file, <strong>apt-listchanges</strong> by default executes <strong>apt-get changelog</strong> to download changelogs from the network servers usually provided by your operating system distribution. This option will disable this behavior, what might be useful for example for systems behind a firewall.</p>
+</blockquote>
+<p><strong>--save-seen=</strong><em>file</em></p>
+<blockquote>
+<p>This option will cause apt-listchanges to keep track of the last version of a package for which changelogs have been displayed, to avoid redisplaying the same changelogs in a future invocation. The database is stored in the named file. Specify none to disable this feature.</p>
+</blockquote>
+<p><strong>--dump-seen</strong></p>
+<blockquote>
+<p>Display the contents of the seen database to standard output as a list of lines consisting of source package name and its latest seen version, separated by space. This option requires the path to the seen database to be known: please either specify it using <strong>--save-seen</strong> option or pass <strong>--profile=apt</strong> option to have it read from the configuration file.</p>
+</blockquote>
+<p><strong>--since=</strong><em>version</em></p>
+<blockquote>
+<p>This option will cause apt-listchanges to show the entries later than the specified version. With this option, the only other argument you can pass is the path to a .deb file.</p>
+</blockquote>
+<p><strong>--latest=</strong><em>N</em></p>
+<blockquote>
+<p>This option will cause apt-listchanges to show only the latest <em>N</em> entries. With this option, the only other argument you can pass is the path to a .deb file.</p>
+</blockquote>
+<p><strong>--which={news|changelogs|both}</strong></p>
+<blockquote>
+<p>This option selects whether news (from NEWS.Debian et al.), changelogs (from changelog.Debian et al.) or both should be displayed. The default is to display only news.</p>
+</blockquote>
+<p><strong>--help</strong></p>
+<blockquote>
+<p>Displays syntax information.</p>
+</blockquote>
+<p><strong>-h, --headers</strong></p>
+<blockquote>
+<p>These options will cause apt-listchanges to insert a header before each packages changelog showing the name of the package, and the names of the binary packages which are being upgraded (if there is more than one, or it differs from the source package name).</p>
+</blockquote>
+<p><strong>--debug</strong></p>
+<blockquote>
+<p>Display some debugging information.</p>
+</blockquote>
+<p><strong>--profile=</strong><em>name</em></p>
+<blockquote>
+<p>Select an option profile. <em>name</em> corresponds to a section in /etc/apt/listchanges.conf. The default when invoked from apt is "apt", and "cmdline" otherwise.</p>
+</blockquote>
+<p><strong>--log=</strong><em>file</em></p>
+<blockquote>
+<p>Select the file appended to by the log frontend. The default is /var/log/apt/listchanges.log. The filter command option can be used to modify the output before it is appended to the log file. Please ensure that you setup log rotation for this file.</p>
+</blockquote>
+<p><strong>--filter=</strong><em>command</em></p>
+<blockquote>
+<p>Select the command used to filter output before it is appended to the log file by the log frontend. stdin will receive the <strong>apt-listchanges</strong> output and stdout will be appended to the log file. Separate arguments with spaces and quote arguments containing spaces. The command will not be run using the shell unless the shell is included in the command: <strong>sh -c date ; cat</strong></p>
+</blockquote>
+<p><strong>--reverse</strong></p>
+<blockquote>
+<p>Show the changelog entries in reverse order.</p>
+</blockquote>
+<p><strong>--ignore-apt-assume</strong>, <strong>--ignore-debian-frontend</strong></p>
+<blockquote>
+<p>Disable forcing non-interactive frontend in some of the cases described in the "AUTOMATIC FRONTEND OVERRIDE" section below.</p>
+</blockquote>
+<p><strong>--titled</strong>, <strong>--untitled</strong></p>
+<blockquote>
+<p>Enable or disable the title at the beginning of the output.</p>
+</blockquote>
+<p><strong>--select-frontend</strong></p>
+<blockquote>
+<p>Choose frontend interactively. This option is mainly for testing purposes, please do not use it.</p>
+</blockquote>
+<h1>AUTOMATIC FRONTEND OVERRIDE</h1>
+<p>For a better integration with existing package management tools, <strong>apt-listchanges</strong> tries to detect if package upgrades are done in a non-interactive way, and automatically switches its frontend to text when <em>any</em> of the following conditions is satisfied:</p>
+<blockquote>
+<p>·</p>
+<p>the standard output is not connected to terminal;</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>the <strong>--quiet</strong> (<strong>-q</strong>) option is given to <strong>apt-get</strong>(8) (or <strong>aptitude</strong>(8)); note however that when the option is used more than once, apt-listchanges switches the frontend to mail;</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>the <strong>--assume-yes</strong> (<strong>-y</strong>) option is given to <strong>apt-get</strong>(8);</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>the <strong>DEBIAN_FRONTEND</strong> environment variable is set to "noninteractive", and <strong>APT_LISTCHANGES_FRONTED</strong> is not set.</p>
+</blockquote>
+<p>For backward compatibility purposes the last two of the above checks can be disabled either with "ignore_apt_assume=true" or "ignore_debian_frontend=true" configuration file entries (see "CONFIGURATION FILE" below) or by using the command line options: <strong>--ignore-apt-assume</strong> or <strong>--ignore-debian-frontend</strong>.</p>
+<p>Please also note that the "mail" frontend is already non-interactive one, so it is never switched to the "text" frontend.</p>
+<p>Additionally <strong>apt-listchanges</strong> overrides X11-based frontends ("gtk", "xterm-pager", "xterm-browser") with "pager" (or "browser" in case of "xterm-browser") when the environment variable <strong>DISPLAY</strong> is not set.</p>
+<p>Please note that these silent frontends are not subject to the overrides: syslog log</p>
+<h1>CONFIGURATION FILE</h1>
+<p><strong>apt-listchanges</strong> reads its configuration from the /etc/apt/listchanges.conf. The file consists of <em>sections</em> with names enclosed in the square brackets. Each section should contain lines in the <em>key</em>=<em>value</em> format. Lines starting with the "#" sign are treated as comments and ignored. Files named <em>name</em>.conf in the /etc/apt/listchanges.conf.d directory are also read in the same way and override values set in the main configuration file.</p>
+<p><em>Section</em> is a name of profile that can be used as parameter of the <strong>--profile</strong> option.</p>
+<p>The configuration of the "apt" section can be managed by <strong>debconf</strong>(7), and most of the settings there can be changed with the help of the <strong>dpkg-reconfigure apt-listchanges</strong> command.</p>
+<p><em>Key</em> is a name of some command-line option (except for <strong>--apt</strong>, <strong>--profile</strong>, <strong>--help</strong>) with the initial hyphens removed, and the remaining hyphens translated to underscores, for example: "email_format" or "save_seen".</p>
+<p><em>Value</em> represents the value of the corresponding option. For command-line options that do not take argument, like "confirm" or "headers", the <em>value</em> should be set either to "1", "yes", "true", and "on" in order to enable the option, or to "0", "no", "false", and "off" to disable it.</p>
+<p>Additionally <em>key</em> can be one of the following keywords: "browser", "pager" or "xterm". The <em>value</em> of such configuration entry should be the name of an appropriate command, eventually followed by its arguments, for example: "pager=less -R".</p>
+<p><strong>Example 1. Example configuration file</strong></p>
+<blockquote>
+<pre><code>[cmdline]
+frontend=pager
+
+[apt]
+frontend=xterm-pager
+email_address=root
+confirm=1
+
+[custom]
+frontend=browser
+browser=mozilla</code></pre>
+</blockquote>
+<p>The above configuration file specifies that in command-line mode, the default frontend should be "pager". In apt mode, the xterm-pager frontend is default, a copy of the changelogs (if any) should be emailed to root, and apt-listchanges should ask for confirmation. If apt-listchanges is invoked with --profile=custom, the browser frontend will be used, and invoke mozilla.</p>
+<h1>ENVIRONMENT</h1>
+<p>APT_LISTCHANGES_FRONTEND</p>
+<blockquote>
+<p>Frontend to use.</p>
+</blockquote>
+<p>APT_LISTCHANGES_USER, SUDO_USER, USERNAME</p>
+<blockquote>
+<p>The value of the first existing of the above variables will be used as the name of user to switch to when running commands spawned by the "browser", "xterm-browser", and "xterm-pager" frontends if <strong>apt-listchanges</strong> is started by a privileged user.</p>
+</blockquote>
+<p>DEBIAN_FRONTEND</p>
+<blockquote>
+<p>If set to "noninteractive", then it can force <strong>apt-listchanges</strong> to use non-interactive frontend, see the "AUTOMATIC FRONTEND OVERRIDE" section for details.</p>
+</blockquote>
+<p>BROWSER</p>
+<blockquote>
+<p>Used by the browser frontend, should be set to a command expecting a file: URL for an HTML file to display.</p>
+</blockquote>
+<p>PAGER</p>
+<blockquote>
+<p>Used by the pager frontend.</p>
+</blockquote>
+<p>APT_HOOK_INFO_FD</p>
+<blockquote>
+<p>File descriptor to read package names from in the <strong>--apt</strong> mode. (Apt is expected to set this variable to a proper file descriptor number).</p>
+</blockquote>
+<h1>FILES</h1>
+<p>/etc/apt/listchanges.conf</p>
+<blockquote>
+<p>Configuration file.</p>
+</blockquote>
+<p>/etc/apt/listchanges.conf.d/*.conf</p>
+<blockquote>
+<p>Configuration file override files.</p>
+</blockquote>
+<p>/etc/apt/apt.conf.d/20listchanges</p>
+<blockquote>
+<p>File used for registering apt-listchanges into apt system.</p>
+</blockquote>
+<p>/var/lib/apt/listchanges.db</p>
+<blockquote>
+<p>Database used for save-seen.</p>
+</blockquote>
+<h1>AUTHOR</h1>
+<p>apt-listchanges was written by Matt Zimmerman &lt;mdz@debian.org&gt;</p>
+<p>The current maintainer is Robert Luberda &lt;robert@debian.org&gt;</p>
+<h1>SEE ALSO</h1>
+<p><strong>sensible-pager</strong>(1), <strong>sensible-browser</strong>(1), <strong>apt-get</strong>(8), <strong>aptitude</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

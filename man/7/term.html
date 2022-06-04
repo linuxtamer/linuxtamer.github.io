@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command term</title><meta name="description" content="Linux command term conventions for naming terminal types"><meta name="keywords" content="linux, command, term, bsd, conventions for naming terminal types"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>term - conventions for naming terminal types</p>
+<h1>DESCRIPTION</h1>
+<p>The environment variable <strong>TERM</strong> should normally contain the type name of the terminal, console or display-device type you are using. This information is critical for all screen-oriented programs, including your editor and mailer.</p>
+<p>A default <strong>TERM</strong> value will be set on a per-line basis by either <strong>/etc/inittab</strong> (e.g., System-V-like UNIXes) or <strong>/etc/ttys</strong> (BSD UNIXes). This will nearly always suffice for workstation and microcomputer consoles.</p>
+<p>If you use a dialup line, the type of device attached to it may vary. Older UNIX systems pre-set a very dumb terminal type like dumb or dialup on dialup lines. Newer ones may pre-set vt100, reflecting the prevalence of DEC VT100-compatible terminals and personal-computer emulators.</p>
+<p>Modern telnets pass your <strong>TERM</strong> environment variable from the local side to the remote one. There can be problems if the remote terminfo or termcap entry for your type is not compatible with yours, but this situation is rare and can almost always be avoided by explicitly exporting vt100 (assuming you are in fact using a VT100-superset console, terminal, or terminal emulator.)</p>
+<p>In any case, you are free to override the system <strong>TERM</strong> setting to your taste in your shell profile. The <strong>tset</strong>(1) utility may be of assistance; you can give it a set of rules for deducing or requesting a terminal type based on the tty device and baud rate.</p>
+<p>Setting your own <strong>TERM</strong> value may also be useful if you have created a custom entry incorporating options (such as visual bell or reverse-video) which you wish to override the system default type for your line.</p>
+<p>Terminal type descriptions are stored as files of capability data underneath /etc/terminfo. To browse a list of all terminal names recognized by the system, do</p>
+<p>toe | more</p>
+<p>from your shell. These capability files are in a binary format optimized for retrieval speed (unlike the old text-based <strong>termcap</strong> format they replace); to examine an entry, you must use the <strong>infocmp</strong>(1) command. Invoke it as follows:</p>
+<p>infocmp <em>entry_name</em></p>
+<p>where <em>entry_name</em> is the name of the type you wish to examine (and the name of its capability file the subdirectory of /etc/terminfo named for its first letter). This command dumps a capability file in the text format described by <strong>terminfo</strong>(5).</p>
+<p>The first line of a <strong>terminfo</strong>(5) description gives the names by which terminfo knows a terminal, separated by | (pipe-bar) characters with the last name field terminated by a comma. The first name field is the type's <em>primary name</em>, and is the one to use when setting <strong>TERM</strong>. The last name field (if distinct from the first) is actually a description of the terminal type (it may contain blanks; the others must be single words). Name fields between the first and last (if present) are aliases for the terminal, usually historical names retained for compatibility.</p>
+<p>There are some conventions for how to choose terminal primary names that help keep them informative and unique. Here is a step-by-step guide to naming terminals that also explains how to parse them:</p>
+<p>First, choose a root name. The root will consist of a lower-case letter followed by up to seven lower-case letters or digits. You need to avoid using punctuation characters in root names, because they are used and interpreted as filenames and shell meta-characters (such as !, $, *, ?, etc.) embedded in them may cause odd and unhelpful behavior. The slash (/), or any other character that may be interpreted by anyone's file system (\, $, [, ]), is especially dangerous (terminfo is platform-independent, and choosing names with special characters could someday make life difficult for users of a future port). The dot (.) character is relatively safe as long as there is at most one per root name; some historical terminfo names use it.</p>
+<p>The root name for a terminal or workstation console type should almost always begin with a vendor prefix (such as <strong>hp</strong> for Hewlett-Packard, <strong>wy</strong> for Wyse, or <strong>att</strong> for AT&amp;T terminals), or a common name of the terminal line (<strong>vt</strong> for the VT series of terminals from DEC, or <strong>sun</strong> for Sun Microsystems workstation consoles, or <strong>regent</strong> for the ADDS Regent series. You can list the terminfo tree to see what prefixes are already in common use. The root name prefix should be followed when appropriate by a model number; thus <strong>vt100</strong>, <strong>hp2621</strong>, <strong>wy50</strong>.</p>
+<p>The root name for a PC-Unix console type should be the OS name, i.e., <strong>linux</strong>, <strong>bsdos</strong>, <strong>freebsd</strong>, <strong>netbsd</strong>. It should <em>not</em> be <strong>console</strong> or any other generic that might cause confusion in a multi-platform environment! If a model number follows, it should indicate either the OS release level or the console driver release level.</p>
+<p>The root name for a terminal emulator (assuming it does not fit one of the standard ANSI or vt100 types) should be the program name or a readily recognizable abbreviation of it (i.e., <strong>versaterm</strong>, <strong>ctrm</strong>).</p>
+<p>Following the root name, you may add any reasonable number of hyphen-separated feature suffixes.</p>
+<dl>
+<dt>2p</dt>
+<dd><p>Has two pages of memory. Likewise 4p, 8p, etc.</p>
+</dd>
+<dt>mc</dt>
+<dd><p>Magic-cookie. Some terminals (notably older Wyses) can only support one attribute without magic-cookie lossage. Their base entry is usually paired with another that has this suffix and uses magic cookies to support multiple attributes.</p>
+</dd>
+<dt>-am</dt>
+<dd><p>Enable auto-margin (right-margin wraparound).</p>
+</dd>
+<dt>-m</dt>
+<dd><p>Mono mode - suppress color support.</p>
+</dd>
+<dt>-na</dt>
+<dd><p>No arrow keys - termcap ignores arrow keys which are actually there on the terminal, so the user can use the arrow keys locally.</p>
+</dd>
+<dt>-nam</dt>
+<dd><p>No auto-margin - suppress am capability.</p>
+</dd>
+<dt>-nl</dt>
+<dd><p>No labels - suppress soft labels.</p>
+</dd>
+<dt>-nsl</dt>
+<dd><p>No status line - suppress status line.</p>
+</dd>
+<dt>-pp</dt>
+<dd><p>Has a printer port which is used.</p>
+</dd>
+<dt>-rv</dt>
+<dd><p>Terminal in reverse video mode (black on white).</p>
+</dd>
+<dt>-s</dt>
+<dd><p>Enable status line.</p>
+</dd>
+<dt>-vb</dt>
+<dd><p>Use visible bell (flash) rather than beep.</p>
+</dd>
+<dt>-w</dt>
+<dd><p>Wide; terminal is in 132-column mode.</p>
+</dd>
+</dl>
+<p>Conventionally, if your terminal type is a variant intended to specify a line height, that suffix should go first. So, for a hypothetical FuBarCo model 2317 terminal in 30-line mode with reverse video, best form would be <strong>fubar-30-rv</strong> (rather than, say, fubar-rv-30).</p>
+<p>Terminal types that are written not as standalone entries, but rather as components to be plugged into other entries via <strong>use</strong> capabilities, are distinguished by using embedded plus signs rather than dashes.</p>
+<p>Commands which use a terminal type to control display often accept a -T option that accepts a terminal name argument. Such programs should fall back on the <strong>TERM</strong> environment variable when no -T option is specified.</p>
+<h1>PORTABILITY</h1>
+<p>For maximum compatibility with older System V UNIXes, names and aliases should be unique within the first 14 characters.</p>
+<h1>FILES</h1>
+<dl>
+<dt>/etc/terminfo/?/*</dt>
+<dd><p>compiled terminal capability data base</p>
+</dd>
+<dt>/etc/inittab</dt>
+<dd><p>tty line initialization (AT&amp;T-like UNIXes)</p>
+</dd>
+<dt>/etc/ttys</dt>
+<dd><p>tty line initialization (BSD-like UNIXes)</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>ncurses</strong>(3NCURSES), <strong>terminfo</strong>(5), <strong>term</strong>(5).</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

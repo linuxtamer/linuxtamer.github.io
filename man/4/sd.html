@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sd</title><meta name="description" content="Linux command sd driver for SCSI disk drives"><meta name="keywords" content="linux, command, sd, bsd, driver for SCSI disk drives"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sd - driver for SCSI disk drives</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;linux/hdreg.h&gt; /* for HDIO_GETGEO */
+#include &lt;linux/fs.h&gt; /* for BLKGETSIZE and BLKRRPART */</code></pre>
+<h1>CONFIGURATION</h1>
+<p>The block device name has the following form: <strong>sd</strong><em>lp,</em> where <em>l</em> is a letter denoting the physical drive, and <em>p</em> is a number denoting the partition on that physical drive. Often, the partition number, <em>p</em>, will be left off when the device corresponds to the whole drive.</p>
+<p>SCSI disks have a major device number of 8, and a minor device number of the form (16 * <em>drive_number</em>) + <em>partition_number</em>, where <em>drive_number</em> is the number of the physical drive in order of detection, and <em>partition_number</em> is as follows:</p>
+<ul>
+<li><p>partition 0 is the whole drive</p>
+<p>partitions 1–4 are the DOS "primary" partitions</p>
+<p>partitions 5–8 are the DOS "extended" (or "logical") partitions</p></li>
+</ul>
+<p>For example, <em>/dev/sda</em> will have major 8, minor 0, and will refer to all of the first SCSI drive in the system; and <em>/dev/sdb3</em> will have major 8, minor 19, and will refer to the third DOS "primary" partition on the second SCSI drive in the system.</p>
+<p>At this time, only block devices are provided. Raw devices have not yet been implemented.</p>
+<h1>DESCRIPTION</h1>
+<p>The following <em>ioctl</em>s are provided:</p>
+<dl>
+<dt><strong>HDIO_GETGEO</strong></dt>
+<dd><p>Returns the BIOS disk parameters in the following structure:</p>
+</dd>
+</dl>
+<pre><code>struct hd_geometry {
+    unsigned char  heads;
+    unsigned char  sectors;
+    unsigned short cylinders;
+    unsigned long  start;
+};</code></pre>
+<blockquote>
+<p>A pointer to this structure is passed as the <strong>ioctl</strong>(2) parameter.</p>
+<p>The information returned in the parameter is the disk geometry of the drive <em>as understood by DOS!</em> This geometry is <em>not</em> the physical geometry of the drive. It is used when constructing the drive's partition table, however, and is needed for convenient operation of <strong>fdisk</strong>(1), <strong>efdisk</strong>(1), and <strong>lilo</strong>(1). If the geometry information is not available, zero will be returned for all of the parameters.</p>
+</blockquote>
+<dl>
+<dt><strong>BLKGETSIZE</strong></dt>
+<dd><p>Returns the device size in sectors. The <strong>ioctl</strong>(2) parameter should be a pointer to a <em>long</em>.</p>
+</dd>
+<dt><strong>BLKRRPART</strong></dt>
+<dd><p>Forces a reread of the SCSI disk partition tables. No parameter is needed.</p>
+<p>The SCSI <strong>ioctl</strong>(2) operations are also supported. If the <strong>ioctl</strong>(2) parameter is required, and it is NULL, then <strong>ioctl</strong>(2) fails with the error <strong>EINVAL</strong>.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>/dev/sd[a-h]</em></dt>
+<dd><p>the whole device</p>
+</dd>
+<dt><em>/dev/sd[a-h][0-8]</em></dt>
+<dd><p>individual block partitions</p>
+</dd>
+</dl>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

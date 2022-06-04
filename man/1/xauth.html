@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command xauth</title><meta name="description" content="Linux command xauth X authority file utility"><meta name="keywords" content="linux, command, xauth, bsd, X authority file utility"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>xauth - X authority file utility</p>
+<h1>SYNOPSIS</h1>
+<p><strong>xauth</strong> [ <strong>-f</strong> <em>authfile</em> ] [ <strong>-vqibn</strong> ] [ <em>command arg ...</em> ]</p>
+<h1>DESCRIPTION</h1>
+<p>The <em>xauth</em> program is used to edit and display the authorization information used in connecting to the X server. This program is usually used to extract authorization records from one machine and merge them in on another (as is the case when using remote logins or granting access to other users). Commands (described below) may be entered interactively, on the <em>xauth</em> command line, or in scripts. Note that this program does <strong>not</strong> contact the X server except when the generate command is used. Normally <em>xauth</em> is not used to create the authority file entry in the first place; the program that starts the X server (often <em>xdm</em> or <em>startx</em>) does that.</p>
+<h1>OPTIONS</h1>
+<p>The following options may be used with <em>xauth</em>. They may be given individually (e.g., <em>-q -i </em>) or may combined (e.g., <em>-qi </em>).</p>
+<dl>
+<dt><strong>-f <em>authfile</em></strong></dt>
+<dd><p>This option specifies the name of the authority file to use. By default, <em>xauth</em> will use the file specified by the XAUTHORITY environment variable or <em>.Xauthority</em> in the user's home directory.</p>
+</dd>
+<dt><strong>-q</strong></dt>
+<dd><p>This option indicates that <em>xauth</em> should operate quietly and not print unsolicited status messages. This is the default if an <em>xauth</em> command is given on the command line or if the standard output is not directed to a terminal.</p>
+</dd>
+<dt><strong>-v</strong></dt>
+<dd><p>This option indicates that <em>xauth</em> should operate verbosely and print status messages indicating the results of various operations (e.g., how many records have been read in or written out). This is the default if <em>xauth</em> is reading commands from its standard input and its standard output is directed to a terminal.</p>
+</dd>
+<dt><strong>-i</strong></dt>
+<dd><p>This option indicates that <em>xauth</em> should ignore any authority file locks. Normally, <em>xauth</em> will refuse to read or edit any authority files that have been locked by other programs (usually <em>xdm</em> or another <em>xauth</em>).</p>
+</dd>
+<dt><strong>-b</strong></dt>
+<dd><p>This option indicates that <em>xauth</em> should attempt to break any authority file locks before proceeding. Use this option only to clean up stale locks.</p>
+</dd>
+<dt><strong>-n</strong></dt>
+<dd><p>This option indicates that <em>xauth</em> should not attempt to resolve any hostnames, but should simply always print the host address as stored in the authority file.</p>
+</dd>
+<dt><strong>-V</strong></dt>
+<dd><p>This option shows the version number of the xauth executable.</p>
+</dd>
+</dl>
+<h1>COMMANDS</h1>
+<p>The following commands may be used to manipulate authority files:</p>
+<dl>
+<dt><strong>add <em>displayname protocolname hexkey</em></strong></dt>
+<dd><p>An authorization entry for the indicated display using the given protocol and key data is added to the authorization file. The data is specified as an even-lengthed string of hexadecimal digits, each pair representing one octet. The first digit of each pair gives the most significant 4 bits of the octet, and the second digit of the pair gives the least significant 4 bits. For example, a 32 character hexkey would represent a 128-bit value. A protocol name consisting of just a single period is treated as an abbreviation for <em>MIT-MAGIC-COOKIE-1.</em></p>
+</dd>
+</dl>
+<dl>
+<dt><strong>generate <em>displayname protocolname </em>[<em>trusted|untrusted</em>]</strong></dt>
+<dd><p><strong>[<em>timeout</em> <em>seconds</em>] [<em>group</em> <em>group-id</em>] [<strong>data</strong> <em>hexdata</em>]</strong></p>
+</dd>
+</dl>
+<p>This command is similar to add. The main difference is that instead of requiring the user to supply the key data, it connects to the server specified in <em>displayname</em> and uses the SECURITY extension in order to get the key data to store in the authorization file. If the server cannot be contacted or if it does not support the SECURITY extension, the command fails. Otherwise, an authorization entry for the indicated display using the given protocol is added to the authorization file. A protocol name consisting of just a single period is treated as an abbreviation for <em>MIT-MAGIC-COOKIE-1</em>.</p>
+<p>If the <strong>trusted</strong> option is used, clients that connect using this authorization will have full run of the display, as usual. If <strong>untrusted</strong> is used, clients that connect using this authorization will be considered untrusted and prevented from stealing or tampering with data belonging to trusted clients. See the SECURITY extension specification for full details on the restrictions imposed on untrusted clients. The default is <strong>untrusted</strong>.</p>
+<p>The <strong>timeout</strong> option specifies how long in seconds this authorization will be valid. If the authorization remains unused (no clients are connected with it) for longer than this time period, the server purges the authorization, and future attempts to connect using it will fail. Note that the purging done by the server does <strong>not</strong> delete the authorization entry from the authorization file. The default timeout is 60 seconds.</p>
+<p>The <strong>group</strong> option specifies the application group that clients connecting with this authorization should belong to. See the application group extension specification for more details. The default is to not belong to an application group.</p>
+<p>The <strong>data</strong> option specifies data that the server should use to generate the authorization. Note that this is <strong>not</strong> the same data that gets written to the authorization file. The interpretation of this data depends on the authorization protocol. The <em>hexdata</em> is in the same format as the <em>hexkey</em> described in the add command. The default is to send no data.</p>
+<dl>
+<dt><strong>[n]extract <em>filename displayname...</em></strong></dt>
+<dd><p>Authorization entries for each of the specified displays are written to the indicated file. If the <em>nextract command is used, the entries are written</em> in a numeric format suitable for non-binary transmission (such as secure electronic mail). The extracted entries can be read back in using the <em>merge and nmerge commands. If the filename consists of</em> just a single dash, the entries will be written to the standard output.</p>
+</dd>
+<dt><strong>[n]list [<em>displayname</em>...]</strong></dt>
+<dd><p>Authorization entries for each of the specified displays (or all if no displays are named) are printed on the standard output. If the <em>nlist</em> command is used, entries will be shown in the numeric format used by the <em>nextract</em> command; otherwise, they are shown in a textual format. Key data is always displayed in the hexadecimal format given in the description of the <em>add</em> command.</p>
+</dd>
+<dt><strong>[n]merge [<em>filename</em>...]</strong></dt>
+<dd><p>Authorization entries are read from the specified files and are merged into the authorization database, superseding any matching existing entries. If the <em>nmerge</em> command is used, the numeric format given in the description of the <em>extract</em> command is used. If a filename consists of just a single dash, the standard input will be read if it hasn't been read before.</p>
+</dd>
+<dt><strong>remove <em>displayname</em>...</strong></dt>
+<dd><p>Authorization entries matching the specified displays are removed from the authority file.</p>
+</dd>
+<dt><strong>source <em>filename</em></strong></dt>
+<dd><p>The specified file is treated as a script containing <em>xauth commands</em> to execute. Blank lines and lines beginning with a sharp sign (#) are ignored. A single dash may be used to indicate the standard input, if it hasn't already been read.</p>
+</dd>
+<dt><strong>info</strong></dt>
+<dd><p>Information describing the authorization file, whether or not any changes have been made, and from where <em>xauth commands are being read</em> is printed on the standard output.</p>
+</dd>
+<dt><strong>exit</strong></dt>
+<dd><p>If any modifications have been made, the authority file is written out (if allowed), and the program exits. An end of file is treated as an implicit <em>exit command.</em></p>
+</dd>
+<dt><strong>quit</strong></dt>
+<dd><p>The program exits, ignoring any modifications. This may also be accomplished by pressing the interrupt character.</p>
+</dd>
+<dt><strong>version</strong></dt>
+<dd><p>This command shows the version number of the xauth executable.</p>
+</dd>
+<dt><strong>help [<em>string]</em></strong></dt>
+<dd><p>A description of all commands that begin with the given string (or all commands if no string is given) is printed on the standard output.</p>
+</dd>
+<dt><strong>?</strong></dt>
+<dd><p>A short list of the valid commands is printed on the standard output.</p>
+</dd>
+</dl>
+<h1>DISPLAY NAMES</h1>
+<p>Display names for the <em>add, [n]extract, [n]list,</em> <em>[n]merge, and remove commands use the same format as the</em> DISPLAY environment variable and the common <em>-display command line</em> argument. Display-specific information (such as the screen number) is unnecessary and will be ignored. Same-machine connections (such as local-host sockets, shared memory, and the Internet Protocol hostname <em>localhost) are</em> referred to as <em>hostname/unix:displaynumber so that</em> local entries for different machines may be stored in one authority file.</p>
+<h1>EXAMPLE</h1>
+<p>The most common use for <em>xauth is to extract the entry for the</em> current display, copy it to another machine, and merge it into the user's authority file on the remote machine:</p>
+<pre><code>        %  xauth extract - $DISPLAY | ssh otherhost xauth merge -</code></pre>
+<p>The following command contacts the server :0 to create an authorization using the MIT-MAGIC-COOKIE-1 protocol. Clients that connect with this authorization will be untrusted.</p>
+<pre><code>	%  xauth generate :0 .</code></pre>
+<h1>ENVIRONMENT</h1>
+<p>This <em>xauth program uses the following environment variables:</em></p>
+<dl>
+<dt><strong>XAUTHORITY</strong></dt>
+<dd><p>to get the name of the authority file to use if the <em>-f option isn't</em> used.</p>
+</dd>
+<dt><strong>HOME</strong></dt>
+<dd><p>to get the user's home directory if XAUTHORITY isn't defined.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>$HOME/.Xauthority</em></dt>
+<dd><p>default authority file if XAUTHORITY isn't defined.</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p>X(7), Xsecurity(7), xhost(1), Xserver(1), xdm(1), startx(1), Xau(3).</p>
+<h1>BUGS</h1>
+<p>Users that have unsecure networks should take care to use encrypted file transfer mechanisms to copy authorization entries between machines. Similarly, the <em>MIT-MAGIC-COOKIE-1 protocol is not very useful in</em> unsecure environments. Sites that are interested in additional security may need to use encrypted authorization mechanisms such as Kerberos.</p>
+<p>Spaces are currently not allowed in the protocol name. Quoting could be added for the truly perverse.</p>
+<h1>AUTHOR</h1>
+<p>Jim Fulton, MIT X Consortium</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

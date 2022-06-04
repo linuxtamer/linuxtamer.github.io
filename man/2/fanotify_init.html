@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fanotify_init</title><meta name="description" content="Linux command fanotify_init create and initialize fanotify group"><meta name="keywords" content="linux, command, fanotify_init, bsd, create and initialize fanotify group"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>fanotify_init - create and initialize fanotify group</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;fcntl.h&gt;</strong><br />
+<strong>#include &lt;sys/fanotify.h&gt;</strong></p>
+<p><strong>int fanotify_init(unsigned int </strong><em>flags</em><strong>, unsigned int </strong><em>event_f_flags</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>For an overview of the fanotify API, see <strong>fanotify</strong>(7).</p>
+<p><strong>fanotify_init</strong>() initializes a new fanotify group and returns a file descriptor for the event queue associated with the group.</p>
+<p>The file descriptor is used in calls to <strong>fanotify_mark</strong>(2) to specify the files, directories, mounts or filesystems for which fanotify events shall be created. These events are received by reading from the file descriptor. Some events are only informative, indicating that a file has been accessed. Other events can be used to determine whether another application is permitted to access a file or directory. Permission to access filesystem objects is granted by writing to the file descriptor.</p>
+<p>Multiple programs may be using the fanotify interface at the same time to monitor the same files.</p>
+<p>In the current implementation, the number of fanotify groups per user is limited to 128. This limit cannot be overridden.</p>
+<p>Calling <strong>fanotify_init</strong>() requires the <strong>CAP_SYS_ADMIN</strong> capability. This constraint might be relaxed in future versions of the API. Therefore, certain additional capability checks have been implemented as indicated below.</p>
+<p>The <em>flags</em> argument contains a multi-bit field defining the notification class of the listening application and further single bit fields specifying the behavior of the file descriptor.</p>
+<p>If multiple listeners for permission events exist, the notification class is used to establish the sequence in which the listeners receive the events.</p>
+<p>Only one of the following notification classes may be specified in <em>flags</em>:</p>
+<dl>
+<dt><strong>FAN_CLASS_PRE_CONTENT</strong></dt>
+<dd><p>This value allows the receipt of events notifying that a file has been accessed and events for permission decisions if a file may be accessed. It is intended for event listeners that need to access files before they contain their final data. This notification class might be used by hierarchical storage managers, for example.</p>
+</dd>
+<dt><strong>FAN_CLASS_CONTENT</strong></dt>
+<dd><p>This value allows the receipt of events notifying that a file has been accessed and events for permission decisions if a file may be accessed. It is intended for event listeners that need to access files when they already contain their final content. This notification class might be used by malware detection programs, for example.</p>
+</dd>
+<dt><strong>FAN_CLASS_NOTIF</strong></dt>
+<dd><p>This is the default value. It does not need to be specified. This value only allows the receipt of events notifying that a file has been accessed. Permission decisions before the file is accessed are not possible.</p>
+</dd>
+</dl>
+<p>Listeners with different notification classes will receive events in the order <strong>FAN_CLASS_PRE_CONTENT</strong>, <strong>FAN_CLASS_CONTENT</strong>, <strong>FAN_CLASS_NOTIF</strong>. The order of notification for listeners in the same notification class is undefined.</p>
+<p>The following bits can additionally be set in <em>flags</em>:</p>
+<dl>
+<dt><strong>FAN_CLOEXEC</strong></dt>
+<dd><p>Set the close-on-exec flag (<strong>FD_CLOEXEC</strong>) on the new file descriptor. See the description of the <strong>O_CLOEXEC</strong> flag in <strong>open</strong>(2).</p>
+</dd>
+<dt><strong>FAN_NONBLOCK</strong></dt>
+<dd><p>Enable the nonblocking flag (<strong>O_NONBLOCK</strong>) for the file descriptor. Reading from the file descriptor will not block. Instead, if no data is available, <strong>read</strong>(2) fails with the error <strong>EAGAIN</strong>.</p>
+</dd>
+<dt><strong>FAN_UNLIMITED_QUEUE</strong></dt>
+<dd><p>Remove the limit of 16384 events for the event queue. Use of this flag requires the <strong>CAP_SYS_ADMIN</strong> capability.</p>
+</dd>
+<dt><strong>FAN_UNLIMITED_MARKS</strong></dt>
+<dd><p>Remove the limit of 8192 marks. Use of this flag requires the <strong>CAP_SYS_ADMIN</strong> capability.</p>
+</dd>
+<dt><strong>FAN_REPORT_TID</strong> (since Linux 4.20)</dt>
+<dd><p>Report thread ID (TID) instead of process ID (PID) in the <em>pid</em> field of the <em>struct fanotify_event_metadata</em> supplied to <strong>read</strong>(2) (see <strong>fanotify</strong>(7)).</p>
+</dd>
+<dt><strong>FAN_REPORT_FID</strong> (since Linux 5.1)</dt>
+<dd><p>This value allows the receipt of events which contain additional information about the underlying filesystem object correlated to an event. An additional record of type <strong>FAN_EVENT_INFO_TYPE_FID</strong> encapsulates the information about the object and is included alongside the generic event metadata structure. The file descriptor that is used to represent the object correlated to an event is instead substituted with a file handle. It is intended for applications that may find the use of a file handle to identify an object more suitable than a file descriptor. Additionally, it may be used for applications monitoring a directory or a filesystem that are interested in the directory entry modification events <strong>FAN_CREATE</strong>, <strong>FAN_DELETE</strong>, and <strong>FAN_MOVE</strong>, or in events such as <strong>FAN_ATTRIB</strong>, <strong>FAN_DELETE_SELF</strong>, and <strong>FAN_MOVE_SELF</strong>. All the events above require an fanotify group that identifies filesystem objects by file handles. Note that for the directory entry modification events the reported file handle identifies the modified directory and not the created/deleted/moved child object. The use of <strong>FAN_CLASS_CONTENT</strong> or <strong>FAN_CLASS_PRE_CONTENT</strong> is not permitted with this flag and will result in the error <strong>EINVAL</strong>. See <strong>fanotify</strong>(7) for additional details.</p>
+</dd>
+<dt><strong>FAN_REPORT_DIR_FID</strong> (since Linux 5.9)</dt>
+<dd><p>Events for fanotify groups initialized with this flag will contain (see exceptions below) additional information about a directory object correlated to an event. An additional record of type <strong>FAN_EVENT_INFO_TYPE_DFID</strong> encapsulates the information about the directory object and is included alongside the generic event metadata structure. For events that occur on a non-directory object, the additional structure includes a file handle that identifies the parent directory filesystem object. Note that there is no guarantee that the directory filesystem object will be found at the location described by the file handle information at the time the event is received. When combined with the flag <strong>FAN_REPORT_FID</strong>, two records may be reported with events that occur on a non-directory object, one to identify the non-directory object itself and one to identify the parent directory object. Note that in some cases, a filesystem object does not have a parent, for example, when an event occurs on an unlinked but open file. In that case, with the <strong>FAN_REPORT_FID</strong> flag, the event will be reported with only one record to identify the non-directory object itself, because there is no directory associated with the event. Without the <strong>FAN_REPORT_FID</strong> flag, no event will be reported. See <strong>fanotify</strong>(7) for additional details.</p>
+</dd>
+<dt><strong>FAN_REPORT_NAME</strong> (since Linux 5.9)</dt>
+<dd><p>Events for fanotify groups initialized with this flag will contain additional information about the name of the directory entry correlated to an event. This flag must be provided in conjunction with the flag <strong>FAN_REPORT_DIR_FID</strong>. Providing this flag value without <strong>FAN_REPORT_DIR_FID</strong> will result in the error <strong>EINVAL</strong>. This flag may be combined with the flag <strong>FAN_REPORT_FID</strong>. An additional record of type <strong>FAN_EVENT_INFO_TYPE_DFID_NAME</strong>, which encapsulates the information about the directory entry, is included alongside the generic event metadata structure and substitutes the additional information record of type <strong>FAN_EVENT_INFO_TYPE_DFID</strong>. The additional record includes a file handle that identifies a directory filesystem object followed by a name that identifies an entry in that directory. For the directory entry modification events <strong>FAN_CREATE</strong>, <strong>FAN_DELETE</strong>, and <strong>FAN_MOVE</strong>, the reported name is that of the created/deleted/moved directory entry. For other events that occur on a directory object, the reported file handle is that of the directory object itself and the reported name is '.'. For other events that occur on a non-directory object, the reported file handle is that of the parent directory object and the reported name is the name of a directory entry where the object was located at the time of the event. The rationale behind this logic is that the reported directory file handle can be passed to <strong>open_by_handle_at</strong>(2) to get an open directory file descriptor and that file descriptor along with the reported name can be used to call <strong>fstatat</strong>(2). The same rule that applies to record type <strong>FAN_EVENT_INFO_TYPE_DFID</strong> also applies to record type <strong>FAN_EVENT_INFO_TYPE_DFID_NAME</strong>: if a non-directory object has no parent, either the event will not be reported or it will be reported without the directory entry information. Note that there is no guarantee that the filesystem object will be found at the location described by the directory entry information at the time the event is received. See <strong>fanotify</strong>(7) for additional details.</p>
+</dd>
+<dt><strong>FAN_REPORT_DFID_NAME</strong></dt>
+<dd><p>This is a synonym for (<strong>FAN_REPORT_DIR_FID</strong>|<strong>FAN_REPORT_NAME</strong>).</p>
+</dd>
+</dl>
+<p>The <em>event_f_flags</em> argument defines the file status flags that will be set on the open file descriptions that are created for fanotify events. For details of these flags, see the description of the <em>flags</em> values in <strong>open</strong>(2). <em>event_f_flags</em> includes a multi-bit field for the access mode. This field can take the following values:</p>
+<dl>
+<dt><strong>O_RDONLY</strong></dt>
+<dd><p>This value allows only read access.</p>
+</dd>
+<dt><strong>O_WRONLY</strong></dt>
+<dd><p>This value allows only write access.</p>
+</dd>
+<dt><strong>O_RDWR</strong></dt>
+<dd><p>This value allows read and write access.</p>
+</dd>
+</dl>
+<p>Additional bits can be set in <em>event_f_flags</em>. The most useful values are:</p>
+<dl>
+<dt><strong>O_LARGEFILE</strong></dt>
+<dd><p>Enable support for files exceeding 2 GB. Failing to set this flag will result in an <strong>EOVERFLOW</strong> error when trying to open a large file which is monitored by an fanotify group on a 32-bit system.</p>
+</dd>
+<dt><strong>O_CLOEXEC</strong> (since Linux 3.18)</dt>
+<dd><p>Enable the close-on-exec flag for the file descriptor. See the description of the <strong>O_CLOEXEC</strong> flag in <strong>open</strong>(2) for reasons why this may be useful.</p>
+</dd>
+</dl>
+<p>The following are also allowable: <strong>O_APPEND</strong>, <strong>O_DSYNC</strong>, <strong>O_NOATIME</strong>, <strong>O_NONBLOCK</strong>, and <strong>O_SYNC</strong>. Specifying any other flag in <em>event_f_flags</em> yields the error <strong>EINVAL</strong> (but see BUGS).</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>fanotify_init</strong>() returns a new file descriptor. On error, -1 is returned, and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>An invalid value was passed in <em>flags</em> or <em>event_f_flags</em>. <strong>FAN_ALL_INIT_FLAGS</strong> (deprecated since Linux kernel version 4.20) defines all allowable bits for <em>flags</em>.</p>
+</dd>
+<dt><strong>EMFILE</strong></dt>
+<dd><p>The number of fanotify groups for this user exceeds 128.</p>
+</dd>
+<dt><strong>EMFILE</strong></dt>
+<dd><p>The per-process limit on the number of open file descriptors has been reached.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>The allocation of memory for the notification group failed.</p>
+</dd>
+<dt><strong>ENOSYS</strong></dt>
+<dd><p>This kernel does not implement <strong>fanotify_init</strong>(). The fanotify API is available only if the kernel was configured with <strong>CONFIG_FANOTIFY</strong>.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The operation is not permitted because the caller lacks the <strong>CAP_SYS_ADMIN</strong> capability.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>fanotify_init</strong>() was introduced in version 2.6.36 of the Linux kernel and enabled in version 2.6.37.</p>
+<h1>CONFORMING TO</h1>
+<p>This system call is Linux-specific.</p>
+<h1>BUGS</h1>
+<p>The following bug was present in Linux kernels before version 3.18:</p>
+<ul>
+<li><p>The <strong>O_CLOEXEC</strong> is ignored when passed in <em>event_f_flags</em>.</p></li>
+</ul>
+<p>The following bug was present in Linux kernels before version 3.14:</p>
+<ul>
+<li><p>The <em>event_f_flags</em> argument is not checked for invalid flags. Flags that are intended only for internal use, such as <strong>FMODE_EXEC</strong>, can be set, and will consequently be set for the file descriptors returned when reading from the fanotify file descriptor.</p></li>
+</ul>
+<h1>SEE ALSO</h1>
+<p><strong>fanotify_mark</strong>(2), <strong>fanotify</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

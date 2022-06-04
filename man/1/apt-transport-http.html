@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command apt-transport-http</title><meta name="description" content="Linux command apt-transport-http APT transport for downloading via the Hypertext Transfer Protocol (HTTP)"><meta name="keywords" content="linux, command, apt-transport-http, bsd, APT transport for downloading via the Hypertext Transfer Protocol (HTTP)"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>apt-transport-http - APT transport for downloading via the Hypertext Transfer Protocol (HTTP)</p>
+<h1>DESCRIPTION</h1>
+<p>This APT transport allows the use of repositories accessed via the Hypertext Transfer Protocol (HTTP). It is available by default and probably the most used of all transports. Note that a transport is never called directly by a user but used by APT tools based on user configuration.</p>
+<p>HTTP is an unencrypted transport protocol meaning that the whole communication with the remote server (or proxy) can be observed by a sufficiently capable attacker commonly referred to as a "man in the middle" (MITM). However, such an attacker can <em>not</em> modify the communication to compromise the security of your system, as APTs data security model is independent of the chosen transport method. This is explained in detail in <strong>apt-secure</strong>(8). An overview of available transport methods is given in <strong>sources.list</strong>(5).</p>
+<h1>OPTIONS</h1>
+<p>Various options can be set in an <strong>apt.conf</strong>(5) file to modify its behavior, ranging from proxy configuration to workarounds for specific server limitations.</p>
+<h2>Proxy Configuration</h2>
+<p>The environment variable <strong>http_proxy</strong> is supported for system wide configuration. Proxies specific to APT can be configured via the option Acquire::http::Proxy. Proxies which should be used only for certain hosts can be specified via Acquire::http::Proxy::<em>host</em>. Even more fine-grained control can be achieved via proxy autodetection, detailed further below. All these options use the URI format <em>scheme</em>://[[<em>user</em>][:<em>pass</em>]@]<em>host</em>[:<em>port</em>]/. Supported URI schemes are socks5h (SOCKS5 with remote DNS resolution), http and https. Authentication details can be supplied via <strong>apt_auth.conf</strong>(5) instead of including it in the URI directly.</p>
+<p>The various APT configuration options support the special value DIRECT meaning that no proxy should be used. The environment variable <strong>no_proxy</strong> is also supported for the same purpose.</p>
+<p>Furthermore, there are three settings provided for cache control with HTTP/1.1 compliant proxy caches: Acquire::http::No-Cache tells the proxy not to use its cached response under any circumstances. Acquire::http::Max-Age sets the allowed maximum age (in seconds) of an index file in the cache of the proxy. Acquire::http::No-Store specifies that the proxy should not store the requested archive files in its cache, which can be used to prevent the proxy from polluting its cache with (big) .deb files.</p>
+<h2>Automatic Proxy Configuration</h2>
+<p>Acquire::http::Proxy-Auto-Detect can be used to specify an external command to discover the HTTP proxy to use. The first and only parameter is a URI denoting the host to be contacted, to allow for host-specific configuration. APT expects the command to output the proxy on stdout as a single line in the previously specified URI format or the word DIRECT if no proxy should be used. No output indicates that the generic proxy settings should be used.</p>
+<p>Note that auto-detection will not be used for a host if a host-specific proxy configuration is already set via Acquire::http::Proxy::<em>host</em>.</p>
+<p>See the <strong>squid-deb-proxy-client</strong>(1) and <strong>auto-apt-proxy</strong>(1) packages for example implementations.</p>
+<p>This option takes precedence over the legacy option name Acquire::http::ProxyAutoDetect.</p>
+<h2>Connection Configuration</h2>
+<p>The option Acquire::http::Timeout sets the timeout timer used by the method; this value applies to the connection as well as the data timeout.</p>
+<p>The used bandwidth can be limited with Acquire::http::Dl-Limit which accepts integer values in kilobytes per second. The default value is 0 which deactivates the limit and tries to use all available bandwidth. Note that this option implicitly disables downloading from multiple servers at the same time.</p>
+<p>The setting Acquire::http::Pipeline-Depth can be used to enable HTTP pipelining (RFC 2616 section 8.1.2.2) which can be beneficial e.g. on high-latency connections. It specifies how many requests are sent in a pipeline. APT tries to detect and work around misbehaving webservers and proxies at runtime, but if you know that yours does not conform to the HTTP/1.1 specification, pipelining can be disabled by setting the value to 0. It is enabled by default with the value 10.</p>
+<p>Acquire::http::AllowRedirect controls whether APT will follow redirects, which is enabled by default.</p>
+<p>Acquire::http::User-Agent can be used to set a different User-Agent for the http download method as some proxies allow access for clients only if the client uses a known identifier.</p>
+<p>Acquire::http::SendAccept is enabled by default and sends an Accept: text/* header field to the server for requests without file extensions to prevent the server from attempting content negotiation.</p>
+<h1>EXAMPLES</h1>
+<blockquote>
+<pre><code>Acquire::http {
+	Proxy::example.org &quot;DIRECT&quot;;
+	Proxy &quot;socks5h://apt:pass@127.0.0.1:9050&quot;;
+	Proxy-Auto-Detect &quot;/usr/local/bin/apt-http-proxy-auto-detect&quot;;
+	No-Cache &quot;true&quot;;
+	Max-Age &quot;3600&quot;;
+	No-Store &quot;true&quot;;
+	Timeout &quot;10&quot;;
+	Dl-Limit &quot;42&quot;;
+	Pipeline-Depth &quot;0&quot;;
+	AllowRedirect &quot;false&quot;;
+	User-Agent &quot;My APT-HTTP&quot;;
+	SendAccept &quot;false&quot;;
+};</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>apt.conf</strong>(5) <strong>apt_auth.conf</strong>(5) <strong>sources.list</strong>(5)</p>
+<h1>BUGS</h1>
+<p><strong>APT bug page</strong>[1]. If you wish to report a bug in APT, please see /usr/share/doc/debian/bug-reporting.txt or the <strong>reportbug</strong>(1) command.</p>
+<h1>AUTHOR</h1>
+<p><strong>APT team</strong></p>
+<blockquote>
+
+</blockquote>
+<h1>NOTES</h1>
+<ul>
+<li><p>APT bug page</p>
+<p>http://bugs.debian.org/src:apt</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

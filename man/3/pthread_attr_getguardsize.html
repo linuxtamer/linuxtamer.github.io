@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pthread_attr_getguardsize</title><meta name="description" content="Linux command pthread_attr_getguardsize set/get guard size attribute in thread attributes object"><meta name="keywords" content="linux, command, pthread_attr_getguardsize, bsd, set/get guard size attribute in thread attributes object"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pthread_attr_setguardsize, pthread_attr_getguardsize - set/get guard size attribute in thread attributes object</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;pthread.h&gt;
+
+int pthread_attr_setguardsize(pthread_attr_t *attr&quot;,size_t&quot;guardsize);
+int pthread_attr_getguardsize(const pthread_attr_t *attr,
+ size_t *guardsize);
+
+Compile and link with -pthread.</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>pthread_attr_setguardsize</strong>() function sets the guard size attribute of the thread attributes object referred to by <em>attr</em> to the value specified in <em>guardsize</em>.</p>
+<p>If <em>guardsize</em> is greater than 0, then for each new thread created using <em>attr</em> the system allocates an additional region of at least <em>guardsize</em> bytes at the end of the thread's stack to act as the guard area for the stack (but see BUGS).</p>
+<p>If <em>guardsize</em> is 0, then new threads created with <em>attr</em> will not have a guard area.</p>
+<p>The default guard size is the same as the system page size.</p>
+<p>If the stack address attribute has been set in <em>attr</em> (using <strong>pthread_attr_setstack</strong>(3) or <strong>pthread_attr_setstackaddr</strong>(3)), meaning that the caller is allocating the thread's stack, then the guard size attribute is ignored (i.e., no guard area is created by the system): it is the application's responsibility to handle stack overflow (perhaps by using <strong>mprotect</strong>(2) to manually define a guard area at the end of the stack that it has allocated).</p>
+<p>The <strong>pthread_attr_getguardsize</strong>() function returns the guard size attribute of the thread attributes object referred to by <em>attr</em> in the buffer pointed to by <em>guardsize</em>.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, these functions return 0; on error, they return a nonzero error number.</p>
+<h1>ERRORS</h1>
+<p>POSIX.1 documents an <strong>EINVAL</strong> error if <em>attr</em> or <em>guardsize</em> is invalid. On Linux these functions always succeed (but portable and future-proof applications should nevertheless handle a possible error return).</p>
+<h1>VERSIONS</h1>
+<p>These functions are provided by glibc since version 2.1.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>pthread_attr_setguardsize</strong>(), <strong>pthread_attr_getguardsize</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>A guard area consists of virtual memory pages that are protected to prevent read and write access. If a thread overflows its stack into the guard area, then, on most hard architectures, it receives a <strong>SIGSEGV</strong> signal, thus notifying it of the overflow. Guard areas start on page boundaries, and the guard size is internally rounded up to the system page size when creating a thread. (Nevertheless, <strong>pthread_attr_getguardsize</strong>() returns the guard size that was set by <strong>pthread_attr_setguardsize</strong>().)</p>
+<p>Setting a guard size of 0 may be useful to save memory in an application that creates many threads and knows that stack overflow can never occur.</p>
+<p>Choosing a guard size larger than the default size may be necessary for detecting stack overflows if a thread allocates large data structures on the stack.</p>
+<h1>BUGS</h1>
+<p>As at glibc 2.8, the NPTL threading implementation includes the guard area within the stack size allocation, rather than allocating extra space at the end of the stack, as POSIX.1 requires. (This can result in an <strong>EINVAL</strong> error from <strong>pthread_create</strong>(3) if the guard size value is too large, leaving no space for the actual stack.)</p>
+<p>The obsolete LinuxThreads implementation did the right thing, allocating extra space at the end of the stack for the guard area.</p>
+<h1>EXAMPLES</h1>
+<p>See <strong>pthread_getattr_np</strong>(3).</p>
+<h1>SEE ALSO</h1>
+<p><strong>mmap</strong>(2), <strong>mprotect</strong>(2), <strong>pthread_attr_init</strong>(3), <strong>pthread_attr_setstack</strong>(3), <strong>pthread_attr_setstacksize</strong>(3), <strong>pthread_create</strong>(3), <strong>pthreads</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

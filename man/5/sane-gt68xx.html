@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sane-gt68xx</title><meta name="description" content="Linux command sane-gt68xx SANE backend for GT-68XX based USB flatbed scanners"><meta name="keywords" content="linux, command, sane-gt68xx, bsd, SANE backend for GT-68XX based USB flatbed scanners"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sane-gt68xx - SANE backend for GT-68XX based USB flatbed scanners</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sane-gt68xx</strong> library implements a SANE (Scanner Access Now Easy) backend that provides access to USB flatbed scanners based on the Grandtech GT-6801 and GT-6816 chips. A list of supported scanners can be found on the gt68xx backend homepage: <em>http://www.meier-geinitz.de/sane/gt68xx-backend/</em>.</p>
+<p>This is BETA software. Especially if you test new or untested scanners, keep your hand at the scanner's plug and unplug it, if the head bumps at the end of the scan area.</p>
+<p>If you own a scanner other than the ones listed on the gt68xx homepage that works with this backend, please let me know this by sending the scanner's exact model name and the USB vendor and device ids (e.g. from <em>sane-find-scanner</em> or syslog) to me. Even if the scanner's name is only slightly different from the models already listed as supported, please let me know.</p>
+<p>If you own a scanner that isn't detected by the gt68xx backend but has a GT-6801 or GT-6816 chipset, you can try to add it to the backend. Have a look at the following web page: <em>http://www.meier-geinitz.de/sane/gt68xx-backend/adding.html</em></p>
+<h1>LIBUSB ISSUES</h1>
+<p>Please use libusb-0.1.8 or later. Without libusb or with older libusb versions all kinds of trouble can be expected. The scanner should be found by sane-find-scanner without further actions. For setting permissions and general USB information looks at <strong>sane-usb</strong>(5).</p>
+<h1>FIRMWARE FILE</h1>
+<p>You need a firmware file for your scanner. That's a small file containing software that will be uploaded to the scanner's memory. It's usually named *.usb, e.g. <em>PS1fw.usb</em>. It comes on the installation CD that was provided by the manufacturer, but it may be packaged together with the installation program in an .exe file. For Mustek scanners, the file can be downloaded from the gt68xx backend homepage. For other scanners, check the CD for .usb files. If you only find *.cab files, try cabextract to unpack. If everything else fails, you must install the Windows driver and get the firmware from there (usually in the <em>windows/system</em> or <em>system32</em> directories). Put that firmware file into <em>/usr/share/sane/gt68xx/</em>. Make sure that it's readable by everyone.</p>
+<h1>CONFIGURATION</h1>
+<p>The contents of the <em>gt68xx.conf</em> file is a list of usb lines containing vendor and product ids that correspond to USB scanners. The file can also contain option lines. Empty lines and lines starting with a hash mark (#) are ignored. The scanners are autodetected by <strong>usb vendor_id product_id</strong> statements which are already included into <em>gt68xx.conf</em>. "vendor_id" and "product_id" are hexadecimal numbers that identify the scanner.</p>
+<p>The <strong>override</strong>, <strong>firmware</strong>, <strong>vendor</strong>, <strong>model</strong>, and <strong>afe</strong> options must be placed after the <strong>usb</strong> line they refer to.</p>
+<p>Option <strong>override</strong> is used to override the default model parameters. That's necessary for some scanners that use the same vendor/product ids but are different. For these scanners there are already commented out override lines in the configuration file. <strong>override mustek-scanexpress-1200-ub-plus</strong> is necessary for the Mustek Scanexpress 1200 UB Plus, the Medion/Lifetec/Tevion LT 9452, and the Trust Compact Scan USB 19200. <strong>override artec-ultima-2000</strong> is used for the Artec Ultima 2000, the Boeder SmartScan Slim Edition, the Medion/ Lifetec/ Tevion/ Cytron MD/LT 9385, the Medion/ Lifetec/ Tevion MD 9458, and the Trust Flat Scan USB 19200. <strong>override mustek-bearpaw-2400-cu</strong> is necessary for the Mustek BearPaw 2400 CU and the Fujitsu 1200CUS. The <strong>override</strong> option must be the first one after the <strong>usb</strong> line.</p>
+<p>Option <strong>firmware</strong> selects the name and path of the firmware file. It's only necessary if the default (or override) doesn't work. The default firmware directory is <em>/usr/share/sane/gt68xx/</em>. You may need to create this directory. If you want to place the firmware files at a different path, use a <strong>firmware</strong> line.</p>
+<p>The <strong>vendor</strong> and <strong>model</strong> options are not absolutely necessary but for convenience. Quite a lot of scanners from different manufacturers share the same vendor/product ids so you can set the "correct" name here.</p>
+<p>The <strong>afe</strong> option allows one to set custom offset and gain values for the Analog FrontEnd of the scanner. This option can be either used to select the AFE values if automatic coarse calibration is disabled, or to make automatic coarse calibration faster. For the latter usage, enable debug level 3 (see below), scan an image and look for debug line string with "afe". Copy this line to <em>gt68xx.conf</em>. The option has six parameters: red offset, red gain, green offset, green gain, blue offset, and blue gain.</p>
+<p>A sample configuration file is shown below:</p>
+<blockquote>
+<p>usb 0x05d8 0x4002<br />
+override "mustek-scanexpress-1200-ub-plus"<br />
+firmware "/opt/gt68xx/SBfw.usb"<br />
+vendor "Trust"<br />
+model "Compact Scan USB 19200"<br />
+afe 0x20 0x02 0x22 0x03 0x1f 0x04</p>
+</blockquote>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/sane.d/gt68xx.conf</em></dt>
+<dd><p>The backend configuration file (see also description of <strong>SANE_CONFIG_DIR</strong> below).</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-gt68xx.a</em></dt>
+<dd><p>The static library implementing this backend.</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-gt68xx.so</em></dt>
+<dd><p>The shared library implementing this backend (present on systems that support dynamic loading).</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>SANE_CONFIG_DIR</strong></dt>
+<dd><p>This environment variable specifies the list of directories that may contain the configuration file. Under UNIX, the directories are separated by a colon (`:'), under OS/2, they are separated by a semi-colon (`;'). If this variable is not set, the configuration file is searched in two default directories: first, the current working directory (".") and then in /etc/sane.d. If the value of the environment variable ends with the directory separator character, then the default directories are searched after the explicitly specified directories. For example, setting <strong>SANE_CONFIG_DIR</strong> to "/tmp/config:" would result in directories "tmp/config", ".", and "/etc/sane.d" being searched (in this order).</p>
+</dd>
+<dt><strong>SANE_DEBUG_GT68XX</strong></dt>
+<dd><p>If the library was compiled with debug support enabled, this environment variable controls the debug level for this backend. Higher debug levels increase the verbosity of the output. If the debug level is set to 1 or higher, some debug options become available that are normally hidden. Handle them with care.</p>
+</dd>
+</dl>
+<p>Example: export SANE_DEBUG_GT68XX=4</p>
+<h1>SEE ALSO</h1>
+<p><strong>sane</strong>(7), <strong>sane-usb</strong>(5), <strong>sane-artec_eplus48u</strong>(5) <strong>sane-plustek</strong>(5), <strong>sane-ma1509</strong>(5), <strong>sane-mustek_usb</strong>(5), <strong>sane-mustek</strong>(5), <strong>sane-mustek_pp</strong>(5)<br />
+<em>/usr/share/doc/libsane/gt68xx/gt68xx.CHANGES</em><br />
+<em>http://www.meier-geinitz.de/sane/gt68xx</em></p>
+<h1>AUTHOR</h1>
+<p>Henning Meier-Geinitz &lt;henning@meier-geinitz.de&gt;<br />
+The original gt68xx driver was written by Sergey Vlasov, Andreas Nowack, and David Stevenson. Thanks for sending patches and answering questions to them and all the other contributors.</p>
+<h1>BUGS</h1>
+<p>The first few lines of the image are garbage for the 2400 TA Plus.</p>
+<p>Interpolation should be used instead of just copying data, when the X- and Y-resolution differ.</p>
+<p>Support for buttons is missing.</p>
+<p>More detailed bug information is available at the gt68xx backend homepage <em>http://www.meier-geinitz.de/sane/gt68xx-backend/</em>. Please contact us if you find a bug or missing feature: &lt;sane-devel@alioth-lists.debian.net&gt;. Please send a debug log if your scanner isn't detected correctly (see SANE_DEBUG_GT68XX above).</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command timerfd_settime</title><meta name="description" content="Linux command timerfd_settime timers that notify via file descriptors"><meta name="keywords" content="linux, command, timerfd_settime, bsd, timers that notify via file descriptors"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>timerfd_create, timerfd_settime, timerfd_gettime - timers that notify via file descriptors</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/timerfd.h&gt;
+
+int timerfd_create(int clockid, int flags);
+
+int timerfd_settime(int fd, int flags,
+ const struct itimerspec *new_value,
+ struct itimerspec *old_value);
+
+int timerfd_gettime(int fd, struct itimerspec *curr_value);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>These system calls create and operate on a timer that delivers timer expiration notifications via a file descriptor. They provide an alternative to the use of <strong>setitimer</strong>(2) or <strong>timer_create</strong>(2), with the advantage that the file descriptor may be monitored by <strong>select</strong>(2), <strong>poll</strong>(2), and <strong>epoll</strong>(7).</p>
+<p>The use of these three system calls is analogous to the use of <strong>timer_create</strong>(2), <strong>timer_settime</strong>(2), and <strong>timer_gettime</strong>(2). (There is no analog of <strong>timer_getoverrun</strong>(2), since that functionality is provided by <strong>read</strong>(2), as described below.)</p>
+<h2>timerfd_create()</h2>
+<p><strong>timerfd_create</strong>() creates a new timer object, and returns a file descriptor that refers to that timer. The <em>clockid</em> argument specifies the clock that is used to mark the progress of the timer, and must be one of the following:</p>
+<dl>
+<dt><strong>CLOCK_REALTIME</strong></dt>
+<dd><p>A settable system-wide real-time clock.</p>
+</dd>
+<dt><strong>CLOCK_MONOTONIC</strong></dt>
+<dd><p>A nonsettable monotonically increasing clock that measures time from some unspecified point in the past that does not change after system startup.</p>
+</dd>
+<dt><strong>CLOCK_BOOTTIME</strong> (Since Linux 3.15)</dt>
+<dd><p>Like <strong>CLOCK_MONOTONIC</strong>, this is a monotonically increasing clock. However, whereas the <strong>CLOCK_MONOTONIC</strong> clock does not measure the time while a system is suspended, the <strong>CLOCK_BOOTTIME</strong> clock does include the time during which the system is suspended. This is useful for applications that need to be suspend-aware. <strong>CLOCK_REALTIME</strong> is not suitable for such applications, since that clock is affected by discontinuous changes to the system clock.</p>
+</dd>
+<dt><strong>CLOCK_REALTIME_ALARM</strong> (since Linux 3.11)</dt>
+<dd><p>This clock is like <strong>CLOCK_REALTIME</strong>, but will wake the system if it is suspended. The caller must have the <strong>CAP_WAKE_ALARM</strong> capability in order to set a timer against this clock.</p>
+</dd>
+<dt><strong>CLOCK_BOOTTIME_ALARM</strong> (since Linux 3.11)</dt>
+<dd><p>This clock is like <strong>CLOCK_BOOTTIME</strong>, but will wake the system if it is suspended. The caller must have the <strong>CAP_WAKE_ALARM</strong> capability in order to set a timer against this clock.</p>
+</dd>
+</dl>
+<p>See <strong>clock_getres</strong>(2) for some further details on the above clocks.</p>
+<p>The current value of each of these clocks can be retrieved using <strong>clock_gettime</strong>(2).</p>
+<p>Starting with Linux 2.6.27, the following values may be bitwise ORed in <em>flags</em> to change the behavior of <strong>timerfd_create</strong>():</p>
+<dl>
+<dt><strong>TFD_NONBLOCK</strong></dt>
+<dd><p>Set the <strong>O_NONBLOCK</strong> file status flag on the open file description (see <strong>open</strong>(2)) referred to by the new file descriptor. Using this flag saves extra calls to <strong>fcntl</strong>(2) to achieve the same result.</p>
+</dd>
+<dt><strong>TFD_CLOEXEC</strong></dt>
+<dd><p>Set the close-on-exec (<strong>FD_CLOEXEC</strong>) flag on the new file descriptor. See the description of the <strong>O_CLOEXEC</strong> flag in <strong>open</strong>(2) for reasons why this may be useful.</p>
+</dd>
+</dl>
+<p>In Linux versions up to and including 2.6.26, <em>flags</em> must be specified as zero.</p>
+<h2>timerfd_settime()</h2>
+<p><strong>timerfd_settime</strong>() arms (starts) or disarms (stops) the timer referred to by the file descriptor <em>fd</em>.</p>
+<p>The <em>new_value</em> argument specifies the initial expiration and interval for the timer. The <em>itimerspec</em> structure used for this argument contains two fields, each of which is in turn a structure of type <em>timespec</em>:</p>
+<pre><code>struct timespec {
+    time_t tv_sec;                /* Seconds */
+    long   tv_nsec;               /* Nanoseconds */
+};
+
+struct itimerspec {
+    struct timespec it_interval;  /* Interval for periodic timer */
+    struct timespec it_value;     /* Initial expiration */
+};</code></pre>
+<p><em>new_value.it_value</em> specifies the initial expiration of the timer, in seconds and nanoseconds. Setting either field of <em>new_value.it_value</em> to a nonzero value arms the timer. Setting both fields of <em>new_value.it_value</em> to zero disarms the timer.</p>
+<p>Setting one or both fields of <em>new_value.it_interval</em> to nonzero values specifies the period, in seconds and nanoseconds, for repeated timer expirations after the initial expiration. If both fields of <em>new_value.it_interval</em> are zero, the timer expires just once, at the time specified by <em>new_value.it_value</em>.</p>
+<p>By default, the initial expiration time specified in <em>new_value</em> is interpreted relative to the current time on the timer's clock at the time of the call (i.e., <em>new_value.it_value</em> specifies a time relative to the current value of the clock specified by <em>clockid</em>). An absolute timeout can be selected via the <em>flags</em> argument.</p>
+<p>The <em>flags</em> argument is a bit mask that can include the following values:</p>
+<dl>
+<dt><strong>TFD_TIMER_ABSTIME</strong></dt>
+<dd><p>Interpret <em>new_value.it_value</em> as an absolute value on the timer's clock. The timer will expire when the value of the timer's clock reaches the value specified in <em>new_value.it_value</em>.</p>
+</dd>
+<dt><strong>TFD_TIMER_CANCEL_ON_SET</strong></dt>
+<dd><p>If this flag is specified along with <strong>TFD_TIMER_ABSTIME</strong> and the clock for this timer is <strong>CLOCK_REALTIME</strong> or <strong>CLOCK_REALTIME_ALARM</strong>, then mark this timer as cancelable if the real-time clock undergoes a discontinuous change (<strong>settimeofday</strong>(2), <strong>clock_settime</strong>(2), or similar). When such changes occur, a current or future <strong>read</strong>(2) from the file descriptor will fail with the error <strong>ECANCELED</strong>.</p>
+</dd>
+</dl>
+<p>If the <em>old_value</em> argument is not NULL, then the <em>itimerspec</em> structure that it points to is used to return the setting of the timer that was current at the time of the call; see the description of <strong>timerfd_gettime</strong>() following.</p>
+<h2>timerfd_gettime()</h2>
+<p><strong>timerfd_gettime</strong>() returns, in <em>curr_value</em>, an <em>itimerspec</em> structure that contains the current setting of the timer referred to by the file descriptor <em>fd</em>.</p>
+<p>The <em>it_value</em> field returns the amount of time until the timer will next expire. If both fields of this structure are zero, then the timer is currently disarmed. This field always contains a relative value, regardless of whether the <strong>TFD_TIMER_ABSTIME</strong> flag was specified when setting the timer.</p>
+<p>The <em>it_interval</em> field returns the interval of the timer. If both fields of this structure are zero, then the timer is set to expire just once, at the time specified by <em>curr_value.it_value</em>.</p>
+<h2>Operating on a timer file descriptor</h2>
+<p>The file descriptor returned by <strong>timerfd_create</strong>() supports the following additional operations:</p>
+<dl>
+<dt><strong>read</strong>(2)</dt>
+<dd><p>If the timer has already expired one or more times since its settings were last modified using <strong>timerfd_settime</strong>(), or since the last successful <strong>read</strong>(2), then the buffer given to <strong>read</strong>(2) returns an unsigned 8-byte integer (<em>uint64_t</em>) containing the number of expirations that have occurred. (The returned value is in host byte order—that is, the native byte order for integers on the host machine.)</p>
+<p>If no timer expirations have occurred at the time of the <strong>read</strong>(2), then the call either blocks until the next timer expiration, or fails with the error <strong>EAGAIN</strong> if the file descriptor has been made nonblocking (via the use of the <strong>fcntl</strong>(2) <strong>F_SETFL</strong> operation to set the <strong>O_NONBLOCK</strong> flag).</p>
+<p>A <strong>read</strong>(2) fails with the error <strong>EINVAL</strong> if the size of the supplied buffer is less than 8 bytes.</p>
+<p>If the associated clock is either <strong>CLOCK_REALTIME</strong> or <strong>CLOCK_REALTIME_ALARM</strong>, the timer is absolute (<strong>TFD_TIMER_ABSTIME</strong>), and the flag <strong>TFD_TIMER_CANCEL_ON_SET</strong> was specified when calling <strong>timerfd_settime</strong>(), then <strong>read</strong>(2) fails with the error <strong>ECANCELED</strong> if the real-time clock undergoes a discontinuous change. (This allows the reading application to discover such discontinuous changes to the clock.)</p>
+<p>If the associated clock is either <strong>CLOCK_REALTIME</strong> or <strong>CLOCK_REALTIME_ALARM</strong>, the timer is absolute (<strong>TFD_TIMER_ABSTIME</strong>), and the flag <strong>TFD_TIMER_CANCEL_ON_SET</strong> was <em>not</em> specified when calling <strong>timerfd_settime</strong>(), then a discontinuous negative change to the clock (e.g., <strong>clock_settime</strong>(2)) may cause <strong>read</strong>(2) to unblock, but return a value of 0 (i.e., no bytes read), if the clock change occurs after the time expired, but before the <strong>read</strong>(2) on the file descriptor.</p>
+</dd>
+<dt><strong>poll</strong>(2), <strong>select</strong>(2) (and similar)</dt>
+<dd><p>The file descriptor is readable (the <strong>select</strong>(2) <em>readfds</em> argument; the <strong>poll</strong>(2) <strong>POLLIN</strong> flag) if one or more timer expirations have occurred.</p>
+<p>The file descriptor also supports the other file-descriptor multiplexing APIs: <strong>pselect</strong>(2), <strong>ppoll</strong>(2), and <strong>epoll</strong>(7).</p>
+</dd>
+<dt><strong>ioctl</strong>(2)</dt>
+<dd><p>The following timerfd-specific command is supported:</p>
+<dl>
+<dt><strong>TFD_IOC_SET_TICKS</strong> (since Linux 3.17)</dt>
+<dd><p>Adjust the number of timer expirations that have occurred. The argument is a pointer to a nonzero 8-byte integer (<em>uint64_t</em>*) containing the new number of expirations. Once the number is set, any waiter on the timer is woken up. The only purpose of this command is to restore the expirations for the purpose of checkpoint/restore. This operation is available only if the kernel was configured with the <strong>CONFIG_CHECKPOINT_RESTORE</strong> option.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>close</strong>(2)</dt>
+<dd><p>When the file descriptor is no longer required it should be closed. When all file descriptors associated with the same timer object have been closed, the timer is disarmed and its resources are freed by the kernel.</p>
+</dd>
+</dl>
+<h2>fork(2) semantics</h2>
+<p>After a <strong>fork</strong>(2), the child inherits a copy of the file descriptor created by <strong>timerfd_create</strong>(). The file descriptor refers to the same underlying timer object as the corresponding file descriptor in the parent, and <strong>read</strong>(2)s in the child will return information about expirations of the timer.</p>
+<h2>execve(2) semantics</h2>
+<p>A file descriptor created by <strong>timerfd_create</strong>() is preserved across <strong>execve</strong>(2), and continues to generate timer expirations if the timer was armed.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>timerfd_create</strong>() returns a new file descriptor. On error, -1 is returned and <em>errno</em> is set to indicate the error.</p>
+<p><strong>timerfd_settime</strong>() and <strong>timerfd_gettime</strong>() return 0 on success; on error they return -1, and set <em>errno</em> to indicate the error.</p>
+<h1>ERRORS</h1>
+<p><strong>timerfd_create</strong>() can fail with the following errors:</p>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The <em>clockid</em> is not valid.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>flags</em> is invalid; or, in Linux 2.6.26 or earlier, <em>flags</em> is nonzero.</p>
+</dd>
+<dt><strong>EMFILE</strong></dt>
+<dd><p>The per-process limit on the number of open file descriptors has been reached.</p>
+</dd>
+<dt><strong>ENFILE</strong></dt>
+<dd><p>The system-wide limit on the total number of open files has been reached.</p>
+</dd>
+<dt><strong>ENODEV</strong></dt>
+<dd><p>Could not mount (internal) anonymous inode device.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>There was insufficient kernel memory to create the timer.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p><em>clockid</em> was <strong>CLOCK_REALTIME_ALARM</strong> or <strong>CLOCK_BOOTTIME_ALARM</strong> but the caller did not have the <strong>CAP_WAKE_ALARM</strong> capability.</p>
+</dd>
+</dl>
+<p><strong>timerfd_settime</strong>() and <strong>timerfd_gettime</strong>() can fail with the following errors:</p>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not a valid file descriptor.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>new_value</em>, <em>old_value</em>, or <em>curr_value</em> is not valid a pointer.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>fd</em> is not a valid timerfd file descriptor.</p>
+</dd>
+</dl>
+<p><strong>timerfd_settime</strong>() can also fail with the following errors:</p>
+<dl>
+<dt><strong>ECANCELED</strong></dt>
+<dd><p>See NOTES.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>new_value</em> is not properly initialized (one of the <em>tv_nsec</em> falls outside the range zero to 999,999,999).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>flags</em> is invalid.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>These system calls are available on Linux since kernel 2.6.25. Library support is provided by glibc since version 2.8.</p>
+<h1>CONFORMING TO</h1>
+<p>These system calls are Linux-specific.</p>
+<h1>NOTES</h1>
+<p>Suppose the following scenario for <strong>CLOCK_REALTIME</strong> or <strong>CLOCK_REALTIME_ALARM</strong> timer that was created with <strong>timerfd_create</strong>():</p>
+<ol type="a">
+<li><p>The timer has been started (<strong>timerfd_settime</strong>()) with the <strong>TFD_TIMER_ABSTIME</strong> and <strong>TFD_TIMER_CANCEL_ON_SET</strong> flags;</p></li>
+<li><p>A discontinuous change (e.g., <strong>settimeofday</strong>(2)) is subsequently made to the <strong>CLOCK_REALTIME</strong> clock; and</p></li>
+<li><p>the caller once more calls <strong>timerfd_settime</strong>() to rearm the timer (without first doing a <strong>read</strong>(2) on the file descriptor).</p></li>
+</ol>
+<p>In this case the following occurs:</p>
+<ul>
+<li><p>The <strong>timerfd_settime</strong>() returns -1 with <em>errno</em> set to <strong>ECANCELED</strong>. (This enables the caller to know that the previous timer was affected by a discontinuous change to the clock.)</p></li>
+<li><p>The timer <em>is successfully rearmed</em> with the settings provided in the second <strong>timerfd_settime</strong>() call. (This was probably an implementation accident, but won't be fixed now, in case there are applications that depend on this behaviour.)</p></li>
+</ul>
+<h1>BUGS</h1>
+<p>Currently, <strong>timerfd_create</strong>() supports fewer types of clock IDs than <strong>timer_create</strong>(2).</p>
+<h1>EXAMPLES</h1>
+<p>The following program creates a timer and then monitors its progress. The program accepts up to three command-line arguments. The first argument specifies the number of seconds for the initial expiration of the timer. The second argument specifies the interval for the timer, in seconds. The third argument specifies the number of times the program should allow the timer to expire before terminating. The second and third command-line arguments are optional.</p>
+<p>The following shell session demonstrates the use of the program:</p>
+<pre><code>$ a.out 3 1 100
+0.000: timer started
+3.000: read: 1; total=1
+4.000: read: 1; total=2
+^Z  # type control-Z to suspend the program
+[1]+  Stopped                 ./timerfd3_demo 3 1 100
+$ fg # Resume execution after a few seconds
+a.out 3 1 100
+9.660: read: 5; total=7
+10.000: read: 1; total=8
+11.000: read: 1; total=9
+^C  # type control-C to suspend the program</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;sys/timerfd.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;inttypes.h&gt;      /* Definition of PRIu64 */
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;        /* Definition of uint64_t */
+
+#define handle_error(msg) \
+        do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+static void
+print_elapsed_time(void)
+{
+    static struct timespec start;
+    struct timespec curr;
+    static int first_call = 1;
+    int secs, nsecs;
+
+    if (first_call) {
+        first_call = 0;
+        if (clock_gettime(CLOCK_MONOTONIC, &amp;start) == -1)
+            handle_error(&quot;clock_gettime&quot;);
+    }
+
+    if (clock_gettime(CLOCK_MONOTONIC, &amp;curr) == -1)
+        handle_error(&quot;clock_gettime&quot;);
+
+    secs = curr.tv_sec - start.tv_sec;
+    nsecs = curr.tv_nsec - start.tv_nsec;
+    if (nsecs &lt; 0) {
+        secs--;
+        nsecs += 1000000000;
+    }
+    printf(&quot;%d.%03d: &quot;, secs, (nsecs + 500000) / 1000000);
+}
+
+int
+main(int argc, char *argv[])
+{
+    struct itimerspec new_value;
+    int max_exp, fd;
+    struct timespec now;
+    uint64_t exp, tot_exp;
+    ssize_t s;
+
+    if ((argc != 2) &amp;&amp; (argc != 4)) {
+        fprintf(stderr, &quot;%s init-secs [interval-secs max-exp]\n&quot;,
+                argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    if (clock_gettime(CLOCK_REALTIME, &amp;now) == -1)
+        handle_error(&quot;clock_gettime&quot;);
+
+    /* Create a CLOCK_REALTIME absolute timer with initial
+       expiration and interval as specified in command line */
+
+    new_value.it_value.tv_sec = now.tv_sec + atoi(argv[1]);
+    new_value.it_value.tv_nsec = now.tv_nsec;
+    if (argc == 2) {
+        new_value.it_interval.tv_sec = 0;
+        max_exp = 1;
+    } else {
+        new_value.it_interval.tv_sec = atoi(argv[2]);
+        max_exp = atoi(argv[3]);
+    }
+    new_value.it_interval.tv_nsec = 0;
+
+    fd = timerfd_create(CLOCK_REALTIME, 0);
+    if (fd == -1)
+        handle_error(&quot;timerfd_create&quot;);
+
+    if (timerfd_settime(fd, TFD_TIMER_ABSTIME, &amp;new_value, NULL) == -1)
+        handle_error(&quot;timerfd_settime&quot;);
+
+    print_elapsed_time();
+    printf(&quot;timer started\n&quot;);
+
+    for (tot_exp = 0; tot_exp &lt; max_exp;) {
+        s = read(fd, &amp;exp, sizeof(uint64_t));
+        if (s != sizeof(uint64_t))
+            handle_error(&quot;read&quot;);
+
+        tot_exp += exp;
+        print_elapsed_time();
+        printf(&quot;read: %&quot; PRIu64 &quot;; total=%&quot; PRIu64 &quot;\n&quot;, exp, tot_exp);
+    }
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>eventfd</strong>(2), <strong>poll</strong>(2), <strong>read</strong>(2), <strong>select</strong>(2), <strong>setitimer</strong>(2), <strong>signalfd</strong>(2), <strong>timer_create</strong>(2), <strong>timer_gettime</strong>(2), <strong>timer_settime</strong>(2), <strong>epoll</strong>(7), <strong>time</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

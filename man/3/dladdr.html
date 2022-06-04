@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command dladdr</title><meta name="description" content="Linux command dladdr translate address to symbolic information"><meta name="keywords" content="linux, command, dladdr, bsd, translate address to symbolic information"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>dladdr, dladdr1 - translate address to symbolic information</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE
+#include &lt;dlfcn.h&gt;
+
+int dladdr(void *addr, Dl_info *info);
+
+int dladdr1(void *addr, Dl_info *info, void **extra_info, int flags);
+
+Link with -ldl.</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The function <strong>dladdr</strong>() determines whether the address specified in <em>addr</em> is located in one of the shared objects loaded by the calling application. If it is, then <strong>dladdr</strong>() returns information about the shared object and symbol that overlaps <em>addr</em>. This information is returned in a <em>Dl_info</em> structure:</p>
+<pre><code>typedef struct {
+    const char *dli_fname;  /* Pathname of shared object that
+                               contains address */
+    void       *dli_fbase;  /* Base address at which shared
+                               object is loaded */
+    const char *dli_sname;  /* Name of symbol whose definition
+                               overlaps addr */
+    void       *dli_saddr;  /* Exact address of symbol named
+                               in dli_sname */
+} Dl_info;</code></pre>
+<p>If no symbol matching <em>addr</em> could be found, then <em>dli_sname</em> and <em>dli_saddr</em> are set to NULL.</p>
+<p>The function <strong>dladdr1</strong>() is like <strong>dladdr</strong>(), but returns additional information via the argument <em>extra_info</em>. The information returned depends on the value specified in <em>flags</em>, which can have one of the following values:</p>
+<dl>
+<dt><strong>RTLD_DL_LINKMAP</strong></dt>
+<dd><p>Obtain a pointer to the link map for the matched file. The <em>extra_info</em> argument points to a pointer to a <em>link_map</em> structure (i.e., <em>struct link_map **</em>), defined in <em>&lt;link.h&gt;</em> as:</p>
+<pre><code>struct link_map {
+    ElfW(Addr) l_addr;  /* Difference between the
+                           address in the ELF file and
+                           the address in memory */
+    char      *l_name;  /* Absolute pathname where
+                           object was found */
+    ElfW(Dyn) *l_ld;    /* Dynamic section of the
+                           shared object */
+    struct link_map *l_next, *l_prev;
+                        /* Chain of loaded objects */
+
+    /* Plus additional fields private to the
+       implementation */
+};</code></pre>
+</dd>
+<dt><strong>RTLD_DL_SYMENT</strong></dt>
+<dd><p>Obtain a pointer to the ELF symbol table entry of the matching symbol. The <em>extra_info</em> argument is a pointer to a symbol pointer: <em>const ElfW(Sym) **</em>. The <em>ElfW</em>() macro definition turns its argument into the name of an ELF data type suitable for the hardware architecture. For example, on a 64-bit platform, <em>ElfW(Sym)</em> yields the data type name <em>Elf64_Sym</em>, which is defined in <em>&lt;elf.h&gt;</em> as:</p>
+<pre><code>typedef struct  {
+    Elf64_Word    st_name;     /* Symbol name */
+    unsigned char st_info;     /* Symbol type and binding */
+    unsigned char st_other;    /* Symbol visibility */
+    Elf64_Section st_shndx;    /* Section index */
+    Elf64_Addr    st_value;    /* Symbol value */
+    Elf64_Xword   st_size;     /* Symbol size */
+} Elf64_Sym;</code></pre>
+<p>The <em>st_name</em> field is an index into the string table.</p>
+<p>The <em>st_info</em> field encodes the symbol's type and binding. The type can be extracted using the macro <strong>ELF64_ST_TYPE(st_info)</strong> (or <strong>ELF32_ST_TYPE()</strong> on 32-bit platforms), which yields one of the following values:</p>
+</dd>
+</dl>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Value</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STT_NOTYPE</td>
+<td style="text-align: left;">Symbol type is unspecified</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STT_OBJECT</td>
+<td style="text-align: left;">Symbol is a data object</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STT_FUNC</td>
+<td style="text-align: left;">Symbol is a code object</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STT_SECTION</td>
+<td style="text-align: left;">Symbol associated with a section</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STT_FILE</td>
+<td style="text-align: left;">Symbol's name is filename</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STT_COMMON</td>
+<td style="text-align: left;">Symbol is a common data object</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STT_TLS</td>
+<td style="text-align: left;">Symbol is thread-local data object</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STT_GNU_IFUNC</td>
+<td style="text-align: left;">Symbol is indirect code object</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>The symbol binding can be extracted from the <em>st_info</em> field using the macro <strong>ELF64_ST_BIND(st_info)</strong> (or <strong>ELF32_ST_BIND()</strong> on 32-bit platforms), which yields one of the following values:</p>
+</blockquote>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Value</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STB_LOCAL</td>
+<td style="text-align: left;">Local symbol</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STB_GLOBAL</td>
+<td style="text-align: left;">Global symbol</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STB_WEAK</td>
+<td style="text-align: left;">Weak symbol</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STB_GNU_UNIQUE</td>
+<td style="text-align: left;">Unique symbol</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>The <em>st_other</em> field contains the symbol's visibility, which can be extracted using the macro <strong>ELF64_ST_VISIBILITY(st_info)</strong> (or <strong>ELF32_ST_VISIBILITY()</strong> on 32-bit platforms), which yields one of the following values:</p>
+</blockquote>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Value</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STV_DEFAULT</td>
+<td style="text-align: left;">Default symbol visibility rules</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STV_INTERNAL</td>
+<td style="text-align: left;">Processor-specific hidden class</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">STV_HIDDEN</td>
+<td style="text-align: left;">Symbol unavailable in other modules</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">STV_PROTECTED</td>
+<td style="text-align: left;">Not preemptible, not exported</td>
+</tr>
+</tbody>
+</table>
+<h1>RETURN VALUE</h1>
+<p>On success, these functions return a nonzero value. If the address specified in <em>addr</em> could be matched to a shared object, but not to a symbol in the shared object, then the <em>info-&gt;dli_sname</em> and <em>info-&gt;dli_saddr</em> fields are set to NULL.</p>
+<p>If the address specified in <em>addr</em> could not be matched to a shared object, then these functions return 0. In this case, an error message is <em>not</em> available via <strong>dlerror</strong>(3).</p>
+<h1>VERSIONS</h1>
+<p><strong>dladdr</strong>() is present in glibc 2.0 and later. <strong>dladdr1</strong>() first appeared in glibc 2.3.3.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>dladdr</strong>(), <strong>dladdr1</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>These functions are nonstandard GNU extensions that are also present on Solaris.</p>
+<h1>BUGS</h1>
+<p>Sometimes, the function pointers you pass to <strong>dladdr</strong>() may surprise you. On some architectures (notably i386 and x86-64), <em>dli_fname</em> and <em>dli_fbase</em> may end up pointing back at the object from which you called <strong>dladdr</strong>(), even if the function used as an argument should come from a dynamically linked library.</p>
+<p>The problem is that the function pointer will still be resolved at compile time, but merely point to the <em>plt</em> (Procedure Linkage Table) section of the original object (which dispatches the call after asking the dynamic linker to resolve the symbol). To work around this, you can try to compile the code to be position-independent: then, the compiler cannot prepare the pointer at compile time any more and <strong>gcc</strong>(1) will generate code that just loads the final symbol address from the <em>got</em> (Global Offset Table) at run time before passing it to <strong>dladdr</strong>().</p>
+<h1>SEE ALSO</h1>
+<p><strong>dl_iterate_phdr</strong>(3), <strong>dlinfo</strong>(3), <strong>dlopen</strong>(3), <strong>dlsym</strong>(3), <strong>ld.so</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

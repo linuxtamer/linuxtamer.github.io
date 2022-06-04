@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command getgrouplist</title><meta name="description" content="Linux command getgrouplist get list of groups to which a user belongs"><meta name="keywords" content="linux, command, getgrouplist, bsd, get list of groups to which a user belongs"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getgrouplist - get list of groups to which a user belongs</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;grp.h&gt;</strong></p>
+<p><strong>int getgrouplist(const char *</strong><em>user</em><strong>, gid_t </strong><em>group</em><strong>,</strong><br />
+<strong> gid_t *</strong><em>groups</em><strong>, int *</strong><em>ngroups</em><strong>);</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>getgrouplist</strong>(): Since glibc 2.19: _DEFAULT_SOURCE Glibc 2.19 and earlier: _BSD_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>getgrouplist</strong>() function scans the group database (see <strong>group</strong>(5)) to obtain the list of groups that <em>user</em> belongs to. Up to <em>*ngroups</em> of these groups are returned in the array <em>groups</em>.</p>
+<p>If it was not among the groups defined for <em>user</em> in the group database, then <em>group</em> is included in the list of groups returned by <strong>getgrouplist</strong>(); typically this argument is specified as the group ID from the password record for <em>user</em>.</p>
+<p>The <em>ngroups</em> argument is a value-result argument: on return it always contains the number of groups found for <em>user</em>, including <em>group</em>; this value may be greater than the number of groups stored in <em>groups</em>.</p>
+<h1>RETURN VALUE</h1>
+<p>If the number of groups of which <em>user</em> is a member is less than or equal to <em>*ngroups</em>, then the value <em>*ngroups</em> is returned.</p>
+<p>If the user is a member of more than <em>*ngroups</em> groups, then <strong>getgrouplist</strong>() returns -1. In this case, the value returned in <em>*ngroups</em> can be used to resize the buffer passed to a further call <strong>getgrouplist</strong>().</p>
+<h1>VERSIONS</h1>
+<p>This function is present since glibc 2.2.4.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getgrouplist</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>This function is nonstandard; it appears on most BSDs.</p>
+<h1>BUGS</h1>
+<p>In glibc versions before 2.3.3, the implementation of this function contains a buffer-overrun bug: it returns the complete list of groups for <em>user</em> in the array <em>groups</em>, even when the number of groups exceeds <em>*ngroups</em>.</p>
+<h1>EXAMPLES</h1>
+<p>The program below displays the group list for the user named in its first command-line argument. The second command-line argument specifies the <em>ngroups</em> value to be supplied to <strong>getgrouplist</strong>(). The following shell session shows examples of the use of this program:</p>
+<pre><code>$ ./a.out cecilia 0
+getgrouplist() returned -1; ngroups = 3
+$ ./a.out cecilia 3
+ngroups = 3
+16 (dialout)
+33 (video)
+100 (users)</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;grp.h&gt;
+#include &lt;pwd.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    int ngroups;
+    struct passwd *pw;
+    struct group *gr;
+
+    if (argc != 3) {
+        fprintf(stderr, &quot;Usage: %s &lt;user&gt; &lt;ngroups&gt;\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    ngroups = atoi(argv[2]);
+
+    gid_t *groups = malloc(sizeof(*groups) * ngroups);
+    if (groups == NULL) {
+        perror(&quot;malloc&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Fetch passwd structure (contains first group ID for user) */
+
+    pw = getpwnam(argv[1]);
+    if (pw == NULL) {
+        perror(&quot;getpwnam&quot;);
+        exit(EXIT_SUCCESS);
+    }
+
+    /* Retrieve group list */
+
+    if (getgrouplist(argv[1], pw-&gt;pw_gid, groups, &amp;ngroups) == -1) {
+        fprintf(stderr, &quot;getgrouplist() returned -1; ngroups = %d\n&quot;,
+                ngroups);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Display list of retrieved groups, along with group names */
+
+    fprintf(stderr, &quot;ngroups = %d\n&quot;, ngroups);
+    for (int j = 0; j &lt; ngroups; j++) {
+        printf(&quot;%d&quot;, groups[j]);
+        gr = getgrgid(groups[j]);
+        if (gr != NULL)
+            printf(&quot; (%s)&quot;, gr-&gt;gr_name);
+        printf(&quot;\n&quot;);
+    }
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>getgroups</strong>(2), <strong>setgroups</strong>(2), <strong>getgrent</strong>(3), <strong>group_member</strong>(3), <strong>group</strong>(5), <strong>passwd</strong>(5)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

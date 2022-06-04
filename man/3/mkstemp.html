@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mkstemp</title><meta name="description" content="Linux command mkstemp create a unique temporary file"><meta name="keywords" content="linux, command, mkstemp, bsd, create a unique temporary file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mkstemp, mkostemp, mkstemps, mkostemps - create a unique temporary file</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdlib.h&gt;
+
+int mkstemp(char *template);
+
+int mkostemp(char *template, int flags);
+
+int mkstemps(char *template, int suffixlen);
+
+int mkostemps(char *template, int suffixlen, int flags);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>mkstemp</strong>():</p>
+<blockquote>
+<p>_XOPEN_SOURCE &gt;= 500 || /* Since glibc 2.12: */ _POSIX_C_SOURCE &gt;= 200809L || /* Glibc versions &lt;= 2.19: */ _SVID_SOURCE || _BSD_SOURCE</p>
+</blockquote>
+<p><strong>mkostemp</strong>(): _GNU_SOURCE<br />
+<strong>mkstemps</strong>(): /* Glibc since 2.19: */ _DEFAULT_SOURCE || /* Glibc versions &lt;= 2.19: */ _SVID_SOURCE || _BSD_SOURCE<br />
+<strong>mkostemps</strong>(): _GNU_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>mkstemp</strong>() function generates a unique temporary filename from <em>template</em>, creates and opens the file, and returns an open file descriptor for the file.</p>
+<p>The last six characters of <em>template</em> must be "XXXXXX" and these are replaced with a string that makes the filename unique. Since it will be modified, <em>template</em> must not be a string constant, but should be declared as a character array.</p>
+<p>The file is created with permissions 0600, that is, read plus write for owner only. The returned file descriptor provides both read and write access to the file. The file is opened with the <strong>open</strong>(2) <strong>O_EXCL</strong> flag, guaranteeing that the caller is the process that creates the file.</p>
+<p>The <strong>mkostemp</strong>() function is like <strong>mkstemp</strong>(), with the difference that the following bits—with the same meaning as for <strong>open</strong>(2)—may be specified in <em>flags</em>: <strong>O_APPEND</strong>, <strong>O_CLOEXEC</strong>, and <strong>O_SYNC</strong>. Note that when creating the file, <strong>mkostemp</strong>() includes the values <strong>O_RDWR</strong>, <strong>O_CREAT</strong>, and <strong>O_EXCL</strong> in the <em>flags</em> argument given to <strong>open</strong>(2); including these values in the <em>flags</em> argument given to <strong>mkostemp</strong>() is unnecessary, and produces errors on some systems.</p>
+<p>The <strong>mkstemps</strong>() function is like <strong>mkstemp</strong>(), except that the string in <em>template</em> contains a suffix of <em>suffixlen</em> characters. Thus, <em>template</em> is of the form <em>prefixXXXXXXsuffix</em>, and the string XXXXXX is modified as for <strong>mkstemp</strong>().</p>
+<p>The <strong>mkostemps</strong>() function is to <strong>mkstemps</strong>() as <strong>mkostemp</strong>() is to <strong>mkstemp</strong>().</p>
+<h1>RETURN VALUE</h1>
+<p>On success, these functions return the file descriptor of the temporary file. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EEXIST</strong></dt>
+<dd><p>Could not create a unique temporary filename. Now the contents of <em>template</em> are undefined.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>For <strong>mkstemp</strong>() and <strong>mkostemp</strong>(): The last six characters of <em>template</em> were not XXXXXX; now <em>template</em> is unchanged.</p>
+<p>For <strong>mkstemps</strong>() and <strong>mkostemps</strong>(): <em>template</em> is less than <em>(6 + suffixlen)</em> characters long, or the last 6 characters before the suffix in <em>template</em> were not XXXXXX.</p>
+</dd>
+</dl>
+<p>These functions may also fail with any of the errors described for <strong>open</strong>(2).</p>
+<h1>VERSIONS</h1>
+<p><strong>mkostemp</strong>() is available since glibc 2.7. <strong>mkstemps</strong>() and <strong>mkostemps</strong>() are available since glibc 2.11.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>mkstemp</strong>(), <strong>mkostemp</strong>(),<br />
+<strong>mkstemps</strong>(), <strong>mkostemps</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p><strong>mkstemp</strong>(): 4.3BSD, POSIX.1-2001.</p>
+<p><strong>mkstemps</strong>(): unstandardized, but appears on several other systems.</p>
+<p><strong>mkostemp</strong>() and <strong>mkostemps</strong>(): are glibc extensions.</p>
+<h1>NOTES</h1>
+<p>In glibc versions 2.06 and earlier, the file is created with permissions 0666, that is, read and write for all users. This old behavior may be a security risk, especially since other UNIX flavors use 0600, and somebody might overlook this detail when porting programs. POSIX.1-2008 adds a requirement that the file be created with mode 0600.</p>
+<p>More generally, the POSIX specification of <strong>mkstemp</strong>() does not say anything about file modes, so the application should make sure its file mode creation mask (see <strong>umask</strong>(2)) is set appropriately before calling <strong>mkstemp</strong>() (and <strong>mkostemp</strong>()).</p>
+<h1>SEE ALSO</h1>
+<p><strong>mkdtemp</strong>(3), <strong>mktemp</strong>(3), <strong>tempnam</strong>(3), <strong>tmpfile</strong>(3), <strong>tmpnam</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command XCompose</title><meta name="description" content="Linux command XCompose X client mappings for multi-key input sequences"><meta name="keywords" content="linux, command, XCompose, bsd, X client mappings for multi-key input sequences"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>Compose - X client mappings for multi-key input sequences</p>
+<h1>DESCRIPTION</h1>
+<p>The X library, libX11, provides a simple input method for characters beyond those represented on typical keyboards using sequences of key strokes that are combined to enter a single character.</p>
+<p>The compose file is searched for in the following order:</p>
+<ul>
+<li><p>If the environment variable <strong>$XCOMPOSEFILE</strong> is set, its value is used as the name of the Compose file.</p></li>
+<li><p>If the user's home directory has a file named <em>.XCompose</em>, it is used as the Compose file.</p></li>
+<li><p>The system provided compose file is used by mapping the locale to a compose file from the list in <em>/usr/share/X11/locale/compose.dir</em>.</p></li>
+</ul>
+<p>Compose files can use an <strong>include</strong> instruction. This allows local modifications to be made to existing compose files without including all of the content directly. For example, the system's iso8859-1 compose file can be included with a line like this:</p>
+<blockquote>
+<p><strong>include </strong><em>%S/iso8859-1/Compose</em><strong></strong></p>
+</blockquote>
+<p>There are several substitutions that can be made in the file name of the include instruction:</p>
+<dl>
+<dt><em>%H</em></dt>
+<dd><p>expands to the user's home directory (the <strong>$HOME</strong> environment variable)</p>
+</dd>
+<dt><em>%L</em></dt>
+<dd><p>expands to the name of the locale specific Compose file (i.e., <em>/usr/share/X11/locale/&lt;localename&gt;/Compose</em>)</p>
+</dd>
+<dt><em>%S</em></dt>
+<dd><p>expands to the name of the system directory for Compose files (i.e., <em>/usr/share/X11/locale</em>)</p>
+</dd>
+</dl>
+<p>For example, you can include in your compose file the default Compose file by using:</p>
+<blockquote>
+<p><strong>include %L</strong></p>
+</blockquote>
+<p>and then rewrite only the few rules that you need to change. New compose rules can be added, and previous ones replaced.</p>
+<h1>FILE FORMAT</h1>
+<p>Compose files are plain text files, with a separate line for each compose sequence. Comments begin with <strong>#</strong> characters. Each compose sequence specifies one or more events and a resulting input sequence, with an optional comment at the end of the line:</p>
+<blockquote>
+<p><em>EVENT</em> [<em>EVENT</em>...] <strong>:</strong> <em>RESULT</em> [<strong>#</strong> <em>COMMENT</em>]</p>
+</blockquote>
+<p>Each event consists of a specified input keysym, and optional modifier states:</p>
+<blockquote>
+<p>[([<strong>!</strong>] ([<strong>~</strong>] <em>MODIFIER</em>)...) | <strong>None</strong>] <strong>&lt;</strong><em>keysym</em><strong>&gt;</strong></p>
+</blockquote>
+<p>If the modifier list is preceded by <strong>!</strong> it must match exactly. MODIFIER may be one of Ctrl, Lock, Caps, Shift, Alt or Meta. Each modifier may be preceded by a <strong>~</strong> character to indicate that the modifier must not be present. If <strong>None</strong> is specified, no modifier may be present.</p>
+<p>The result specifies a string, keysym, or both, that the X client receives as input when the sequence of events is input:</p>
+<blockquote>
+<p><em>STRING</em> | <em>keysym</em> | <em>STRING</em> <em>keysym</em></p>
+</blockquote>
+<p>Keysyms are specified without the <strong>XK_</strong> prefix.</p>
+<p>Strings may be direct text encoded in the locale for which the compose file is to be used, or an escaped octal or hexadecimal character code. Octal codes are specified as <strong>\123</strong> and hexadecimal codes as <strong>\x3a</strong>. It is not necessary to specify in the right part of a rule a locale encoded string in addition to the keysym name. If the string is omitted, Xlib figures it out from the keysym according to the current locale. I.e., if a rule looks like:</p>
+<blockquote>
+<p><strong>&lt;dead_grave&gt; &lt;A&gt; : \300 Agrave</strong></p>
+</blockquote>
+<p>the result of the composition is always the letter with the "\300" code. But if the rule is:</p>
+<blockquote>
+<p><strong>&lt;dead_grave&gt; &lt;A&gt; : Agrave</strong></p>
+</blockquote>
+<p>the result depends on how Agrave is mapped in the current locale.</p>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>XCOMPOSEFILE</strong></dt>
+<dd><p>File to use for compose sequences.</p>
+</dd>
+<dt><strong>XCOMPOSECACHE</strong></dt>
+<dd><p>Directory to use for caching compiled compose files.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>$HOME/.XCompose</em></dt>
+<dd><p>User default compose file if XCOMPOSEFILE is not set.</p>
+</dd>
+<dt><em>/usr/share/X11/locale/compose.dir</em></dt>
+<dd><p>File listing the compose file path to use for each locale.</p>
+</dd>
+<dt><em>/usr/share/X11/locale/&lt;localemapping&gt;/Compose</em></dt>
+<dd><p>System default compose file for the locale, mapped via compose.dir.</p>
+</dd>
+<dt><em>/var/cache/libx11/compose/</em></dt>
+<dd><p>System-wide cache directory for compiled compose files.</p>
+</dd>
+<dt><em>$HOME/.compose-cache/</em></dt>
+<dd><p>Per-user cache directory for compiled compose files.</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>XLookupString</strong>(3), <strong>XmbLookupString</strong>(3), <strong>XwcLookupString</strong>(3), <strong>Xutf8LookupString</strong>(3), <strong>mkcomposecache</strong>(1), <strong>locale</strong>(7).<br />
+<em>Xlib - C Language X Interface</em></p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

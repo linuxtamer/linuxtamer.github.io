@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command openat2</title><meta name="description" content="Linux command openat2 open and possibly create a file (extended)"><meta name="keywords" content="linux, command, openat2, bsd, open and possibly create a file (extended)"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>openat2 - open and possibly create a file (extended)</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;linux/openat2.h&gt;
+
+long openat2(int dirfd, const char *pathname,
+ struct open_how *how, size_t size);</code></pre>
+<p><em>Note</em>: There is no glibc wrapper for this system call; see NOTES.</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>openat2</strong>() system call is an extension of <strong>openat</strong>(2) and provides a superset of its functionality.</p>
+<p>The <strong>openat2</strong>() system call opens the file specified by <em>pathname</em>. If the specified file does not exist, it may optionally (if <strong>O_CREAT</strong> is specified in <em>how.flags</em>) be created.</p>
+<p>As with <strong>openat</strong>(2), if <em>pathname</em> is a relative pathname, then it is interpreted relative to the directory referred to by the file descriptor <em>dirfd</em> (or the current working directory of the calling process, if <em>dirfd</em> is the special value <strong>AT_FDCWD</strong>). If <em>pathname</em> is an absolute pathname, then <em>dirfd</em> is ignored (unless <em>how.resolve</em> contains <strong>RESOLVE_IN_ROOT</strong>, in which case <em>pathname</em> is resolved relative to <em>dirfd</em>).</p>
+<p>Rather than taking a single <em>flags</em> argument, an extensible structure (<em>how</em>) is passed to allow for future extensions. The <em>size</em> argument must be specified as <em>sizeof(struct open_how)</em>.</p>
+<h2>The open_how structure</h2>
+<p>The <em>how</em> argument specifies how <em>pathname</em> should be opened, and acts as a superset of the <em>flags</em> and <em>mode</em> arguments to <strong>openat</strong>(2). This argument is a pointer to a structure of the following form:</p>
+<pre><code>struct open_how {
+    u64 flags;    /* O_* flags */
+    u64 mode;     /* Mode for O_{CREAT,TMPFILE} */
+    u64 resolve;  /* RESOLVE_* flags */
+    /* ... */
+};</code></pre>
+<p>Any future extensions to <strong>openat2</strong>() will be implemented as new fields appended to the above structure, with a zero value in a new field resulting in the kernel behaving as though that extension field was not present. Therefore, the caller <em>must</em> zero-fill this structure on initialization. (See the "Extensibility" section of the <strong>NOTES</strong> for more detail on why this is necessary.)</p>
+<p>The fields of the <em>open_how</em> structure are as follows:</p>
+<dl>
+<dt><em>flags</em></dt>
+<dd><p>This field specifies the file creation and file status flags to use when opening the file. All of the <strong>O_*</strong> flags defined for <strong>openat</strong>(2) are valid <strong>openat2</strong>() flag values.</p>
+<p>Whereas <strong>openat</strong>(2) ignores unknown bits in its <em>flags</em> argument, <strong>openat2</strong>() returns an error if unknown or conflicting flags are specified in <em>how.flags</em>.</p>
+</dd>
+<dt><em>mode</em></dt>
+<dd><p>This field specifies the mode for the new file, with identical semantics to the <em>mode</em> argument of <strong>openat</strong>(2).</p>
+<p>Whereas <strong>openat</strong>(2) ignores bits other than those in the range <em>07777</em> in its <em>mode</em> argument, <strong>openat2</strong>() returns an error if <em>how.mode</em> contains bits other than <em>07777</em>. Similarly, an error is returned if <strong>openat2</strong>() is called with a nonzero <em>how.mode</em> and <em>how.flags</em> does not contain <strong>O_CREAT</strong> or <strong>O_TMPFILE</strong>.</p>
+</dd>
+<dt><em>resolve</em></dt>
+<dd><p>This is a bit-mask of flags that modify the way in which <strong>all</strong> components of <em>pathname</em> will be resolved. (See <strong>path_resolution</strong>(7) for background information.)</p>
+<p>The primary use case for these flags is to allow trusted programs to restrict how untrusted paths (or paths inside untrusted directories) are resolved. The full list of <em>resolve</em> flags is as follows:</p>
+<dl>
+<dt><strong>RESOLVE_BENEATH</strong></dt>
+<dd><p>Do not permit the path resolution to succeed if any component of the resolution is not a descendant of the directory indicated by <em>dirfd</em>. This causes absolute symbolic links (and absolute values of <em>pathname</em>) to be rejected.</p>
+<p>Currently, this flag also disables magic-link resolution (see below). However, this may change in the future. Therefore, to ensure that magic links are not resolved, the caller should explicitly specify <strong>RESOLVE_NO_MAGICLINKS</strong>.</p>
+</dd>
+<dt><strong>RESOLVE_IN_ROOT</strong></dt>
+<dd><p>Treat the directory referred to by <em>dirfd</em> as the root directory while resolving <em>pathname</em>. Absolute symbolic links are interpreted relative to <em>dirfd</em>. If a prefix component of <em>pathname</em> equates to <em>dirfd</em>, then an immediately following <em>..</em> component likewise equates to <em>dirfd</em> (just as <em>/..</em> is traditionally equivalent to <em>/</em>). If <em>pathname</em> is an absolute path, it is also interpreted relative to <em>dirfd</em>.</p>
+<p>The effect of this flag is as though the calling process had used <strong>chroot</strong>(2) to (temporarily) modify its root directory (to the directory referred to by <em>dirfd</em>). However, unlike <strong>chroot</strong>(2) (which changes the filesystem root permanently for a process), <strong>RESOLVE_IN_ROOT</strong> allows a program to efficiently restrict path resolution on a per-open basis.</p>
+<p>Currently, this flag also disables magic-link resolution. However, this may change in the future. Therefore, to ensure that magic links are not resolved, the caller should explicitly specify <strong>RESOLVE_NO_MAGICLINKS</strong>.</p>
+</dd>
+<dt><strong>RESOLVE_NO_MAGICLINKS</strong></dt>
+<dd><p>Disallow all magic-link resolution during path resolution.</p>
+<p>Magic links are symbolic link-like objects that are most notably found in <strong>proc</strong>(5); examples include <em>/proc/[pid]/exe</em> and <em>/proc/[pid]/fd/*</em>. (See <strong>symlink</strong>(7) for more details.)</p>
+<p>Unknowingly opening magic links can be risky for some applications. Examples of such risks include the following:</p>
+<ul>
+<li><p>If the process opening a pathname is a controlling process that currently has no controlling terminal (see <strong>credentials</strong>(7)), then opening a magic link inside <em>/proc/[pid]/fd</em> that happens to refer to a terminal would cause the process to acquire a controlling terminal.</p></li>
+<li><p>In a containerized environment, a magic link inside <em>/proc</em> may refer to an object outside the container, and thus may provide a means to escape from the container.</p></li>
+</ul>
+<p>Because of such risks, an application may prefer to disable magic link resolution using the <strong>RESOLVE_NO_MAGICLINKS</strong> flag.</p>
+<p>If the trailing component (i.e., basename) of <em>pathname</em> is a magic link, <em>how.resolve</em> contains <strong>RESOLVE_NO_MAGICLINKS</strong>, and <em>how.flags</em> contains both <strong>O_PATH</strong> and <strong>O_NOFOLLOW</strong>, then an <strong>O_PATH</strong> file descriptor referencing the magic link will be returned.</p>
+</dd>
+<dt><strong>RESOLVE_NO_SYMLINKS</strong></dt>
+<dd><p>Disallow resolution of symbolic links during path resolution. This option implies <strong>RESOLVE_NO_MAGICLINKS</strong>.</p>
+<p>If the trailing component (i.e., basename) of <em>pathname</em> is a symbolic link, <em>how.resolve</em> contains <strong>RESOLVE_NO_SYMLINKS</strong>, and <em>how.flags</em> contains both <strong>O_PATH</strong> and <strong>O_NOFOLLOW</strong>, then an <strong>O_PATH</strong> file descriptor referencing the symbolic link will be returned.</p>
+<p>Note that the effect of the <strong>RESOLVE_NO_SYMLINKS</strong> flag, which affects the treatment of symbolic links in all of the components of <em>pathname</em>, differs from the effect of the <strong>O_NOFOLLOW</strong> file creation flag (in <em>how.flags</em>), which affects the handling of symbolic links only in the final component of <em>pathname</em>.</p>
+<p>Applications that employ the <strong>RESOLVE_NO_SYMLINKS</strong> flag are encouraged to make its use configurable (unless it is used for a specific security purpose), as symbolic links are very widely used by end-users. Setting this flag indiscriminately—i.e., for purposes not specifically related to security—for all uses of <strong>openat2</strong>() may result in spurious errors on previously functional systems. This may occur if, for example, a system pathname that is used by an application is modified (e.g., in a new distribution release) so that a pathname component (now) contains a symbolic link.</p>
+</dd>
+<dt><strong>RESOLVE_NO_XDEV</strong></dt>
+<dd><p>Disallow traversal of mount points during path resolution (including all bind mounts). Consequently, <em>pathname</em> must either be on the same mount as the directory referred to by <em>dirfd</em>, or on the same mount as the current working directory if <em>dirfd</em> is specified as <strong>AT_FDCWD</strong>.</p>
+<p>Applications that employ the <strong>RESOLVE_NO_XDEV</strong> flag are encouraged to make its use configurable (unless it is used for a specific security purpose), as bind mounts are widely used by end-users. Setting this flag indiscriminately—i.e., for purposes not specifically related to security—for all uses of <strong>openat2</strong>() may result in spurious errors on previously functional systems. This may occur if, for example, a system pathname that is used by an application is modified (e.g., in a new distribution release) so that a pathname component (now) contains a bind mount.</p>
+</dd>
+</dl>
+<p>If any bits other than those listed above are set in <em>how.resolve</em>, an error is returned.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, a new file descriptor is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<p>The set of errors returned by <strong>openat2</strong>() includes all of the errors returned by <strong>openat</strong>(2), as well as the following additional errors:</p>
+<dl>
+<dt><strong>E2BIG</strong></dt>
+<dd><p>An extension that this kernel does not support was specified in <em>how</em>. (See the "Extensibility" section of <strong>NOTES</strong> for more detail on how extensions are handled.)</p>
+</dd>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p><em>how.resolve</em> contains either <strong>RESOLVE_IN_ROOT</strong> or <strong>RESOLVE_BENEATH</strong>, and the kernel could not ensure that a ".." component didn't escape (due to a race condition or potential attack). The caller may choose to retry the <strong>openat2</strong>() call.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>An unknown flag or invalid value was specified in <em>how</em>.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>mode</em> is nonzero, but <em>how.flags</em> does not contain <strong>O_CREAT</strong> or <strong>O_TMPFILE</strong>.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>size</em> was smaller than any known version of <em>struct open_how</em>.</p>
+</dd>
+<dt><strong>ELOOP</strong></dt>
+<dd><p><em>how.resolve</em> contains <strong>RESOLVE_NO_SYMLINKS</strong>, and one of the path components was a symbolic link (or magic link).</p>
+</dd>
+<dt><strong>ELOOP</strong></dt>
+<dd><p><em>how.resolve</em> contains <strong>RESOLVE_NO_MAGICLINKS</strong>, and one of the path components was a magic link.</p>
+</dd>
+<dt><strong>EXDEV</strong></dt>
+<dd><p><em>how.resolve</em> contains either <strong>RESOLVE_IN_ROOT</strong> or <strong>RESOLVE_BENEATH</strong>, and an escape from the root during path resolution was detected.</p>
+</dd>
+<dt><strong>EXDEV</strong></dt>
+<dd><p><em>how.resolve</em> contains <strong>RESOLVE_NO_XDEV</strong>, and a path component crosses a mount point.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>openat2</strong>() first appeared in Linux 5.6.</p>
+<h1>CONFORMING TO</h1>
+<p>This system call is Linux-specific.</p>
+<p>The semantics of <strong>RESOLVE_BENEATH</strong> were modeled after FreeBSD's <strong>O_BENEATH</strong>.</p>
+<h1>NOTES</h1>
+<p>Glibc does not provide a wrapper for this system call; call it using <strong>syscall</strong>(2).</p>
+<h2>Extensibility</h2>
+<p>In order to allow for future extensibility, <strong>openat2</strong>() requires the user-space application to specify the size of the <em>open_how</em> structure that it is passing. By providing this information, it is possible for <strong>openat2</strong>() to provide both forwards- and backwards-compatibility, with <em>size</em> acting as an implicit version number. (Because new extension fields will always be appended, the structure size will always increase.) This extensibility design is very similar to other system calls such as <strong>sched_setattr</strong>(2), <strong>perf_event_open</strong>(2), and <strong>clone3</strong>(2).</p>
+<p>If we let <em>usize</em> be the size of the structure as specified by the user-space application, and <em>ksize</em> be the size of the structure which the kernel supports, then there are three cases to consider:</p>
+<ul>
+<li><p>If <em>ksize</em> equals <em>usize</em>, then there is no version mismatch and <em>how</em> can be used verbatim.</p></li>
+<li><p>If <em>ksize</em> is larger than <em>usize</em>, then there are some extension fields that the kernel supports which the user-space application is unaware of. Because a zero value in any added extension field signifies a no-op, the kernel treats all of the extension fields not provided by the user-space application as having zero values. This provides backwards-compatibility.</p></li>
+<li><p>If <em>ksize</em> is smaller than <em>usize</em>, then there are some extension fields which the user-space application is aware of but which the kernel does not support. Because any extension field must have its zero values signify a no-op, the kernel can safely ignore the unsupported extension fields if they are all-zero. If any unsupported extension fields are nonzero, then -1 is returned and <em>errno</em> is set to <strong>E2BIG</strong>. This provides forwards-compatibility.</p></li>
+</ul>
+<p>Because the definition of <em>struct open_how</em> may change in the future (with new fields being added when system headers are updated), user-space applications should zero-fill <em>struct open_how</em> to ensure that recompiling the program with new headers will not result in spurious errors at runtime. The simplest way is to use a designated initializer:</p>
+<pre><code>struct open_how how = { .flags = O_RDWR,
+                        .resolve = RESOLVE_IN_ROOT };</code></pre>
+<p>or explicitly using <strong>memset</strong>(3) or similar:</p>
+<pre><code>struct open_how how;
+memset(&amp;how, 0, sizeof(how));
+how.flags = O_RDWR;
+how.resolve = RESOLVE_IN_ROOT;</code></pre>
+<p>A user-space application that wishes to determine which extensions the running kernel supports can do so by conducting a binary search on <em>size</em> with a structure which has every byte nonzero (to find the largest value which doesn't produce an error of <strong>E2BIG</strong>).</p>
+<h1>SEE ALSO</h1>
+<p><strong>openat</strong>(2), <strong>path_resolution</strong>(7), <strong>symlink</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

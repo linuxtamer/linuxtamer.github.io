@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command update-alternatives</title><meta name="description" content="Linux command update-alternatives maintain symbolic links determining default commands"><meta name="keywords" content="linux, command, update-alternatives, bsd, maintain symbolic links determining default commands"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>update-alternatives - maintain symbolic links determining default commands</p>
+<h1>SYNOPSIS</h1>
+<p><strong>update-alternatives</strong> [<em>option</em>...] <em>command</em></p>
+<h1>DESCRIPTION</h1>
+<p><strong>update-alternatives</strong> creates, removes, maintains and displays information about the symbolic links comprising the Debian alternatives system.</p>
+<p>It is possible for several programs fulfilling the same or similar functions to be installed on a single system at the same time. For example, many systems have several text editors installed at once. This gives choice to the users of a system, allowing each to use a different editor, if desired, but makes it difficult for a program to make a good choice for an editor to invoke if the user has not specified a particular preference.</p>
+<p>Debian's alternatives system aims to solve this problem. A generic name in the filesystem is shared by all files providing interchangeable functionality. The alternatives system and the system administrator together determine which actual file is referenced by this generic name. For example, if the text editors <strong>ed</strong>(1) and <strong>nvi</strong>(1) are both installed on the system, the alternatives system will cause the generic name <em>/usr/bin/editor</em> to refer to <em>/usr/bin/nvi</em> by default. The system administrator can override this and cause it to refer to <em>/usr/bin/ed</em> instead, and the alternatives system will not alter this setting until explicitly requested to do so.</p>
+<p>The generic name is not a direct symbolic link to the selected alternative. Instead, it is a symbolic link to a name in the <em>alternatives</em> <em>directory</em>, which in turn is a symbolic link to the actual file referenced. This is done so that the system administrator's changes can be confined within the <em>/etc</em> directory: the FHS (q.v.) gives reasons why this is a Good Thing.</p>
+<p>When each package providing a file with a particular functionality is installed, changed or removed, <strong>update-alternatives</strong> is called to update information about that file in the alternatives system. <strong>update-alternatives</strong> is usually called from the following Debian package maintainer scripts, <strong>postinst</strong> (configure) to install the alternative and from <strong>prerm</strong> and <strong>postrm</strong> (remove) to remove the alternative. <strong>Note:</strong> in most (if not all) cases no other maintainer script actions should call <strong>update-alternatives</strong>, in particular neither of <strong>upgrade</strong> nor <strong>disappear</strong>, as any other such action can lose the manual state of an alternative, or make the alternative temporarily flip-flop, or completely switch when several of them have the same priority.</p>
+<p>It is often useful for a number of alternatives to be synchronized, so that they are changed as a group; for example, when several versions of the <strong>vi</strong>(1) editor are installed, the man page referenced by <em>/usr/share/man/man1/vi.1</em> should correspond to the executable referenced by <em>/usr/bin/vi</em>. <strong>update-alternatives</strong> handles this by means of <em>master</em> and <em>slave</em> links; when the master is changed, any associated slaves are changed too. A master link and its associated slaves make up a <em>link</em> <em>group</em>.</p>
+<p>Each link group is, at any given time, in one of two modes: automatic or manual. When a group is in automatic mode, the alternatives system will automatically decide, as packages are installed and removed, whether and how to update the links. In manual mode, the alternatives system will retain the choice of the administrator and avoid changing the links (except when something is broken).</p>
+<p>Link groups are in automatic mode when they are first introduced to the system. If the system administrator makes changes to the system's automatic settings, this will be noticed the next time <strong>update-alternatives</strong> is run on the changed link's group, and the group will automatically be switched to manual mode.</p>
+<p>Each alternative has a <em>priority</em> associated with it. When a link group is in automatic mode, the alternatives pointed to by members of the group will be those which have the highest priority.</p>
+<p>When using the <strong>--config</strong> option, <strong>update-alternatives</strong> will list all of the choices for the link group of which given <em>name</em> is the master alternative name. The current choice is marked with a ‘*’. You will then be prompted for your choice regarding this link group. Depending on the choice made, the link group might no longer be in <em>auto</em> mode. You will need to use the <strong>--auto</strong> option in order to return to the automatic mode (or you can rerun <strong>--config</strong> and select the entry marked as automatic).</p>
+<p>If you want to configure non-interactively you can use the <strong>--set</strong> option instead (see below).</p>
+<p>Different packages providing the same file need to do so <strong>cooperatively</strong>. In other words, the usage of <strong>update-alternatives</strong> is <strong>mandatory</strong> for all involved packages in such case. It is not possible to override some file in a package that does not employ the <strong>update-alternatives</strong> mechanism.</p>
+<h1>TERMINOLOGY</h1>
+<p>Since the activities of <strong>update-alternatives</strong> are quite involved, some specific terms will help to explain its operation.</p>
+<ul>
+<li><p>A name, like <em>/usr/bin/editor</em>, which refers, via the alternatives system, to one of a number of files of similar function.</p></li>
+<li><p>The name of a symbolic link in the alternatives directory.</p></li>
+<li><p>The name of a specific file in the filesystem, which may be made accessible via a generic name using the alternatives system.</p></li>
+<li><p>A directory, by default <em>/etc/alternatives</em>, containing the symlinks.</p></li>
+<li><p>A directory, by default <em>/var/lib/dpkg/alternatives</em>, containing <strong>update-alternatives</strong>' state information.</p></li>
+<li><p>A set of related symlinks, intended to be updated as a group.</p></li>
+<li><p>The alternative link in a link group which determines how the other links in the group are configured.</p></li>
+<li><p>An alternative link in a link group which is controlled by the setting of the master link.</p></li>
+<li><p>When a link group is in automatic mode, the alternatives system ensures that the links in the group point to the highest priority alternative appropriate for the group.</p></li>
+<li><p>When a link group is in manual mode, the alternatives system will not make any changes to the system administrator's settings.</p></li>
+</ul>
+<h1>COMMANDS</h1>
+<ul>
+<li><p>Add a group of alternatives to the system. <em>link</em> is the generic name for the master link, <em>name</em> is the name of its symlink in the alternatives directory, and <em>path</em> is the alternative being introduced for the master link. The arguments after <strong>--slave</strong> are the generic name, symlink name in the alternatives directory and the alternative path for a slave link. Zero or more <strong>--slave</strong> options, each followed by three arguments, may be specified. Note that the master alternative must exist or the call will fail. However if a slave alternative doesn't exist, the corresponding slave alternative link will simply not be installed (a warning will still be displayed). If some real file is installed where an alternative link has to be installed, it is kept unless <strong>--force</strong> is used. If the alternative name specified exists already in the alternatives system's records, the information supplied will be added as a new set of alternatives for the group. Otherwise, a new group, set to automatic mode, will be added with this information. If the group is in automatic mode, and the newly added alternatives' priority is higher than any other installed alternatives for this group, the symlinks will be updated to point to the newly added alternatives.</p></li>
+<li><p>Set the program <em>path</em> as alternative for <em>name</em>. This is equivalent to <strong>--config</strong> but is non-interactive and thus scriptable.</p></li>
+<li><p>Remove an alternative and all of its associated slave links. <em>name</em> is a name in the alternatives directory, and <em>path</em> is an absolute filename to which <em>name</em> could be linked. If <em>name</em> is indeed linked to <em>path</em>, <em>name</em> will be updated to point to another appropriate alternative (and the group is put back in automatic mode), or removed if there is no such alternative left. Associated slave links will be updated or removed, correspondingly. If the link is not currently pointing to <em>path</em>, no links are changed; only the information about the alternative is removed.</p></li>
+<li><p>Remove all alternatives and all of their associated slave links. <em>name</em> is a name in the alternatives directory.</p></li>
+<li><p>Call <strong>--config</strong> on all alternatives. It can be usefully combined with <strong>--skip-auto</strong> to review and configure all alternatives which are not configured in automatic mode. Broken alternatives are also displayed. Thus a simple way to fix all broken alternatives is to call <strong>yes '' | update-alternatives --force --all</strong>.</p></li>
+<li><p>Switch the link group behind the alternative for <em>name</em> to automatic mode. In the process, the master symlink and its slaves are updated to point to the highest priority installed alternatives.</p></li>
+<li><p>Display information about the link group. Information displayed includes the group's mode (auto or manual), the master and slave links, which alternative the master link currently points to, what other alternatives are available (and their corresponding slave alternatives), and the highest priority alternative currently installed.</p></li>
+<li><p>List all master alternative names (those controlling a link group) and their status (since version 1.15.0). Each line contains up to 3 fields (separated by one or more spaces). The first field is the alternative name, the second one is the status (either <strong>auto</strong> or <strong>manual</strong>), and the last one contains the current choice in the alternative (beware: it's a filename and thus might contain spaces).</p></li>
+<li><p>Read configuration of alternatives on standard input in the format generated by <strong>--get-selections</strong> and reconfigure them accordingly (since version 1.15.0).</p></li>
+<li><p>Display information about the link group like <strong>--display</strong> does, but in a machine parseable way (since version 1.15.0, see section <strong>QUERY FORMAT</strong> below).</p></li>
+<li><p>Display all targets of the link group.</p></li>
+<li><p>Show available alternatives for a link group and allow the user to interactively select which one to use. The link group is updated.</p></li>
+<li><p>Show the usage message and exit.</p></li>
+<li><p>Show the version and exit.</p></li>
+</ul>
+<h1>OPTIONS</h1>
+<ul>
+<li><p>Specifies the alternatives directory, when this is to be different from the default. Defaults to «<em>/etc/alternatives</em>».</p></li>
+<li><p>Specifies the administrative directory, when this is to be different from the default. Defaults to «<em>/var/lib/dpkg/alternatives</em>»</p></li>
+<li><p>Specifies the installation directory where alternatives links will be created (since version 1.20.1). Defaults to «».</p></li>
+<li><p>Specifies the root directory (since version 1.20.1). This also sets the alternatives, installation and administrative directories to match. Defaults to «».</p></li>
+<li><p>Specifies the log file (since version 1.15.0), when this is to be different from the default (/var/log/alternatives.log).</p></li>
+<li><p>Allow replacing or dropping any real file that is installed where an alternative link has to be installed or removed.</p></li>
+<li><p>Skip configuration prompt for alternatives which are properly configured in automatic mode. This option is only relevant with <strong>--config</strong> or <strong>--all</strong>.</p></li>
+<li><p>Do not generate any comments unless errors occur.</p></li>
+<li><p>Generate more comments about what is being done.</p></li>
+<li><p>Generate even more comments, helpful for debugging, about what is being done (since version 1.19.3).</p></li>
+</ul>
+<h1>EXIT STATUS</h1>
+<ol start="0" type="1">
+<li><p>The requested action was successfully performed.</p></li>
+<li><p>Problems were encountered whilst parsing the command line or performing the action.</p></li>
+</ol>
+<h1>ENVIRONMENT</h1>
+<ul>
+<li><p>If set and the <strong>--admindir</strong> option has not been specified, it will be used as the base administrative directory.</p></li>
+</ul>
+<h1>FILES</h1>
+<ul>
+<li><p>The default alternatives directory. Can be overridden by the <strong>--altdir</strong> option.</p></li>
+<li><p>The default administration directory. Can be overridden by the <strong>--admindir</strong> option.</p></li>
+</ul>
+<h1>QUERY FORMAT</h1>
+<p>The <strong>--query</strong> format is using an RFC822-like flat format. It's made of <em>n</em> + 1 blocks where <em>n</em> is the number of alternatives available in the queried link group. The first block contains the following fields:</p>
+<ul>
+<li><p>The alternative name in the alternative directory.</p></li>
+<li><p>The generic name of the alternative.</p></li>
+<li><p>When this field is present, the <strong>next</strong> lines hold all slave links associated to the master link of the alternative. There is one slave per line. Each line contains one space, the generic name of the slave alternative, another space, and the path to the slave link.</p></li>
+<li><p>The status of the alternative (<strong>auto</strong> or <strong>manual</strong>).</p></li>
+<li><p>The path of the best alternative for this link group. Not present if there is no alternatives available.</p></li>
+<li><p>The path of the currently selected alternative. It can also take the magic value <strong>none</strong>. It is used if the link doesn't exist.</p></li>
+</ul>
+<p>The other blocks describe the available alternatives in the queried link group:</p>
+<ul>
+<li><p>Path to this block's alternative.</p></li>
+<li><p>Value of the priority of this alternative.</p></li>
+<li><p>When this field is present, the <strong>next</strong> lines hold all slave alternatives associated to the master link of the alternative. There is one slave per line. Each line contains one space, the generic name of the slave alternative, another space, and the path to the slave alternative.</p></li>
+</ul>
+<h2>Example</h2>
+<p>$ update-alternatives --query editor Name: editor Link: /usr/bin/editor Slaves: editor.1.gz /usr/share/man/man1/editor.1.gz editor.fr.1.gz /usr/share/man/fr/man1/editor.1.gz editor.it.1.gz /usr/share/man/it/man1/editor.1.gz editor.pl.1.gz /usr/share/man/pl/man1/editor.1.gz editor.ru.1.gz /usr/share/man/ru/man1/editor.1.gz Status: auto Best: /usr/bin/vim.basic Value: /usr/bin/vim.basic Alternative: /bin/ed Priority: -100 Slaves: editor.1.gz /usr/share/man/man1/ed.1.gz Alternative: /usr/bin/vim.basic Priority: 50 Slaves: editor.1.gz /usr/share/man/man1/vim.1.gz editor.fr.1.gz /usr/share/man/fr/man1/vim.1.gz editor.it.1.gz /usr/share/man/it/man1/vim.1.gz editor.pl.1.gz /usr/share/man/pl/man1/vim.1.gz editor.ru.1.gz /usr/share/man/ru/man1/vim.1.gz</p>
+<h1>DIAGNOSTICS</h1>
+<p>With <strong>--verbose</strong> <strong>update-alternatives</strong> chatters incessantly about its activities on its standard output channel. If problems occur, <strong>update-alternatives</strong> outputs error messages on its standard error channel and returns an exit status of 2. These diagnostics should be self-explanatory; if you do not find them so, please report this as a bug.</p>
+<h1>EXAMPLES</h1>
+<p>There are several packages which provide a text editor compatible with <strong>vi</strong>, for example <strong>nvi</strong> and <strong>vim</strong>. Which one is used is controlled by the link group <strong>vi</strong>, which includes links for the program itself and the associated manpage.</p>
+<p>To display the available packages which provide <strong>vi</strong> and the current setting for it, use the <strong>--display</strong> action: update-alternatives --display vi</p>
+<p>To choose a particular <strong>vi</strong> implementation, use this command as root and then select a number from the list: update-alternatives --config vi</p>
+<p>To go back to having the <strong>vi</strong> implementation chosen automatically, do this as root: update-alternatives --auto vi</p>
+<h1>SEE ALSO</h1>
+<p><strong>ln</strong>(1), FHS (the Filesystem Hierarchy Standard).</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command flock</title><meta name="description" content="Linux command flock apply or remove an advisory lock on an open file"><meta name="keywords" content="linux, command, flock, bsd, apply or remove an advisory lock on an open file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>flock - apply or remove an advisory lock on an open file</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/file.h&gt;</strong></p>
+<p><strong>int flock(int </strong><em>fd</em><strong>, int </strong><em>operation</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>Apply or remove an advisory lock on the open file specified by <em>fd</em>. The argument <em>operation</em> is one of the following:</p>
+<blockquote>
+<dl>
+<dt><strong>LOCK_SH</strong></dt>
+<dd><p>Place a shared lock. More than one process may hold a shared lock for a given file at a given time.</p>
+</dd>
+<dt><strong>LOCK_EX</strong></dt>
+<dd><p>Place an exclusive lock. Only one process may hold an exclusive lock for a given file at a given time.</p>
+</dd>
+<dt><strong>LOCK_UN</strong></dt>
+<dd><p>Remove an existing lock held by this process.</p>
+</dd>
+</dl>
+</blockquote>
+<p>A call to <strong>flock</strong>() may block if an incompatible lock is held by another process. To make a nonblocking request, include <strong>LOCK_NB</strong> (by ORing) with any of the above operations.</p>
+<p>A single file may not simultaneously have both shared and exclusive locks.</p>
+<p>Locks created by <strong>flock</strong>() are associated with an open file description (see <strong>open</strong>(2)). This means that duplicate file descriptors (created by, for example, <strong>fork</strong>(2) or <strong>dup</strong>(2)) refer to the same lock, and this lock may be modified or released using any of these file descriptors. Furthermore, the lock is released either by an explicit <strong>LOCK_UN</strong> operation on any of these duplicate file descriptors, or when all such file descriptors have been closed.</p>
+<p>If a process uses <strong>open</strong>(2) (or similar) to obtain more than one file descriptor for the same file, these file descriptors are treated independently by <strong>flock</strong>(). An attempt to lock the file using one of these file descriptors may be denied by a lock that the calling process has already placed via another file descriptor.</p>
+<p>A process may hold only one type of lock (shared or exclusive) on a file. Subsequent <strong>flock</strong>() calls on an already locked file will convert an existing lock to the new lock mode.</p>
+<p>Locks created by <strong>flock</strong>() are preserved across an <strong>execve</strong>(2).</p>
+<p>A shared or exclusive lock can be placed on a file regardless of the mode in which the file was opened.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not an open file descriptor.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>While waiting to acquire a lock, the call was interrupted by delivery of a signal caught by a handler; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>operation</em> is invalid.</p>
+</dd>
+<dt><strong>ENOLCK</strong></dt>
+<dd><p>The kernel ran out of memory for allocating lock records.</p>
+</dd>
+<dt><strong>EWOULDBLOCK</strong></dt>
+<dd><p>The file is locked and the <strong>LOCK_NB</strong> flag was selected.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>4.4BSD (the <strong>flock</strong>() call first appeared in 4.2BSD). A version of <strong>flock</strong>(), possibly implemented in terms of <strong>fcntl</strong>(2), appears on most UNIX systems.</p>
+<h1>NOTES</h1>
+<p>Since kernel 2.0, <strong>flock</strong>() is implemented as a system call in its own right rather than being emulated in the GNU C library as a call to <strong>fcntl</strong>(2). With this implementation, there is no interaction between the types of lock placed by <strong>flock</strong>() and <strong>fcntl</strong>(2), and <strong>flock</strong>() does not detect deadlock. (Note, however, that on some systems, such as the modern BSDs, <strong>flock</strong>() and <strong>fcntl</strong>(2) locks <em>do</em> interact with one another.)</p>
+<p><strong>flock</strong>() places advisory locks only; given suitable permissions on a file, a process is free to ignore the use of <strong>flock</strong>() and perform I/O on the file.</p>
+<p><strong>flock</strong>() and <strong>fcntl</strong>(2) locks have different semantics with respect to forked processes and <strong>dup</strong>(2). On systems that implement <strong>flock</strong>() using <strong>fcntl</strong>(2), the semantics of <strong>flock</strong>() will be different from those described in this manual page.</p>
+<p>Converting a lock (shared to exclusive, or vice versa) is not guaranteed to be atomic: the existing lock is first removed, and then a new lock is established. Between these two steps, a pending lock request by another process may be granted, with the result that the conversion either blocks, or fails if <strong>LOCK_NB</strong> was specified. (This is the original BSD behavior, and occurs on many other implementations.)</p>
+<h2>NFS details</h2>
+<p>In Linux kernels up to 2.6.11, <strong>flock</strong>() does not lock files over NFS (i.e., the scope of locks was limited to the local system). Instead, one could use <strong>fcntl</strong>(2) byte-range locking, which does work over NFS, given a sufficiently recent version of Linux and a server which supports locking.</p>
+<p>Since Linux 2.6.12, NFS clients support <strong>flock</strong>() locks by emulating them as <strong>fcntl</strong>(2) byte-range locks on the entire file. This means that <strong>fcntl</strong>(2) and <strong>flock</strong>() locks <em>do</em> interact with one another over NFS. It also means that in order to place an exclusive lock, the file must be opened for writing.</p>
+<p>Since Linux 2.6.37, the kernel supports a compatibility mode that allows <strong>flock</strong>() locks (and also <strong>fcntl</strong>(2) byte region locks) to be treated as local; see the discussion of the <em>local_lock</em> option in <strong>nfs</strong>(5).</p>
+<h1>SEE ALSO</h1>
+<p><strong>flock</strong>(1), <strong>close</strong>(2), <strong>dup</strong>(2), <strong>execve</strong>(2), <strong>fcntl</strong>(2), <strong>fork</strong>(2), <strong>open</strong>(2), <strong>lockf</strong>(3), <strong>lslocks</strong>(8)</p>
+<p><em>Documentation/filesystems/locks.txt</em> in the Linux kernel source tree (<em>Documentation/locks.txt</em> in older kernels)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

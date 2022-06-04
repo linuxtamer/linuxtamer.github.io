@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command poll</title><meta name="description" content="Linux command poll wait for some event on a file descriptor"><meta name="keywords" content="linux, command, poll, bsd, wait for some event on a file descriptor"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>poll, ppoll - wait for some event on a file descriptor</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;poll.h&gt;
+
+int poll(struct pollfd *fds, nfds_t nfds, int timeout);
+
+#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;signal.h&gt;
+#include &lt;poll.h&gt;
+
+int ppoll(struct pollfd *fds, nfds_t nfds,
+ const struct timespec *tmo_p, const sigset_t *sigmask);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>poll</strong>() performs a similar task to <strong>select</strong>(2): it waits for one of a set of file descriptors to become ready to perform I/O. The Linux-specific <strong>epoll</strong>(7) API performs a similar task, but offers features beyond those found in <strong>poll</strong>().</p>
+<p>The set of file descriptors to be monitored is specified in the <em>fds</em> argument, which is an array of structures of the following form:</p>
+<pre><code>struct pollfd {
+    int   fd;         /* file descriptor */
+    short events;     /* requested events */
+    short revents;    /* returned events */
+};</code></pre>
+<p>The caller should specify the number of items in the <em>fds</em> array in <em>nfds</em>.</p>
+<p>The field <em>fd</em> contains a file descriptor for an open file. If this field is negative, then the corresponding <em>events</em> field is ignored and the <em>revents</em> field returns zero. (This provides an easy way of ignoring a file descriptor for a single <strong>poll</strong>() call: simply negate the <em>fd</em> field. Note, however, that this technique can't be used to ignore file descriptor 0.)</p>
+<p>The field <em>events</em> is an input parameter, a bit mask specifying the events the application is interested in for the file descriptor <em>fd</em>. This field may be specified as zero, in which case the only events that can be returned in <em>revents</em> are <strong>POLLHUP</strong>, <strong>POLLERR</strong>, and <strong>POLLNVAL</strong> (see below).</p>
+<p>The field <em>revents</em> is an output parameter, filled by the kernel with the events that actually occurred. The bits returned in <em>revents</em> can include any of those specified in <em>events</em>, or one of the values <strong>POLLERR</strong>, <strong>POLLHUP</strong>, or <strong>POLLNVAL</strong>. (These three bits are meaningless in the <em>events</em> field, and will be set in the <em>revents</em> field whenever the corresponding condition is true.)</p>
+<p>If none of the events requested (and no error) has occurred for any of the file descriptors, then <strong>poll</strong>() blocks until one of the events occurs.</p>
+<p>The <em>timeout</em> argument specifies the number of milliseconds that <strong>poll</strong>() should block waiting for a file descriptor to become ready. The call will block until either:</p>
+<ul>
+<li><p>a file descriptor becomes ready;</p></li>
+<li><p>the call is interrupted by a signal handler; or</p></li>
+<li><p>the timeout expires.</p></li>
+</ul>
+<p>Note that the <em>timeout</em> interval will be rounded up to the system clock granularity, and kernel scheduling delays mean that the blocking interval may overrun by a small amount. Specifying a negative value in <em>timeout</em> means an infinite timeout. Specifying a <em>timeout</em> of zero causes <strong>poll</strong>() to return immediately, even if no file descriptors are ready.</p>
+<p>The bits that may be set/returned in <em>events</em> and <em>revents</em> are defined in <em>&lt;poll.h&gt;</em>:</p>
+<dl>
+<dt><strong>POLLIN</strong></dt>
+<dd><p>There is data to read.</p>
+</dd>
+<dt><strong>POLLPRI</strong></dt>
+<dd><p>There is some exceptional condition on the file descriptor. Possibilities include:</p>
+<ul>
+<li><p>There is out-of-band data on a TCP socket (see <strong>tcp</strong>(7)).</p></li>
+<li><p>A pseudoterminal master in packet mode has seen a state change on the slave (see <strong>ioctl_tty</strong>(2)).</p></li>
+<li><p>A <em>cgroup.events</em> file has been modified (see <strong>cgroups</strong>(7)).</p></li>
+</ul>
+</dd>
+<dt><strong>POLLOUT</strong></dt>
+<dd><p>Writing is now possible, though a write larger than the available space in a socket or pipe will still block (unless <strong>O_NONBLOCK</strong> is set).</p>
+</dd>
+<dt><strong>POLLRDHUP</strong> (since Linux 2.6.17)</dt>
+<dd><p>Stream socket peer closed connection, or shut down writing half of connection. The <strong>_GNU_SOURCE</strong> feature test macro must be defined (before including <em>any</em> header files) in order to obtain this definition.</p>
+</dd>
+<dt><strong>POLLERR</strong></dt>
+<dd><p>Error condition (only returned in <em>revents</em>; ignored in <em>events</em>). This bit is also set for a file descriptor referring to the write end of a pipe when the read end has been closed.</p>
+</dd>
+<dt><strong>POLLHUP</strong></dt>
+<dd><p>Hang up (only returned in <em>revents</em>; ignored in <em>events</em>). Note that when reading from a channel such as a pipe or a stream socket, this event merely indicates that the peer closed its end of the channel. Subsequent reads from the channel will return 0 (end of file) only after all outstanding data in the channel has been consumed.</p>
+</dd>
+<dt><strong>POLLNVAL</strong></dt>
+<dd><p>Invalid request: <em>fd</em> not open (only returned in <em>revents</em>; ignored in <em>events</em>).</p>
+</dd>
+</dl>
+<p>When compiling with <strong>_XOPEN_SOURCE</strong> defined, one also has the following, which convey no further information beyond the bits listed above:</p>
+<dl>
+<dt><strong>POLLRDNORM</strong></dt>
+<dd><p>Equivalent to <strong>POLLIN</strong>.</p>
+</dd>
+<dt><strong>POLLRDBAND</strong></dt>
+<dd><p>Priority band data can be read (generally unused on Linux).</p>
+</dd>
+<dt><strong>POLLWRNORM</strong></dt>
+<dd><p>Equivalent to <strong>POLLOUT</strong>.</p>
+</dd>
+<dt><strong>POLLWRBAND</strong></dt>
+<dd><p>Priority data may be written.</p>
+</dd>
+</dl>
+<p>Linux also knows about, but does not use <strong>POLLMSG</strong>.</p>
+<h2>ppoll()</h2>
+<p>The relationship between <strong>poll</strong>() and <strong>ppoll</strong>() is analogous to the relationship between <strong>select</strong>(2) and <strong>pselect</strong>(2): like <strong>pselect</strong>(2), <strong>ppoll</strong>() allows an application to safely wait until either a file descriptor becomes ready or until a signal is caught.</p>
+<p>Other than the difference in the precision of the <em>timeout</em> argument, the following <strong>ppoll</strong>() call:</p>
+<pre><code>ready = ppoll(&amp;fds, nfds, tmo_p, &amp;sigmask);</code></pre>
+<p>is nearly equivalent to <em>atomically</em> executing the following calls:</p>
+<pre><code>sigset_t origmask;
+int timeout;
+
+timeout = (tmo_p == NULL) ? -1 :
+          (tmo_p-&gt;tv_sec * 1000 + tmo_p-&gt;tv_nsec / 1000000);
+pthread_sigmask(SIG_SETMASK, &amp;sigmask, &amp;origmask);
+ready = poll(&amp;fds, nfds, timeout);
+pthread_sigmask(SIG_SETMASK, &amp;origmask, NULL);</code></pre>
+<p>The above code segment is described as <em>nearly</em> equivalent because whereas a negative <em>timeout</em> value for <strong>poll</strong>() is interpreted as an infinite timeout, a negative value expressed in <em>*tmo_p</em> results in an error from <strong>ppoll</strong>().</p>
+<p>See the description of <strong>pselect</strong>(2) for an explanation of why <strong>ppoll</strong>() is necessary.</p>
+<p>If the <em>sigmask</em> argument is specified as NULL, then no signal mask manipulation is performed (and thus <strong>ppoll</strong>() differs from <strong>poll</strong>() only in the precision of the <em>timeout</em> argument).</p>
+<p>The <em>tmo_p</em> argument specifies an upper limit on the amount of time that <strong>ppoll</strong>() will block. This argument is a pointer to a structure of the following form:</p>
+<pre><code>struct timespec {
+    long    tv_sec;         /* seconds */
+    long    tv_nsec;        /* nanoseconds */
+};</code></pre>
+<p>If <em>tmo_p</em> is specified as NULL, then <strong>ppoll</strong>() can block indefinitely.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>poll</strong>() returns a nonnegative value which is the number of elements in the <em>pollfds</em> whose <em>revents</em> fields have been set to a nonzero value (indicating an event or an error). A return value of zero indicates that the system call timed out before any file descriptors became read.</p>
+<p>On error, -1 is returned, and <em>errno</em> is set to indicate the cause of the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>fds</em> points outside the process's accessible address space. The array given as argument was not contained in the calling program's address space.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>A signal occurred before any requested event; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The <em>nfds</em> value exceeds the <strong>RLIMIT_NOFILE</strong> value.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>(<strong>ppoll</strong>()) The timeout value expressed in <em>*ip</em> is invalid (negative).</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Unable to allocate memory for kernel data structures.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The <strong>poll</strong>() system call was introduced in Linux 2.1.23. On older kernels that lack this system call, the glibc <strong>poll</strong>() wrapper function provides emulation using <strong>select</strong>(2).</p>
+<p>The <strong>ppoll</strong>() system call was added to Linux in kernel 2.6.16. The <strong>ppoll</strong>() library call was added in glibc 2.4.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>poll</strong>() conforms to POSIX.1-2001 and POSIX.1-2008. <strong>ppoll</strong>() is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>The operation of <strong>poll</strong>() and <strong>ppoll</strong>() is not affected by the <strong>O_NONBLOCK</strong> flag.</p>
+<p>On some other UNIX systems, <strong>poll</strong>() can fail with the error <strong>EAGAIN</strong> if the system fails to allocate kernel-internal resources, rather than <strong>ENOMEM</strong> as Linux does. POSIX permits this behavior. Portable programs may wish to check for <strong>EAGAIN</strong> and loop, just as with <strong>EINTR</strong>.</p>
+<p>Some implementations define the nonstandard constant <strong>INFTIM</strong> with the value -1 for use as a <em>timeout</em> for <strong>poll</strong>(). This constant is not provided in glibc.</p>
+<p>For a discussion of what may happen if a file descriptor being monitored by <strong>poll</strong>() is closed in another thread, see <strong>select</strong>(2).</p>
+<h2>C library/kernel differences</h2>
+<p>The Linux <strong>ppoll</strong>() system call modifies its <em>tmo_p</em> argument. However, the glibc wrapper function hides this behavior by using a local variable for the timeout argument that is passed to the system call. Thus, the glibc <strong>ppoll</strong>() function does not modify its <em>tmo_p</em> argument.</p>
+<p>The raw <strong>ppoll</strong>() system call has a fifth argument, <em>size_t sigsetsize</em>, which specifies the size in bytes of the <em>sigmask</em> argument. The glibc <strong>ppoll</strong>() wrapper function specifies this argument as a fixed value (equal to <em>sizeof(kernel_sigset_t)</em>). See <strong>sigprocmask</strong>(2) for a discussion on the differences between the kernel and the libc notion of the sigset.</p>
+<h1>BUGS</h1>
+<p>See the discussion of spurious readiness notifications under the BUGS section of <strong>select</strong>(2).</p>
+<h1>EXAMPLES</h1>
+<p>The program below opens each of the files named in its command-line arguments and monitors the resulting file descriptors for readiness to read (<strong>POLLIN</strong>). The program loops, repeatedly using <strong>poll</strong>() to monitor the file descriptors, printing the number of ready file descriptors on return. For each ready file descriptor, the program:</p>
+<ul>
+<li><p>displays the returned <em>revents</em> field in a human-readable form;</p></li>
+<li><p>if the file descriptor is readable, reads some data from it, and displays that data on standard output; and</p></li>
+<li><p>if the file descriptors was not readable, but some other event occurred (presumably <strong>POLLHUP</strong>), closes the file descriptor.</p></li>
+</ul>
+<p>Suppose we run the program in one terminal, asking it to open a FIFO:</p>
+<pre><code>$ mkfifo myfifo
+$ ./poll_input myfifo</code></pre>
+<p>In a second terminal window, we then open the FIFO for writing, write some data to it, and close the FIFO:</p>
+<pre><code>$ echo aaaaabbbbbccccc &gt; myfifo</code></pre>
+<p>In the terminal where we are running the program, we would then see:</p>
+<pre><code>Opened &quot;myfifo&quot; on fd 3
+About to poll()
+Ready: 1
+  fd=3; events: POLLIN POLLHUP
+    read 10 bytes: aaaaabbbbb
+About to poll()
+Ready: 1
+  fd=3; events: POLLIN POLLHUP
+    read 6 bytes: ccccc
+
+About to poll()
+Ready: 1
+  fd=3; events: POLLHUP
+    closing fd 3
+All file descriptors closed; bye</code></pre>
+<p>In the above output, we see that <strong>poll</strong>() returned three times:</p>
+<ul>
+<li><p>On the first return, the bits returned in the <em>revents</em> field were <strong>POLLIN</strong>, indicating that the file descriptor is readable, and <strong>POLLHUP</strong>, indicating that the other end of the FIFO has been closed. The program then consumed some of the available input.</p></li>
+<li><p>The second return from <strong>poll</strong>() also indicated <strong>POLLIN</strong> and <strong>POLLHUP</strong>; the program then consumed the last of the available input.</p></li>
+<li><p>On the final return, <strong>poll</strong>() indicated only <strong>POLLHUP</strong> on the FIFO, at which point the file descriptor was closed and the program terminated.</p></li>
+</ul>
+<h2>Program source</h2>
+<pre><code>/* poll_input.c
+
+   Licensed under GNU General Public License v2 or later.
+*/
+#include &lt;poll.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+#define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
+                        } while (0)
+
+int
+main(int argc, char *argv[])
+{
+    int nfds, num_open_fds;
+    struct pollfd *pfds;
+
+    if (argc &lt; 2) {
+       fprintf(stderr, &quot;Usage: %s file...\n&quot;, argv[0]);
+       exit(EXIT_FAILURE);
+    }
+
+    num_open_fds = nfds = argc - 1;
+    pfds = calloc(nfds, sizeof(struct pollfd));
+    if (pfds == NULL)
+        errExit(&quot;malloc&quot;);
+
+    /* Open each file on command line, and add it &#39;pfds&#39; array */
+
+    for (int j = 0; j &lt; nfds; j++) {
+        pfds[j].fd = open(argv[j + 1], O_RDONLY);
+        if (pfds[j].fd == -1)
+            errExit(&quot;open&quot;);
+
+        printf(&quot;Opened \&quot;%s\&quot; on fd %d\n&quot;, argv[j + 1], pfds[j].fd);
+
+        pfds[j].events = POLLIN;
+    }
+
+    /* Keep calling poll() as long as at least one file descriptor is
+       open */
+
+    while (num_open_fds &gt; 0) {
+        int ready;
+
+        printf(&quot;About to poll()\n&quot;);
+        ready = poll(pfds, nfds, -1);
+        if (ready == -1)
+            errExit(&quot;poll&quot;);
+
+        printf(&quot;Ready: %d\n&quot;, ready);
+
+        /* Deal with array returned by poll() */
+
+        for (int j = 0; j &lt; nfds; j++) {
+            char buf[10];
+
+            if (pfds[j].revents != 0) {
+                printf(&quot;  fd=%d; events: %s%s%s\n&quot;, pfds[j].fd,
+                        (pfds[j].revents &amp; POLLIN)  ? &quot;POLLIN &quot;  : &quot;&quot;,
+                        (pfds[j].revents &amp; POLLHUP) ? &quot;POLLHUP &quot; : &quot;&quot;,
+                        (pfds[j].revents &amp; POLLERR) ? &quot;POLLERR &quot; : &quot;&quot;);
+
+                if (pfds[j].revents &amp; POLLIN) {
+                    ssize_t s = read(pfds[j].fd, buf, sizeof(buf));
+                    if (s == -1)
+                        errExit(&quot;read&quot;);
+                    printf(&quot;    read %zd bytes: %.*s\n&quot;,
+                            s, (int) s, buf);
+                } else {                /* POLLERR | POLLHUP */
+                    printf(&quot;    closing fd %d\n&quot;, pfds[j].fd);
+                    if (close(pfds[j].fd) == -1)
+                        errExit(&quot;close&quot;);
+                    num_open_fds--;
+                }
+            }
+        }
+    }
+
+    printf(&quot;All file descriptors closed; bye\n&quot;);
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>restart_syscall</strong>(2), <strong>select</strong>(2), <strong>select_tut</strong>(2), <strong>epoll</strong>(7), <strong>time</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

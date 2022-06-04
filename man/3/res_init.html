@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command res_init</title><meta name="description" content="Linux command res_init resolver routines"><meta name="keywords" content="linux, command, res_init, bsd, resolver routines"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>res_ninit, res_nclose, res_nquery, res_nsearch, res_nquerydomain, res_nmkquery, res_nsend, res_init, res_query, res_search, res_querydomain, res_mkquery, res_send, dn_comp, dn_expand - resolver routines</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;netinet/in.h&gt;
+#include &lt;arpa/nameser.h&gt;
+#include &lt;resolv.h&gt;
+
+struct __res_state;
+typedef struct __res_state *res_state;
+
+int res_ninit(res_state statep);
+
+void res_nclose(res_state statep);
+
+int res_nquery(res_state statep,
+ const char *dname, int class, int type,
+ unsigned char *answer, int anslen);
+
+int res_nsearch(res_state statep,
+ const char *dname, int class, int type,
+ unsigned char *answer, int anslen);
+
+int res_nquerydomain(res_state statep,
+ const char *name, const char *domain,
+ int class, int type, unsigned char *answer,
+ int anslen);
+
+int res_nmkquery(res_state statep,
+ int op, const char *dname, int class,
+ int type, const unsigned char *data, int datalen,
+ const unsigned char *newrr,
+ unsigned char *buf, int buflen);
+
+int res_nsend(res_state statep,
+ const unsigned char *msg, int msglen,
+ unsigned char *answer, int anslen);
+
+int dn_comp(const char *exp_dn, unsigned char *comp_dn,
+ int length, unsigned char **dnptrs,
+ unsigned char **lastdnptr);
+
+int dn_expand(const unsigned char *msg,
+ const unsigned char *eomorig,
+ const unsigned char *comp_dn, char *exp_dn,
+ int length);</code></pre>
+<h2>Deprecated</h2>
+<pre><code>extern struct __res_state _res;
+
+int res_init(void);
+
+int res_query(const char *dname, int class, int type,
+ unsigned char *answer, int anslen);
+
+int res_search(const char *dname, int class, int type,
+ unsigned char *answer, int anslen);
+
+int res_querydomain(const char *name, const char *domain,
+ int class, int type, unsigned char *answer,
+ int anslen);
+
+int res_mkquery(int op, const char *dname, int class,
+ int type, const unsigned char *data, int datalen,
+ const unsigned char *newrr,
+ unsigned char *buf, int buflen);
+
+int res_send(const unsigned char *msg, int msglen,
+ unsigned char *answer, int anslen);</code></pre>
+<p>Link with <em>-lresolv</em>.</p>
+<h1>DESCRIPTION</h1>
+<p><strong>Note:</strong> This page is incomplete (various resolver functions provided by glibc are not described) and likely out of date.</p>
+<p>The functions described below make queries to and interpret the responses from Internet domain name servers.</p>
+<p>The API consists of a set of more modern, reentrant functions and an older set of nonreentrant functions that have been superseded. The traditional resolver interfaces such as <strong>res_init</strong>() and <strong>res_query</strong>() use some static (global) state stored in the <em>_res</em> structure, rendering these functions non-thread-safe. BIND 8.2 introduced a set of new interfaces <strong>res_ninit</strong>(), <strong>res_nquery</strong>(), and so on, which take a <em>res_state</em> as their first argument, so you can use a per-thread resolver state.</p>
+<p>The <strong>res_ninit</strong>() and <strong>res_init</strong>() functions read the configuration files (see <strong>resolv.conf</strong>(5)) to get the default domain name and name server address(es). If no server is given, the local host is tried. If no domain is given, that associated with the local host is used. It can be overridden with the environment variable <strong>LOCALDOMAIN</strong>. <strong>res_ninit</strong>() or <strong>res_init</strong>() is normally executed by the first call to one of the other functions. Every call to <strong>res_ninit</strong>() requires a corresponding call to <strong>res_nclose</strong>() to free memory allocated by <strong>res_ninit</strong>() and subsequent calls to <strong>res_nquery</strong>().</p>
+<p>The <strong>res_nquery</strong>() and <strong>res_query</strong>() functions query the name server for the fully qualified domain name <em>name</em> of specified <em>type</em> and <em>class</em>. The reply is left in the buffer <em>answer</em> of length <em>anslen</em> supplied by the caller.</p>
+<p>The <strong>res_nsearch</strong>() and <strong>res_search</strong>() functions make a query and waits for the response like <strong>res_nquery</strong>() and <strong>res_query</strong>(), but in addition they implement the default and search rules controlled by <strong>RES_DEFNAMES</strong> and <strong>RES_DNSRCH</strong> (see description of <em>_res</em> options below).</p>
+<p>The <strong>res_nquerydomain</strong>() and <strong>res_querydomain</strong>() functions make a query using <strong>res_nquery</strong>()/<strong>res_query</strong>() on the concatenation of <em>name</em> and <em>domain</em>.</p>
+<p>The following functions are lower-level routines used by <strong>res_nquery</strong>()/<strong>res_query</strong>().</p>
+<p>The <strong>res_nmkquery</strong>() and <strong>res_mkquery</strong>() functions construct a query message in <em>buf</em> of length <em>buflen</em> for the domain name <em>dname</em>. The query type <em>op</em> is one of the following (typically <strong>QUERY</strong>):</p>
+<dl>
+<dt><strong>QUERY</strong></dt>
+<dd><p>Standard query.</p>
+</dd>
+<dt><strong>IQUERY</strong></dt>
+<dd><p>Inverse query. This option was removed in glibc 2.26, since it has not been supported by DNS servers for a very long time.</p>
+</dd>
+<dt><strong>NS_NOTIFY_OP</strong></dt>
+<dd><p>Notify secondary of SOA (Start of Authority) change.</p>
+</dd>
+</dl>
+<p><em>newrr</em> is currently unused.</p>
+<p>The <strong>res_nsend</strong>() and <strong>res_send</strong>() function send a preformatted query given in <em>msg</em> of length <em>msglen</em> and returns the answer in <em>answer</em> which is of length <em>anslen</em>. They will call <strong>res_ninit</strong>()/<strong>res_init</strong>() if it has not already been called.</p>
+<p>The <strong>dn_comp</strong>() function compresses the domain name <em>exp_dn</em> and stores it in the buffer <em>comp_dn</em> of length <em>length</em>. The compression uses an array of pointers <em>dnptrs</em> to previously compressed names in the current message. The first pointer points to the beginning of the message and the list ends with NULL. The limit of the array is specified by <em>lastdnptr</em>. If <em>dnptr</em> is NULL, domain names are not compressed. If <em>lastdnptr</em> is NULL, the list of labels is not updated.</p>
+<p>The <strong>dn_expand</strong>() function expands the compressed domain name <em>comp_dn</em> to a full domain name, which is placed in the buffer <em>exp_dn</em> of size <em>length</em>. The compressed name is contained in a query or reply message, and <em>msg</em> points to the beginning of the message.</p>
+<p>The resolver routines use configuration and state information contained in a <em>__res_state</em> structure (either passed as the <em>statep</em> argument, or in the global variable <em>_res</em>, in the case of the older nonreentrant functions). The only field of this structure that is normally manipulated by the user is the <em>options</em> field. This field can contain the bitwise "OR" of the following options:</p>
+<dl>
+<dt><strong>RES_INIT</strong></dt>
+<dd><p>True if <strong>res_ninit</strong>() or <strong>res_init</strong>() has been called.</p>
+</dd>
+<dt><strong>RES_DEBUG</strong></dt>
+<dd><p>Print debugging messages. This option is available only if glibc was built with debugging enabled, which is not the default.</p>
+</dd>
+<dt><strong>RES_AAONLY</strong> (unimplemented; deprecated in glibc 2.25)</dt>
+<dd><p>Accept authoritative answers only. <strong>res_send</strong>() continues until it finds an authoritative answer or returns an error. This option was present but unimplemented in glibc until version 2.24; since glibc 2.25, it is deprecated, and its usage produces a warning.</p>
+</dd>
+<dt><strong>RES_USEVC</strong></dt>
+<dd><p>Use TCP connections for queries rather than UDP datagrams.</p>
+</dd>
+<dt><strong>RES_PRIMARY</strong> (unimplemented; deprecated in glibc 2.25)</dt>
+<dd><p>Query primary domain name server only. This option was present but unimplemented in glibc until version 2.24; since glibc 2.25, it is deprecated, and its usage produces a warning.</p>
+</dd>
+<dt><strong>RES_IGNTC</strong></dt>
+<dd><p>Ignore truncation errors. Don't retry with TCP.</p>
+</dd>
+<dt><strong>RES_RECURSE</strong></dt>
+<dd><p>Set the recursion desired bit in queries. Recursion is carried out by the domain name server, not by <strong>res_send</strong>(). [Enabled by default].</p>
+</dd>
+<dt><strong>RES_DEFNAMES</strong></dt>
+<dd><p>If set, <strong>res_search</strong>() will append the default domain name to single component names—that is, those that do not contain a dot. [Enabled by default].</p>
+</dd>
+<dt><strong>RES_STAYOPEN</strong></dt>
+<dd><p>Used with <strong>RES_USEVC</strong> to keep the TCP connection open between queries.</p>
+</dd>
+<dt><strong>RES_DNSRCH</strong></dt>
+<dd><p>If set, <strong>res_search</strong>() will search for hostnames in the current domain and in parent domains. This option is used by <strong>gethostbyname</strong>(3). [Enabled by default].</p>
+</dd>
+<dt><strong>RES_INSECURE1</strong></dt>
+<dd><p>Accept a response from a wrong server. This can be used to detect potential security hazards, but you need to compile glibc with debugging enabled and use <strong>RES_DEBUG</strong> option (for debug purpose only).</p>
+</dd>
+<dt><strong>RES_INSECURE2</strong></dt>
+<dd><p>Accept a response which contains a wrong query. This can be used to detect potential security hazards, but you need to compile glibc with debugging enabled and use <strong>RES_DEBUG</strong> option (for debug purpose only).</p>
+</dd>
+<dt><strong>RES_NOALIASES</strong></dt>
+<dd><p>Disable usage of <strong>HOSTALIASES</strong> environment variable.</p>
+</dd>
+<dt><strong>RES_USE_INET6</strong></dt>
+<dd><p>Try an AAAA query before an A query inside the <strong>gethostbyname</strong>(3) function, and map IPv4 responses in IPv6 "tunneled form" if no AAAA records are found but an A record set exists. Since glibc 2.25, this option is deprecated, and its usage produces a warning; applications should use <strong>getaddrinfo</strong>(3), rather than <strong>gethostbyname</strong>(3).</p>
+</dd>
+<dt><strong>RES_ROTATE</strong></dt>
+<dd><p>Causes round-robin selection of name servers from among those listed. This has the effect of spreading the query load among all listed servers, rather than having all clients try the first listed server first every time.</p>
+</dd>
+<dt><strong>RES_NOCHECKNAME</strong> (unimplemented; deprecated in glibc 2.25)</dt>
+<dd><p>Disable the modern BIND checking of incoming hostnames and mail names for invalid characters such as underscore (_), non-ASCII, or control characters. This option was present in glibc until version 2.24; since glibc 2.25, it is deprecated, and its usage produces a warning.</p>
+</dd>
+<dt><strong>RES_KEEPTSIG</strong> (unimplemented; deprecated in glibc 2.25)</dt>
+<dd><p>Do not strip TSIG records. This option was present but unimplemented in glibc until version 2.24; since glibc 2.25, it is deprecated, and its usage produces a warning.</p>
+</dd>
+<dt><strong>RES_BLAST</strong> (unimplemented; deprecated in glibc 2.25)</dt>
+<dd><p>Send each query simultaneously and recursively to all servers. This option was present but unimplemented in glibc until version 2.24; since glibc 2.25, it is deprecated, and its usage produces a warning.</p>
+</dd>
+<dt><strong>RES_USEBSTRING</strong> (glibc 2.3.4 to 2.24)</dt>
+<dd><p>Make reverse IPv6 lookups using the bit-label format described in RFC 2673; if this option is not set (which is the default), then nibble format is used. This option was removed in glibc 2.25, since it relied on a backward-incompatible DNS extension that was never deployed on the Internet.</p>
+</dd>
+<dt><strong>RES_NOIP6DOTINT</strong> (glibc 2.24 and earlier)</dt>
+<dd><p>Use <em>ip6.arpa</em> zone in IPv6 reverse lookup instead of <em>ip6.int</em>, which is deprecated since glibc 2.3.4. This option is present in glibc up to and including version 2.24, where it is enabled by default. In glibc 2.25, this option was removed.</p>
+</dd>
+<dt><strong>RES_USE_EDNS0</strong> (since glibc 2.6)</dt>
+<dd><p>Enables support for the DNS extensions (EDNS0) described in RFC 2671.</p>
+</dd>
+<dt><strong>RES_SNGLKUP</strong> (since glibc 2.10)</dt>
+<dd><p>By default, glibc performs IPv4 and IPv6 lookups in parallel since version 2.9. Some appliance DNS servers cannot handle these queries properly and make the requests time out. This option disables the behavior and makes glibc perform the IPv6 and IPv4 requests sequentially (at the cost of some slowdown of the resolving process).</p>
+</dd>
+<dt><strong>RES_SNGLKUPREOP</strong></dt>
+<dd><p>When <strong>RES_SNGLKUP</strong> option is enabled, opens a new socket for the each request.</p>
+</dd>
+<dt><strong>RES_USE_DNSSEC</strong></dt>
+<dd><p>Use DNSSEC with OK bit in OPT record. This option implies <strong>RES_USE_EDNS0</strong>.</p>
+</dd>
+<dt><strong>RES_NOTLDQUERY</strong></dt>
+<dd><p>Do not look up unqualified name as a top-level domain (TLD).</p>
+</dd>
+<dt><strong>RES_DEFAULT</strong></dt>
+<dd><p>Default option which implies: <strong>RES_RECURSE</strong>, <strong>RES_DEFNAMES</strong>, <strong>RES_DNSRCH</strong>, and <strong>RES_NOIP6DOTINT</strong>.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>The <strong>res_ninit</strong>() and <strong>res_init</strong>() functions return 0 on success, or -1 if an error occurs.</p>
+<p>The <strong>res_nquery</strong>(), <strong>res_query</strong>(), <strong>res_nsearch</strong>(), <strong>res_search</strong>(), <strong>res_nquerydomain</strong>(), <strong>res_querydomain</strong>(), <strong>res_nmkquery</strong>(), <strong>res_mkquery</strong>(), <strong>res_nsend</strong>(), and <strong>res_send</strong>() functions return the length of the response, or -1 if an error occurs.</p>
+<p>The <strong>dn_comp</strong>() and <strong>dn_expand</strong>() functions return the length of the compressed name, or -1 if an error occurs.</p>
+<p>In the case of an error return from <strong>res_nquery</strong>(), <strong>res_query</strong>(), <strong>res_nsearch</strong>(), <strong>res_search</strong>(), <strong>res_nquerydomain</strong>(), or <strong>res_querydomain</strong>(), the global variable <em>h_errno</em> (see <strong>gethostbyname</strong>(3)) can be consulted to determine the cause of the error.</p>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/resolv.conf</em></dt>
+<dd><p>resolver configuration file</p>
+</dd>
+<dt><em>/etc/host.conf</em></dt>
+<dd><p>resolver configuration file</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>res_ninit</strong>(), <strong>res_nclose</strong>(), <strong>res_nquery</strong>(),<br />
+<strong>res_nsearch</strong>(), <strong>res_nquerydomain</strong>(), <strong>res_nsend</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>res_nmkquery</strong>(), <strong>dn_comp</strong>(),<br />
+<strong>dn_expand</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>4.3BSD.</p>
+<h1>SEE ALSO</h1>
+<p><strong>gethostbyname</strong>(3), <strong>resolv.conf</strong>(5), <strong>resolver</strong>(5), <strong>hostname</strong>(7), <strong>named</strong>(8)</p>
+<p>The GNU C library source file <em>resolv/README</em>.</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

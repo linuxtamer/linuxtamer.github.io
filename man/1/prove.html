@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command prove</title><meta name="description" content="Linux command prove Run tests through a TAP harness."><meta name="keywords" content="linux, command, prove, bsd, Run tests through a TAP harness."><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>prove - Run tests through a TAP harness.</p>
+<h1>USAGE</h1>
+<p>prove [options] [files or directories]</p>
+<h1>OPTIONS</h1>
+<p>Boolean options:</p>
+<p>-v, --verbose Print all test lines. -l, --lib Add lib to the path for your tests (-Ilib). -b, --blib Add blib/lib and blib/arch to the path for your tests -s, --shuffle Run the tests in random order. -c, --color Colored test output (default). --nocolor Do not color test output. --count Show the X/Y test count when not verbose (default) --nocount Disable the X/Y test count. -D --dry Dry run. Show test that would have run. -f, --failures Show failed tests. -o, --comments Show comments. --ignore-exit Ignore exit status from test scripts. -m, --merge Merge test scripts STDERR with their STDOUT. -r, --recurse Recursively descend into directories. --reverse Run the tests in reverse order. -q, --quiet Suppress some test output while running tests. -Q, --QUIET Only print summary results. -p, --parse Show full list of TAP parse errors, if any. --directives Only show results with TODO or SKIP directives. --timer Print elapsed time after each test. --trap Trap Ctrl-C and print summary on interrupt. --normalize Normalize TAP output in verbose output -T Enable tainting checks. -t Enable tainting warnings. -W Enable fatal warnings. -w Enable warnings. -h, --help Display this help -?, Display this help -V, --version Display the version -H, --man Longer manpage for prove --norc Dont process default .proverc</p>
+<p>Options that take arguments:</p>
+<p>-I Library paths to include. -P Load plugin (searches App::Prove::Plugin::*.) -M Load a module. -e, --exec Interpreter to run the tests ( for compiled tests.) --ext Set the extension for tests (default .t) --harness Define test harness to use. See TAP::Harness. --formatter Result formatter to use. See FORMATTERS. --source Load and/or configure a SourceHandler. See SOURCE HANDLERS. -a, --archive out.tgz Store the resulting TAP in an archive file. -j, --jobs N Run N test jobs in parallel (try 9.) --state=opts Control proves persistent state. --statefile=file Use `file` instead of `.prove` for state --rc=rcfile Process options from rcfile --rules Rules for parallel vs sequential processing.</p>
+<h1>NOTES</h1>
+<h2>.proverc</h2>
+<p>If <em>~/.proverc</em> or <em>./.proverc</em> exist they will be read and any options they contain processed before the command line options. Options in <em>.proverc</em> are specified in the same way as command line options:</p>
+<p># .proverc --state=hot,fast,save -j9</p>
+<p>Additional option files may be specified with the <code>--rc</code> option. Default option file processing is disabled by the <code>--norc</code> option.</p>
+<p>Under Windows and VMS the option file is named <em>_proverc</em> rather than <em>.proverc</em> and is sought only in the current directory.</p>
+<h2>Reading from "STDIN"</h2>
+<p>If you have a list of tests (or URLs, or anything else you want to test) in a file, you can add them to your tests by using a '-':</p>
+<p>prove - &lt; my_list_of_things_to_test.txt</p>
+<p>See the <code>README</code> in the <code>examples</code> directory of this distribution.</p>
+<h2>Default Test Directory</h2>
+<p>If no files or directories are supplied, <code>prove</code> looks for all files matching the pattern <code>t/*.t</code>.</p>
+<h2>Colored Test Output</h2>
+<p>Colored test output using TAP::Formatter::Color is the default, but if output is not to a terminal, color is disabled. You can override this by adding the <code>--color</code> switch.</p>
+<p>Color support requires Term::ANSIColor and, on windows platforms, also Win32::Console::ANSI. If the necessary module(s) are not installed colored output will not be available.</p>
+<h2>Exit Code</h2>
+<p>If the tests fail <code>prove</code> will exit with non-zero status.</p>
+<h2>Arguments to Tests</h2>
+<p>It is possible to supply arguments to tests. To do so separate them from prove's own arguments with the arisdottle, '::'. For example</p>
+<p>prove -v t/mytest.t :: --url http://example.com</p>
+<p>would run <em>t/mytest.t</em> with the options '--url http://example.com'. When running multiple tests they will each receive the same arguments.</p>
+<h2>"--exec"</h2>
+<p>Normally you can just pass a list of Perl tests and the harness will know how to execute them. However, if your tests are not written in Perl or if you want all tests invoked exactly the same way, use the <code>-e</code>, or <code>--exec</code> switch:</p>
+<p>prove --exec /usr/bin/ruby -w t/ prove --exec /usr/bin/perl -Tw -mstrict -Ilib t/ prove --exec /path/to/my/customer/exec</p>
+<h2>"--merge"</h2>
+<p>If you need to make sure your diagnostics are displayed in the correct order relative to test results you can use the <code>--merge</code> option to merge the test scripts' STDERR into their STDOUT.</p>
+<p>This guarantees that STDOUT (where the test results appear) and STDERR (where the diagnostics appear) will stay in sync. The harness will display any diagnostics your tests emit on STDERR.</p>
+<p>Caveat: this is a bit of a kludge. In particular note that if anything that appears on STDERR looks like a test result the test harness will get confused. Use this option only if you understand the consequences and can live with the risk.</p>
+<h2>"--trap"</h2>
+<p>The <code>--trap</code> option will attempt to trap SIGINT (Ctrl-C) during a test run and display the test summary even if the run is interrupted</p>
+<h2>"--state"</h2>
+<p>You can ask <code>prove</code> to remember the state of previous test runs and select and/or order the tests to be run based on that saved state.</p>
+<p>The <code>--state</code> switch requires an argument which must be a comma separated list of one or more of the following options.</p>
+<ul>
+<li><p>Run the same tests as the last time the state was saved. This makes it possible, for example, to recreate the ordering of a shuffled test. # Run all tests in random order $ prove -b --state=save --shuffle # Run them again in the same order $ prove -b --state=last</p></li>
+<li><p>Run only the tests that failed on the last run. # Run all tests $ prove -b --state=save # Run failures $ prove -b --state=failed If you also specify the <code>save</code> option newly passing tests will be excluded from subsequent runs. # Repeat until no more failures $ prove -b --state=failed,save</p></li>
+<li><p>Run only the passed tests from last time. Useful to make sure that no new problems have been introduced.</p></li>
+<li><p>Run all tests in normal order. Multple options may be specified, so to run all tests with the failures from last time first: $ prove -b --state=failed,all,save</p></li>
+<li><p>Run the tests that most recently failed first. The last failure time of each test is stored. The <code>hot</code> option causes tests to be run in most-recent- failure order. $ prove -b --state=hot,save Tests that have never failed will not be selected. To run all tests with the most recently failed first use $ prove -b --state=hot,all,save This combination of options may also be specified thus $ prove -b --state=adrian</p></li>
+<li><p>Run any tests with todos.</p></li>
+<li><p>Run the tests in slowest to fastest order. This is useful in conjunction with the <code>-j</code> parallel testing switch to ensure that your slowest tests start running first. $ prove -b --state=slow -j9</p></li>
+<li><p>Run test tests in fastest to slowest order.</p></li>
+<li><p>Run the tests in newest to oldest order based on the modification times of the test scripts.</p></li>
+<li><p>Run the tests in oldest to newest order.</p></li>
+<li><p>Run those test scripts that have been modified since the last test run.</p></li>
+<li><p>Save the state on exit. The state is stored in a file called <em>.prove</em> (<em>_prove</em> on Windows and VMS) in the current directory.</p></li>
+</ul>
+<p>The <code>--state</code> switch may be used more than once.</p>
+<p>$ prove -b --state=hot --state=all,save</p>
+<h2>--rules</h2>
+<p>The <code>--rules</code> option is used to control which tests are run sequentially and which are run in parallel, if the <code>--jobs</code> option is specified. The option may be specified multiple times, and the order matters.</p>
+<p>The most practical use is likely to specify that some tests are not parallel-ready. Since mentioning a file with --rules doesn't cause it to be selected to run as a test, you can set and forget some rules preferences in your .proverc file. Then you'll be able to take maximum advantage of the performance benefits of parallel testing, while some exceptions are still run in parallel.</p>
+<p><em>--rules examples</em></p>
+<p># All tests are allowed to run in parallel, except those starting with "p" --rules=seq=t/p*.t --rules=par=** # All tests must run in sequence except those starting with "p", which should be run parallel --rules=par=t/p*.t</p>
+<p><em>--rules resolution</em></p>
+<ul>
+<li><p>By default, all tests are eligible to be run in parallel. Specifying any of your own rules removes this one.</p></li>
+<li><p>First match wins. The first rule that matches a test will be the one that applies.</p></li>
+<li><p>Any test which does not match a rule will be run in sequence at the end of the run.</p></li>
+<li><p>The existence of a rule does not imply selecting a test. You must still specify the tests to run.</p></li>
+<li><p>Specifying a rule to allow tests to run in parallel does not make them run in parallel. You still need specify the number of parallel <code>jobs</code> in your Harness object.</p></li>
+</ul>
+<p><em>--rules Glob-style pattern matching</em></p>
+<p>We implement our own glob-style pattern matching for --rules. Here are the supported patterns:</p>
+<p>** is any number of characters, including /, within a pathname * is zero or more characters within a filename/directory name ? is exactly one character within a filename/directory name {foo,bar,baz} is any of foo, bar or baz. \ is an escape character</p>
+<p><em>More advanced specifications for parallel vs sequence run rules</em></p>
+<p>If you need more advanced management of what runs in parallel vs in sequence, see the associated 'rules' documentation in TAP::Harness and TAP::Parser::Scheduler. If what's possible directly through <code>prove</code> is not sufficient, you can write your own harness to access these features directly.</p>
+<h2>@INC</h2>
+<p>prove introduces a separation between options passed to the perl which runs prove and options passed to the perl which runs tests; this distinction is by design. Thus the perl which is running a test starts with the default <code>@INC</code>. Additional library directories can be added via the <code>PERL5LIB</code> environment variable, via -Ifoo in <code>PERL5OPT</code> or via the <code>-Ilib</code> option to <em>prove</em>.</p>
+<h2>Taint Mode</h2>
+<p>Normally when a Perl program is run in taint mode the contents of the <code>PERL5LIB</code> environment variable do not appear in <code>@INC</code>.</p>
+<p>Because <code>PERL5LIB</code> is often used during testing to add build directories to <code>@INC</code> prove passes the names of any directories found in <code>PERL5LIB</code> as -I switches. The net effect of this is that <code>PERL5LIB</code> is honoured even when prove is run in taint mode.</p>
+<h1>FORMATTERS</h1>
+<p>You can load a custom TAP::Parser::Formatter:</p>
+<p>prove --formatter MyFormatter</p>
+<h1>SOURCE HANDLERS</h1>
+<p>You can load custom TAP::Parser::SourceHandlers, to change the way the parser interprets particular <em>sources</em> of TAP.</p>
+<p>prove --source MyHandler --source YetAnother t</p>
+<p>If you want to provide config to the source you can use:</p>
+<p>prove --source MyCustom \ --source Perl --perl-option foo=bar baz --perl-option avg=0.278 \ --source File --file-option extensions=.txt --file-option extensions=.tmp t --source pgTAP --pgtap-option pset=format=html --pgtap-option pset=border=2</p>
+<p>Each <code>--$source-option</code> option must specify a key/value pair separated by an <code>=</code>. If an option can take multiple values, just specify it multiple times, as with the <code>extensions=</code> examples above. If the option should be a hash reference, specify the value as a second pair separated by a <code>=</code>, as in the <code>pset=</code> examples above (escape <code>=</code> with a backslash).</p>
+<p>All <code>--sources</code> are combined into a hash, and passed to new in TAP::Harness's <code>sources</code> parameter.</p>
+<p>See TAP::Parser::IteratorFactory for more details on how configuration is passed to <em>SourceHandlers</em>.</p>
+<h1>PLUGINS</h1>
+<p>Plugins can be loaded using the <code>-P</code><em><code>plugin</code></em> syntax, eg:</p>
+<p>prove -PMyPlugin</p>
+<p>This will search for a module named <code>App::Prove::Plugin::MyPlugin</code>, or failing that, <code>MyPlugin</code>. If the plugin can't be found, <code>prove</code> will complain &amp; exit.</p>
+<p>You can pass arguments to your plugin by appending <code>=arg1,arg2,etc</code> to the plugin name:</p>
+<p>prove -PMyPlugin=fou,du,fafa</p>
+<p>Please check individual plugin documentation for more details.</p>
+<h2>Available Plugins</h2>
+<p>For an up-to-date list of plugins available, please check CPAN:</p>
+<p>&lt;http://search.cpan.org/search?query=App%3A%3AProve+Plugin&gt;</p>
+<h2>Writing Plugins</h2>
+<p>Please see PLUGINS in App::Prove.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

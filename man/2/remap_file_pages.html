@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command remap_file_pages</title><meta name="description" content="Linux command remap_file_pages create a nonlinear file mapping"><meta name="keywords" content="linux, command, remap_file_pages, bsd, create a nonlinear file mapping"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>remap_file_pages - create a nonlinear file mapping</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#define _GNU_SOURCE /* See feature_test_macros(7) */
+#include &lt;sys/mman.h&gt;
+
+int remap_file_pages(void *addr, size_t size, int prot,
+ size_t pgoff, int flags);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>Note</strong>: this system call was marked as deprecated starting with Linux 3.16. In Linux 4.0, the implementation was replaced by a slower in-kernel emulation. Those few applications that use this system call should consider migrating to alternatives. This change was made because the kernel code for this system call was complex, and it is believed to be little used or perhaps even completely unused. While it had some use cases in database applications on 32-bit systems, those use cases don't exist on 64-bit systems.</p>
+<p>The <strong>remap_file_pages</strong>() system call is used to create a nonlinear mapping, that is, a mapping in which the pages of the file are mapped into a nonsequential order in memory. The advantage of using <strong>remap_file_pages</strong>() over using repeated calls to <strong>mmap</strong>(2) is that the former approach does not require the kernel to create additional VMA (Virtual Memory Area) data structures.</p>
+<p>To create a nonlinear mapping we perform the following steps:</p>
+<dl>
+<dt>1.</dt>
+<dd><p>Use <strong>mmap</strong>(2) to create a mapping (which is initially linear). This mapping must be created with the <strong>MAP_SHARED</strong> flag.</p>
+</dd>
+<dt>2.</dt>
+<dd><p>Use one or more calls to <strong>remap_file_pages</strong>() to rearrange the correspondence between the pages of the mapping and the pages of the file. It is possible to map the same page of a file into multiple locations within the mapped region.</p>
+</dd>
+</dl>
+<p>The <em>pgoff</em> and <em>size</em> arguments specify the region of the file that is to be relocated within the mapping: <em>pgoff</em> is a file offset in units of the system page size; <em>size</em> is the length of the region in bytes.</p>
+<p>The <em>addr</em> argument serves two purposes. First, it identifies the mapping whose pages we want to rearrange. Thus, <em>addr</em> must be an address that falls within a region previously mapped by a call to <strong>mmap</strong>(2). Second, <em>addr</em> specifies the address at which the file pages identified by <em>pgoff</em> and <em>size</em> will be placed.</p>
+<p>The values specified in <em>addr</em> and <em>size</em> should be multiples of the system page size. If they are not, then the kernel rounds <em>both</em> values <em>down</em> to the nearest multiple of the page size.</p>
+<p>The <em>prot</em> argument must be specified as 0.</p>
+<p>The <em>flags</em> argument has the same meaning as for <strong>mmap</strong>(2), but all flags other than <strong>MAP_NONBLOCK</strong> are ignored.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>remap_file_pages</strong>() returns 0. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>addr</em> does not refer to a valid mapping created with the <strong>MAP_SHARED</strong> flag.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>addr</em>, <em>size</em>, <em>prot</em>, or <em>pgoff</em> is invalid.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The <strong>remap_file_pages</strong>() system call appeared in Linux 2.5.46; glibc support was added in version 2.3.3.</p>
+<h1>CONFORMING TO</h1>
+<p>The <strong>remap_file_pages</strong>() system call is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>Since Linux 2.6.23, <strong>remap_file_pages</strong>() creates non-linear mappings only on in-memory filesystems such as <strong>tmpfs</strong>(5), hugetlbfs or ramfs. On filesystems with a backing store, <strong>remap_file_pages</strong>() is not much more efficient than using <strong>mmap</strong>(2) to adjust which parts of the file are mapped to which addresses.</p>
+<h1>SEE ALSO</h1>
+<p><strong>getpagesize</strong>(2), <strong>mmap</strong>(2), <strong>mmap2</strong>(2), <strong>mprotect</strong>(2), <strong>mremap</strong>(2), <strong>msync</strong>(2)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

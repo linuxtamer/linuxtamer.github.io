@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command glob</title><meta name="description" content="Linux command glob globbing pathnames"><meta name="keywords" content="linux, command, glob, bsd, globbing pathnames"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>glob - globbing pathnames</p>
+<h1>DESCRIPTION</h1>
+<p>Long ago, in UNIX V6, there was a program <em>/etc/glob</em> that would expand wildcard patterns. Soon afterward this became a shell built-in.</p>
+<p>These days there is also a library routine <strong>glob</strong>(3) that will perform this function for a user program.</p>
+<p>The rules are as follows (POSIX.2, 3.13).</p>
+<h2>Wildcard matching</h2>
+<p>A string is a wildcard pattern if it contains one of the characters '?', '*' or '['. Globbing is the operation that expands a wildcard pattern into the list of pathnames matching the pattern. Matching is defined by:</p>
+<p>A '?' (not between brackets) matches any single character.</p>
+<p>A '*' (not between brackets) matches any string, including the empty string.</p>
+<p><strong>Character classes</strong></p>
+<p>An expression "<em>[...]</em>" where the first character after the leading '[' is not an '!' matches a single character, namely any of the characters enclosed by the brackets. The string enclosed by the brackets cannot be empty; therefore ']' can be allowed between the brackets, provided that it is the first character. (Thus, "<em>[][!]</em>" matches the three characters '[', ']' and '!'.)</p>
+<p><strong>Ranges</strong></p>
+<p>There is one special convention: two characters separated by '-' denote a range. (Thus, "<em>[A-Fa-f0-9]</em>" is equivalent to "<em>[ABCDEFabcdef0123456789]</em>".) One may include '-' in its literal meaning by making it the first or last character between the brackets. (Thus, "<em>[]-]</em>" matches just the two characters ']' and '-', and "<em>[--0]</em>" matches the three characters '-', '.', '0', since '/' cannot be matched.)</p>
+<p><strong>Complementation</strong></p>
+<p>An expression "<em>[!...]</em>" matches a single character, namely any character that is not matched by the expression obtained by removing the first '!' from it. (Thus, "<em>[!]a-]</em>" matches any single character except ']', 'a' and '-'.)</p>
+<p>One can remove the special meaning of '?', '*' and '[' by preceding them by a backslash, or, in case this is part of a shell command line, enclosing them in quotes. Between brackets these characters stand for themselves. Thus, "<em>[[?*\]</em>" matches the four characters '[', '?', '*' and '\'.</p>
+<h2>Pathnames</h2>
+<p>Globbing is applied on each of the components of a pathname separately. A '/' in a pathname cannot be matched by a '?' or '*' wildcard, or by a range like "<em>[.-0]</em>". A range containing an explicit '/' character is syntactically incorrect. (POSIX requires that syntactically incorrect patterns are left unchanged.)</p>
+<p>If a filename starts with a '.', this character must be matched explicitly. (Thus, <em>rm *</em> will not remove .profile, and <em>tar c *</em> will not archive all your files; <em>tar c .</em> is better.)</p>
+<h2>Empty lists</h2>
+<p>The nice and simple rule given above: "expand a wildcard pattern into the list of matching pathnames" was the original UNIX definition. It allowed one to have patterns that expand into an empty list, as in</p>
+<pre><code>    xv -wait 0 *.gif *.jpg</code></pre>
+<p>where perhaps no *.gif files are present (and this is not an error). However, POSIX requires that a wildcard pattern is left unchanged when it is syntactically incorrect, or the list of matching pathnames is empty. With <em>bash</em> one can force the classical behavior using this command:</p>
+<p>shopt -s nullglob</p>
+<p>(Similar problems occur elsewhere. For example, where old scripts have</p>
+<pre><code>    rm `find . -name &quot;*~&quot;`</code></pre>
+<p>new scripts require</p>
+<pre><code>    rm -f nosuchfile `find . -name &quot;*~&quot;`</code></pre>
+<p>to avoid error messages from <em>rm</em> called with an empty argument list.)</p>
+<h1>NOTES</h1>
+<h2>Regular expressions</h2>
+<p>Note that wildcard patterns are not regular expressions, although they are a bit similar. First of all, they match filenames, rather than text, and secondly, the conventions are not the same: for example, in a regular expression '*' means zero or more copies of the preceding thing.</p>
+<p>Now that regular expressions have bracket expressions where the negation is indicated by a '^', POSIX has declared the effect of a wildcard pattern "<em>[^...]</em>" to be undefined.</p>
+<h2>Character classes and internationalization</h2>
+<p>Of course ranges were originally meant to be ASCII ranges, so that "<em>[ -%]</em>" stands for "<em>[ !"#$%]</em>" and "<em>[a-z]</em>" stands for "any lowercase letter". Some UNIX implementations generalized this so that a range X-Y stands for the set of characters with code between the codes for X and for Y. However, this requires the user to know the character coding in use on the local system, and moreover, is not convenient if the collating sequence for the local alphabet differs from the ordering of the character codes. Therefore, POSIX extended the bracket notation greatly, both for wildcard patterns and for regular expressions. In the above we saw three types of items that can occur in a bracket expression: namely (i) the negation, (ii) explicit single characters, and (iii) ranges. POSIX specifies ranges in an internationally more useful way and adds three more types:</p>
+<p>(iii) Ranges X-Y comprise all characters that fall between X and Y (inclusive) in the current collating sequence as defined by the <strong>LC_COLLATE</strong> category in the current locale.</p>
+<p>(iv) Named character classes, like</p>
+<pre><code>[:alnum:]  [:alpha:]  [:blank:]  [:cntrl:]
+[:digit:]  [:graph:]  [:lower:]  [:print:]
+[:punct:]  [:space:]  [:upper:]  [:xdigit:]</code></pre>
+<p>so that one can say "<em>[[:lower:]]</em>" instead of "<em>[a-z]</em>", and have things work in Denmark, too, where there are three letters past 'z' in the alphabet. These character classes are defined by the <strong>LC_CTYPE</strong> category in the current locale.</p>
+<p>(v) Collating symbols, like "<em>[.ch.]</em>" or "<em>[.a-acute.]</em>", where the string between "<em>[.</em>" and "<em>.]</em>" is a collating element defined for the current locale. Note that this may be a multicharacter element.</p>
+<p>(vi) Equivalence class expressions, like "<em>[=a=]</em>", where the string between "<em>[=</em>" and "<em>=]</em>" is any collating element from its equivalence class, as defined for the current locale. For example, "<em>[[=a=]]</em>" might be equivalent to "<em>[aá�aäâ]</em>", that is, to "<em>[a[.a-acute.][.a-grave.][.a-umlaut.][.a-circumflex.]]</em>".</p>
+<h1>SEE ALSO</h1>
+<p><strong>sh</strong>(1), <strong>fnmatch</strong>(3), <strong>glob</strong>(3), <strong>locale</strong>(7), <strong>regex</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

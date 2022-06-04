@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-mirred</title><meta name="description" content="Linux command tc-mirred mirror/redirect action"><meta name="keywords" content="linux, command, tc-mirred, bsd, mirror/redirect action"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mirred - mirror/redirect action</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc</strong> ... <strong>action mirred</strong> <em>DIRECTION ACTION</em> [ <strong>index</strong> <em>INDEX</em> ] <strong>dev</strong><em> DEVICENAME</em></p>
+<p><em>DIRECTION</em> := { <strong>ingress</strong> | <strong>egress</strong> }</p>
+<p><em>ACTION</em> := { <strong>mirror</strong> | <strong>redirect</strong> }</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>mirred</strong> action allows packet mirroring (copying) or redirecting (stealing) the packet it receives. Mirroring is what is sometimes referred to as Switch Port Analyzer (SPAN) and is commonly used to analyze and/or debug flows.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>ingress</strong><br />
+<strong>egress</strong></dt>
+<dd><p>Specify the direction in which the packet shall appear on the destination interface.</p>
+</dd>
+<dt><strong>mirror</strong><br />
+<strong>redirect</strong></dt>
+<dd><p>Define whether the packet should be copied (<strong>mirror</strong>) or moved (<strong>redirect</strong>) to the destination interface.</p>
+</dd>
+<dt><strong>index</strong><em> INDEX</em></dt>
+<dd><p>Assign a unique ID to this action instead of letting the kernel choose one automatically. <em>INDEX</em> is a 32bit unsigned integer greater than zero.</p>
+</dd>
+<dt><strong>dev</strong><em> DEVICENAME</em></dt>
+<dd><p>Specify the network interface to redirect or mirror to.</p>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<p>Limit ingress bandwidth on eth0 to 1mbit/s, redirect exceeding traffic to lo for debugging purposes:</p>
+<blockquote>
+<pre><code># tc qdisc add dev eth0 handle ffff: ingress
+# tc filter add dev eth0 parent ffff: u32 \
+	match u32 0 0 \
+	action police rate 1mbit burst 100k conform-exceed pipe \
+	action mirred egress redirect dev lo</code></pre>
+</blockquote>
+<p>Mirror all incoming ICMP packets on eth0 to a dummy interface for examination with e.g. tcpdump:</p>
+<blockquote>
+<pre><code># ip link add dummy0 type dummy
+# ip link set dummy0 up
+# tc qdisc add dev eth0 handle ffff: ingress
+# tc filter add dev eth0 parent ffff: protocol ip \
+	u32 match ip protocol 1 0xff \
+	action mirred egress mirror dev dummy0</code></pre>
+</blockquote>
+<p>Using an <strong>ifb</strong> interface, it is possible to send ingress traffic through an instance of <strong>sfq</strong>:</p>
+<blockquote>
+<pre><code># modprobe ifb
+# ip link set ifb0 up
+# tc qdisc add dev ifb0 root sfq
+# tc qdisc add dev eth0 handle ffff: ingress
+# tc filter add dev eth0 parent ffff: u32 \
+	match u32 0 0 \
+	action mirred egress redirect dev ifb0</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8), <strong>tc-u32</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

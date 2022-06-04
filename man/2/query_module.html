@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command query_module</title><meta name="description" content="Linux command query_module query the kernel for various bits pertaining to modules"><meta name="keywords" content="linux, command, query_module, bsd, query the kernel for various bits pertaining to modules"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>query_module - query the kernel for various bits pertaining to modules</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;linux/module.h&gt;
+
+int query_module(const char *name, int which, void *buf,
+ size_t bufsize, size_t *ret);</code></pre>
+<p><em>Note</em>: No declaration of this system call is provided in glibc headers; see NOTES.</p>
+<h1>DESCRIPTION</h1>
+<p><em>Note</em>: This system call is present only in kernels before Linux 2.6.</p>
+<p><strong>query_module</strong>() requests information from the kernel about loadable modules. The returned information is placed in the buffer pointed to by <em>buf</em>. The caller must specify the size of <em>buf</em> in <em>bufsize</em>. The precise nature and format of the returned information depend on the operation specified by <em>which</em>. Some operations require <em>name</em> to identify a currently loaded module, some allow <em>name</em> to be NULL, indicating the kernel proper.</p>
+<p>The following values can be specified for <em>which</em>:</p>
+<dl>
+<dt><strong>0</strong></dt>
+<dd><p>Returns success, if the kernel supports <strong>query_module</strong>(). Used to probe for availability of the system call.</p>
+</dd>
+<dt><strong>QM_MODULES</strong></dt>
+<dd><p>Returns the names of all loaded modules. The returned buffer consists of a sequence of null-terminated strings; <em>ret</em> is set to the number of modules.</p>
+</dd>
+<dt><strong>QM_DEPS</strong></dt>
+<dd><p>Returns the names of all modules used by the indicated module. The returned buffer consists of a sequence of null-terminated strings; <em>ret</em> is set to the number of modules.</p>
+</dd>
+<dt><strong>QM_REFS</strong></dt>
+<dd><p>Returns the names of all modules using the indicated module. This is the inverse of <strong>QM_DEPS</strong>. The returned buffer consists of a sequence of null-terminated strings; <em>ret</em> is set to the number of modules.</p>
+</dd>
+<dt><strong>QM_SYMBOLS</strong></dt>
+<dd><p>Returns the symbols and values exported by the kernel or the indicated module. The returned buffer is an array of structures of the following form</p>
+<pre><code>struct module_symbol {
+    unsigned long value;
+    unsigned long name;
+};</code></pre>
+<p>followed by null-terminated strings. The value of <em>name</em> is the character offset of the string relative to the start of <em>buf</em>; <em>ret</em> is set to the number of symbols.</p>
+</dd>
+<dt><strong>QM_INFO</strong></dt>
+<dd><p>Returns miscellaneous information about the indicated module. The output buffer format is:</p>
+<pre><code>struct module_info {
+    unsigned long address;
+    unsigned long size;
+    unsigned long flags;
+};</code></pre>
+<p>where <em>address</em> is the kernel address at which the module resides, <em>size</em> is the size of the module in bytes, and <em>flags</em> is a mask of <strong>MOD_RUNNING</strong>, <strong>MOD_AUTOCLEAN</strong>, and so on, that indicates the current status of the module (see the Linux kernel source file <em>include/linux/module.h</em>). <em>ret</em> is set to the size of the <em>module_info</em> structure.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>At least one of <em>name</em>, <em>buf</em>, or <em>ret</em> was outside the program's accessible address space.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Invalid <em>which</em>; or <em>name</em> is NULL (indicating "the kernel"), but this is not permitted with the specified value of <em>which</em>.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>No module by that <em>name</em> exists.</p>
+</dd>
+<dt><strong>ENOSPC</strong></dt>
+<dd><p>The buffer size provided was too small. <em>ret</em> is set to the minimum size needed.</p>
+</dd>
+<dt><strong>ENOSYS</strong></dt>
+<dd><p><strong>query_module</strong>() is not supported in this version of the kernel (e.g., the kernel is version 2.6 or later).</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>This system call is present on Linux only up until kernel 2.4; it was removed in Linux 2.6.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>query_module</strong>() is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>Some of the information that was formerly available via <strong>query_module</strong>() can be obtained from <em>/proc/modules</em>, <em>/proc/kallsyms</em>, and the files under the directory <em>/sys/module</em>.</p>
+<p>The <strong>query_module</strong>() system call is not supported by glibc. No declaration is provided in glibc headers, but, through a quirk of history, glibc does export an ABI for this system call. Therefore, in order to employ this system call, it is sufficient to manually declare the interface in your code; alternatively, you can invoke the system call using <strong>syscall</strong>(2).</p>
+<h1>SEE ALSO</h1>
+<p><strong>create_module</strong>(2), <strong>delete_module</strong>(2), <strong>get_kernel_syms</strong>(2), <strong>init_module</strong>(2), <strong>lsmod</strong>(8), <strong>modinfo</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

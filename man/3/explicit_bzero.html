@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command explicit_bzero</title><meta name="description" content="Linux command explicit_bzero zero a byte string"><meta name="keywords" content="linux, command, explicit_bzero, bsd, zero a byte string"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>bzero, explicit_bzero - zero a byte string</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;strings.h&gt;
+
+void bzero(void *s, size_t n);
+
+#include &lt;string.h&gt;
+
+void explicit_bzero(void *s, size_t n);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>bzero</strong>() function erases the data in the <em>n</em> bytes of the memory starting at the location pointed to by <em>s</em>, by writing zeros (bytes containing '\0') to that area.</p>
+<p>The <strong>explicit_bzero</strong>() function performs the same task as <strong>bzero</strong>(). It differs from <strong>bzero</strong>() in that it guarantees that compiler optimizations will not remove the erase operation if the compiler deduces that the operation is "unnecessary".</p>
+<h1>RETURN VALUE</h1>
+<p>None.</p>
+<h1>VERSIONS</h1>
+<p><strong>explicit_bzero</strong>() first appeared in glibc 2.25.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>bzero</strong>(),<br />
+<strong>explicit_bzero</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>The <strong>bzero</strong>() function is deprecated (marked as LEGACY in POSIX.1-2001); use <strong>memset</strong>(3) in new programs. POSIX.1-2008 removes the specification of <strong>bzero</strong>(). The <strong>bzero</strong>() function first appeared in 4.3BSD.</p>
+<p>The <strong>explicit_bzero</strong>() function is a nonstandard extension that is also present on some of the BSDs. Some other implementations have a similar function, such as <strong>memset_explicit</strong>() or <strong>memset_s</strong>().</p>
+<h1>NOTES</h1>
+<p>The <strong>explicit_bzero</strong>() function addresses a problem that security-conscious applications may run into when using <strong>bzero</strong>(): if the compiler can deduce that the location to zeroed will never again be touched by a <em>correct</em> program, then it may remove the <strong>bzero</strong>() call altogether. This is a problem if the intent of the <strong>bzero</strong>() call was to erase sensitive data (e.g., passwords) to prevent the possibility that the data was leaked by an incorrect or compromised program. Calls to <strong>explicit_bzero</strong>() are never optimized away by the compiler.</p>
+<p>The <strong>explicit_bzero</strong>() function does not solve all problems associated with erasing sensitive data:</p>
+<ol type="1">
+<li><p>The <strong>explicit_bzero</strong>() function does <em>not</em> guarantee that sensitive data is completely erased from memory. (The same is true of <strong>bzero</strong>().) For example, there may be copies of the sensitive data in a register and in "scratch" stack areas. The <strong>explicit_bzero</strong>() function is not aware of these copies, and can't erase them.</p></li>
+<li><p>In some circumstances, <strong>explicit_bzero</strong>() can <em>decrease</em> security. If the compiler determined that the variable containing the sensitive data could be optimized to be stored in a register (because it is small enough to fit in a register, and no operation other than the <strong>explicit_bzero</strong>() call would need to take the address of the variable), then the <strong>explicit_bzero</strong>() call will force the data to be copied from the register to a location in RAM that is then immediately erased (while the copy in the register remains unaffected). The problem here is that data in RAM is more likely to be exposed by a bug than data in a register, and thus the <strong>explicit_bzero</strong>() call creates a brief time window where the sensitive data is more vulnerable than it would otherwise have been if no attempt had been made to erase the data.</p></li>
+</ol>
+<p>Note that declaring the sensitive variable with the <strong>volatile</strong> qualifier does <em>not</em> eliminate the above problems. Indeed, it will make them worse, since, for example, it may force a variable that would otherwise have been optimized into a register to instead be maintained in (more vulnerable) RAM for its entire lifetime.</p>
+<p>Notwithstanding the above details, for security-conscious applications, using <strong>explicit_bzero</strong>() is generally preferable to not using it. The developers of <strong>explicit_bzero</strong>() anticipate that future compilers will recognize calls to <strong>explicit_bzero</strong>() and take steps to ensure that all copies of the sensitive data are erased, including copies in registers or in "scratch" stack areas.</p>
+<h1>SEE ALSO</h1>
+<p><strong>bstring</strong>(3), <strong>memset</strong>(3), <strong>swab</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

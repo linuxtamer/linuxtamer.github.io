@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command git-init</title><meta name="description" content="Linux command git-init Create an empty Git repository or reinitialize an existing one"><meta name="keywords" content="linux, command, git-init, bsd, Create an empty Git repository or reinitialize an existing one"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>git-init - Create an empty Git repository or reinitialize an existing one</p>
+<h1>SYNOPSIS</h1>
+<pre><code>git init [-q | --quiet] [--bare] [--template=&lt;template_directory&gt;]
+          [--separate-git-dir &lt;git dir&gt;] [--object-format=&lt;format&gt;]
+          [-b &lt;branch-name&gt; | --initial-branch=&lt;branch-name&gt;]
+          [--shared[=&lt;permissions&gt;]] [directory]</code></pre>
+<h1>DESCRIPTION</h1>
+<p>This command creates an empty Git repository - basically a <strong>.git</strong> directory with subdirectories for <strong>objects</strong>, <strong>refs/heads</strong>, <strong>refs/tags</strong>, and template files. An initial branch without any commits will be created (see the <strong>--initial-branch</strong> option below for its name).</p>
+<p>If the <strong>$GIT_DIR</strong> environment variable is set then it specifies a path to use instead of <strong>./.git</strong> for the base of the repository.</p>
+<p>If the object storage directory is specified via the <strong>$GIT_OBJECT_DIRECTORY</strong> environment variable then the sha1 directories are created underneath - otherwise the default <strong>$GIT_DIR/objects</strong> directory is used.</p>
+<p>Running <em>git init</em> in an existing repository is safe. It will not overwrite things that are already there. The primary reason for rerunning <em>git init</em> is to pick up newly added templates (or to move the repository to another place if --separate-git-dir is given).</p>
+<h1>OPTIONS</h1>
+<p>-q, --quiet</p>
+<blockquote>
+<p>Only print error and warning messages; all other output will be suppressed.</p>
+</blockquote>
+<p>--bare</p>
+<blockquote>
+<p>Create a bare repository. If <strong>GIT_DIR</strong> environment is not set, it is set to the current working directory.</p>
+</blockquote>
+<p>--object-format=&lt;format&gt;</p>
+<blockquote>
+<p>Specify the given object format (hash algorithm) for the repository. The valid values are <em>sha1</em> and (if enabled) <em>sha256</em>. <em>sha1</em> is the default.</p>
+<p>THIS OPTION IS EXPERIMENTAL! SHA-256 support is experimental and still in an early stage. A SHA-256 repository will in general not be able to share work with "regular" SHA-1 repositories. It should be assumed that, e.g., Git internal file formats in relation to SHA-256 repositories may change in backwards-incompatible ways. Only use <strong>--object-format=sha256</strong> for testing purposes.</p>
+</blockquote>
+<p>--template=&lt;template_directory&gt;</p>
+<blockquote>
+<p>Specify the directory from which templates will be used. (See the "TEMPLATE DIRECTORY" section below.)</p>
+</blockquote>
+<p>--separate-git-dir=&lt;git dir&gt;</p>
+<blockquote>
+<p>Instead of initializing the repository as a directory to either <strong>$GIT_DIR</strong> or <strong>./.git/</strong>, create a text file there containing the path to the actual repository. This file acts as filesystem-agnostic Git symbolic link to the repository.</p>
+<p>If this is reinitialization, the repository will be moved to the specified path.</p>
+</blockquote>
+<p>-b &lt;branch-name&gt;, --initial-branch=&lt;branch-name&gt;</p>
+<blockquote>
+<p>Use the specified name for the initial branch in the newly created repository. If not specified, fall back to the default name (currently <strong>master</strong>, but this is subject to change in the future; the name can be customized via the <strong>init.defaultBranch</strong> configuration variable).</p>
+</blockquote>
+<p>--shared[=(false|true|umask|group|all|world|everybody|0xxx)]</p>
+<blockquote>
+<p>Specify that the Git repository is to be shared amongst several users. This allows users belonging to the same group to push into that repository. When specified, the config variable "core.sharedRepository" is set so that files and directories under <strong>$GIT_DIR</strong> are created with the requested permissions. When not specified, Git will use permissions reported by umask(2).</p>
+<p>The option can have the following values, defaulting to <em>group</em> if no value is given:</p>
+<p><em>umask</em> (or <em>false</em>)</p>
+<blockquote>
+<p>Use permissions reported by umask(2). The default, when <strong>--shared</strong> is not specified.</p>
+</blockquote>
+<p><em>group</em> (or <em>true</em>)</p>
+<blockquote>
+<p>Make the repository group-writable, (and g+sx, since the git group may be not the primary group of all users). This is used to loosen the permissions of an otherwise safe umask(2) value. Note that the umask still applies to the other permission bits (e.g. if umask is <em>0022</em>, using <em>group</em> will not remove read privileges from other (non-group) users). See <em>0xxx</em> for how to exactly specify the repository permissions.</p>
+</blockquote>
+<p><em>all</em> (or <em>world</em> or <em>everybody</em>)</p>
+<blockquote>
+<p>Same as <em>group</em>, but make the repository readable by all users.</p>
+</blockquote>
+<p><em>0xxx</em></p>
+<blockquote>
+<p><em>0xxx</em> is an octal number and each file will have mode <em>0xxx</em>. <em>0xxx</em> will override users umask(2) value (and not only loosen permissions as <em>group</em> and <em>all</em> does). <em>0640</em> will create a repository which is group-readable, but not group-writable or accessible to others. <em>0660</em> will create a repo that is readable and writable to the current user and group, but inaccessible to others.</p>
+</blockquote>
+</blockquote>
+<p>By default, the configuration flag <strong>receive.denyNonFastForwards</strong> is enabled in shared repositories, so that you cannot force a non fast-forwarding push into it.</p>
+<p>If you provide a <em>directory</em>, the command is run inside it. If this directory does not exist, it will be created.</p>
+<h1>TEMPLATE DIRECTORY</h1>
+<p>Files and directories in the template directory whose name do not start with a dot will be copied to the <strong>$GIT_DIR</strong> after it is created.</p>
+<p>The template directory will be one of the following (in order):</p>
+<blockquote>
+<p>·</p>
+<p>the argument given with the <strong>--template</strong> option;</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>the contents of the <strong>$GIT_TEMPLATE_DIR</strong> environment variable;</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>the <strong>init.templateDir</strong> configuration variable; or</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>the default template directory: <strong>/usr/share/git-core/templates</strong>.</p>
+</blockquote>
+<p>The default template directory includes some directory structure, suggested "exclude patterns" (see <strong>gitignore</strong>(5)), and sample hook files.</p>
+<p>The sample hooks are all disabled by default. To enable one of the sample hooks rename it by removing its <strong>.sample</strong> suffix.</p>
+<p>See <strong>githooks</strong>(5) for more general info on hook execution.</p>
+<h1>EXAMPLES</h1>
+<p>Start a new Git repository for an existing code base</p>
+<blockquote>
+<blockquote>
+<pre><code>$ cd /path/to/my/codebase
+$ git init      (1)
+$ git add .     (2)
+$ git commit    (3)</code></pre>
+</blockquote>
+<p><strong>1. </strong>Create a /path/to/my/codebase/.git directory.<br />
+<strong>2. </strong>Add all existing files to the index.<br />
+<strong>3. </strong>Record the pristine state as the first commit in the history.<br />
+</p>
+</blockquote>
+<h1>GIT</h1>
+<p>Part of the <strong>git</strong>(1) suite</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

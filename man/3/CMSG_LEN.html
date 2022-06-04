@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command CMSG_LEN</title><meta name="description" content="Linux command CMSG_LEN access ancillary data"><meta name="keywords" content="linux, command, CMSG_LEN, bsd, access ancillary data"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>CMSG_ALIGN, CMSG_SPACE, CMSG_NXTHDR, CMSG_FIRSTHDR - access ancillary data</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/socket.h&gt;
+struct cmsghdr *CMSG_FIRSTHDR(struct msghdr *msgh);
+struct cmsghdr *CMSG_NXTHDR(struct msghdr *msgh,
+ struct cmsghdr *cmsg);
+size_t CMSG_ALIGN(size_t length);
+size_t CMSG_SPACE(size_t length);
+size_t CMSG_LEN(size_t length);
+unsigned char *CMSG_DATA(struct cmsghdr *cmsg);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>These macros are used to create and access control messages (also called ancillary data) that are not a part of the socket payload. This control information may include the interface the packet was received on, various rarely used header fields, an extended error description, a set of file descriptors, or UNIX credentials. For instance, control messages can be used to send additional header fields such as IP options. Ancillary data is sent by calling <strong>sendmsg</strong>(2) and received by calling <strong>recvmsg</strong>(2). See their manual pages for more information.</p>
+<p>Ancillary data is a sequence of <em>cmsghdr</em> structures with appended data. See the specific protocol man pages for the available control message types. The maximum ancillary buffer size allowed per socket can be set using <em>/proc/sys/net/core/optmem_max</em>; see <strong>socket</strong>(7).</p>
+<p>The <em>cmsghdr</em> structure is defined as follows:</p>
+<pre><code>struct cmsghdr {
+    size_t cmsg_len;    /* Data byte count, including header
+                           (type is socklen_t in POSIX) */
+    int    cmsg_level;  /* Originating protocol */
+    int    cmsg_type;   /* Protocol-specific type */
+/* followed by
+   unsigned char cmsg_data[]; */
+};</code></pre>
+<p>The sequence of <em>cmsghdr</em> structures should never be accessed directly. Instead, use only the following macros:</p>
+<ul>
+<li><p><strong>CMSG_FIRSTHDR</strong>() returns a pointer to the first <em>cmsghdr</em> in the ancillary data buffer associated with the passed <em>msghdr</em>. It returns NULL if there isn't enough space for a <em>cmsghdr</em> in the buffer.</p></li>
+<li><p><strong>CMSG_NXTHDR</strong>() returns the next valid <em>cmsghdr</em> after the passed <em>cmsghdr</em>. It returns NULL when there isn't enough space left in the buffer.</p>
+<p>When initializing a buffer that will contain a series of <em>cmsghdr</em> structures (e.g., to be sent with <strong>sendmsg</strong>(2)), that buffer should first be zero-initialized to ensure the correct operation of <strong>CMSG_NXTHDR</strong>().</p></li>
+<li><p><strong>CMSG_ALIGN</strong>(), given a length, returns it including the required alignment. This is a constant expression.</p></li>
+<li><p><strong>CMSG_SPACE</strong>() returns the number of bytes an ancillary element with payload of the passed data length occupies. This is a constant expression.</p></li>
+<li><p><strong>CMSG_DATA</strong>() returns a pointer to the data portion of a <em>cmsghdr</em>. The pointer returned cannot be assumed to be suitably aligned for accessing arbitrary payload data types. Applications should not cast it to a pointer type matching the payload, but should instead use <strong>memcpy</strong>(3) to copy data to or from a suitably declared object.</p></li>
+<li><p><strong>CMSG_LEN</strong>() returns the value to store in the <em>cmsg_len</em> member of the <em>cmsghdr</em> structure, taking into account any necessary alignment. It takes the data length as an argument. This is a constant expression.</p></li>
+</ul>
+<p>To create ancillary data, first initialize the <em>msg_controllen</em> member of the <em>msghdr</em> with the length of the control message buffer. Use <strong>CMSG_FIRSTHDR</strong>() on the <em>msghdr</em> to get the first control message and <strong>CMSG_NXTHDR</strong>() to get all subsequent ones. In each control message, initialize <em>cmsg_len</em> (with <strong>CMSG_LEN</strong>()), the other <em>cmsghdr</em> header fields, and the data portion using <strong>CMSG_DATA</strong>(). Finally, the <em>msg_controllen</em> field of the <em>msghdr</em> should be set to the sum of the <strong>CMSG_SPACE</strong>() of the length of all control messages in the buffer. For more information on the <em>msghdr</em>, see <strong>recvmsg</strong>(2).</p>
+<h1>CONFORMING TO</h1>
+<p>This ancillary data model conforms to the POSIX.1g draft, 4.4BSD-Lite, the IPv6 advanced API described in RFC 2292 and SUSv2. <strong>CMSG_FIRSTHDR</strong>(), <strong>CMSG_NXTHDR</strong>(), and <strong>CMSG_DATA</strong>() are specified in POSIX.1-2008. <strong>CMSG_SPACE</strong>() and <strong>CMSG_LEN</strong>() will be included in the next POSIX release (Issue 8).</p>
+<p><strong>CMSG_ALIGN</strong>() is a Linux extension.</p>
+<h1>NOTES</h1>
+<p>For portability, ancillary data should be accessed using only the macros described here. <strong>CMSG_ALIGN</strong>() is a Linux extension and should not be used in portable programs.</p>
+<p>In Linux, <strong>CMSG_LEN</strong>(), <strong>CMSG_DATA</strong>(), and <strong>CMSG_ALIGN</strong>() are constant expressions (assuming their argument is constant), meaning that these values can be used to declare the size of global variables. This may not be portable, however.</p>
+<h1>EXAMPLES</h1>
+<p>This code looks for the <strong>IP_TTL</strong> option in a received ancillary buffer:</p>
+<pre><code>struct msghdr msgh;
+struct cmsghdr *cmsg;
+int received_ttl;
+
+/* Receive auxiliary data in msgh */
+
+for (cmsg = CMSG_FIRSTHDR(&amp;msgh); cmsg != NULL;
+        cmsg = CMSG_NXTHDR(&amp;msgh, cmsg)) {
+    if (cmsg-&gt;cmsg_level == IPPROTO_IP
+            &amp;&amp; cmsg-&gt;cmsg_type == IP_TTL) {
+        memcpy(&amp;receive_ttl, CMSG_DATA(cmsg), sizeof(received_ttl));
+        break;
+    }
+}
+
+if (cmsg == NULL) {
+    /* Error: IP_TTL not enabled or small buffer or I/O error */
+}</code></pre>
+<p>The code below passes an array of file descriptors over a UNIX domain socket using <strong>SCM_RIGHTS</strong>:</p>
+<pre><code>struct msghdr msg = { 0 };
+struct cmsghdr *cmsg;
+int myfds[NUM_FD];  /* Contains the file descriptors to pass */
+char iobuf[1];
+struct iovec io = {
+    .iov_base = iobuf,
+    .iov_len = sizeof(iobuf)
+};
+union {         /* Ancillary data buffer, wrapped in a union
+                   in order to ensure it is suitably aligned */
+    char buf[CMSG_SPACE(sizeof(myfds))];
+    struct cmsghdr align;
+} u;
+
+msg.msg_iov = &amp;io;
+msg.msg_iovlen = 1;
+msg.msg_control = u.buf;
+msg.msg_controllen = sizeof(u.buf);
+cmsg = CMSG_FIRSTHDR(&amp;msg);
+cmsg-&gt;cmsg_level = SOL_SOCKET;
+cmsg-&gt;cmsg_type = SCM_RIGHTS;
+cmsg-&gt;cmsg_len = CMSG_LEN(sizeof(myfds));
+memcpy(CMSG_DATA(cmsg), myfds, sizeof(myfds));</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>recvmsg</strong>(2), <strong>sendmsg</strong>(2)</p>
+<p>RFC 2292</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

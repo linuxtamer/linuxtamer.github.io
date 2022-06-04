@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fgetgrent_r</title><meta name="description" content="Linux command fgetgrent_r get group file entry reentrantly"><meta name="keywords" content="linux, command, fgetgrent_r, bsd, get group file entry reentrantly"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getgrent_r, fgetgrent_r - get group file entry reentrantly</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;grp.h&gt;
+
+int getgrent_r(struct group *gbuf, char *buf,
+ size_t buflen, struct group **gbufp);
+
+int fgetgrent_r(FILE *stream, struct group *gbuf, char *buf,
+ size_t buflen, struct group **gbufp);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>getgrent_r</strong>(): _GNU_SOURCE<br />
+<strong>fgetgrent_r</strong>(): Since glibc 2.19: _DEFAULT_SOURCE Glibc 2.19 and earlier: _SVID_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>The functions <strong>getgrent_r</strong>() and <strong>fgetgrent_r</strong>() are the reentrant versions of <strong>getgrent</strong>(3) and <strong>fgetgrent</strong>(3). The former reads the next group entry from the stream initialized by <strong>setgrent</strong>(3). The latter reads the next group entry from <em>stream</em>.</p>
+<p>The <em>group</em> structure is defined in <em>&lt;grp.h&gt;</em> as follows:</p>
+<pre><code>struct group {
+    char   *gr_name;        /* group name */
+    char   *gr_passwd;      /* group password */
+    gid_t   gr_gid;         /* group ID */
+    char  **gr_mem;         /* NULL-terminated array of pointers
+                               to names of group members */
+};</code></pre>
+<p>For more information about the fields of this structure, see <strong>group</strong>(5).</p>
+<p>The nonreentrant functions return a pointer to static storage, where this static storage contains further pointers to group name, password and members. The reentrant functions described here return all of that in caller-provided buffers. First of all there is the buffer <em>gbuf</em> that can hold a <em>struct group</em>. And next the buffer <em>buf</em> of size <em>buflen</em> that can hold additional strings. The result of these functions, the <em>struct group</em> read from the stream, is stored in the provided buffer <em>*gbuf</em>, and a pointer to this <em>struct group</em> is returned in <em>*gbufp</em>.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, these functions return 0 and <em>*gbufp</em> is a pointer to the <em>struct group</em>. On error, these functions return an error value and <em>*gbufp</em> is NULL.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>No more entries.</p>
+</dd>
+<dt><strong>ERANGE</strong></dt>
+<dd><p>Insufficient buffer space supplied. Try again with larger buffer.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getgrent_r</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:grent locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>fgetgrent_r</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<p>In the above table, <em>grent</em> in <em>race:grent</em> signifies that if any of the functions <strong>setgrent</strong>(3), <strong>getgrent</strong>(3), <strong>endgrent</strong>(3), or <strong>getgrent_r</strong>() are used in parallel in different threads of a program, then data races could occur.</p>
+<h1>CONFORMING TO</h1>
+<p>These functions are GNU extensions, done in a style resembling the POSIX version of functions like <strong>getpwnam_r</strong>(3). Other systems use the prototype</p>
+<pre><code>struct group *getgrent_r(struct group *grp, char *buf,
+                         int buflen);</code></pre>
+<p>or, better,</p>
+<pre><code>int getgrent_r(struct group *grp, char *buf, int buflen,
+               FILE **gr_fp);</code></pre>
+<h1>NOTES</h1>
+<p>The function <strong>getgrent_r</strong>() is not really reentrant since it shares the reading position in the stream with all other threads.</p>
+<h1>EXAMPLES</h1>
+<pre><code>#define _GNU_SOURCE
+#include &lt;grp.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdint.h&gt;
+#include &lt;stdlib.h&gt;
+#define BUFLEN 4096
+
+int
+main(void)
+{
+    struct group grp;
+    struct group *grpp;
+    char buf[BUFLEN];
+    int i;
+
+    setgrent();
+    while (1) {
+        i = getgrent_r(&amp;grp, buf, sizeof(buf), &amp;grpp);
+        if (i)
+            break;
+        printf(&quot;%s (%jd):&quot;, grpp-&gt;gr_name, (intmax_t) grpp-&gt;gr_gid);
+        for (int j = 0; ; j++) {
+            if (grpp-&gt;gr_mem[j] == NULL)
+                break;
+            printf(&quot; %s&quot;, grpp-&gt;gr_mem[j]);
+        }
+        printf(&quot;\n&quot;);
+    }
+    endgrent();
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>fgetgrent</strong>(3), <strong>getgrent</strong>(3), <strong>getgrgid</strong>(3), <strong>getgrnam</strong>(3), <strong>putgrent</strong>(3), <strong>group</strong>(5)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

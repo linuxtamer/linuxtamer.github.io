@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command access.conf</title><meta name="description" content="Linux command access.conf the login access control table file"><meta name="keywords" content="linux, command, access.conf, bsd, the login access control table file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>access.conf - the login access control table file</p>
+<h1>DESCRIPTION</h1>
+<p>The /etc/security/access.conf file specifies (<em>user/group</em>, <em>host</em>), (<em>user/group</em>, <em>network/netmask</em>), (<em>user/group</em>, <em>tty</em>), (<em>user/group</em>, <em>X-$DISPLAY-value</em>), or (<em>user/group</em>, <em>pam-service-name</em>) combinations for which a login will be either accepted or refused.</p>
+<p>When someone logs in, the file access.conf is scanned for the first entry that matches the (<em>user/group</em>, <em>host</em>) or (<em>user/group</em>, <em>network/netmask</em>) combination, or, in case of non-networked logins, the first entry that matches the (<em>user/group</em>, <em>tty</em>) combination, or in the case of non-networked logins without a tty, the first entry that matches the (<em>user/group</em>, <em>X-$DISPLAY-value</em>) or (<em>user/group</em>, <em>pam-service-name/</em>) combination. The permissions field of that table entry determines whether the login will be accepted or refused.</p>
+<p>Each line of the login access control table has three fields separated by a ":" character (colon):</p>
+<p><em>permission</em>:<em>users/groups</em>:<em>origins</em></p>
+<p>The first field, the <em>permission</em> field, can be either a "<em>+</em>" character (plus) for access granted or a "<em>-</em>" character (minus) for access denied.</p>
+<p>The second field, the <em>users</em>/<em>group</em> field, should be a list of one or more login names, group names, or <em>ALL</em> (which always matches). To differentiate user entries from group entries, group entries should be written with brackets, e.g. <em>(group)</em>.</p>
+<p>The third field, the <em>origins</em> field, should be a list of one or more tty names (for non-networked logins), X <em>$DISPLAY</em> values or PAM service names (for non-networked logins without a tty), host names, domain names (begin with "."), host addresses, internet network numbers (end with "."), internet network addresses with network mask (where network mask can be a decimal number or an internet address also), <em>ALL</em> (which always matches) or <em>LOCAL</em>. The <em>LOCAL</em> keyword matches if and only if <strong>pam_get_item</strong>(3), when called with an <em>item_type</em> of <em>PAM_RHOST</em>, returns NULL or an empty string (and therefore the <em>origins</em> field is compared against the return value of <strong>pam_get_item</strong>(3) called with an <em>item_type</em> of <em>PAM_TTY</em> or, absent that, <em>PAM_SERVICE</em>).</p>
+<p>If supported by the system you can use <em>@netgroupname</em> in host or user patterns. The <em>@@netgroupname</em> syntax is supported in the user pattern only and it makes the local system hostname to be passed to the netgroup match call in addition to the user name. This might not work correctly on some libc implementations causing the match to always fail.</p>
+<p>The <em>EXCEPT</em> operator makes it possible to write very compact rules.</p>
+<p>If the <strong>nodefgroup</strong> is not set, the group file is searched when a name does not match that of the logged-in user. Only groups are matched in which users are explicitly listed. However the PAM module does not look at the primary group id of a user.</p>
+<p>The "<em>#</em>" character at start of line (no space at front) can be used to mark this line as a comment line.</p>
+<h1>EXAMPLES</h1>
+<p>These are some example lines which might be specified in /etc/security/access.conf.</p>
+<p>User <em>root</em> should be allowed to get access via <em>cron</em>, X11 terminal <em>:0</em>, <em>tty1</em>, ..., <em>tty5</em>, <em>tty6</em>.</p>
+<p>+:root:crond :0 tty1 tty2 tty3 tty4 tty5 tty6</p>
+<p>User <em>root</em> should be allowed to get access from hosts which own the IPv4 addresses. This does not mean that the connection have to be a IPv4 one, a IPv6 connection from a host with one of this IPv4 addresses does work, too.</p>
+<p>+:root:192.168.200.1 192.168.200.4 192.168.200.9</p>
+<p>+:root:127.0.0.1</p>
+<p>User <em>root</em> should get access from network 192.168.201. where the term will be evaluated by string matching. But it might be better to use network/netmask instead. The same meaning of 192.168.201. is <em>192.168.201.0/24</em> or <em>192.168.201.0/255.255.255.0</em>.</p>
+<p>+:root:192.168.201.</p>
+<p>User <em>root</em> should be able to have access from hosts <em>foo1.bar.org</em> and <em>foo2.bar.org</em> (uses string matching also).</p>
+<p>+:root:foo1.bar.org foo2.bar.org</p>
+<p>User <em>root</em> should be able to have access from domain <em>foo.bar.org</em> (uses string matching also).</p>
+<p>+:root:.foo.bar.org</p>
+<p>User <em>root</em> should be denied to get access from all other sources.</p>
+<p>-:root:ALL</p>
+<p>User <em>foo</em> and members of netgroup <em>admins</em> should be allowed to get access from all sources. This will only work if netgroup service is available.</p>
+<p>+:@admins foo:ALL</p>
+<p>User <em>john</em> and <em>foo</em> should get access from IPv6 host address.</p>
+<p>+:john foo:2001:db8:0:101::1</p>
+<p>User <em>john</em> should get access from IPv6 net/mask.</p>
+<p>+:john:2001:db8:0:101::/64</p>
+<p>Members of group <em>wheel</em> should be allowed to get access from all sources.</p>
+<p>+:(wheel):ALL</p>
+<p>Disallow console logins to all but the shutdown, sync and all other accounts, which are a member of the wheel group.</p>
+<p>-:ALL EXCEPT (wheel) shutdown sync:LOCAL</p>
+<p>All other users should be denied to get access from all sources.</p>
+<p>-:ALL:ALL</p>
+<h1>NOTES</h1>
+<p>The default separators of list items in a field are space, ,, and tabulator characters. Thus conveniently if spaces are put at the beginning and the end of the fields they are ignored. However if the list separator is changed with the <em>listsep</em> option, the spaces will become part of the actual item and the line will be most probably ignored. For this reason, it is not recommended to put spaces around the : characters.</p>
+<h1>SEE ALSO</h1>
+<p><strong>pam_access</strong>(8), <strong>pam.d</strong>(5), <strong>pam</strong>(7)</p>
+<h1>AUTHORS</h1>
+<p>Original <strong>login.access</strong>(5) manual was provided by Guido van Rooij which was renamed to <strong>access.conf</strong>(5) to reflect relation to default config file.</p>
+<p>Network address / netmask description and example text was introduced by Mike Becher &lt;mike.becher@lrz-muenchen.de&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

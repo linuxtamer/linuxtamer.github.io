@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command popen</title><meta name="description" content="Linux command popen pipe stream to or from a process"><meta name="keywords" content="linux, command, popen, bsd, pipe stream to or from a process"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>popen, pclose - pipe stream to or from a process</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;stdio.h&gt;
+
+FILE *popen(const char *command, const char *type);
+
+int pclose(FILE *stream);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>popen</strong>(), <strong>pclose</strong>():</p>
+<blockquote>
+<p>_POSIX_C_SOURCE &gt;= 2 || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE || _SVID_SOURCE</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>The <strong>popen</strong>() function opens a process by creating a pipe, forking, and invoking the shell. Since a pipe is by definition unidirectional, the <em>type</em> argument may specify only reading or writing, not both; the resulting stream is correspondingly read-only or write-only.</p>
+<p>The <em>command</em> argument is a pointer to a null-terminated string containing a shell command line. This command is passed to <em>/bin/sh</em> using the <strong>-c</strong> flag; interpretation, if any, is performed by the shell.</p>
+<p>The <em>type</em> argument is a pointer to a null-terminated string which must contain either the letter 'r' for reading or the letter 'w' for writing. Since glibc 2.9, this argument can additionally include the letter 'e', which causes the close-on-exec flag (<strong>FD_CLOEXEC</strong>) to be set on the underlying file descriptor; see the description of the <strong>O_CLOEXEC</strong> flag in <strong>open</strong>(2) for reasons why this may be useful.</p>
+<p>The return value from <strong>popen</strong>() is a normal standard I/O stream in all respects save that it must be closed with <strong>pclose</strong>() rather than <strong>fclose</strong>(3). Writing to such a stream writes to the standard input of the command; the command's standard output is the same as that of the process that called <strong>popen</strong>(), unless this is altered by the command itself. Conversely, reading from the stream reads the command's standard output, and the command's standard input is the same as that of the process that called <strong>popen</strong>().</p>
+<p>Note that output <strong>popen</strong>() streams are block buffered by default.</p>
+<p>The <strong>pclose</strong>() function waits for the associated process to terminate and returns the exit status of the command as returned by <strong>wait4</strong>(2).</p>
+<h1>RETURN VALUE</h1>
+<p><strong>popen</strong>(): on success, returns a pointer to an open stream that can be used to read or write to the pipe; if the <strong>fork</strong>(2) or <strong>pipe</strong>(2) calls fail, or if the function cannot allocate memory, NULL is returned.</p>
+<p><strong>pclose</strong>(): on success, returns the exit status of the command; if <strong>wait4</strong>(2) returns an error, or some other error is detected, -1 is returned.</p>
+<p>Both functions set <em>errno</em> to an appropriate value in the case of an error.</p>
+<h1>ERRORS</h1>
+<p>The <strong>popen</strong>() function does not set <em>errno</em> if memory allocation fails. If the underlying <strong>fork</strong>(2) or <strong>pipe</strong>(2) fails, <em>errno</em> is set appropriately. If the <em>type</em> argument is invalid, and this condition is detected, <em>errno</em> is set to <strong>EINVAL</strong>.</p>
+<p>If <strong>pclose</strong>() cannot obtain the child status, <em>errno</em> is set to <strong>ECHILD</strong>.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>popen</strong>(), <strong>pclose</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<p>The 'e' value for <em>type</em> is a Linux extension.</p>
+<h1>NOTES</h1>
+<p><strong>Note</strong>: carefully read Caveats in <strong>system</strong>(3).</p>
+<h1>BUGS</h1>
+<p>Since the standard input of a command opened for reading shares its seek offset with the process that called <strong>popen</strong>(), if the original process has done a buffered read, the command's input position may not be as expected. Similarly, the output from a command opened for writing may become intermingled with that of the original process. The latter can be avoided by calling <strong>fflush</strong>(3) before <strong>popen</strong>().</p>
+<p>Failure to execute the shell is indistinguishable from the shell's failure to execute command, or an immediate exit of the command. The only hint is an exit status of 127.</p>
+<h1>SEE ALSO</h1>
+<p><strong>sh</strong>(1), <strong>fork</strong>(2), <strong>pipe</strong>(2), <strong>wait4</strong>(2), <strong>fclose</strong>(3), <strong>fflush</strong>(3), <strong>fopen</strong>(3), <strong>stdio</strong>(3), <strong>system</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

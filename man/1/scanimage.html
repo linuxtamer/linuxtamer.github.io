@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command scanimage</title><meta name="description" content="Linux command scanimage scan an image"><meta name="keywords" content="linux, command, scanimage, bsd, scan an image"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>scanimage - scan an image</p>
+<h1>SYNOPSIS</h1>
+<p><strong>scanimage</strong> [<strong>-d</strong>|<strong>--device-name</strong> <em>dev</em>] [<strong>--format</strong> <em>format</em>] [<strong>-i</strong>|<strong>--icc-profile</strong> <em>profile</em>] [<strong>-L</strong>|<strong>--list-devices</strong>] [<strong>-f</strong>|<strong>--formatted-device-list</strong> <em>format</em>] [<strong>-b</strong>|<strong>--batch</strong> [=<em>format</em>]] [<strong>--batch-start</strong> <em>start</em>] [<strong>--batch-count</strong> <em>count</em>] [<strong>--batch-increment</strong> <em>increment</em>] [<strong>--batch-double</strong>] [<strong>--accept-md5-only</strong>] [<strong>-p</strong>|<strong>--progress</strong>] [<strong>-o</strong>|<strong>--output-file</strong>] [<strong>-n</strong>|<strong>--dont-scan</strong>] [<strong>-T</strong>|<strong>--test</strong>] [<strong>-A</strong>|<strong>--all-options</strong>] [<strong>-h</strong>|<strong>--help</strong>] [<strong>-v</strong>|<strong>--verbose</strong>] [<strong>-B</strong>|<strong>--buffer-size</strong> [=<em>size</em>]] [<strong>-V</strong>|<strong>--version</strong>] [<em>device-specific-options</em>]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>scanimage</strong> is a command-line interface to control image acquisition devices such as flatbed scanners or cameras. The device is controlled via command-line options. After command-line processing, <strong>scanimage</strong> normally proceeds to acquire an image. The image data is written to standard output in one of the PNM (portable aNyMaP) formats (PBM for black-and-white images, PGM for grayscale images, and PPM for color images), TIFF format (black-and-white, grayscale or color), PNG format, or JPEG format (compression level 75). <strong>scanimage</strong> accesses image acquisition devices through the <strong>SANE</strong> (Scanner Access Now Easy) interface and can thus support any device for which there exists a <strong>SANE</strong> backend (try <strong>apropos</strong> <em>sane-</em> to get a list of available backends).</p>
+<h1>EXAMPLES</h1>
+<p>To get a list of devices:</p>
+<p>scanimage -L</p>
+<p>To scan with default settings to the file image.pnm:</p>
+<p>scanimage &gt;image.pnm</p>
+<p>To scan 100x100 mm to the file image.tiff (-x and -y may not be available with all devices):</p>
+<p>scanimage -x 100 -y 100 --format=tiff &gt;image.tiff</p>
+<p>To print all available options:</p>
+<p>scanimage -h</p>
+<h1>OPTIONS</h1>
+<p><strong>Remark:</strong> Parameter are defined by the backends. So are --mode Gray and --mode Grayscale in use. Please read the backend documentation first.</p>
+<p>Parameters are separated by a blank from single-character options (e.g. -d epson) and by a "=" from multi-character options (e.g. --device-name=epson).</p>
+<p>The <strong>-d</strong> or <strong>--device-name</strong> options must be followed by a <strong>SANE</strong> device-name like `<em>epson:/dev/sg0</em>' or `<em>hp:/dev/usbscanner0</em>'. A (partial) list of available devices can be obtained with the <strong>--list-devices</strong> option (see below). If no device-name is specified explicitly, <strong>scanimage</strong> reads a device-name from the environment variable <strong>SANE_DEFAULT_DEVICE</strong>. If this variable is not set, <strong>scanimage</strong> will attempt to open the first available device.</p>
+<p>The <strong>--format</strong> <em>format</em> option selects how image data is written to standard output or the file specified by the --output-file option. <em>format</em> can be <strong>pnm</strong>, <strong>tiff</strong>, <strong>png</strong>, or <strong>jpeg</strong>. If <strong>--format</strong> is not specified, PNM is written by default.</p>
+<p>The <strong>-i</strong> or <strong>--icc-profile</strong> option is used to include an ICC profile into a TIFF file.</p>
+<p>The <strong>-L</strong> or <strong>--list-devices</strong> option requests a (partial) list of devices that are available. The list is not complete since some devices may be available, but are not listed in any of the configuration files (which are typically stored in directory <em>/etc/sane.d</em>). This is particularly the case when accessing scanners through the network. If a device is not listed in a configuration file, the only way to access it is by its full device name. You may need to consult your system administrator to find out the names of such devices.</p>
+<p>The <strong>-f</strong> or <strong>--formatted-device-list</strong> option works similar to <strong>--list-devices</strong>, but requires a format string. <strong>scanimage</strong> replaces the placeholders <strong>%d %v %m %t %i %n</strong> with the device name, vendor name, model name, scanner type, an index number and newline respectively. The command</p>
+<blockquote>
+<p><strong>scanimage -f</strong> <em>“ scanner number %i device %d is a %t, model %m, produced by %v ”</em></p>
+</blockquote>
+<p>will produce something like:</p>
+<blockquote>
+<p>scanner number 0 device sharp:/dev/sg1 is a flatbed scanner, model JX250 SCSI, produced by SHARP</p>
+</blockquote>
+<p>The <strong>--batch*</strong> options provide the features for scanning documents using document feeders. <strong>--batch</strong> [<em>format</em>] is used to specify the format of the filename that each page will be written to. Each page is written out to a single file. If <em>format</em> is not specified, the default of out%d.pnm (or out%d.tif for --format tiff, out%d.png for --format png or out%d.jpg for -- format jpeg) will be used. This option is incompatible with the --output-path option. <em>format</em> is given as a printf style string with one integer parameter. <strong>--batch-start</strong> <em>start</em> selects the page number to start naming files with. If this option is not given, the counter will start at 1. <strong>--batch-count</strong> <em>count</em> specifies the number of pages to attempt to scan. If not given, scanimage will continue scanning until the scanner returns a state other than OK. Not all scanners with document feeders signal when the ADF is empty, use this command to work around them. With <strong>--batch-increment</strong> <em>increment</em> you can change the amount that the number in the filename is incremented by. Generally this is used when you are scanning double-sided documents on a single-sided document feeder. A specific command is provided to aid this: <strong>--batch-double</strong> will automatically set the increment to 2. <strong>--batch-prompt</strong> will ask for pressing RETURN before scanning a page. This can be used for scanning multiple pages without an automatic document feeder.</p>
+<p>The <strong>--accept-md5-only</strong> option only accepts user authorization requests that support MD5 security. The <strong>SANE</strong> network daemon (<strong>saned</strong>) is capable of doing such requests. See <strong>saned</strong>(8).</p>
+<p>The <strong>-p</strong> or <strong>--progress</strong> option requests that <strong>scanimage</strong> prints a progress counter. It shows how much image data of the current image has already been received by <strong>scanimage</strong> (in percent).</p>
+<p>The <strong>-o</strong> or <strong>--output-file</strong> option requests that <strong>scanimage</strong> saves the scanning output to the given path. This option is incompatible with the --batch option. The program will try to guess --format from the file name. If that is not possible, it will print an error message and exit.</p>
+<p>The <strong>-n</strong> or <strong>--dont-scan</strong> option requests that <strong>scanimage</strong> only sets the options provided by the user but doesn't actually perform a scan. This option can be used to e.g. turn off the scanner's lamp (if supported by the backend).</p>
+<p>The <strong>-T</strong> or <strong>--test</strong> option requests that <strong>scanimage</strong> performs a few simple sanity tests to make sure the backend works as defined by the <strong>SANE</strong> API (in particular the <strong>sane_read</strong> function is exercised by this test).</p>
+<p>The <strong>-A</strong> or <strong>--all-options</strong> option requests that <strong>scanimage</strong> lists all available options exposed the backend, including button options. The information is printed on standard output and no scan will be done.</p>
+<p>The <strong>-h</strong> or <strong>--help</strong> options request help information. The information is printed on standard output and in this case, no attempt will be made to acquire an image.</p>
+<p>The <strong>-v</strong> or <strong>--verbose</strong> options increase the verbosity of the operation of <strong>scanimage.</strong> The option may be specified repeatedly, each time increasing the verbosity level.</p>
+<p>The <strong>-B</strong> option without argument changes the input buffer size from the default 32KB to 1MB. For finer grained control, use <strong>--buffer-size=</strong> followed by the number of KB.</p>
+<p>The <strong>-V</strong> or <strong>--version</strong> option requests that <strong>scanimage</strong> prints the program and package name, the version number of the <strong>SANE</strong> distribution that it came with and the version of the backend that it loads. Usually that's the dll backend. If more information about the version numbers of the backends are necessary, the <strong>DEBUG</strong> variable for the dll backend can be used. Example: SANE_DEBUG_DLL=3 scanimage -L.</p>
+<p>As you might imagine, much of the power of <strong>scanimage</strong> comes from the fact that it can control any <strong>SANE</strong> backend. Thus, the exact set of command-line options depends on the capabilities of the selected device. To see the options for a device named <em>dev</em>, invoke <strong>scanimage</strong> via a command-line of the form:</p>
+<blockquote>
+<p><strong>scanimage --help --device-name</strong> <em>dev</em></p>
+</blockquote>
+<p>The documentation for the device-specific options printed by <strong>--help</strong> is best explained with a few examples:</p>
+<p>-l 0..218mm [0]<br />
+Top-left x position of scan area.</p>
+<blockquote>
+<p>The description above shows that option <strong>-l</strong> expects an option value in the range from 0 to 218 mm. The value in square brackets indicates that the current option value is 0 mm. Most backends provide similar geometry options for top-left y position (-t), width (-x) and height of scan-area (-y).</p>
+</blockquote>
+<p>--brightness -100..100% [0]<br />
+Controls the brightness of the acquired image.</p>
+<blockquote>
+<p>The description above shows that option <strong>--brightness</strong> expects an option value in the range from -100 to 100 percent. The value in square brackets indicates that the current option value is 0 percent.</p>
+</blockquote>
+<p>--default-enhancements<br />
+Set default values for enhancement controls.</p>
+<blockquote>
+<p>The description above shows that option <strong>--default-enhancements</strong> has no option value. It should be thought of as having an immediate effect at the point of the command-line at which it appears. For example, since this option resets the <strong>--brightness</strong> option, the option-pair <strong>--brightness 50 --default-enhancements</strong> would effectively be a no-op.</p>
+</blockquote>
+<p>--mode Lineart|Gray|Color [Gray]<br />
+Selects the scan mode (e.g., lineart or color).</p>
+<blockquote>
+<p>The description above shows that option <strong>--mode</strong> accepts an argument that must be one of the strings <strong>Lineart</strong>, <strong>Gray</strong>, or <strong>Color</strong>. The value in the square bracket indicates that the option is currently set to <strong>Gray</strong>. For convenience, it is legal to abbreviate the string values as long as they remain unique. Also, the case of the spelling doesn't matter. For example, option setting <strong>--mode col</strong> is identical to <strong>--mode Color</strong>.</p>
+</blockquote>
+<p>--custom-gamma[=(yes|no)] [inactive]<br />
+Determines whether a builtin or a custom gamma-table<br />
+should be used.</p>
+<blockquote>
+<p>The description above shows that option <strong>--custom-gamma</strong> expects either no option value, a "yes" string, or a "no" string. Specifying the option with no value is equivalent to specifying "yes". The value in square-brackets indicates that the option is not currently active. That is, attempting to set the option would result in an error message. The set of available options typically depends on the settings of other options. For example, the <strong>--custom-gamma</strong> table might be active only when a grayscale or color scan-mode has been requested.</p>
+<p>Note that the <strong>--help</strong> option is processed only after all other options have been processed. This makes it possible to see the option settings for a particular mode by specifying the appropriate mode-options along with the <strong>--help</strong> option. For example, the command-line:</p>
+<p><strong>scanimage --help --mode</strong> <em>color</em></p>
+<p>would print the option settings that are in effect when the color-mode is selected.</p>
+</blockquote>
+<p>--gamma-table 0..255,...<br />
+Gamma-correction table. In color mode this option<br />
+equally affects the red, green, and blue channels<br />
+simultaneously (i.e., it is an intensity gamma table).</p>
+<blockquote>
+<p>The description above shows that option <strong>--gamma-table</strong> expects zero or more values in the range 0 to 255. For example, a legal value for this option would be "3,4,5,6,7,8,9,10,11,12". Since it's cumbersome to specify long vectors in this form, the same can be expressed by the abbreviated form "[0]3-[9]12". What this means is that the first vector element is set to 3, the 9-th element is set to 12 and the values in between are interpolated linearly. Of course, it is possible to specify multiple such linear segments. For example, "[0]3-[2]3-[6]7,[7]10-[9]6" is equivalent to "3,3,3,4,5,6,7,10,8,6". The program <strong>gamma4scanimage</strong> can be used to generate such gamma tables (see <strong>gamma4scanimage</strong>(1) for details).</p>
+</blockquote>
+<p><br />
+--filename &lt;string&gt; [/tmp/input.ppm]<br />
+The filename of the image to be loaded.</p>
+<blockquote>
+<p>The description above is an example of an option that takes an arbitrary string value (which happens to be a filename). Again, the value in brackets show that the option is current set to the filename <strong>/tmp/input.ppm</strong>.</p>
+</blockquote>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>SANE_DEFAULT_DEVICE</strong></dt>
+<dd><p>The default device-name.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/sane.d</em></dt>
+<dd><p>This directory holds various configuration files. For details, please refer to the manual pages listed below.</p>
+</dd>
+<dt><em>~/.sane/pass</em></dt>
+<dd><p>This file contains lines of the form</p>
+</dd>
+</dl>
+<blockquote>
+<p>user:password:resource</p>
+<p>scanimage uses this information to answer user authorization requests automatically. The file must have 0600 permissions or stricter. You should use this file in conjunction with the --accept-md5-only option to avoid server-side attacks. The resource may contain any character but is limited to 127 characters.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>sane</strong>(7), <strong>gamma4scanimage</strong>(1), <strong>xscanimage</strong>(1), <strong>xcam(1)</strong>, <strong>xsane(1)</strong>, <strong>scanadf</strong>(1), <strong>sane-dll</strong>(5), <strong>sane-net</strong>(5), <strong>sane-"backendname"</strong>(5)</p>
+<h1>AUTHOR</h1>
+<p>David Mosberger, Andreas Beck, Gordon Matzigkeit, Caskey Dickson, and many others. For questions and comments contact the sane-devel mailinglist (see http://www.sane-project.org/mailing-lists.html).</p>
+<h1>BUGS</h1>
+<p>For vector options, the help output currently has no indication as to how many elements a vector-value should have.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

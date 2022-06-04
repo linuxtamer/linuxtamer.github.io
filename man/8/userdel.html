@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command userdel</title><meta name="description" content="Linux command userdel delete a user account and related files"><meta name="keywords" content="linux, command, userdel, bsd, delete a user account and related files"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>userdel - delete a user account and related files</p>
+<h1>SYNOPSIS</h1>
+<p><strong>userdel</strong> [options] <em>LOGIN</em></p>
+<h1>DESCRIPTION</h1>
+<p><strong>userdel</strong> is a low level utility for removing users. On Debian, administrators should usually use <strong>deluser</strong>(8) instead.</p>
+<p>The <strong>userdel</strong> command modifies the system account files, deleting all entries that refer to the user name <em>LOGIN</em>. The named user must exist.</p>
+<h1>OPTIONS</h1>
+<p>The options which apply to the <strong>userdel</strong> command are:</p>
+<p><strong>-f</strong>, <strong>--force</strong></p>
+<blockquote>
+<p>This option forces the removal of the user account, even if the user is still logged in. It also forces <strong>userdel</strong> to remove the users home directory and mail spool, even if another user uses the same home directory or if the mail spool is not owned by the specified user. If <strong>USERGROUPS_ENAB</strong> is defined to <em>yes</em> in /etc/login.defs and if a group exists with the same name as the deleted user, then this group will be removed, even if it is still the primary group of another user.</p>
+<p><em>Note:</em> This option is dangerous and may leave your system in an inconsistent state.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Display help message and exit.</p>
+</blockquote>
+<p><strong>-r</strong>, <strong>--remove</strong></p>
+<blockquote>
+<p>Files in the users home directory will be removed along with the home directory itself and the users mail spool. Files located in other file systems will have to be searched for and deleted manually.</p>
+<p>The mail spool is defined by the <strong>MAIL_DIR</strong> variable in the login.defs file.</p>
+</blockquote>
+<p><strong>-R</strong>, <strong>--root</strong> <em>CHROOT_DIR</em></p>
+<blockquote>
+<p>Apply changes in the <em>CHROOT_DIR</em> directory and use the configuration files from the <em>CHROOT_DIR</em> directory.</p>
+</blockquote>
+<p><strong>-P</strong>, <strong>--prefix</strong> <em>PREFIX_DIR</em></p>
+<blockquote>
+<p>Apply changes in the <em>PREFIX_DIR</em> directory and use the configuration files from the <em>PREFIX_DIR</em> directory. This option does not chroot and is intended for preparing a cross-compilation target. Some limitations: NIS and LDAP users/groups are not verified. PAM authentication is using the host files. No SELINUX support.</p>
+</blockquote>
+<p><strong>-Z</strong>, <strong>--selinux-user</strong></p>
+<blockquote>
+<p>Remove any SELinux user mapping for the users login.</p>
+</blockquote>
+<h1>CONFIGURATION</h1>
+<p>The following configuration variables in /etc/login.defs change the behavior of this tool:</p>
+<p><strong>MAIL_DIR</strong> (string)</p>
+<blockquote>
+<p>The mail spool directory. This is needed to manipulate the mailbox when its corresponding user account is modified or deleted. If not specified, a compile-time default is used.</p>
+</blockquote>
+<p><strong>MAIL_FILE</strong> (string)</p>
+<blockquote>
+<p>Defines the location of the users mail spool files relatively to their home directory.</p>
+</blockquote>
+<p>The <strong>MAIL_DIR</strong> and <strong>MAIL_FILE</strong> variables are used by <strong>useradd</strong>, <strong>usermod</strong>, and <strong>userdel</strong> to create, move, or delete the users mail spool.</p>
+<p><strong>MAX_MEMBERS_PER_GROUP</strong> (number)</p>
+<blockquote>
+<p>Maximum members per group entry. When the maximum is reached, a new group entry (line) is started in /etc/group (with the same name, same password, and same GID).</p>
+<p>The default value is 0, meaning that there are no limits in the number of members in a group.</p>
+<p>This feature (split group) permits to limit the length of lines in the group file. This is useful to make sure that lines for NIS groups are not larger than 1024 characters.</p>
+<p>If you need to enforce such limit, you can use 25.</p>
+<p>Note: split groups may not be supported by all tools (even in the Shadow toolsuite). You should not use this variable unless you really need it.</p>
+</blockquote>
+<p><strong>USERDEL_CMD</strong> (string)</p>
+<blockquote>
+<p>If defined, this command is run when removing a user. It should remove any at/cron/print jobs etc. owned by the user to be removed (passed as the first argument).</p>
+<p>The return code of the script is not taken into account.</p>
+<p>Here is an example script, which removes the users cron, at and print jobs:</p>
+<blockquote>
+<pre><code>#! /bin/sh
+
+# Check for the required argument.
+if [ $# != 1 ]; then
+	echo &quot;Usage: $0 username&quot;
+	exit 1
+fi
+
+# Remove cron jobs.
+crontab -r -u $1
+
+# Remove at jobs.
+# Note that it will remove any jobs owned by the same UID,
+# even if it was shared by a different username.
+AT_SPOOL_DIR=/var/spool/cron/atjobs
+find $AT_SPOOL_DIR -name &quot;[^.]*&quot; -type f -user $1 -delete \;
+
+# Remove print jobs.
+lprm $1
+
+# All done.
+exit 0
+      </code></pre>
+</blockquote>
+</blockquote>
+<p><strong>USERGROUPS_ENAB</strong> (boolean)</p>
+<blockquote>
+<p>If set to <em>yes</em>, <strong>userdel</strong> will remove the users group if it contains no more members, and <strong>useradd</strong> will create by default a group with the name of the user.</p>
+</blockquote>
+<h1>FILES</h1>
+<p>/etc/group</p>
+<blockquote>
+<p>Group account information.</p>
+</blockquote>
+<p>/etc/login.defs</p>
+<blockquote>
+<p>Shadow password suite configuration.</p>
+</blockquote>
+<p>/etc/passwd</p>
+<blockquote>
+<p>User account information.</p>
+</blockquote>
+<p>/etc/shadow</p>
+<blockquote>
+<p>Secure user account information.</p>
+</blockquote>
+<p>/etc/subgid</p>
+<blockquote>
+<p>Per user subordinate group IDs.</p>
+</blockquote>
+<p>/etc/subuid</p>
+<blockquote>
+<p>Per user subordinate user IDs.</p>
+</blockquote>
+<h1>EXIT VALUES</h1>
+<p>The <strong>userdel</strong> command exits with the following values:</p>
+<p><em>0</em></p>
+<blockquote>
+<p>success</p>
+</blockquote>
+<p><em>1</em></p>
+<blockquote>
+<p>cant update password file</p>
+</blockquote>
+<p><em>2</em></p>
+<blockquote>
+<p>invalid command syntax</p>
+</blockquote>
+<p><em>6</em></p>
+<blockquote>
+<p>specified user doesnt exist</p>
+</blockquote>
+<p><em>8</em></p>
+<blockquote>
+<p>user currently logged in</p>
+</blockquote>
+<p><em>10</em></p>
+<blockquote>
+<p>cant update group file</p>
+</blockquote>
+<p><em>12</em></p>
+<blockquote>
+<p>cant remove home directory</p>
+</blockquote>
+<h1>CAVEATS</h1>
+<p><strong>userdel</strong> will not allow you to remove an account if there are running processes which belong to this account. In that case, you may have to kill those processes or lock the users password or account and remove the account later. The <strong>-f</strong> option can force the deletion of this account.</p>
+<p>You should manually check all file systems to ensure that no files remain owned by this user.</p>
+<p>You may not remove any NIS attributes on a NIS client. This must be performed on the NIS server.</p>
+<p>If <strong>USERGROUPS_ENAB</strong> is defined to <em>yes</em> in /etc/login.defs, <strong>userdel</strong> will delete the group with the same name as the user. To avoid inconsistencies in the passwd and group databases, <strong>userdel</strong> will check that this group is not used as a primary group for another user, and will just warn without deleting the group otherwise. The <strong>-f</strong> option can force the deletion of this group.</p>
+<h1>SEE ALSO</h1>
+<p><strong>chfn</strong>(1), <strong>chsh</strong>(1), <strong>passwd</strong>(1), <strong>login.defs</strong>(5), <strong>gpasswd</strong>(8), <strong>groupadd</strong>(8), <strong>groupdel</strong>(8), <strong>groupmod</strong>(8), <strong>subgid</strong>(5), <strong>subuid</strong>(5), <strong>useradd</strong>(8), <strong>usermod</strong>(8).</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

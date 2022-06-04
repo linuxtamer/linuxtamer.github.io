@@ -1,0 +1,4276 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command nftables</title><meta name="description" content="Linux command nftables Administration tool of the nftables framework for packet filtering and classification"><meta name="keywords" content="linux, command, nftables, bsd, Administration tool of the nftables framework for packet filtering and classification"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>nft - Administration tool of the nftables framework for packet filtering and classification</p>
+<h1>SYNOPSIS</h1>
+<pre><code>nft [ -nNscaeSupyjt ] [ -I directory ] [ -f filename | -i | cmd ...]
+nft -h
+nft -v</code></pre>
+<h1>DESCRIPTION</h1>
+<p>nft is the command line tool used to set up, maintain and inspect packet filtering and classification rules in the Linux kernel, in the nftables framework. The Linux kernel subsystem is known as nf_tables, and ‘nf’ stands for Netfilter.</p>
+<h1>OPTIONS</h1>
+<p>The command accepts several different options which are documented here in groups for better understanding of their meaning. You can get information about options by running <strong>nft --help</strong>.</p>
+<p><strong>General options:</strong></p>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Show help message and all options.</p>
+</blockquote>
+<p><strong>-v</strong>, <strong>--version</strong></p>
+<blockquote>
+<p>Show version.</p>
+</blockquote>
+<p><strong>-V</strong></p>
+<blockquote>
+<p>Show long version information, including compile-time configuration.</p>
+</blockquote>
+<p><strong>Ruleset input handling options that specify to how to load rulesets:</strong></p>
+<p><strong>-f</strong>, <strong>--file </strong><em>filename</em></p>
+<blockquote>
+<p>Read input from <em>filename</em>. If <em>filename</em> is -, read from stdin.</p>
+</blockquote>
+<p><strong>-i</strong>, <strong>--interactive</strong></p>
+<blockquote>
+<p>Read input from an interactive readline CLI. You can use quit to exit, or use the EOF marker, normally this is CTRL-D.</p>
+</blockquote>
+<p><strong>-I</strong>, <strong>--includepath directory</strong></p>
+<blockquote>
+<p>Add the directory <em>directory</em> to the list of directories to be searched for included files. This option may be specified multiple times.</p>
+</blockquote>
+<p><strong>-c</strong>, <strong>--check</strong></p>
+<blockquote>
+<p>Check commands validity without actually applying the changes.</p>
+</blockquote>
+<p><strong>Ruleset list output formatting that modify the output of the list ruleset command:</strong></p>
+<p><strong>-a</strong>, <strong>--handle</strong></p>
+<blockquote>
+<p>Show object handles in output.</p>
+</blockquote>
+<p><strong>-s</strong>, <strong>--stateless</strong></p>
+<blockquote>
+<p>Omit stateful information of rules and stateful objects.</p>
+</blockquote>
+<p><strong>-t</strong>, <strong>--terse</strong></p>
+<blockquote>
+<p>Omit contents of sets from output.</p>
+</blockquote>
+<p><strong>-S</strong>, <strong>--service</strong></p>
+<blockquote>
+<p>Translate ports to service names as defined by /etc/services.</p>
+</blockquote>
+<p><strong>-N</strong>, <strong>--reversedns</strong></p>
+<blockquote>
+<p>Translate IP address to names via reverse DNS lookup. This may slow down your listing since it generates network traffic.</p>
+</blockquote>
+<p><strong>-u</strong>, <strong>--guid</strong></p>
+<blockquote>
+<p>Translate numeric UID/GID to names as defined by /etc/passwd and /etc/group.</p>
+</blockquote>
+<p><strong>-n</strong>, <strong>--numeric</strong></p>
+<blockquote>
+<p>Print fully numerical output.</p>
+</blockquote>
+<p><strong>-y</strong>, <strong>--numeric-priority</strong></p>
+<blockquote>
+<p>Display base chain priority numerically.</p>
+</blockquote>
+<p><strong>-p</strong>, <strong>--numeric-protocol</strong></p>
+<blockquote>
+<p>Display layer 4 protocol numerically.</p>
+</blockquote>
+<p><strong>-T</strong>, <strong>--numeric-time</strong></p>
+<blockquote>
+<p>Show time, day and hour values in numeric format.</p>
+</blockquote>
+<p><strong>Command output formatting:</strong></p>
+<p><strong>-e</strong>, <strong>--echo</strong></p>
+<blockquote>
+<p>When inserting items into the ruleset using <strong>add</strong>, <strong>insert</strong> or <strong>replace</strong> commands, print notifications just like <strong>nft monitor</strong>.</p>
+</blockquote>
+<p><strong>-j</strong>, <strong>--json</strong></p>
+<blockquote>
+<p>Format output in JSON. See libnftables-json(5) for a schema description.</p>
+</blockquote>
+<p><strong>-d</strong>, <strong>--debug</strong> <em>level</em></p>
+<blockquote>
+<p>Enable debugging output. The debug level can be any of <strong>scanner</strong>, <strong>parser</strong>, <strong>eval</strong>, <strong>netlink</strong>, <strong>mnl</strong>, <strong>proto-ctx</strong>, <strong>segtree</strong>, <strong>all</strong>. You can combine more than one by separating by the <em>,</em> symbol, for example <em>-d eval,mnl</em>.</p>
+</blockquote>
+<h1>INPUT FILE FORMATS</h1>
+<h2>LEXICAL CONVENTIONS</h2>
+<p>Input is parsed line-wise. When the last character of a line, just before the newline character, is a non-quoted backslash (\), the next line is treated as a continuation. Multiple commands on the same line can be separated using a semicolon (;).</p>
+<p>A hash sign (#) begins a comment. All following characters on the same line are ignored.</p>
+<p>Identifiers begin with an alphabetic character (a-z,A-Z), followed zero or more alphanumeric characters (a-z,A-Z,0-9) and the characters slash (/), backslash (\), underscore (_) and dot (.). Identifiers using different characters or clashing with a keyword need to be enclosed in double quotes (").</p>
+<h2>INCLUDE FILES</h2>
+<blockquote>
+<pre><code>include filename</code></pre>
+</blockquote>
+<p>Other files can be included by using the <strong>include</strong> statement. The directories to be searched for include files can be specified using the <strong>-I</strong>/<strong>--includepath</strong> option. You can override this behaviour either by prepending ‘./’ to your path to force inclusion of files located in the current working directory (i.e. relative path) or / for file location expressed as an absolute path.</p>
+<p>If <strong>-I</strong>/<strong>--includepath</strong> is not specified, then nft relies on the default directory that is specified at compile time. You can retrieve this default directory via <strong>-h</strong>/<strong>--help</strong> option.</p>
+<p>Include statements support the usual shell wildcard symbols (\*,?,[]). Having no matches for an include statement is not an error, if wildcard symbols are used in the include statement. This allows having potentially empty include directories for statements like <strong>include "/etc/firewall/rules/"</strong>. The wildcard matches are loaded in alphabetical order. Files beginning with dot (.) are not matched by include statements.</p>
+<h2>SYMBOLIC VARIABLES</h2>
+<blockquote>
+<pre><code>define variable = expr
+$variable</code></pre>
+</blockquote>
+<p>Symbolic variables can be defined using the <strong>define</strong> statement. Variable references are expressions and can be used initialize other variables. The scope of a definition is the current block and all blocks contained within.</p>
+<p><strong>Using symbolic variables</strong>.</p>
+<blockquote>
+<pre><code>define int_if1 = eth0
+define int_if2 = eth1
+define int_ifs = { $int_if1, $int_if2 }
+
+filter input iif $int_ifs accept</code></pre>
+</blockquote>
+<h1>ADDRESS FAMILIES</h1>
+<p>Address families determine the type of packets which are processed. For each address family, the kernel contains so called hooks at specific stages of the packet processing paths, which invoke nftables if rules for these hooks exist.</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>ip</strong></td>
+<td style="text-align: left;">IPv4 address family.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>ip6</strong></td>
+<td style="text-align: left;">IPv6 address family.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>inet</strong></td>
+<td style="text-align: left;">Internet (IPv4/IPv6) address family.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>arp</strong></td>
+<td style="text-align: left;">ARP address family, handling IPv4 ARP packets.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>bridge</strong></td>
+<td style="text-align: left;">Bridge address family, handling packets which traverse a bridge device.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>netdev</strong></td>
+<td style="text-align: left;">Netdev address family, handling packets from ingress.</td>
+</tr>
+</tbody>
+</table>
+<p>All nftables objects exist in address family specific namespaces, therefore all identifiers include an address family. If an identifier is specified without an address family, the <strong>ip</strong> family is used by default.</p>
+<h2>IPV4/IPV6/INET ADDRESS FAMILIES</h2>
+<p>The IPv4/IPv6/Inet address families handle IPv4, IPv6 or both types of packets. They contain five hooks at different packet processing stages in the network stack.</p>
+<p><br />
+<strong>Table 1. IPv4/IPv6/Inet address family hooks</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Hook</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">prerouting</td>
+<td style="text-align: left;">All packets entering the system are processed by the prerouting hook. It is invoked before the routing process and is used for early filtering or changing packet attributes that affect routing.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">input</td>
+<td style="text-align: left;">Packets delivered to the local system are processed by the input hook.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">forward</td>
+<td style="text-align: left;">Packets forwarded to a different host are processed by the forward hook.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">output</td>
+<td style="text-align: left;">Packets sent by local processes are processed by the output hook.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">postrouting</td>
+<td style="text-align: left;">All packets leaving the system are processed by the postrouting hook.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ingress</td>
+<td style="text-align: left;">All packets entering the system are processed by this hook. It is invoked before layer 3 protocol handlers, hence before the prerouting hook, and it can be used for filtering and policing. Ingress is only available for Inet family (since Linux kernel 5.10).</td>
+</tr>
+</tbody>
+</table>
+<h2>ARP ADDRESS FAMILY</h2>
+<p>The ARP address family handles ARP packets received and sent by the system. It is commonly used to mangle ARP packets for clustering.</p>
+<p><br />
+<strong>Table 2. ARP address family hooks</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Hook</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">input</td>
+<td style="text-align: left;">Packets delivered to the local system are processed by the input hook.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">output</td>
+<td style="text-align: left;">Packets send by the local system are processed by the output hook.</td>
+</tr>
+</tbody>
+</table>
+<h2>BRIDGE ADDRESS FAMILY</h2>
+<p>The bridge address family handles Ethernet packets traversing bridge devices.</p>
+<p>The list of supported hooks is identical to IPv4/IPv6/Inet address families above.</p>
+<h2>NETDEV ADDRESS FAMILY</h2>
+<p>The Netdev address family handles packets from the device ingress path. This family allows you to filter packets of any ethertype such as ARP, VLAN 802.1q, VLAN 802.1ad (Q-in-Q) as well as IPv4 and IPv6 packets.</p>
+<p><br />
+<strong>Table 3. Netdev address family hooks</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Hook</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ingress</td>
+<td style="text-align: left;">All packets entering the system are processed by this hook. It is invoked after the network taps (ie. <strong>tcpdump</strong>), right after <strong>tc</strong> ingress and before layer 3 protocol handlers, it can be used for early filtering and policing.</td>
+</tr>
+</tbody>
+</table>
+<h1>RULESET</h1>
+<blockquote>
+<pre><code>{list | flush} ruleset [family]</code></pre>
+</blockquote>
+<p>The <strong>ruleset</strong> keyword is used to identify the whole set of tables, chains, etc. currently in place in kernel. The following <strong>ruleset</strong> commands exist:</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>list</strong></td>
+<td style="text-align: left;">Print the ruleset in human-readable format.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>flush</strong></td>
+<td style="text-align: left;">Clear the whole ruleset. Note that, unlike iptables, this will remove all tables and whatever they contain, effectively leading to an empty ruleset - no packet filtering will happen anymore, so the kernel accepts any valid packet it receives.</td>
+</tr>
+</tbody>
+</table>
+<p>It is possible to limit <strong>list</strong> and <strong>flush</strong> to a specific address family only. For a list of valid family names, see the section called “ADDRESS FAMILIES” above.</p>
+<p>By design, <strong>list ruleset</strong> command output may be used as input to <strong>nft -f</strong>. Effectively, this is the nft-equivalent of <strong>iptables-save</strong> and <strong>iptables-restore</strong>.</p>
+<h1>TABLES</h1>
+<blockquote>
+<pre><code>{add | create} table [family] table [{ flags flags ; }]
+{delete | list | flush} table [family] table
+list tables [family]
+delete table [family] handle handle</code></pre>
+</blockquote>
+<p>Tables are containers for chains, sets and stateful objects. They are identified by their address family and their name. The address family must be one of <strong>ip</strong>, <strong>ip6</strong>, <strong>inet</strong>, <strong>arp</strong>, <strong>bridge</strong>, <strong>netdev</strong>. The <strong>inet</strong> address family is a dummy family which is used to create hybrid IPv4/IPv6 tables. The <strong>meta expression nfproto</strong> keyword can be used to test which family (ipv4 or ipv6) context the packet is being processed in. When no address family is specified, <strong>ip</strong> is used by default. The only difference between add and create is that the former will not return an error if the specified table already exists while <strong>create</strong> will return an error.</p>
+<p><br />
+<strong>Table 4. Table flags</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Flag</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">dormant</td>
+<td style="text-align: left;">table is not evaluated any more (base chains are unregistered).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Add, change, delete a table</strong>.</p>
+<blockquote>
+<pre><code># start nft in interactive mode
+nft --interactive
+
+# create a new table.
+create table inet mytable
+
+# add a new base chain: get input packets
+add chain inet mytable myin { type filter hook input priority 0; }
+
+# add a single counter to the chain
+add rule inet mytable myin counter
+
+# disable the table temporarily -- rules are not evaluated anymore
+add table inet mytable { flags dormant; }
+
+# make table active again:
+add table inet mytable</code></pre>
+</blockquote>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>add</strong></td>
+<td style="text-align: left;">Add a new table for the given family with the given name.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>delete</strong></td>
+<td style="text-align: left;">Delete the specified table.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>list</strong></td>
+<td style="text-align: left;">List all chains and rules of the specified table.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>flush</strong></td>
+<td style="text-align: left;">Flush all chains and rules of the specified table.</td>
+</tr>
+</tbody>
+</table>
+<h1>CHAINS</h1>
+<blockquote>
+<pre><code>{add | create} chain [family] table chain [{ type type hook hook [device device] priority priority ; [policy policy ;] }]
+{delete | list | flush} chain [family] table chain
+list chains [family]
+delete chain [family] table handle handle
+rename chain [family] table chain newname</code></pre>
+</blockquote>
+<p>Chains are containers for rules. They exist in two kinds, base chains and regular chains. A base chain is an entry point for packets from the networking stack, a regular chain may be used as jump target and is used for better rule organization.</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>add</strong></td>
+<td style="text-align: left;">Add a new chain in the specified table. When a hook and priority value are specified, the chain is created as a base chain and hooked up to the networking stack.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>create</strong></td>
+<td style="text-align: left;">Similar to the <strong>add</strong> command, but returns an error if the chain already exists.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>delete</strong></td>
+<td style="text-align: left;">Delete the specified chain. The chain must not contain any rules or be used as jump target.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>rename</strong></td>
+<td style="text-align: left;">Rename the specified chain.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>list</strong></td>
+<td style="text-align: left;">List all rules of the specified chain.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>flush</strong></td>
+<td style="text-align: left;">Flush all rules of the specified chain.</td>
+</tr>
+</tbody>
+</table>
+<p>For base chains, <strong>type</strong>, <strong>hook</strong> and <strong>priority</strong> parameters are mandatory.</p>
+<p><br />
+<strong>Table 5. Supported chain types</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Type</td>
+<td style="text-align: left;">Families</td>
+<td style="text-align: left;">Hooks</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">filter</td>
+<td style="text-align: left;">all</td>
+<td style="text-align: left;">all</td>
+<td style="text-align: left;">Standard chain type to use in doubt.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nat</td>
+<td style="text-align: left;">ip, ip6, inet</td>
+<td style="text-align: left;">prerouting, input, output, postrouting</td>
+<td style="text-align: left;">Chains of this type perform Native Address Translation based on conntrack entries. Only the first packet of a connection actually traverses this chain - its rules usually define details of the created conntrack entry (NAT statements for instance).</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">route</td>
+<td style="text-align: left;">ip, ip6</td>
+<td style="text-align: left;">output</td>
+<td style="text-align: left;">If a packet has traversed a chain of this type and is about to be accepted, a new route lookup is performed if relevant parts of the IP header have changed. This allows to e.g. implement policy routing selectors in nftables.</td>
+</tr>
+</tbody>
+</table>
+<p>Apart from the special cases illustrated above (e.g. <strong>nat</strong> type not supporting <strong>forward</strong> hook or <strong>route</strong> type only supporting <strong>output</strong> hook), there are three further quirks worth noticing:</p>
+<blockquote>
+<p>·</p>
+<p>The netdev family supports merely a single combination, namely <strong>filter</strong> type and <strong>ingress</strong> hook. Base chains in this family also require the <strong>device</strong> parameter to be present since they exist per incoming interface only.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The arp family supports only the <strong>input</strong> and <strong>output</strong> hooks, both in chains of type <strong>filter</strong>.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>The inet family also supports the <strong>ingress</strong> hook (since Linux kernel 5.10), to filter IPv4 and IPv6 packet at the same location as the netdev <strong>ingress</strong> hook. This inet hook allows you to share sets and maps between the usual <strong>prerouting</strong>, <strong>input</strong>, <strong>forward</strong>, <strong>output</strong>, <strong>postrouting</strong> and this <strong>ingress</strong> hook.</p>
+</blockquote>
+<p>The <strong>priority</strong> parameter accepts a signed integer value or a standard priority name which specifies the order in which chains with same <strong>hook</strong> value are traversed. The ordering is ascending, i.e. lower priority values have precedence over higher ones.</p>
+<p>Standard priority values can be replaced with easily memorizable names. Not all names make sense in every family with every hook (see the compatibility matrices below) but their numerical value can still be used for prioritizing chains.</p>
+<p>These names and values are defined and made available based on what priorities are used by xtables when registering their default chains.</p>
+<p>Most of the families use the same values, but bridge uses different ones from the others. See the following tables that describe the values and compatibility.</p>
+<p><br />
+<strong>Table 6. Standard priority names, family and hook compatibility matrix</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Value</td>
+<td style="text-align: left;">Families</td>
+<td style="text-align: left;">Hooks</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">raw</td>
+<td style="text-align: left;">-300</td>
+<td style="text-align: left;">ip, ip6, inet</td>
+<td style="text-align: left;">all</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">mangle</td>
+<td style="text-align: left;">-150</td>
+<td style="text-align: left;">ip, ip6, inet</td>
+<td style="text-align: left;">all</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">dstnat</td>
+<td style="text-align: left;">-100</td>
+<td style="text-align: left;">ip, ip6, inet</td>
+<td style="text-align: left;">prerouting</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">filter</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">ip, ip6, inet, arp, netdev</td>
+<td style="text-align: left;">all</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">security</td>
+<td style="text-align: left;">50</td>
+<td style="text-align: left;">ip, ip6, inet</td>
+<td style="text-align: left;">all</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">srcnat</td>
+<td style="text-align: left;">100</td>
+<td style="text-align: left;">ip, ip6, inet</td>
+<td style="text-align: left;">postrouting</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 7. Standard priority names and hook compatibility for the bridge family</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Value</td>
+<td style="text-align: left;">Hooks</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">dstnat</td>
+<td style="text-align: left;">-300</td>
+<td style="text-align: left;">prerouting</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">filter</td>
+<td style="text-align: left;">-200</td>
+<td style="text-align: left;">all</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">out</td>
+<td style="text-align: left;">100</td>
+<td style="text-align: left;">output</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">srcnat</td>
+<td style="text-align: left;">300</td>
+<td style="text-align: left;">postrouting</td>
+</tr>
+</tbody>
+</table>
+<p>Basic arithmetic expressions (addition and subtraction) can also be achieved with these standard names to ease relative prioritizing, e.g. <strong>mangle - 5</strong> stands for <strong>-155</strong>. Values will also be printed like this until the value is not further than 10 form the standard value.</p>
+<p>Base chains also allow to set the chain’s <strong>policy</strong>, i.e. what happens to packets not explicitly accepted or refused in contained rules. Supported policy values are <strong>accept</strong> (which is the default) or <strong>drop</strong>.</p>
+<h1>RULES</h1>
+<blockquote>
+<pre><code>{add | insert} rule [family] table chain [handle handle | index index] statement ... [comment comment]
+replace rule [family] table chain handle handle statement ... [comment comment]
+delete rule [family] table chain handle handle</code></pre>
+</blockquote>
+<p>Rules are added to chains in the given table. If the family is not specified, the ip family is used. Rules are constructed from two kinds of components according to a set of grammatical rules: expressions and statements.</p>
+<p>The add and insert commands support an optional location specifier, which is either a <em>handle</em> or the <em>index</em> (starting at zero) of an existing rule. Internally, rule locations are always identified by <em>handle</em> and the translation from <em>index</em> happens in userspace. This has two potential implications in case a concurrent ruleset change happens after the translation was done: The effective rule index might change if a rule was inserted or deleted before the referred one. If the referred rule was deleted, the command is rejected by the kernel just as if an invalid <em>handle</em> was given.</p>
+<p>A <em>comment</em> is a single word or a double-quoted (") multi-word string which can be used to make notes regarding the actual rule. <strong>Note:</strong> If you use bash for adding rules, you have to escape the quotation marks, e.g. \"enable ssh for servers\".</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>add</strong></td>
+<td style="text-align: left;">Add a new rule described by the list of statements. The rule is appended to the given chain unless a location is specified, in which case the rule is inserted after the specified rule.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>insert</strong></td>
+<td style="text-align: left;">Same as <strong>add</strong> except the rule is inserted at the beginning of the chain or before the specified rule.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>replace</strong></td>
+<td style="text-align: left;">Similar to <strong>add</strong>, but the rule replaces the specified rule.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>delete</strong></td>
+<td style="text-align: left;">Delete the specified rule.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>add a rule to ip table output chain</strong>.</p>
+<blockquote>
+<pre><code>nft add rule filter output ip daddr 192.168.0.0/24 accept # ip filter is assumed
+# same command, slightly more verbose
+nft add rule ip filter output ip daddr 192.168.0.0/24 accept</code></pre>
+</blockquote>
+<p><strong>delete rule from inet table</strong>.</p>
+<blockquote>
+<pre><code># nft -a list ruleset
+table inet filter {
+        chain input {
+                type filter hook input priority 0; policy accept;
+                ct state established,related accept # handle 4
+                ip saddr 10.1.1.1 tcp dport ssh accept # handle 5
+          ...
+# delete the rule with handle 5
+# nft delete rule inet filter input handle 5</code></pre>
+</blockquote>
+<h1>SETS</h1>
+<p>nftables offers two kinds of set concepts. Anonymous sets are sets that have no specific name. The set members are enclosed in curly braces, with commas to separate elements when creating the rule the set is used in. Once that rule is removed, the set is removed as well. They cannot be updated, i.e. once an anonymous set is declared it cannot be changed anymore except by removing/altering the rule that uses the anonymous set.</p>
+<p><strong>Using anonymous sets to accept particular subnets and ports</strong>.</p>
+<blockquote>
+<pre><code>nft add rule filter input ip saddr { 10.0.0.0/8, 192.168.0.0/16 } tcp dport { 22, 443 } accept</code></pre>
+</blockquote>
+<p>Named sets are sets that need to be defined first before they can be referenced in rules. Unlike anonymous sets, elements can be added to or removed from a named set at any time. Sets are referenced from rules using an @ prefixed to the sets name.</p>
+<p><strong>Using named sets to accept addresses and ports</strong>.</p>
+<blockquote>
+<pre><code>nft add rule filter input ip saddr @allowed_hosts tcp dport @allowed_ports accept</code></pre>
+</blockquote>
+<p>The sets allowed_hosts and allowed_ports need to be created first. The next section describes nft set syntax in more detail.</p>
+<blockquote>
+<pre><code>add set [family] table set { type type | typeof expression ; [flags flags ;] [timeout timeout ;] [gc-interval gc-interval ;] [elements = { element[, ...] } ;] [size size ;] [policy policy ;] [auto-merge ;] }
+{delete | list | flush} set [family] table set
+list sets [family]
+delete set [family] table handle handle
+{add | delete} element [family] table set { element[, ...] }</code></pre>
+</blockquote>
+<p>Sets are element containers of a user-defined data type, they are uniquely identified by a user-defined name and attached to tables. Their behaviour can be tuned with the flags that can be specified at set creation time.</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>add</strong></td>
+<td style="text-align: left;">Add a new set in the specified table. See the Set specification table below for more information about how to specify a sets properties.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>delete</strong></td>
+<td style="text-align: left;">Delete the specified set.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>list</strong></td>
+<td style="text-align: left;">Display the elements in the specified set.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>flush</strong></td>
+<td style="text-align: left;">Remove all elements from the specified set.</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 8. Set specifications</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">type</td>
+<td style="text-align: left;">data type of set elements</td>
+<td style="text-align: left;">string: ipv4_addr, ipv6_addr, ether_addr, inet_proto, inet_service, mark</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">typeof</td>
+<td style="text-align: left;">data type of set element</td>
+<td style="text-align: left;">expression to derive the data type from</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">flags</td>
+<td style="text-align: left;">set flags</td>
+<td style="text-align: left;">string: constant, dynamic, interval, timeout</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">timeout</td>
+<td style="text-align: left;">time an element stays in the set, mandatory if set is added to from the packet path (ruleset).</td>
+<td style="text-align: left;">string, decimal followed by unit. Units are: d, h, m, s</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">gc-interval</td>
+<td style="text-align: left;">garbage collection interval, only available when timeout or flag timeout are active</td>
+<td style="text-align: left;">string, decimal followed by unit. Units are: d, h, m, s</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">elements</td>
+<td style="text-align: left;">elements contained by the set</td>
+<td style="text-align: left;">set data type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">size</td>
+<td style="text-align: left;">maximum number of elements in the set, mandatory if set is added to from the packet path (ruleset).</td>
+<td style="text-align: left;">unsigned integer (64 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">policy</td>
+<td style="text-align: left;">set policy</td>
+<td style="text-align: left;">string: performance [default], memory</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">auto-merge</td>
+<td style="text-align: left;">automatic merge of adjacent/overlapping set elements (only for interval sets)</td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+<h1>MAPS</h1>
+<blockquote>
+<pre><code>add map [family] table map { type type | typeof expression [flags flags ;] [elements = { element[, ...] } ;] [size size ;] [policy policy ;] }
+{delete | list | flush} map [family] table map
+list maps [family]</code></pre>
+</blockquote>
+<p>Maps store data based on some specific key used as input. They are uniquely identified by a user-defined name and attached to tables.</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>add</strong></td>
+<td style="text-align: left;">Add a new map in the specified table.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>delete</strong></td>
+<td style="text-align: left;">Delete the specified map.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>list</strong></td>
+<td style="text-align: left;">Display the elements in the specified map.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>flush</strong></td>
+<td style="text-align: left;">Remove all elements from the specified map.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>add element</strong></td>
+<td style="text-align: left;">Comma-separated list of elements to add into the specified map.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>delete element</strong></td>
+<td style="text-align: left;">Comma-separated list of element keys to delete from the specified map.</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 9. Map specifications</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">type</td>
+<td style="text-align: left;">data type of map elements</td>
+<td style="text-align: left;">string: ipv4_addr, ipv6_addr, ether_addr, inet_proto, inet_service, mark, counter, quota. Counter and quota can’t be used as keys</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">typeof</td>
+<td style="text-align: left;">data type of set element</td>
+<td style="text-align: left;">expression to derive the data type from</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">flags</td>
+<td style="text-align: left;">map flags</td>
+<td style="text-align: left;">string: constant, interval</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">elements</td>
+<td style="text-align: left;">elements contained by the map</td>
+<td style="text-align: left;">map data type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">size</td>
+<td style="text-align: left;">maximum number of elements in the map</td>
+<td style="text-align: left;">unsigned integer (64 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">policy</td>
+<td style="text-align: left;">map policy</td>
+<td style="text-align: left;">string: performance [default], memory</td>
+</tr>
+</tbody>
+</table>
+<h1>ELEMENTS</h1>
+<blockquote>
+<pre><code>{add | create | delete | get } element [family] table set { ELEMENT[, ...] }
+
+ELEMENT := key_expression OPTIONS [: value_expression]
+OPTIONS := [timeout TIMESPEC] [expires TIMESPEC] [comment string]
+TIMESPEC := [numd][numh][numm][num[s]]</code></pre>
+</blockquote>
+<p>Element-related commands allow to change contents of named sets and maps. <em>key_expression</em> is typically a value matching the set type. <em>value_expression</em> is not allowed in sets but mandatory when adding to maps, where it matches the data part in it’s type definition. When deleting from maps, it may be specified but is optional as <em>key_expression</em> uniquely identifies the element.</p>
+<p><strong>create</strong> command is similar to <strong>add</strong> with the exception that none of the listed elements may already exist.</p>
+<p><strong>get</strong> command is useful to check if an element is contained in a set which may be non-trivial in very large and/or interval sets. In the latter case, the containing interval is returned instead of just the element itself.</p>
+<p><br />
+<strong>Table 10. Element options</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Option</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">timeout</td>
+<td style="text-align: left;">timeout value for sets/maps with flag <strong>timeout</strong></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">expires</td>
+<td style="text-align: left;">the time until given element expires, useful for ruleset replication only</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">comment</td>
+<td style="text-align: left;">per element comment field</td>
+</tr>
+</tbody>
+</table>
+<h1>FLOWTABLES</h1>
+<blockquote>
+<pre><code>{add | create} flowtable [family] table flowtable { hook hook priority priority ; devices = { device[, ...] } ; }
+list flowtables [family]
+{delete | list} flowtable [family] table flowtable
+delete flowtable [family] table handle handle</code></pre>
+</blockquote>
+<p>Flowtables allow you to accelerate packet forwarding in software. Flowtables entries are represented through a tuple that is composed of the input interface, source and destination address, source and destination port; and layer 3/4 protocols. Each entry also caches the destination interface and the gateway address - to update the destination link-layer address - to forward packets. The ttl and hoplimit fields are also decremented. Hence, flowtables provides an alternative path that allow packets to bypass the classic forwarding path. Flowtables reside in the ingress hook that is located before the prerouting hook. You can select which flows you want to offload through the flow expression from the forward chain. Flowtables are identified by their address family and their name. The address family must be one of ip, ip6, or inet. The inet address family is a dummy family which is used to create hybrid IPv4/IPv6 tables. When no address family is specified, ip is used by default.</p>
+<p>The <strong>priority</strong> can be a signed integer or <strong>filter</strong> which stands for 0. Addition and subtraction can be used to set relative priority, e.g. filter + 5 equals to 5.</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>add</strong></td>
+<td style="text-align: left;">Add a new flowtable for the given family with the given name.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>delete</strong></td>
+<td style="text-align: left;">Delete the specified flowtable.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>list</strong></td>
+<td style="text-align: left;">List all flowtables.</td>
+</tr>
+</tbody>
+</table>
+<h1>STATEFUL OBJECTS</h1>
+<blockquote>
+<pre><code>{add | delete | list | reset} type [family] table object
+delete type [family] table handle handle
+list counters [family]
+list quotas [family]</code></pre>
+</blockquote>
+<p>Stateful objects are attached to tables and are identified by an unique name. They group stateful information from rules, to reference them in rules the keywords "type name" are used e.g. "counter name".</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>add</strong></td>
+<td style="text-align: left;">Add a new stateful object in the specified table.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>delete</strong></td>
+<td style="text-align: left;">Delete the specified object.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>list</strong></td>
+<td style="text-align: left;">Display stateful information the object holds.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>reset</strong></td>
+<td style="text-align: left;">List-and-reset stateful object.</td>
+</tr>
+</tbody>
+</table>
+<h2>CT HELPER</h2>
+<blockquote>
+<pre><code>ct helper helper { type type protocol protocol ; [l3proto family ;] }</code></pre>
+</blockquote>
+<p>Ct helper is used to define connection tracking helpers that can then be used in combination with the <strong>ct helper set</strong> statement. <em>type</em> and <em>protocol</em> are mandatory, l3proto is derived from the table family by default, i.e. in the inet table the kernel will try to load both the ipv4 and ipv6 helper backends, if they are supported by the kernel.</p>
+<p><br />
+<strong>Table 11. conntrack helper specifications</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">type</td>
+<td style="text-align: left;">name of helper type</td>
+<td style="text-align: left;">quoted string (e.g. "ftp")</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">protocol</td>
+<td style="text-align: left;">layer 4 protocol of the helper</td>
+<td style="text-align: left;">string (e.g. ip)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l3proto</td>
+<td style="text-align: left;">layer 3 protocol of the helper</td>
+<td style="text-align: left;">address family (e.g. ip)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>defining and assigning ftp helper</strong>.</p>
+<blockquote>
+<pre><code>Unlike iptables, helper assignment needs to be performed after the conntrack
+lookup has completed, for example with the default 0 hook priority.
+
+table inet myhelpers {
+  ct helper ftp-standard {
+     type &quot;ftp&quot; protocol tcp
+  }
+  chain prerouting {
+      type filter hook prerouting priority 0;
+      tcp dport 21 ct helper set &quot;ftp-standard&quot;
+  }
+}</code></pre>
+</blockquote>
+<h2>CT TIMEOUT</h2>
+<blockquote>
+<pre><code>ct timeout name { protocol protocol ; policy = { state: value [, ...] } ; [l3proto family ;] }</code></pre>
+</blockquote>
+<p>Ct timeout is used to update connection tracking timeout values.Timeout policies are assigned with the <strong>ct timeout set</strong> statement. <em>protocol</em> and <em>policy</em> are mandatory, l3proto is derived from the table family by default.</p>
+<p><br />
+<strong>Table 12. conntrack timeout specifications</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">protocol</td>
+<td style="text-align: left;">layer 4 protocol of the timeout object</td>
+<td style="text-align: left;">string (e.g. ip)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">state</td>
+<td style="text-align: left;">connection state name</td>
+<td style="text-align: left;">string (e.g. "established")</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">value</td>
+<td style="text-align: left;">timeout value for connection state</td>
+<td style="text-align: left;">unsigned integer</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">l3proto</td>
+<td style="text-align: left;">layer 3 protocol of the timeout object</td>
+<td style="text-align: left;">address family (e.g. ip)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>defining and assigning ct timeout policy</strong>.</p>
+<blockquote>
+<pre><code>table ip filter {
+        ct timeout customtimeout {
+                protocol tcp;
+                l3proto ip
+                policy = { established: 120, close: 20 }
+        }
+
+        chain output {
+                type filter hook output priority filter; policy accept;
+                ct timeout set &quot;customtimeout&quot;
+        }
+}</code></pre>
+</blockquote>
+<p><strong>testing the updated timeout policy</strong>.</p>
+<blockquote>
+<pre><code>% conntrack -E
+
+It should display:
+
+[UPDATE] tcp      6 120 ESTABLISHED src=172.16.19.128 dst=172.16.19.1
+sport=22 dport=41360 [UNREPLIED] src=172.16.19.1 dst=172.16.19.128
+sport=41360 dport=22</code></pre>
+</blockquote>
+<h2>CT EXPECTATION</h2>
+<blockquote>
+<pre><code>ct expectation name { protocol protocol ; dport dport ; timeout timeout ; size size ; [*l3proto family ;] }</code></pre>
+</blockquote>
+<p>Ct expectation is used to create connection expectations. Expectations are assigned with the <strong>ct expectation set</strong> statement. <em>protocol</em>, <em>dport</em>, <em>timeout</em> and <em>size</em> are mandatory, l3proto is derived from the table family by default.</p>
+<p><br />
+<strong>Table 13. conntrack expectation specifications</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">protocol</td>
+<td style="text-align: left;">layer 4 protocol of the expectation object</td>
+<td style="text-align: left;">string (e.g. ip)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dport</td>
+<td style="text-align: left;">destination port of expected connection</td>
+<td style="text-align: left;">unsigned integer</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">timeout</td>
+<td style="text-align: left;">timeout value for expectation</td>
+<td style="text-align: left;">unsigned integer</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">size</td>
+<td style="text-align: left;">size value for expectation</td>
+<td style="text-align: left;">unsigned integer</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l3proto</td>
+<td style="text-align: left;">layer 3 protocol of the expectation object</td>
+<td style="text-align: left;">address family (e.g. ip)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>defining and assigning ct expectation policy</strong>.</p>
+<blockquote>
+<pre><code>table ip filter {
+        ct expectation expect {
+                protocol udp
+                dport 9876
+                timeout 2m
+                size 8
+                l3proto ip
+        }
+
+        chain input {
+                type filter hook input priority filter; policy accept;
+                ct expectation set &quot;expect&quot;
+        }
+}</code></pre>
+</blockquote>
+<h2>COUNTER</h2>
+<blockquote>
+<pre><code>counter [packets bytes]</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 14. Counter specifications</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">packets</td>
+<td style="text-align: left;">initial count of packets</td>
+<td style="text-align: left;">unsigned integer (64 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">bytes</td>
+<td style="text-align: left;">initial count of bytes</td>
+<td style="text-align: left;">unsigned integer (64 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>QUOTA</h2>
+<blockquote>
+<pre><code>quota [over | until] [used]</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 15. Quota specifications</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">quota</td>
+<td style="text-align: left;">quota limit, used as the quota name</td>
+<td style="text-align: left;">Two arguments, unsigned integer (64 bit) and string: bytes, kbytes, mbytes. "over" and "until" go before these arguments</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">used</td>
+<td style="text-align: left;">initial value of used quota</td>
+<td style="text-align: left;">Two arguments, unsigned integer (64 bit) and string: bytes, kbytes, mbytes</td>
+</tr>
+</tbody>
+</table>
+<h1>EXPRESSIONS</h1>
+<p>Expressions represent values, either constants like network addresses, port numbers, etc., or data gathered from the packet during ruleset evaluation. Expressions can be combined using binary, logical, relational and other types of expressions to form complex or relational (match) expressions. They are also used as arguments to certain types of operations, like NAT, packet marking etc.</p>
+<p>Each expression has a data type, which determines the size, parsing and representation of symbolic values and type compatibility with other expressions.</p>
+<h2>DESCRIBE COMMAND</h2>
+<blockquote>
+<pre><code>describe expression | data type</code></pre>
+</blockquote>
+<p>The <strong>describe</strong> command shows information about the type of an expression and its data type. A data type may also be given, in which nft will display more information about the type.</p>
+<p><strong>The describe command</strong>.</p>
+<blockquote>
+<pre><code>$ nft describe tcp flags
+payload expression, datatype tcp_flag (TCP flag) (basetype bitmask, integer), 8 bits
+
+predefined symbolic constants:
+fin                           0x01
+syn                           0x02
+rst                           0x04
+psh                           0x08
+ack                           0x10
+urg                           0x20
+ecn                           0x40
+cwr                           0x80</code></pre>
+</blockquote>
+<h1>DATA TYPES</h1>
+<p>Data types determine the size, parsing and representation of symbolic values and type compatibility of expressions. A number of global data types exist, in addition some expression types define further data types specific to the expression type. Most data types have a fixed size, some however may have a dynamic size, f.i. the string type. Some types also have predefined symbolic constants. Those can be listed using the nft <strong>describe</strong> command:</p>
+<blockquote>
+<pre><code>$ nft describe ct_state
+datatype ct_state (conntrack state) (basetype bitmask, integer), 32 bits
+
+pre-defined symbolic constants (in hexadecimal):
+invalid                         0x00000001
+new ...</code></pre>
+</blockquote>
+<p>Types may be derived from lower order types, f.i. the IPv4 address type is derived from the integer type, meaning an IPv4 address can also be specified as an integer value.</p>
+<p>In certain contexts (set and map definitions), it is necessary to explicitly specify a data type. Each type has a name which is used for this.</p>
+<h2>INTEGER TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Integer</td>
+<td style="text-align: left;">integer</td>
+<td style="text-align: left;">variable</td>
+<td style="text-align: left;">-</td>
+</tr>
+</tbody>
+</table>
+<p>The integer type is used for numeric values. It may be specified as a decimal, hexadecimal or octal number. The integer type does not have a fixed size, its size is determined by the expression for which it is used.</p>
+<h2>BITMASK TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Bitmask</td>
+<td style="text-align: left;">bitmask</td>
+<td style="text-align: left;">variable</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The bitmask type (<strong>bitmask</strong>) is used for bitmasks.</p>
+<h2>STRING TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">String</td>
+<td style="text-align: left;">string</td>
+<td style="text-align: left;">variable</td>
+<td style="text-align: left;">-</td>
+</tr>
+</tbody>
+</table>
+<p>The string type is used for character strings. A string begins with an alphabetic character (a-zA-Z) followed by zero or more alphanumeric characters or the characters /, -, _ and .. In addition, anything enclosed in double quotes (") is recognized as a string.</p>
+<p><strong>String specification</strong>.</p>
+<blockquote>
+<pre><code># Interface name
+filter input iifname eth0
+
+# Weird interface name
+filter input iifname &quot;(eth0)&quot;</code></pre>
+</blockquote>
+<h2>LINK LAYER ADDRESS TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Link layer address</td>
+<td style="text-align: left;">lladdr</td>
+<td style="text-align: left;">variable</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The link layer address type is used for link layer addresses. Link layer addresses are specified as a variable amount of groups of two hexadecimal digits separated using colons (:).</p>
+<p><strong>Link layer address specification</strong>.</p>
+<blockquote>
+<pre><code># Ethernet destination MAC address
+filter input ether daddr 20:c9:d0:43:12:d9</code></pre>
+</blockquote>
+<h2>IPV4 ADDRESS TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">IPV4 address</td>
+<td style="text-align: left;">ipv4_addr</td>
+<td style="text-align: left;">32 bit</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The IPv4 address type is used for IPv4 addresses. Addresses are specified in either dotted decimal, dotted hexadecimal, dotted octal, decimal, hexadecimal, octal notation or as a host name. A host name will be resolved using the standard system resolver.</p>
+<p><strong>IPv4 address specification</strong>.</p>
+<blockquote>
+<pre><code># dotted decimal notation
+filter output ip daddr 127.0.0.1
+
+# host name
+filter output ip daddr localhost</code></pre>
+</blockquote>
+<h2>IPV6 ADDRESS TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">IPv6 address</td>
+<td style="text-align: left;">ipv6_addr</td>
+<td style="text-align: left;">128 bit</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The IPv6 address type is used for IPv6 addresses. Addresses are specified as a host name or as hexadecimal halfwords separated by colons. Addresses might be enclosed in square brackets ("[]") to differentiate them from port numbers.</p>
+<p><strong>IPv6 address specification</strong>.</p>
+<blockquote>
+<pre><code># abbreviated loopback address
+filter output ip6 daddr ::1</code></pre>
+</blockquote>
+<p><strong>IPv6 address specification with bracket notation</strong>.</p>
+<blockquote>
+<pre><code># without [] the port number (22) would be parsed as part of the
+# ipv6 address
+ip6 nat prerouting tcp dport 2222 dnat to [1ce::d0]:22</code></pre>
+</blockquote>
+<h2>BOOLEAN TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Boolean</td>
+<td style="text-align: left;">boolean</td>
+<td style="text-align: left;">1 bit</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The boolean type is a syntactical helper type in userspace. Its use is in the right-hand side of a (typically implicit) relational expression to change the expression on the left-hand side into a boolean check (usually for existence).</p>
+<p><br />
+<strong>Table 16. The following keywords will automatically resolve into a boolean type with given value</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">exists</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">missing</td>
+<td style="text-align: left;">0</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 17. expressions support a boolean comparison</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Expression</td>
+<td style="text-align: left;">Behaviour</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">fib</td>
+<td style="text-align: left;">Check route existence.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">exthdr</td>
+<td style="text-align: left;">Check IPv6 extension header existence.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">tcp option</td>
+<td style="text-align: left;">Check TCP option header existence.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Boolean specification</strong>.</p>
+<blockquote>
+<pre><code># match if route exists
+filter input fib daddr . iif oif exists
+
+# match only non-fragmented packets in IPv6 traffic
+filter input exthdr frag missing
+
+# match if TCP timestamp option is present
+filter input tcp option timestamp exists</code></pre>
+</blockquote>
+<h2>ICMP TYPE TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ICMP Type</td>
+<td style="text-align: left;">icmp_type</td>
+<td style="text-align: left;">8 bit</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The ICMP Type type is used to conveniently specify the ICMP header’s type field.</p>
+<p><br />
+<strong>Table 18. Keywords may be used when specifying the ICMP type</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">echo-reply</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">destination-unreachable</td>
+<td style="text-align: left;">3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">source-quench</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">redirect</td>
+<td style="text-align: left;">5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">echo-request</td>
+<td style="text-align: left;">8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">router-advertisement</td>
+<td style="text-align: left;">9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">router-solicitation</td>
+<td style="text-align: left;">10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">time-exceeded</td>
+<td style="text-align: left;">11</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">parameter-problem</td>
+<td style="text-align: left;">12</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">timestamp-request</td>
+<td style="text-align: left;">13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">timestamp-reply</td>
+<td style="text-align: left;">14</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">info-request</td>
+<td style="text-align: left;">15</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">info-reply</td>
+<td style="text-align: left;">16</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">address-mask-request</td>
+<td style="text-align: left;">17</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">address-mask-reply</td>
+<td style="text-align: left;">18</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ICMP Type specification</strong>.</p>
+<blockquote>
+<pre><code># match ping packets
+filter output icmp type { echo-request, echo-reply }</code></pre>
+</blockquote>
+<h2>ICMP CODE TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ICMP Code</td>
+<td style="text-align: left;">icmp_code</td>
+<td style="text-align: left;">8 bit</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The ICMP Code type is used to conveniently specify the ICMP header’s code field.</p>
+<p><br />
+<strong>Table 19. Keywords may be used when specifying the ICMP code</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">net-unreachable</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">host-unreachable</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">prot-unreachable</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">port-unreachable</td>
+<td style="text-align: left;">3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">frag-needed</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">net-prohibited</td>
+<td style="text-align: left;">9</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">host-prohibited</td>
+<td style="text-align: left;">10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">admin-prohibited</td>
+<td style="text-align: left;">13</td>
+</tr>
+</tbody>
+</table>
+<h2>ICMPV6 TYPE TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ICMPv6 Type</td>
+<td style="text-align: left;">icmpx_code</td>
+<td style="text-align: left;">8 bit</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The ICMPv6 Type type is used to conveniently specify the ICMPv6 header’s type field.</p>
+<p><br />
+<strong>Table 20. keywords may be used when specifying the ICMPv6 type:</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">destination-unreachable</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">packet-too-big</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">time-exceeded</td>
+<td style="text-align: left;">3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">parameter-problem</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">echo-request</td>
+<td style="text-align: left;">128</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">echo-reply</td>
+<td style="text-align: left;">129</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">mld-listener-query</td>
+<td style="text-align: left;">130</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">mld-listener-report</td>
+<td style="text-align: left;">131</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">mld-listener-done</td>
+<td style="text-align: left;">132</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">mld-listener-reduction</td>
+<td style="text-align: left;">132</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">nd-router-solicit</td>
+<td style="text-align: left;">133</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nd-router-advert</td>
+<td style="text-align: left;">134</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">nd-neighbor-solicit</td>
+<td style="text-align: left;">135</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nd-neighbor-advert</td>
+<td style="text-align: left;">136</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">nd-redirect</td>
+<td style="text-align: left;">137</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">router-renumbering</td>
+<td style="text-align: left;">138</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ind-neighbor-solicit</td>
+<td style="text-align: left;">141</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ind-neighbor-advert</td>
+<td style="text-align: left;">142</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">mld2-listener-report</td>
+<td style="text-align: left;">143</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ICMPv6 Type specification</strong>.</p>
+<blockquote>
+<pre><code># match ICMPv6 ping packets
+filter output icmpv6 type { echo-request, echo-reply }</code></pre>
+</blockquote>
+<h2>ICMPV6 CODE TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ICMPv6 Code</td>
+<td style="text-align: left;">icmpv6_code</td>
+<td style="text-align: left;">8 bit</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The ICMPv6 Code type is used to conveniently specify the ICMPv6 header’s code field.</p>
+<p><br />
+<strong>Table 21. keywords may be used when specifying the ICMPv6 code</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">no-route</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">admin-prohibited</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">addr-unreachable</td>
+<td style="text-align: left;">3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">port-unreachable</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">policy-fail</td>
+<td style="text-align: left;">5</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">reject-route</td>
+<td style="text-align: left;">6</td>
+</tr>
+</tbody>
+</table>
+<h2>ICMPVX CODE TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ICMPvX Code</td>
+<td style="text-align: left;">icmpv6_type</td>
+<td style="text-align: left;">8 bit</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The ICMPvX Code type abstraction is a set of values which overlap between ICMP and ICMPv6 Code types to be used from the inet family.</p>
+<p><br />
+<strong>Table 22. keywords may be used when specifying the ICMPvX code</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">no-route</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">port-unreachable</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">host-unreachable</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">admin-prohibited</td>
+<td style="text-align: left;">3</td>
+</tr>
+</tbody>
+</table>
+<h2>CONNTRACK TYPES</h2>
+<p><br />
+<strong>Table 23. overview of types used in ct expression and statement</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">conntrack state</td>
+<td style="text-align: left;">ct_state</td>
+<td style="text-align: left;">4 byte</td>
+<td style="text-align: left;">bitmask</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">conntrack direction</td>
+<td style="text-align: left;">ct_dir</td>
+<td style="text-align: left;">8 bit</td>
+<td style="text-align: left;">integer</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">conntrack status</td>
+<td style="text-align: left;">ct_status</td>
+<td style="text-align: left;">4 byte</td>
+<td style="text-align: left;">bitmask</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">conntrack event bits</td>
+<td style="text-align: left;">ct_event</td>
+<td style="text-align: left;">4 byte</td>
+<td style="text-align: left;">bitmask</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">conntrack label</td>
+<td style="text-align: left;">ct_label</td>
+<td style="text-align: left;">128 bit</td>
+<td style="text-align: left;">bitmask</td>
+</tr>
+</tbody>
+</table>
+<p>For each of the types above, keywords are available for convenience:</p>
+<p><br />
+<strong>Table 24. conntrack state (ct_state)</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">invalid</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">established</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">related</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">new</td>
+<td style="text-align: left;">8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">untracked</td>
+<td style="text-align: left;">64</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 25. conntrack direction (ct_dir)</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">original</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">reply</td>
+<td style="text-align: left;">1</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 26. conntrack status (ct_status)</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">expected</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">seen-reply</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">assured</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">confirmed</td>
+<td style="text-align: left;">8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">snat</td>
+<td style="text-align: left;">16</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dnat</td>
+<td style="text-align: left;">32</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">dying</td>
+<td style="text-align: left;">512</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 27. conntrack event bits (ct_event)</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">new</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">related</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">destroy</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">reply</td>
+<td style="text-align: left;">8</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">assured</td>
+<td style="text-align: left;">16</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">protoinfo</td>
+<td style="text-align: left;">32</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">helper</td>
+<td style="text-align: left;">64</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">mark</td>
+<td style="text-align: left;">128</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">seqadj</td>
+<td style="text-align: left;">256</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">secmark</td>
+<td style="text-align: left;">512</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">label</td>
+<td style="text-align: left;">1024</td>
+</tr>
+</tbody>
+</table>
+<p>Possible keywords for conntrack label type (ct_label) are read at runtime from /etc/connlabel.conf.</p>
+<h2>DCCP PKTTYPE TYPE</h2>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Size</td>
+<td style="text-align: left;">Base type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">DCCP packet type</td>
+<td style="text-align: left;">dccp_pkttype</td>
+<td style="text-align: left;">4 bit</td>
+<td style="text-align: left;">integer</td>
+</tr>
+</tbody>
+</table>
+<p>The DCCP packet type abstracts the different legal values of the respective four bit field in the DCCP header, as stated by RFC4340. Note that possible values 10-15 are considered reserved and therefore not allowed to be used. In iptables <strong>dccp</strong> match, these values are aliased <em>INVALID</em>. With nftables, one may simply match on the numeric value range, i.e. <strong>10-15</strong>.</p>
+<p><br />
+<strong>Table 28. keywords may be used when specifying the DCCP packet type</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">request</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">response</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">data</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ack</td>
+<td style="text-align: left;">3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">dataack</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">closereq</td>
+<td style="text-align: left;">5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">close</td>
+<td style="text-align: left;">6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">reset</td>
+<td style="text-align: left;">7</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sync</td>
+<td style="text-align: left;">8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">syncack</td>
+<td style="text-align: left;">9</td>
+</tr>
+</tbody>
+</table>
+<h1>PRIMARY EXPRESSIONS</h1>
+<p>The lowest order expression is a primary expression, representing either a constant or a single datum from a packet’s payload, meta data or a stateful module.</p>
+<h2>META EXPRESSIONS</h2>
+<blockquote>
+<pre><code>meta {length | nfproto | l4proto | protocol | priority}
+[meta] {mark | iif | iifname | iiftype | oif | oifname | oiftype | skuid | skgid | nftrace | rtclassid | ibrname | obrname | pkttype | cpu | iifgroup | oifgroup | cgroup | random | ipsec | iifkind | oifkind | time | hour | day }</code></pre>
+</blockquote>
+<p>A meta expression refers to meta data associated with a packet.</p>
+<p>There are two types of meta expressions: unqualified and qualified meta expressions. Qualified meta expressions require the meta keyword before the meta key, unqualified meta expressions can be specified by using the meta key directly or as qualified meta expressions. Meta l4proto is useful to match a particular transport protocol that is part of either an IPv4 or IPv6 packet. It will also skip any IPv6 extension headers present in an IPv6 packet.</p>
+<p>meta iif, oif, iifname and oifname are used to match the interface a packet arrived on or is about to be sent out on.</p>
+<p>iif and oif are used to match on the interface index, whereas iifname and oifname are used to match on the interface name. This is not the same — assuming the rule</p>
+<blockquote>
+<pre><code>filter input meta iif &quot;foo&quot;</code></pre>
+</blockquote>
+<p>Then this rule can only be added if the interface "foo" exists. Also, the rule will continue to match even if the interface "foo" is renamed to "bar".</p>
+<p>This is because internally the interface index is used. In case of dynamically created interfaces, such as tun/tap or dialup interfaces (ppp for example), it might be better to use iifname or oifname instead.</p>
+<p>In these cases, the name is used so the interface doesn’t have to exist to add such a rule, it will stop matching if the interface gets renamed and it will match again in case interface gets deleted and later a new interface with the same name is created.</p>
+<p>Like with iptables, wildcard matching on interface name prefixes is available for <strong>iifname</strong> and <strong>oifname</strong> matches by appending an asterisk (*) character. Note however that unlike iptables, nftables does not accept interface names consisting of the wildcard character only - users are supposed to just skip those always matching expressions. In order to match on literal asterisk character, one may escape it using backslash (\).</p>
+<p><br />
+<strong>Table 29. Meta expression types</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">length</td>
+<td style="text-align: left;">Length of the packet in bytes</td>
+<td style="text-align: left;">integer (32-bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nfproto</td>
+<td style="text-align: left;">real hook protocol family, useful only in inet table</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l4proto</td>
+<td style="text-align: left;">layer 4 protocol, skips ipv6 extension headers</td>
+<td style="text-align: left;">integer (8 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">protocol</td>
+<td style="text-align: left;">EtherType protocol value</td>
+<td style="text-align: left;">ether_type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">priority</td>
+<td style="text-align: left;">TC packet priority</td>
+<td style="text-align: left;">tc_handle</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">mark</td>
+<td style="text-align: left;">Packet mark</td>
+<td style="text-align: left;">mark</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">iif</td>
+<td style="text-align: left;">Input interface index</td>
+<td style="text-align: left;">iface_index</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">iifname</td>
+<td style="text-align: left;">Input interface name</td>
+<td style="text-align: left;">ifname</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">iiftype</td>
+<td style="text-align: left;">Input interface type</td>
+<td style="text-align: left;">iface_type</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">oif</td>
+<td style="text-align: left;">Output interface index</td>
+<td style="text-align: left;">iface_index</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">oifname</td>
+<td style="text-align: left;">Output interface name</td>
+<td style="text-align: left;">ifname</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">oiftype</td>
+<td style="text-align: left;">Output interface hardware type</td>
+<td style="text-align: left;">iface_type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sdif</td>
+<td style="text-align: left;">Slave device input interface index</td>
+<td style="text-align: left;">iface_index</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">sdifname</td>
+<td style="text-align: left;">Slave device interface name</td>
+<td style="text-align: left;">ifname</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">skuid</td>
+<td style="text-align: left;">UID associated with originating socket</td>
+<td style="text-align: left;">uid</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">skgid</td>
+<td style="text-align: left;">GID associated with originating socket</td>
+<td style="text-align: left;">gid</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">rtclassid</td>
+<td style="text-align: left;">Routing realm</td>
+<td style="text-align: left;">realm</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ibrname</td>
+<td style="text-align: left;">Input bridge interface name</td>
+<td style="text-align: left;">ifname</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">obrname</td>
+<td style="text-align: left;">Output bridge interface name</td>
+<td style="text-align: left;">ifname</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">pkttype</td>
+<td style="text-align: left;">packet type</td>
+<td style="text-align: left;">pkt_type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">cpu</td>
+<td style="text-align: left;">cpu number processing the packet</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">iifgroup</td>
+<td style="text-align: left;">incoming device group</td>
+<td style="text-align: left;">devgroup</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">oifgroup</td>
+<td style="text-align: left;">outgoing device group</td>
+<td style="text-align: left;">devgroup</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">cgroup</td>
+<td style="text-align: left;">control group id</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">random</td>
+<td style="text-align: left;">pseudo-random number</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ipsec</td>
+<td style="text-align: left;">true if packet was ipsec encrypted</td>
+<td style="text-align: left;">boolean (1 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">iifkind</td>
+<td style="text-align: left;">Input interface kind</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">oifkind</td>
+<td style="text-align: left;">Output interface kind</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">time</td>
+<td style="text-align: left;">Absolute time of packet reception</td>
+<td style="text-align: left;">Integer (32 bit) or string</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">day</td>
+<td style="text-align: left;">Day of week</td>
+<td style="text-align: left;">Integer (8 bit) or string</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">hour</td>
+<td style="text-align: left;">Hour of day</td>
+<td style="text-align: left;">String</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 30. Meta expression specific types</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Type</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">iface_index</td>
+<td style="text-align: left;">Interface index (32 bit number). Can be specified numerically or as name of an existing interface.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ifname</td>
+<td style="text-align: left;">Interface name (16 byte string). Does not have to exist.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">iface_type</td>
+<td style="text-align: left;">Interface type (16 bit number).</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">uid</td>
+<td style="text-align: left;">User ID (32 bit number). Can be specified numerically or as user name.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">gid</td>
+<td style="text-align: left;">Group ID (32 bit number). Can be specified numerically or as group name.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">realm</td>
+<td style="text-align: left;">Routing Realm (32 bit number). Can be specified numerically or as symbolic name defined in /etc/iproute2/rt_realms.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">devgroup_type</td>
+<td style="text-align: left;">Device group (32 bit number). Can be specified numerically or as symbolic name defined in /etc/iproute2/group.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">pkt_type</td>
+<td style="text-align: left;">Packet type: <strong>host</strong> (addressed to local host), <strong>broadcast</strong> (to all), <strong>multicast</strong> (to group), <strong>other</strong> (addressed to another host).</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ifkind</td>
+<td style="text-align: left;">Interface kind (16 byte string). See TYPES in ip-link(8) for a list.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">time</td>
+<td style="text-align: left;">Either an integer or a date in ISO format. For example: "2019-06-06 17:00". Hour and seconds are optional and can be omitted if desired. If omitted, midnight will be assumed. The following three would be equivalent: "2019-06-06", "2019-06-06 00:00" and "2019-06-06 00:00:00". When an integer is given, it is assumed to be a UNIX timestamp.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">day</td>
+<td style="text-align: left;">Either a day of week ("Monday", "Tuesday", etc.), or an integer between 0 and 6. Strings are matched case-insensitively, and a full match is not expected (e.g. "Mon" would match "Monday"). When an integer is given, 0 is Sunday and 6 is Saturday.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">hour</td>
+<td style="text-align: left;">A string representing an hour in 24-hour format. Seconds can optionally be specified. For example, 17:00 and 17:00:00 would be equivalent.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Using meta expressions</strong>.</p>
+<blockquote>
+<pre><code># qualified meta expression
+filter output meta oif eth0
+filter forward meta iifkind { &quot;tun&quot;, &quot;veth&quot; }
+
+# unqualified meta expression
+filter output oif eth0
+
+# incoming packet was subject to ipsec processing
+raw prerouting meta ipsec exists accept</code></pre>
+</blockquote>
+<h2>SOCKET EXPRESSION</h2>
+<blockquote>
+<pre><code>socket {transparent | mark | wildcard}</code></pre>
+</blockquote>
+<p>Socket expression can be used to search for an existing open TCP/UDP socket and its attributes that can be associated with a packet. It looks for an established or non-zero bound listening socket (possibly with a non-local address).</p>
+<p><br />
+<strong>Table 31. Available socket attributes</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">transparent</td>
+<td style="text-align: left;">Value of the IP_TRANSPARENT socket option in the found socket. It can be 0 or 1.</td>
+<td style="text-align: left;">boolean (1 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">mark</td>
+<td style="text-align: left;">Value of the socket mark (SOL_SOCKET, SO_MARK).</td>
+<td style="text-align: left;">mark</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">wildcard</td>
+<td style="text-align: left;">Indicates whether the socket is wildcard-bound (e.g. 0.0.0.0 or ::0).</td>
+<td style="text-align: left;">boolean (1 bit)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Using socket expression</strong>.</p>
+<blockquote>
+<pre><code># Mark packets that correspond to a transparent socket. &quot;socket wildcard 0&quot;
+# means that zero-bound listener sockets are NOT matched (which is usually
+# exactly what you want).
+table inet x {
+    chain y {
+        type filter hook prerouting priority -150; policy accept;
+        socket transparent 1 socket wildcard 0 mark set 0x00000001 accept
+    }
+}
+
+# Trace packets that corresponds to a socket with a mark value of 15
+table inet x {
+    chain y {
+        type filter hook prerouting priority -150; policy accept;
+        socket mark 0x0000000f nftrace set 1
+    }
+}
+
+# Set packet mark to socket mark
+table inet x {
+    chain y {
+        type filter hook prerouting priority -150; policy accept;
+        tcp dport 8080 mark set socket mark
+    }
+}</code></pre>
+</blockquote>
+<h2>OSF EXPRESSION</h2>
+<blockquote>
+<pre><code>osf [ttl {loose | skip}] {name | version}</code></pre>
+</blockquote>
+<p>The osf expression does passive operating system fingerprinting. This expression compares some data (Window Size, MSS, options and their order, DF, and others) from packets with the SYN bit set.</p>
+<p><br />
+<strong>Table 32. Available osf attributes</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ttl</td>
+<td style="text-align: left;">Do TTL checks on the packet to determine the operating system.</td>
+<td style="text-align: left;">string</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">version</td>
+<td style="text-align: left;">Do OS version checks on the packet.</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">name</td>
+<td style="text-align: left;">Name of the OS signature to match. All signatures can be found at pf.os file. Use "unknown" for OS signatures that the expression could not detect.</td>
+<td style="text-align: left;">string</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Available ttl values</strong>.</p>
+<blockquote>
+<pre><code>If no TTL attribute is passed, make a true IP header and fingerprint TTL true comparison. This generally works for LANs.
+
+* loose: Check if the IP headers TTL is less than the fingerprint one. Works for globally-routable addresses.
+* skip: Do not compare the TTL at all.</code></pre>
+</blockquote>
+<p><strong>Using osf expression</strong>.</p>
+<blockquote>
+<pre><code># Accept packets that match the &quot;Linux&quot; OS genre signature without comparing TTL.
+table inet x {
+    chain y {
+        type filter hook input priority 0; policy accept;
+        osf ttl skip name &quot;Linux&quot;
+    }
+}</code></pre>
+</blockquote>
+<h2>FIB EXPRESSIONS</h2>
+<blockquote>
+<pre><code>fib {saddr | daddr | mark | iif | oif} [. ...] {oif | oifname | type}</code></pre>
+</blockquote>
+<p>A fib expression queries the fib (forwarding information base) to obtain information such as the output interface index a particular address would use. The input is a tuple of elements that is used as input to the fib lookup functions.</p>
+<p><br />
+<strong>Table 33. fib expression specific types</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">oif</td>
+<td style="text-align: left;">Output interface index</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">oifname</td>
+<td style="text-align: left;">Output interface name</td>
+<td style="text-align: left;">string</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">type</td>
+<td style="text-align: left;">Address type</td>
+<td style="text-align: left;">fib_addrtype</td>
+</tr>
+</tbody>
+</table>
+<p>Use <strong>nft</strong> <strong>describe</strong> <strong>fib_addrtype</strong> to get a list of all address types.</p>
+<p><strong>Using fib expressions</strong>.</p>
+<blockquote>
+<pre><code># drop packets without a reverse path
+filter prerouting fib saddr . iif oif missing drop
+
+In this example, saddr . iif looks up routing information based on the source address and the input interface.
+oif picks the output interface index from the routing information.
+If no route was found for the source address/input interface combination, the output interface index is zero.
+In case the input interface is specified as part of the input key, the output interface index is always the same as the input interface index or zero.
+If only saddr oif is given, then oif can be any interface index or zero.
+
+# drop packets to address not configured on incoming interface
+filter prerouting fib daddr . iif type != { local, broadcast, multicast } drop
+
+# perform lookup in a specific blackhole table (0xdead, needs ip appropriate ip rule)
+filter prerouting meta mark set 0xdead fib daddr . mark type vmap { blackhole : drop, prohibit : jump prohibited, unreachable : drop }</code></pre>
+</blockquote>
+<h2>ROUTING EXPRESSIONS</h2>
+<blockquote>
+<pre><code>rt [ip | ip6] {classid | nexthop | mtu | ipsec}</code></pre>
+</blockquote>
+<p>A routing expression refers to routing data associated with a packet.</p>
+<p><br />
+<strong>Table 34. Routing expression types</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">classid</td>
+<td style="text-align: left;">Routing realm</td>
+<td style="text-align: left;">realm</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nexthop</td>
+<td style="text-align: left;">Routing nexthop</td>
+<td style="text-align: left;">ipv4_addr/ipv6_addr</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">mtu</td>
+<td style="text-align: left;">TCP maximum segment size of route</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ipsec</td>
+<td style="text-align: left;">route via ipsec tunnel or transport</td>
+<td style="text-align: left;">boolean</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 35. Routing expression specific types</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Type</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">realm</td>
+<td style="text-align: left;">Routing Realm (32 bit number). Can be specified numerically or as symbolic name defined in /etc/iproute2/rt_realms.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Using routing expressions</strong>.</p>
+<blockquote>
+<pre><code># IP family independent rt expression
+filter output rt classid 10
+
+# IP family dependent rt expressions
+ip filter output rt nexthop 192.168.0.1
+ip6 filter output rt nexthop fd00::1
+inet filter output rt ip nexthop 192.168.0.1
+inet filter output rt ip6 nexthop fd00::1
+
+# outgoing packet will be encapsulated/encrypted by ipsec
+filter output rt ipsec exists</code></pre>
+</blockquote>
+<h2>IPSEC EXPRESSIONS</h2>
+<blockquote>
+<pre><code>ipsec {in | out} [ spnum NUM ]  {reqid | spi}
+ipsec {in | out} [ spnum NUM ]  {ip | ip6} {saddr | daddr}</code></pre>
+</blockquote>
+<p>An ipsec expression refers to ipsec data associated with a packet.</p>
+<p>The <em>in</em> or <em>out</em> keyword needs to be used to specify if the expression should examine inbound or outbound policies. The <em>in</em> keyword can be used in the prerouting, input and forward hooks. The <em>out</em> keyword applies to forward, output and postrouting hooks. The optional keyword spnum can be used to match a specific state in a chain, it defaults to 0.</p>
+<p><br />
+<strong>Table 36. Ipsec expression types</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">reqid</td>
+<td style="text-align: left;">Request ID</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">spi</td>
+<td style="text-align: left;">Security Parameter Index</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">saddr</td>
+<td style="text-align: left;">Source address of the tunnel</td>
+<td style="text-align: left;">ipv4_addr/ipv6_addr</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">daddr</td>
+<td style="text-align: left;">Destination address of the tunnel</td>
+<td style="text-align: left;">ipv4_addr/ipv6_addr</td>
+</tr>
+</tbody>
+</table>
+<h2>NUMGEN EXPRESSION</h2>
+<blockquote>
+<pre><code>numgen {inc | random} mod NUM [ offset NUM ]</code></pre>
+</blockquote>
+<p>Create a number generator. The <strong>inc</strong> or <strong>random</strong> keywords control its operation mode: In <strong>inc</strong> mode, the last returned value is simply incremented. In <strong>random</strong> mode, a new random number is returned. The value after <strong>mod</strong> keyword specifies an upper boundary (read: modulus) which is not reached by returned numbers. The optional <strong>offset</strong> allows to increment the returned value by a fixed offset.</p>
+<p>A typical use-case for <strong>numgen</strong> is load-balancing:</p>
+<p><strong>Using numgen expression</strong>.</p>
+<blockquote>
+<pre><code># round-robin between 192.168.10.100 and 192.168.20.200:
+add rule nat prerouting dnat to numgen inc mod 2 map \
+        { 0 : 192.168.10.100, 1 : 192.168.20.200 }
+
+# probability-based with odd bias using intervals:
+add rule nat prerouting dnat to numgen random mod 10 map \
+        { 0-2 : 192.168.10.100, 3-9 : 192.168.20.200 }</code></pre>
+</blockquote>
+<h2>HASH EXPRESSIONS</h2>
+<blockquote>
+<pre><code>jhash {ip saddr | ip6 daddr | tcp dport | udp sport | ether saddr} [. ...] mod NUM [ seed NUM ] [ offset NUM ]
+symhash mod NUM [ offset NUM ]</code></pre>
+</blockquote>
+<p>Use a hashing function to generate a number. The functions available are <strong>jhash</strong>, known as Jenkins Hash, and <strong>symhash</strong>, for Symmetric Hash. The <strong>jhash</strong> requires an expression to determine the parameters of the packet header to apply the hashing, concatenations are possible as well. The value after <strong>mod</strong> keyword specifies an upper boundary (read: modulus) which is not reached by returned numbers. The optional <strong>seed</strong> is used to specify an init value used as seed in the hashing function. The optional <strong>offset</strong> allows to increment the returned value by a fixed offset.</p>
+<p>A typical use-case for <strong>jhash</strong> and <strong>symhash</strong> is load-balancing:</p>
+<p><strong>Using hash expressions</strong>.</p>
+<blockquote>
+<pre><code># load balance based on source ip between 2 ip addresses:
+add rule nat prerouting dnat to jhash ip saddr mod 2 map \
+        { 0 : 192.168.10.100, 1 : 192.168.20.200 }
+
+# symmetric load balancing between 2 ip addresses:
+add rule nat prerouting dnat to symhash mod 2 map \
+        { 0 : 192.168.10.100, 1 : 192.168.20.200 }</code></pre>
+</blockquote>
+<h1>PAYLOAD EXPRESSIONS</h1>
+<p>Payload expressions refer to data from the packet’s payload.</p>
+<h2>ETHERNET HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>ether {daddr | saddr | type}</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 37. Ethernet header expression types</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">daddr</td>
+<td style="text-align: left;">Destination MAC address</td>
+<td style="text-align: left;">ether_addr</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">saddr</td>
+<td style="text-align: left;">Source MAC address</td>
+<td style="text-align: left;">ether_addr</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">type</td>
+<td style="text-align: left;">EtherType</td>
+<td style="text-align: left;">ether_type</td>
+</tr>
+</tbody>
+</table>
+<h2>VLAN HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>vlan {id | cfi | pcp | type}</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 38. VLAN header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">id</td>
+<td style="text-align: left;">VLAN ID (VID)</td>
+<td style="text-align: left;">integer (12 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">cfi</td>
+<td style="text-align: left;">Canonical Format Indicator</td>
+<td style="text-align: left;">integer (1 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">pcp</td>
+<td style="text-align: left;">Priority code point</td>
+<td style="text-align: left;">integer (3 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">type</td>
+<td style="text-align: left;">EtherType</td>
+<td style="text-align: left;">ether_type</td>
+</tr>
+</tbody>
+</table>
+<h2>ARP HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>arp {htype | ptype | hlen | plen | operation | saddr { ip | ether } | daddr { ip | ether }</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 39. ARP header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">htype</td>
+<td style="text-align: left;">ARP hardware type</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ptype</td>
+<td style="text-align: left;">EtherType</td>
+<td style="text-align: left;">ether_type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">hlen</td>
+<td style="text-align: left;">Hardware address len</td>
+<td style="text-align: left;">integer (8 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">plen</td>
+<td style="text-align: left;">Protocol address len</td>
+<td style="text-align: left;">integer (8 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">operation</td>
+<td style="text-align: left;">Operation</td>
+<td style="text-align: left;">arp_op</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">saddr ether</td>
+<td style="text-align: left;">Ethernet sender address</td>
+<td style="text-align: left;">ether_addr</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">daddr ether</td>
+<td style="text-align: left;">Ethernet target address</td>
+<td style="text-align: left;">ether_addr</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">saddr ip</td>
+<td style="text-align: left;">IPv4 sender address</td>
+<td style="text-align: left;">ipv4_addr</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">daddr ip</td>
+<td style="text-align: left;">IPv4 target address</td>
+<td style="text-align: left;">ipv4_addr</td>
+</tr>
+</tbody>
+</table>
+<h2>IPV4 HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>ip {version | hdrlength | dscp | ecn | length | id | frag-off | ttl | protocol | checksum | saddr | daddr }</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 40. IPv4 header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">version</td>
+<td style="text-align: left;">IP header version (4)</td>
+<td style="text-align: left;">integer (4 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">hdrlength</td>
+<td style="text-align: left;">IP header length including options</td>
+<td style="text-align: left;">integer (4 bit) FIXME scaling</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">dscp</td>
+<td style="text-align: left;">Differentiated Services Code Point</td>
+<td style="text-align: left;">dscp</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ecn</td>
+<td style="text-align: left;">Explicit Congestion Notification</td>
+<td style="text-align: left;">ecn</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">length</td>
+<td style="text-align: left;">Total packet length</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">id</td>
+<td style="text-align: left;">IP ID</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">frag-off</td>
+<td style="text-align: left;">Fragment offset</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ttl</td>
+<td style="text-align: left;">Time to live</td>
+<td style="text-align: left;">integer (8 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">protocol</td>
+<td style="text-align: left;">Upper layer protocol</td>
+<td style="text-align: left;">inet_proto</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">checksum</td>
+<td style="text-align: left;">IP header checksum</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">saddr</td>
+<td style="text-align: left;">Source address</td>
+<td style="text-align: left;">ipv4_addr</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">daddr</td>
+<td style="text-align: left;">Destination address</td>
+<td style="text-align: left;">ipv4_addr</td>
+</tr>
+</tbody>
+</table>
+<h2>ICMP HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>icmp {type | code | checksum | id | sequence | gateway | mtu}</code></pre>
+</blockquote>
+<p>This expression refers to ICMP header fields. When using it in <strong>inet</strong>, <strong>bridge</strong> or <strong>netdev</strong> families, it will cause an implicit dependency on IPv4 to be created. To match on unusual cases like ICMP over IPv6, one has to add an explicit <strong>meta protocol ip6</strong> match to the rule.</p>
+<p><br />
+<strong>Table 41. ICMP header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">type</td>
+<td style="text-align: left;">ICMP type field</td>
+<td style="text-align: left;">icmp_type</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">code</td>
+<td style="text-align: left;">ICMP code field</td>
+<td style="text-align: left;">integer (8 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">checksum</td>
+<td style="text-align: left;">ICMP checksum field</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">id</td>
+<td style="text-align: left;">ID of echo request/response</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sequence</td>
+<td style="text-align: left;">sequence number of echo request/response</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">gateway</td>
+<td style="text-align: left;">gateway of redirects</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">mtu</td>
+<td style="text-align: left;">MTU of path MTU discovery</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>IGMP HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>igmp {type | mrt | checksum | group}</code></pre>
+</blockquote>
+<p>This expression refers to IGMP header fields. When using it in <strong>inet</strong>, <strong>bridge</strong> or <strong>netdev</strong> families, it will cause an implicit dependency on IPv4 to be created. To match on unusual cases like IGMP over IPv6, one has to add an explicit <strong>meta protocol ip6</strong> match to the rule.</p>
+<p><br />
+<strong>Table 42. IGMP header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">type</td>
+<td style="text-align: left;">IGMP type field</td>
+<td style="text-align: left;">igmp_type</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">mrt</td>
+<td style="text-align: left;">IGMP maximum response time field</td>
+<td style="text-align: left;">integer (8 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">checksum</td>
+<td style="text-align: left;">IGMP checksum field</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">group</td>
+<td style="text-align: left;">Group address</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>IPV6 HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>ip6 {version | dscp | ecn | flowlabel | length | nexthdr | hoplimit | saddr | daddr}</code></pre>
+</blockquote>
+<p>This expression refers to the ipv6 header fields. Caution when using <strong>ip6 nexthdr</strong>, the value only refers to the next header, i.e. <strong>ip6 nexthdr tcp</strong> will only match if the ipv6 packet does not contain any extension headers. Packets that are fragmented or e.g. contain a routing extension headers will not be matched. Please use <strong>meta l4proto</strong> if you wish to match the real transport header and ignore any additional extension headers instead.</p>
+<p><br />
+<strong>Table 43. IPv6 header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">version</td>
+<td style="text-align: left;">IP header version (6)</td>
+<td style="text-align: left;">integer (4 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dscp</td>
+<td style="text-align: left;">Differentiated Services Code Point</td>
+<td style="text-align: left;">dscp</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ecn</td>
+<td style="text-align: left;">Explicit Congestion Notification</td>
+<td style="text-align: left;">ecn</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">flowlabel</td>
+<td style="text-align: left;">Flow label</td>
+<td style="text-align: left;">integer (20 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">length</td>
+<td style="text-align: left;">Payload length</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nexthdr</td>
+<td style="text-align: left;">Nexthdr protocol</td>
+<td style="text-align: left;">inet_proto</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">hoplimit</td>
+<td style="text-align: left;">Hop limit</td>
+<td style="text-align: left;">integer (8 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">saddr</td>
+<td style="text-align: left;">Source address</td>
+<td style="text-align: left;">ipv6_addr</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">daddr</td>
+<td style="text-align: left;">Destination address</td>
+<td style="text-align: left;">ipv6_addr</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Using ip6 header expressions</strong>.</p>
+<blockquote>
+<pre><code># matching if first extension header indicates a fragment
+ip6 nexthdr ipv6-frag</code></pre>
+</blockquote>
+<h2>ICMPV6 HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>icmpv6 {type | code | checksum | parameter-problem | packet-too-big | id | sequence | max-delay}</code></pre>
+</blockquote>
+<p>This expression refers to ICMPv6 header fields. When using it in <strong>inet</strong>, <strong>bridge</strong> or <strong>netdev</strong> families, it will cause an implicit dependency on IPv6 to be created. To match on unusual cases like ICMPv6 over IPv4, one has to add an explicit <strong>meta protocol ip</strong> match to the rule.</p>
+<p><br />
+<strong>Table 44. ICMPv6 header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">type</td>
+<td style="text-align: left;">ICMPv6 type field</td>
+<td style="text-align: left;">icmpv6_type</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">code</td>
+<td style="text-align: left;">ICMPv6 code field</td>
+<td style="text-align: left;">integer (8 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">checksum</td>
+<td style="text-align: left;">ICMPv6 checksum field</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">parameter-problem</td>
+<td style="text-align: left;">pointer to problem</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">packet-too-big</td>
+<td style="text-align: left;">oversized MTU</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">id</td>
+<td style="text-align: left;">ID of echo request/response</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sequence</td>
+<td style="text-align: left;">sequence number of echo request/response</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">max-delay</td>
+<td style="text-align: left;">maximum response delay of MLD queries</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>TCP HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>tcp {sport | dport | sequence | ackseq | doff | reserved | flags | window | checksum | urgptr}</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 45. TCP header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sport</td>
+<td style="text-align: left;">Source port</td>
+<td style="text-align: left;">inet_service</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dport</td>
+<td style="text-align: left;">Destination port</td>
+<td style="text-align: left;">inet_service</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sequence</td>
+<td style="text-align: left;">Sequence number</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ackseq</td>
+<td style="text-align: left;">Acknowledgement number</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">doff</td>
+<td style="text-align: left;">Data offset</td>
+<td style="text-align: left;">integer (4 bit) FIXME scaling</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">reserved</td>
+<td style="text-align: left;">Reserved area</td>
+<td style="text-align: left;">integer (4 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">flags</td>
+<td style="text-align: left;">TCP flags</td>
+<td style="text-align: left;">tcp_flag</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">window</td>
+<td style="text-align: left;">Window</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">checksum</td>
+<td style="text-align: left;">Checksum</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">urgptr</td>
+<td style="text-align: left;">Urgent pointer</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>UDP HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>udp {sport | dport | length | checksum}</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 46. UDP header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sport</td>
+<td style="text-align: left;">Source port</td>
+<td style="text-align: left;">inet_service</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dport</td>
+<td style="text-align: left;">Destination port</td>
+<td style="text-align: left;">inet_service</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">length</td>
+<td style="text-align: left;">Total packet length</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">checksum</td>
+<td style="text-align: left;">Checksum</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>UDP-LITE HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>udplite {sport | dport | checksum}</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 47. UDP-Lite header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sport</td>
+<td style="text-align: left;">Source port</td>
+<td style="text-align: left;">inet_service</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dport</td>
+<td style="text-align: left;">Destination port</td>
+<td style="text-align: left;">inet_service</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">checksum</td>
+<td style="text-align: left;">Checksum</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>SCTP HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>sctp {sport | dport | vtag | checksum}</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 48. SCTP header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sport</td>
+<td style="text-align: left;">Source port</td>
+<td style="text-align: left;">inet_service</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dport</td>
+<td style="text-align: left;">Destination port</td>
+<td style="text-align: left;">inet_service</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">vtag</td>
+<td style="text-align: left;">Verification Tag</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">checksum</td>
+<td style="text-align: left;">Checksum</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>DCCP HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>dccp {sport | dport | type}</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 49. DCCP header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sport</td>
+<td style="text-align: left;">Source port</td>
+<td style="text-align: left;">inet_service</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dport</td>
+<td style="text-align: left;">Destination port</td>
+<td style="text-align: left;">inet_service</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">type</td>
+<td style="text-align: left;">Packet type</td>
+<td style="text-align: left;">dccp_pkttype</td>
+</tr>
+</tbody>
+</table>
+<h2>AUTHENTICATION HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>ah {nexthdr | hdrlength | reserved | spi | sequence}</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 50. AH header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">nexthdr</td>
+<td style="text-align: left;">Next header protocol</td>
+<td style="text-align: left;">inet_proto</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">hdrlength</td>
+<td style="text-align: left;">AH Header length</td>
+<td style="text-align: left;">integer (8 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">reserved</td>
+<td style="text-align: left;">Reserved area</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">spi</td>
+<td style="text-align: left;">Security Parameter Index</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sequence</td>
+<td style="text-align: left;">Sequence number</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>ENCRYPTED SECURITY PAYLOAD HEADER EXPRESSION</h2>
+<blockquote>
+<pre><code>esp {spi | sequence}</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 51. ESP header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">spi</td>
+<td style="text-align: left;">Security Parameter Index</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">sequence</td>
+<td style="text-align: left;">Sequence number</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>IPCOMP HEADER EXPRESSION</h2>
+<p><strong>comp</strong> {<strong>nexthdr</strong> | <strong>flags</strong> | <strong>cpi</strong>}</p>
+<p><br />
+<strong>Table 52. IPComp header expression</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">nexthdr</td>
+<td style="text-align: left;">Next header protocol</td>
+<td style="text-align: left;">inet_proto</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">flags</td>
+<td style="text-align: left;">Flags</td>
+<td style="text-align: left;">bitmask</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">cpi</td>
+<td style="text-align: left;">compression Parameter Index</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>RAW PAYLOAD EXPRESSION</h2>
+<blockquote>
+<pre><code>@base,offset,length</code></pre>
+</blockquote>
+<p>The raw payload expression instructs to load <em>length</em> bits starting at <em>offset</em> bits. Bit 0 refers to the very first bit — in the C programming language, this corresponds to the topmost bit, i.e. 0x80 in case of an octet. They are useful to match headers that do not have a human-readable template expression yet. Note that nft will not add dependencies for Raw payload expressions. If you e.g. want to match protocol fields of a transport header with protocol number 5, you need to manually exclude packets that have a different transport header, for instance by using <strong>meta l4proto 5</strong> before the raw expression.</p>
+<p><br />
+<strong>Table 53. Supported payload protocol bases</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Base</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ll</td>
+<td style="text-align: left;">Link layer, for example the Ethernet header</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nh</td>
+<td style="text-align: left;">Network header, for example IPv4 or IPv6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">th</td>
+<td style="text-align: left;">Transport Header, for example TCP</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Matching destination port of both UDP and TCP</strong>.</p>
+<blockquote>
+<pre><code>inet filter input meta l4proto {tcp, udp} @th,16,16 { 53, 80 }</code></pre>
+</blockquote>
+<p>The above can also be written as</p>
+<blockquote>
+<pre><code>inet filter input meta l4proto {tcp, udp} th dport { 53, 80 }</code></pre>
+</blockquote>
+<p>it is more convenient, but like the raw expression notation no dependencies are created or checked. It is the users responsibility to restrict matching to those header types that have a notion of ports. Otherwise, rules using raw expressions will errnously match unrelated packets, e.g. mis-interpreting ESP packets SPI field as a port.</p>
+<p><strong>Rewrite arp packet target hardware address if target protocol address matches a given address</strong>.</p>
+<blockquote>
+<pre><code>input meta iifname enp2s0 arp ptype 0x0800 arp htype 1 arp hlen 6 arp plen 4 @nh,192,32 0xc0a88f10 @nh,144,48 set 0x112233445566 accept</code></pre>
+</blockquote>
+<h2>EXTENSION HEADER EXPRESSIONS</h2>
+<p>Extension header expressions refer to data from variable-sized protocol headers, such as IPv6 extension headers, TCP options and IPv4 options.</p>
+<p>nftables currently supports matching (finding) a given ipv6 extension header, TCP option or IPv4 option.</p>
+<blockquote>
+<pre><code>hbh {nexthdr | hdrlength}
+frag {nexthdr | frag-off | more-fragments | id}
+rt {nexthdr | hdrlength | type | seg-left}
+dst {nexthdr | hdrlength}
+mh {nexthdr | hdrlength | checksum | type}
+srh {flags | tag | sid | seg-left}
+tcp option {eol | nop | maxseg | window | sack-perm | sack | sack0 | sack1 | sack2 | sack3 | timestamp} tcp_option_field
+ip option { lsrr | ra | rr | ssrr } ip_option_field</code></pre>
+</blockquote>
+<p>The following syntaxes are valid only in a relational expression with boolean type on right-hand side for checking header existence only:</p>
+<blockquote>
+<pre><code>exthdr {hbh | frag | rt | dst | mh}
+tcp option {eol | nop | maxseg | window | sack-perm | sack | sack0 | sack1 | sack2 | sack3 | timestamp}
+ip option { lsrr | ra | rr | ssrr }</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 54. IPv6 extension headers</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">hbh</td>
+<td style="text-align: left;">Hop by Hop</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">rt</td>
+<td style="text-align: left;">Routing Header</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">frag</td>
+<td style="text-align: left;">Fragmentation header</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dst</td>
+<td style="text-align: left;">dst options</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">mh</td>
+<td style="text-align: left;">Mobility Header</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">srh</td>
+<td style="text-align: left;">Segment Routing Header</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 55. TCP Options</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">TCP option fields</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">eol</td>
+<td style="text-align: left;">End if option list</td>
+<td style="text-align: left;">kind</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nop</td>
+<td style="text-align: left;">1 Byte TCP Nop padding option</td>
+<td style="text-align: left;">kind</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">maxseg</td>
+<td style="text-align: left;">TCP Maximum Segment Size</td>
+<td style="text-align: left;">kind, length, size</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">window</td>
+<td style="text-align: left;">TCP Window Scaling</td>
+<td style="text-align: left;">kind, length, count</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sack-perm</td>
+<td style="text-align: left;">TCP SACK permitted</td>
+<td style="text-align: left;">kind, length</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">sack</td>
+<td style="text-align: left;">TCP Selective Acknowledgement (alias of block 0)</td>
+<td style="text-align: left;">kind, length, left, right</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sack0</td>
+<td style="text-align: left;">TCP Selective Acknowledgement (block 0)</td>
+<td style="text-align: left;">kind, length, left, right</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">sack1</td>
+<td style="text-align: left;">TCP Selective Acknowledgement (block 1)</td>
+<td style="text-align: left;">kind, length, left, right</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sack2</td>
+<td style="text-align: left;">TCP Selective Acknowledgement (block 2)</td>
+<td style="text-align: left;">kind, length, left, right</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">sack3</td>
+<td style="text-align: left;">TCP Selective Acknowledgement (block 3)</td>
+<td style="text-align: left;">kind, length, left, right</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">timestamp</td>
+<td style="text-align: left;">TCP Timestamps</td>
+<td style="text-align: left;">kind, length, tsval, tsecr</td>
+</tr>
+</tbody>
+</table>
+<p>TCP option matching also supports raw expression syntax to access arbitrary options:</p>
+<blockquote>
+<pre><code>tcp option</code></pre>
+</blockquote>
+<blockquote>
+<pre><code>tcp option @number,offset,length</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 56. IP Options</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">IP option fields</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">lsrr</td>
+<td style="text-align: left;">Loose Source Route</td>
+<td style="text-align: left;">type, length, ptr, addr</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ra</td>
+<td style="text-align: left;">Router Alert</td>
+<td style="text-align: left;">type, length, value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">rr</td>
+<td style="text-align: left;">Record Route</td>
+<td style="text-align: left;">type, length, ptr, addr</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ssrr</td>
+<td style="text-align: left;">Strict Source Route</td>
+<td style="text-align: left;">type, length, ptr, addr</td>
+</tr>
+</tbody>
+</table>
+<p><strong>finding TCP options</strong>.</p>
+<blockquote>
+<pre><code>filter input tcp option sack-perm kind 1 counter</code></pre>
+</blockquote>
+<p><strong>matching IPv6 exthdr</strong>.</p>
+<blockquote>
+<pre><code>ip6 filter input frag more-fragments 1 counter</code></pre>
+</blockquote>
+<p><strong>finding IP option</strong>.</p>
+<blockquote>
+<pre><code>filter input ip option lsrr exists counter</code></pre>
+</blockquote>
+<h2>CONNTRACK EXPRESSIONS</h2>
+<p>Conntrack expressions refer to meta data of the connection tracking entry associated with a packet.</p>
+<p>There are three types of conntrack expressions. Some conntrack expressions require the flow direction before the conntrack key, others must be used directly because they are direction agnostic. The <strong>packets</strong>, <strong>bytes</strong> and <strong>avgpkt</strong> keywords can be used with or without a direction. If the direction is omitted, the sum of the original and the reply direction is returned. The same is true for the <strong>zone</strong>, if a direction is given, the zone is only matched if the zone id is tied to the given direction.</p>
+<blockquote>
+<pre><code>ct {state | direction | status | mark | expiration | helper | label}
+ct [original | reply] {l3proto | protocol | bytes | packets | avgpkt | zone | id}
+ct {original | reply} {proto-src | proto-dst}
+ct {original | reply} {ip | ip6} {saddr | daddr}</code></pre>
+</blockquote>
+<p>The conntrack-specific types in this table are described in the sub-section CONNTRACK TYPES above.</p>
+<p><br />
+<strong>Table 57. Conntrack expressions</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">state</td>
+<td style="text-align: left;">State of the connection</td>
+<td style="text-align: left;">ct_state</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">direction</td>
+<td style="text-align: left;">Direction of the packet relative to the connection</td>
+<td style="text-align: left;">ct_dir</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">status</td>
+<td style="text-align: left;">Status of the connection</td>
+<td style="text-align: left;">ct_status</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">mark</td>
+<td style="text-align: left;">Connection mark</td>
+<td style="text-align: left;">mark</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">expiration</td>
+<td style="text-align: left;">Connection expiration time</td>
+<td style="text-align: left;">time</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">helper</td>
+<td style="text-align: left;">Helper associated with the connection</td>
+<td style="text-align: left;">string</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">label</td>
+<td style="text-align: left;">Connection tracking label bit or symbolic name defined in connlabel.conf in the nftables include path</td>
+<td style="text-align: left;">ct_label</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">l3proto</td>
+<td style="text-align: left;">Layer 3 protocol of the connection</td>
+<td style="text-align: left;">nf_proto</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">saddr</td>
+<td style="text-align: left;">Source address of the connection for the given direction</td>
+<td style="text-align: left;">ipv4_addr/ipv6_addr</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">daddr</td>
+<td style="text-align: left;">Destination address of the connection for the given direction</td>
+<td style="text-align: left;">ipv4_addr/ipv6_addr</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">protocol</td>
+<td style="text-align: left;">Layer 4 protocol of the connection for the given direction</td>
+<td style="text-align: left;">inet_proto</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">proto-src</td>
+<td style="text-align: left;">Layer 4 protocol source for the given direction</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">proto-dst</td>
+<td style="text-align: left;">Layer 4 protocol destination for the given direction</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">packets</td>
+<td style="text-align: left;">packet count seen in the given direction or sum of original and reply</td>
+<td style="text-align: left;">integer (64 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">bytes</td>
+<td style="text-align: left;">byte count seen, see description for <strong>packets</strong> keyword</td>
+<td style="text-align: left;">integer (64 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">avgpkt</td>
+<td style="text-align: left;">average bytes per packet, see description for <strong>packets</strong> keyword</td>
+<td style="text-align: left;">integer (64 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">zone</td>
+<td style="text-align: left;">conntrack zone</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">count</td>
+<td style="text-align: left;">number of current connections</td>
+<td style="text-align: left;">integer (32 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">id</td>
+<td style="text-align: left;">Connection id</td>
+<td style="text-align: left;">ct_id</td>
+</tr>
+</tbody>
+</table>
+<p><strong>restrict the number of parallel connections to a server</strong>.</p>
+<blockquote>
+<pre><code>nft add set filter ssh_flood { type ipv4_addr; flags dynamic; }
+nft add rule filter input tcp dport 22 add @ssh_flood { ip saddr ct count over 2 } reject</code></pre>
+</blockquote>
+<h1>STATEMENTS</h1>
+<p>Statements represent actions to be performed. They can alter control flow (return, jump to a different chain, accept or drop the packet) or can perform actions, such as logging, rejecting a packet, etc.</p>
+<p>Statements exist in two kinds. Terminal statements unconditionally terminate evaluation of the current rule, non-terminal statements either only conditionally or never terminate evaluation of the current rule, in other words, they are passive from the ruleset evaluation perspective. There can be an arbitrary amount of non-terminal statements in a rule, but only a single terminal statement as the final statement.</p>
+<h2>VERDICT STATEMENT</h2>
+<p>The verdict statement alters control flow in the ruleset and issues policy decisions for packets.</p>
+<blockquote>
+<pre><code>{accept | drop | queue | continue | return}
+{jump | goto} chain</code></pre>
+</blockquote>
+<p><strong>accept</strong> and <strong>drop</strong> are absolute verdicts — they terminate ruleset evaluation immediately.</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>accept</strong></td>
+<td style="text-align: left;">Terminate ruleset evaluation and accept the packet. The packet can still be dropped later by another hook, for instance accept in the forward hook still allows to drop the packet later in the postrouting hook, or another forward base chain that has a higher priority number and is evaluated afterwards in the processing pipeline.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>drop</strong></td>
+<td style="text-align: left;">Terminate ruleset evaluation and drop the packet. The drop occurs instantly, no further chains or hooks are evaluated. It is not possible to accept the packet in a later chain again, as those are not evaluated anymore for the packet.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>queue</strong></td>
+<td style="text-align: left;">Terminate ruleset evaluation and queue the packet to userspace. Userspace must provide a drop or accept verdict. In case of accept, processing resumes with the next base chain hook, not the rule following the queue verdict.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>continue</strong></td>
+<td style="text-align: left;">Continue ruleset evaluation with the next rule. This is the default behaviour in case a rule issues no verdict.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>return</strong></td>
+<td style="text-align: left;">Return from the current chain and continue evaluation at the next rule in the last chain. If issued in a base chain, it is equivalent to the base chain policy.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>jump</strong> <em>chain</em></td>
+<td style="text-align: left;">Continue evaluation at the first rule in <em>chain</em>. The current position in the ruleset is pushed to a call stack and evaluation will continue there when the new chain is entirely evaluated or a <strong>return</strong> verdict is issued. In case an absolute verdict is issued by a rule in the chain, ruleset evaluation terminates immediately and the specific action is taken.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>goto</strong> <em>chain</em></td>
+<td style="text-align: left;">Similar to <strong>jump</strong>, but the current position is not pushed to the call stack, meaning that after the new chain evaluation will continue at the last chain instead of the one containing the goto statement.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Using verdict statements</strong>.</p>
+<blockquote>
+<pre><code># process packets from eth0 and the internal network in from_lan
+# chain, drop all packets from eth0 with different source addresses.
+
+filter input iif eth0 ip saddr 192.168.0.0/24 jump from_lan
+filter input iif eth0 drop</code></pre>
+</blockquote>
+<h2>PAYLOAD STATEMENT</h2>
+<blockquote>
+<pre><code>payload_expression set value</code></pre>
+</blockquote>
+<p>The payload statement alters packet content. It can be used for example to set ip DSCP (diffserv) header field or ipv6 flow labels.</p>
+<p><strong>route some packets instead of bridging</strong>.</p>
+<blockquote>
+<pre><code># redirect tcp:http from 192.160.0.0/16 to local machine for routing instead of bridging
+# assumes 00:11:22:33:44:55 is local MAC address.
+bridge input meta iif eth0 ip saddr 192.168.0.0/16 tcp dport 80 meta pkttype set unicast ether daddr set 00:11:22:33:44:55</code></pre>
+</blockquote>
+<p><strong>Set IPv4 DSCP header field</strong>.</p>
+<blockquote>
+<pre><code>ip forward ip dscp set 42</code></pre>
+</blockquote>
+<h2>EXTENSION HEADER STATEMENT</h2>
+<blockquote>
+<pre><code>extension_header_expression set value</code></pre>
+</blockquote>
+<p>The extension header statement alters packet content in variable-sized headers. This can currently be used to alter the TCP Maximum segment size of packets, similar to TCPMSS.</p>
+<p><strong>change tcp mss</strong>.</p>
+<blockquote>
+<pre><code>tcp flags syn tcp option maxseg size set 1360
+# set a size based on route information:
+tcp flags syn tcp option maxseg size set rt mtu</code></pre>
+</blockquote>
+<h2>LOG STATEMENT</h2>
+<blockquote>
+<pre><code>log [prefix quoted_string] [level syslog-level] [flags log-flags]
+log group nflog_group [prefix quoted_string] [queue-threshold value] [snaplen size]
+log level audit</code></pre>
+</blockquote>
+<p>The log statement enables logging of matching packets. When this statement is used from a rule, the Linux kernel will print some information on all matching packets, such as header fields, via the kernel log (where it can be read with dmesg(1) or read in the syslog).</p>
+<p>In the second form of invocation (if <em>nflog_group</em> is specified), the Linux kernel will pass the packet to nfnetlink_log which will multicast the packet through a netlink socket to the specified multicast group. One or more userspace processes may subscribe to the group to receive the packets, see libnetfilter_queue documentation for details.</p>
+<p>In the third form of invocation (if level audit is specified), the Linux kernel writes a message into the audit buffer suitably formatted for reading with auditd. Therefore no further formatting options (such as prefix or flags) are allowed in this mode.</p>
+<p>This is a non-terminating statement, so the rule evaluation continues after the packet is logged.</p>
+<p><br />
+<strong>Table 58. log statement options</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">prefix</td>
+<td style="text-align: left;">Log message prefix</td>
+<td style="text-align: left;">quoted string</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">level</td>
+<td style="text-align: left;">Syslog level of logging</td>
+<td style="text-align: left;">string: emerg, alert, crit, err, warn [default], notice, info, debug, audit</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">group</td>
+<td style="text-align: left;">NFLOG group to send messages to</td>
+<td style="text-align: left;">unsigned integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">snaplen</td>
+<td style="text-align: left;">Length of packet payload to include in netlink message</td>
+<td style="text-align: left;">unsigned integer (32 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">queue-threshold</td>
+<td style="text-align: left;">Number of packets to queue inside the kernel before sending them to userspace</td>
+<td style="text-align: left;">unsigned integer (32 bit)</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 59. log-flags</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Flag</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">tcp sequence</td>
+<td style="text-align: left;">Log TCP sequence numbers.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">tcp options</td>
+<td style="text-align: left;">Log options from the TCP packet header.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ip options</td>
+<td style="text-align: left;">Log options from the IP/IPv6 packet header.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">skuid</td>
+<td style="text-align: left;">Log the userid of the process which generated the packet.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ether</td>
+<td style="text-align: left;">Decode MAC addresses and protocol.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">all</td>
+<td style="text-align: left;">Enable all log flags listed above.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Using log statement</strong>.</p>
+<blockquote>
+<pre><code># log the UID which generated the packet and ip options
+ip filter output log flags skuid flags ip options
+
+# log the tcp sequence numbers and tcp options from the TCP packet
+ip filter output log flags tcp sequence,options
+
+# enable all supported log flags
+ip6 filter output log flags all</code></pre>
+</blockquote>
+<h2>REJECT STATEMENT</h2>
+<blockquote>
+<pre><code>reject [ with REJECT_WITH ]
+
+REJECT_WITH := icmp type icmp_code |
+                 icmpv6 type icmpv6_code |
+                 icmpx type icmpx_code |
+                 tcp reset</code></pre>
+</blockquote>
+<p>A reject statement is used to send back an error packet in response to the matched packet otherwise it is equivalent to drop so it is a terminating statement, ending rule traversal. This statement is only valid in base chains using the <strong>input</strong>, <strong>forward</strong> or <strong>output</strong> hooks, and user-defined chains which are only called from those chains.</p>
+<p><br />
+<strong>Table 60. different ICMP reject variants are meant for use in different table families</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Variant</td>
+<td style="text-align: left;">Family</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">icmp</td>
+<td style="text-align: left;">ip</td>
+<td style="text-align: left;">icmp_code</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">icmpv6</td>
+<td style="text-align: left;">ip6</td>
+<td style="text-align: left;">icmpv6_code</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">icmpx</td>
+<td style="text-align: left;">inet</td>
+<td style="text-align: left;">icmpx_code</td>
+</tr>
+</tbody>
+</table>
+<p>For a description of the different types and a list of supported keywords refer to DATA TYPES section above. The common default reject value is <strong>port-unreachable</strong>.</p>
+<p>Note that in bridge family, reject statement is only allowed in base chains which hook into input or prerouting.</p>
+<h2>COUNTER STATEMENT</h2>
+<p>A counter statement sets the hit count of packets along with the number of bytes.</p>
+<blockquote>
+<pre><code>counter packets number bytes number
+counter { packets number | bytes number }</code></pre>
+</blockquote>
+<h2>CONNTRACK STATEMENT</h2>
+<p>The conntrack statement can be used to set the conntrack mark and conntrack labels.</p>
+<blockquote>
+<pre><code>ct {mark | event | label | zone} set value</code></pre>
+</blockquote>
+<p>The ct statement sets meta data associated with a connection. The zone id has to be assigned before a conntrack lookup takes place, i.e. this has to be done in prerouting and possibly output (if locally generated packets need to be placed in a distinct zone), with a hook priority of -300.</p>
+<p>Unlike iptables, where the helper assignment happens in the raw table, the helper needs to be assigned after a conntrack entry has been found, i.e. it will not work when used with hook priorities equal or before -200.</p>
+<p><br />
+<strong>Table 61. Conntrack statement types</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">event</td>
+<td style="text-align: left;">conntrack event bits</td>
+<td style="text-align: left;">bitmask, integer (32 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">helper</td>
+<td style="text-align: left;">name of ct helper object to assign to the connection</td>
+<td style="text-align: left;">quoted string</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">mark</td>
+<td style="text-align: left;">Connection tracking mark</td>
+<td style="text-align: left;">mark</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">label</td>
+<td style="text-align: left;">Connection tracking label</td>
+<td style="text-align: left;">label</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">zone</td>
+<td style="text-align: left;">conntrack zone</td>
+<td style="text-align: left;">integer (16 bit)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>save packet nfmark in conntrack</strong>.</p>
+<blockquote>
+<pre><code>ct mark set meta mark</code></pre>
+</blockquote>
+<p><strong>set zone mapped via interface</strong>.</p>
+<blockquote>
+<pre><code>table inet raw {
+  chain prerouting {
+      type filter hook prerouting priority -300;
+      ct zone set iif map { &quot;eth1&quot; : 1, &quot;veth1&quot; : 2 }
+  }
+  chain output {
+      type filter hook output priority -300;
+      ct zone set oif map { &quot;eth1&quot; : 1, &quot;veth1&quot; : 2 }
+  }
+}</code></pre>
+</blockquote>
+<p><strong>restrict events reported by ctnetlink</strong>.</p>
+<blockquote>
+<pre><code>ct event set new,related,destroy</code></pre>
+</blockquote>
+<h2>NOTRACK STATEMENT</h2>
+<p>The notrack statement allows to disable connection tracking for certain packets.</p>
+<blockquote>
+<pre><code>notrack</code></pre>
+</blockquote>
+<p>Note that for this statement to be effective, it has to be applied to packets before a conntrack lookup happens. Therefore, it needs to sit in a chain with either prerouting or output hook and a hook priority of -300 or less.</p>
+<p>See SYNPROXY STATEMENT for an example usage.</p>
+<h2>META STATEMENT</h2>
+<p>A meta statement sets the value of a meta expression. The existing meta fields are: priority, mark, pkttype, nftrace.</p>
+<blockquote>
+<pre><code>meta {mark | priority | pkttype | nftrace} set value</code></pre>
+</blockquote>
+<p>A meta statement sets meta data associated with a packet.</p>
+<p><br />
+<strong>Table 62. Meta statement types</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Keyword</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">priority</td>
+<td style="text-align: left;">TC packet priority</td>
+<td style="text-align: left;">tc_handle</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">mark</td>
+<td style="text-align: left;">Packet mark</td>
+<td style="text-align: left;">mark</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">pkttype</td>
+<td style="text-align: left;">packet type</td>
+<td style="text-align: left;">pkt_type</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nftrace</td>
+<td style="text-align: left;">ruleset packet tracing on/off. Use <strong>monitor trace</strong> command to watch traces</td>
+<td style="text-align: left;">0, 1</td>
+</tr>
+</tbody>
+</table>
+<h2>LIMIT STATEMENT</h2>
+<blockquote>
+<pre><code>limit rate [over] packet_number / TIME_UNIT [burst packet_number packets]
+limit rate [over] byte_number BYTE_UNIT / TIME_UNIT [burst byte_number BYTE_UNIT]
+
+TIME_UNIT := second | minute | hour | day
+BYTE_UNIT := bytes | kbytes | mbytes</code></pre>
+</blockquote>
+<p>A limit statement matches at a limited rate using a token bucket filter. A rule using this statement will match until this limit is reached. It can be used in combination with the log statement to give limited logging. The optional <strong>over</strong> keyword makes it match over the specified rate. Default <strong>burst</strong> is 5. if you specify <strong>burst</strong>, it must be non-zero value.</p>
+<p><br />
+<strong>Table 63. limit statement values</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Value</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">packet_number</td>
+<td style="text-align: left;">Number of packets</td>
+<td style="text-align: left;">unsigned integer (32 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">byte_number</td>
+<td style="text-align: left;">Number of bytes</td>
+<td style="text-align: left;">unsigned integer (32 bit)</td>
+</tr>
+</tbody>
+</table>
+<h2>NAT STATEMENTS</h2>
+<blockquote>
+<pre><code>snat to address [:port] [PRF_FLAGS]
+snat to address - address [:port - port] [PRF_FLAGS]
+snat { ip | ip6 } to address - address [:port - port] [PR_FLAGS]
+dnat to address [:port] [PRF_FLAGS]
+dnat to address [:port - port] [PR_FLAGS]
+dnat { ip | ip6 } to address [:port - port] [PR_FLAGS]
+masquerade to [:port] [PRF_FLAGS]
+masquerade to [:port - port] [PRF_FLAGS]
+redirect to [:port] [PRF_FLAGS]
+redirect to [:port - port] [PRF_FLAGS]
+
+PRF_FLAGS := PRF_FLAG [, PRF_FLAGS]
+PR_FLAGS  := PR_FLAG [, PR_FLAGS]
+PRF_FLAG  := PR_FLAG | fully-random
+PR_FLAG   := persistent | random</code></pre>
+</blockquote>
+<p>The nat statements are only valid from nat chain types.</p>
+<p>The <strong>snat</strong> and <strong>masquerade</strong> statements specify that the source address of the packet should be modified. While <strong>snat</strong> is only valid in the postrouting and input chains, <strong>masquerade</strong> makes sense only in postrouting. The dnat and redirect statements are only valid in the prerouting and output chains, they specify that the destination address of the packet should be modified. You can use non-base chains which are called from base chains of nat chain type too. All future packets in this connection will also be mangled, and rules should cease being examined.</p>
+<p>The <strong>masquerade</strong> statement is a special form of snat which always uses the outgoing interface’s IP address to translate to. It is particularly useful on gateways with dynamic (public) IP addresses.</p>
+<p>The <strong>redirect</strong> statement is a special form of dnat which always translates the destination address to the local host’s one. It comes in handy if one only wants to alter the destination port of incoming traffic on different interfaces.</p>
+<p>When used in the inet family (available with kernel 5.2), the dnat and snat statements require the use of the ip and ip6 keyword in case an address is provided, see the examples below.</p>
+<p>Before kernel 4.18 nat statements require both prerouting and postrouting base chains to be present since otherwise packets on the return path won’t be seen by netfilter and therefore no reverse translation will take place.</p>
+<p><br />
+<strong>Table 64. NAT statement values</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Expression</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">address</td>
+<td style="text-align: left;">Specifies that the source/destination address of the packet should be modified. You may specify a mapping to relate a list of tuples composed of arbitrary expression key with address value.</td>
+<td style="text-align: left;">ipv4_addr, ipv6_addr, e.g. abcd::1234, or you can use a mapping, e.g. meta mark map { 10 : 192.168.1.2, 20 : 192.168.1.3 }</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">port</td>
+<td style="text-align: left;">Specifies that the source/destination address of the packet should be modified.</td>
+<td style="text-align: left;">port number (16 bit)</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 65. NAT statement flags</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Flag</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">persistent</td>
+<td style="text-align: left;">Gives a client the same source-/destination-address for each connection.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">random</td>
+<td style="text-align: left;">In kernel 5.0 and newer this is the same as fully-random. In earlier kernels the port mapping will be randomized using a seeded MD5 hash mix using source and destination address and destination port.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">fully-random</td>
+<td style="text-align: left;">If used then port mapping is generated based on a 32-bit pseudo-random algorithm.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Using NAT statements</strong>.</p>
+<blockquote>
+<pre><code># create a suitable table/chain setup for all further examples
+add table nat
+add chain nat prerouting { type nat hook prerouting priority 0; }
+add chain nat postrouting { type nat hook postrouting priority 100; }
+
+# translate source addresses of all packets leaving via eth0 to address 1.2.3.4
+add rule nat postrouting oif eth0 snat to 1.2.3.4
+
+# redirect all traffic entering via eth0 to destination address 192.168.1.120
+add rule nat prerouting iif eth0 dnat to 192.168.1.120
+
+# translate source addresses of all packets leaving via eth0 to whatever
+# locally generated packets would use as source to reach the same destination
+add rule nat postrouting oif eth0 masquerade
+
+# redirect incoming TCP traffic for port 22 to port 2222
+add rule nat prerouting tcp dport 22 redirect to :2222
+
+# inet family:
+# handle ip dnat:
+add rule inet nat prerouting dnat ip to 10.0.2.99
+# handle ip6 dnat:
+add rule inet nat prerouting dnat ip6 to fe80::dead
+# this masquerades both ipv4 and ipv6:
+add rule inet nat postrouting meta oif ppp0 masquerade</code></pre>
+</blockquote>
+<h2>TPROXY STATEMENT</h2>
+<p>Tproxy redirects the packet to a local socket without changing the packet header in any way. If any of the arguments is missing the data of the incoming packet is used as parameter. Tproxy matching requires another rule that ensures the presence of transport protocol header is specified.</p>
+<blockquote>
+<pre><code>tproxy to address:port
+tproxy to {address | :port}</code></pre>
+</blockquote>
+<p>This syntax can be used in <strong>ip/ip6</strong> tables where network layer protocol is obvious. Either IP address or port can be specified, but at least one of them is necessary.</p>
+<blockquote>
+<pre><code>tproxy {ip | ip6} to address[:port]
+tproxy to :port</code></pre>
+</blockquote>
+<p>This syntax can be used in <strong>inet</strong> tables. The <strong>ip/ip6</strong> parameter defines the family the rule will match. The <strong>address</strong> parameter must be of this family. When only <strong>port</strong> is defined, the address family should not be specified. In this case the rule will match for both families.</p>
+<p><br />
+<strong>Table 66. tproxy attributes</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">address</td>
+<td style="text-align: left;">IP address the listening socket with IP_TRANSPARENT option is bound to.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">port</td>
+<td style="text-align: left;">Port the listening socket with IP_TRANSPARENT option is bound to.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example ruleset for tproxy statement</strong>.</p>
+<blockquote>
+<pre><code>table ip x {
+    chain y {
+        type filter hook prerouting priority -150; policy accept;
+        tcp dport ntp tproxy to 1.1.1.1
+        udp dport ssh tproxy to :2222
+    }
+}
+table ip6 x {
+    chain y {
+       type filter hook prerouting priority -150; policy accept;
+       tcp dport ntp tproxy to [dead::beef]
+       udp dport ssh tproxy to :2222
+    }
+}
+table inet x {
+    chain y {
+        type filter hook prerouting priority -150; policy accept;
+        tcp dport 321 tproxy to :ssh
+        tcp dport 99 tproxy ip to 1.1.1.1:999
+        udp dport 155 tproxy ip6 to [dead::beef]:smux
+    }
+}</code></pre>
+</blockquote>
+<h2>SYNPROXY STATEMENT</h2>
+<p>This statement will process TCP three-way-handshake parallel in netfilter context to protect either local or backend system. This statement requires connection tracking because sequence numbers need to be translated.</p>
+<blockquote>
+<pre><code>synproxy [mss mss_value] [wscale wscale_value] [SYNPROXY_FLAGS]</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 67. synproxy statement attributes</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">mss</td>
+<td style="text-align: left;">Maximum segment size announced to clients. This must match the backend.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">wscale</td>
+<td style="text-align: left;">Window scale announced to clients. This must match the backend.</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 68. synproxy statement flags</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Flag</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sack-perm</td>
+<td style="text-align: left;">Pass client selective acknowledgement option to backend (will be disabled if not present).</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">timestamp</td>
+<td style="text-align: left;">Pass client timestamp option to backend (will be disabled if not present, also needed for selective acknowledgement and window scaling).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example ruleset for synproxy statement</strong>.</p>
+<blockquote>
+<pre><code>Determine tcp options used by backend, from an external system
+
+              tcpdump -pni eth0 -c 1 tcp[tcpflags] == (tcp-syn|tcp-ack)
+                  port 80 &amp;
+              telnet 192.0.2.42 80
+              18:57:24.693307 IP 192.0.2.42.80 &gt; 192.0.2.43.48757:
+                  Flags [S.], seq 360414582, ack 788841994, win 14480,
+                  options [mss 1460,sackOK,
+                  TS val 1409056151 ecr 9690221,
+                  nop,wscale 9],
+                  length 0
+
+Switch tcp_loose mode off, so conntrack will mark out-of-flow packets as state INVALID.
+
+              echo 0 &gt; /proc/sys/net/netfilter/nf_conntrack_tcp_loose
+
+Make SYN packets untracked.
+
+        table ip x {
+                chain y {
+                        type filter hook prerouting priority raw; policy accept;
+                        tcp flags syn notrack
+                }
+        }
+
+Catch UNTRACKED (SYN  packets) and INVALID (3WHS ACK packets) states and send
+them to SYNPROXY. This rule will respond to SYN packets with SYN+ACK
+syncookies, create ESTABLISHED for valid client response (3WHS ACK packets) and
+drop incorrect cookies. Flags combinations not expected during  3WHS will not
+match and continue (e.g. SYN+FIN, SYN+ACK). Finally, drop invalid packets, this
+will be out-of-flow packets that were not matched by SYNPROXY.
+
+    table ip foo {
+            chain z {
+                    type filter hook input priority filter; policy accept;
+                    ct state { invalid, untracked } synproxy mss 1460 wscale 9 timestamp sack-perm
+                    ct state invalid drop
+            }
+    }
+
+The outcome ruleset of the steps above should be similar to the one below.
+
+        table ip x {
+                chain y {
+                        type filter hook prerouting priority raw; policy accept;
+                        tcp flags syn notrack
+                }
+
+                chain z {
+                        type filter hook input priority filter; policy accept;
+                        ct state { invalid, untracked } synproxy mss 1460 wscale 9 timestamp sack-perm
+                        ct state invalid drop
+                }
+        }</code></pre>
+</blockquote>
+<h2>FLOW STATEMENT</h2>
+<p>A flow statement allows us to select what flows you want to accelerate forwarding through layer 3 network stack bypass. You have to specify the flowtable name where you want to offload this flow.</p>
+<p><strong>flow add @</strong><em>flowtable</em></p>
+<h2>QUEUE STATEMENT</h2>
+<p>This statement passes the packet to userspace using the nfnetlink_queue handler. The packet is put into the queue identified by its 16-bit queue number. Userspace can inspect and modify the packet if desired. Userspace must then drop or re-inject the packet into the kernel. See libnetfilter_queue documentation for details.</p>
+<blockquote>
+<pre><code>queue [num queue_number] [bypass]
+queue [num queue_number_from - queue_number_to] [QUEUE_FLAGS]
+
+QUEUE_FLAGS := QUEUE_FLAG [, QUEUE_FLAGS]
+QUEUE_FLAG  := bypass | fanout</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 69. queue statement values</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Value</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">queue_number</td>
+<td style="text-align: left;">Sets queue number, default is 0.</td>
+<td style="text-align: left;">unsigned integer (16 bit)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">queue_number_from</td>
+<td style="text-align: left;">Sets initial queue in the range, if fanout is used.</td>
+<td style="text-align: left;">unsigned integer (16 bit)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">queue_number_to</td>
+<td style="text-align: left;">Sets closing queue in the range, if fanout is used.</td>
+<td style="text-align: left;">unsigned integer (16 bit)</td>
+</tr>
+</tbody>
+</table>
+<p><br />
+<strong>Table 70. queue statement flags</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Flag</td>
+<td style="text-align: left;">Description</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">bypass</td>
+<td style="text-align: left;">Let packets go through if userspace application cannot back off. Before using this flag, read libnetfilter_queue documentation for performance tuning recommendations.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">fanout</td>
+<td style="text-align: left;">Distribute packets between several queues.</td>
+</tr>
+</tbody>
+</table>
+<h2>DUP STATEMENT</h2>
+<p>The dup statement is used to duplicate a packet and send the copy to a different destination.</p>
+<blockquote>
+<pre><code>dup to device
+dup to address device device</code></pre>
+</blockquote>
+<p><br />
+<strong>Table 71. Dup statement values</strong></p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Expression</td>
+<td style="text-align: left;">Description</td>
+<td style="text-align: left;">Type</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">address</td>
+<td style="text-align: left;">Specifies that the copy of the packet should be sent to a new gateway.</td>
+<td style="text-align: left;">ipv4_addr, ipv6_addr, e.g. abcd::1234, or you can use a mapping, e.g. ip saddr map { 192.168.1.2 : 10.1.1.1 }</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">device</td>
+<td style="text-align: left;">Specifies that the copy should be transmitted via device.</td>
+<td style="text-align: left;">string</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Using the dup statement</strong>.</p>
+<blockquote>
+<pre><code># send to machine with ip address 10.2.3.4 on eth0
+ip filter forward dup to 10.2.3.4 device &quot;eth0&quot;
+
+# copy raw frame to another interface
+netdetv ingress dup to &quot;eth0&quot;
+dup to &quot;eth0&quot;
+
+# combine with map dst addr to gateways
+dup to ip daddr map { 192.168.7.1 : &quot;eth0&quot;, 192.168.7.2 : &quot;eth1&quot; }</code></pre>
+</blockquote>
+<h2>FWD STATEMENT</h2>
+<p>The fwd statement is used to redirect a raw packet to another interface. It is only available in the netdev family ingress hook. It is similar to the dup statement except that no copy is made.</p>
+<p><strong>fwd to</strong> <em>device</em></p>
+<h2>SET STATEMENT</h2>
+<p>The set statement is used to dynamically add or update elements in a set from the packet path. The set setname must already exist in the given table and must have been created with one or both of the dynamic and the timeout flags. The dynamic flag is required if the set statement expression includes a stateful object. The timeout flag is implied if the set is created with a timeout, and is required if the set statement updates elements, rather than adding them. Furthermore, these sets should specify both a maximum set size (to prevent memory exhaustion), and their elements should have a timeout (so their number will not grow indefinitely) either from the set definition or from the statement that adds or updates them. The set statement can be used to e.g. create dynamic blacklists.</p>
+<blockquote>
+<pre><code>{add | update} @setname { expression [timeout timeout] [comment string] }</code></pre>
+</blockquote>
+<p><strong>Example for simple blacklist</strong>.</p>
+<blockquote>
+<pre><code># declare a set, bound to table &quot;filter&quot;, in family &quot;ip&quot;.
+# Timeout and size are mandatory because we will add elements from packet path.
+# Entries will timeout after one minute, after which they might be
+# re-added if limit condition persists.
+nft add set ip filter blackhole \
+    &quot;{ type ipv4_addr; flags dynamic; timeout 1m; size 65536; }&quot;
+
+# declare a set to store the limit per saddr.
+# This must be separate from blackhole since the timeout is different
+nft add set ip filter flood \
+    &quot;{ type ipv4_addr; flags dynamic; timeout 10s; size 128000; }&quot;
+
+# whitelist internal interface.
+nft add rule ip filter input meta iifname &quot;internal&quot; accept
+
+# drop packets coming from blacklisted ip addresses.
+nft add rule ip filter input ip saddr @blackhole counter drop
+
+# add source ip addresses to the blacklist if more than 10 tcp connection
+# requests occurred per second and ip address.
+nft add rule ip filter input tcp flags syn tcp dport ssh \
+    add @flood { ip saddr limit rate over 10/second } \
+    add @blackhole { ip saddr } drop
+
+# inspect state of the sets.
+nft list set ip filter flood
+nft list set ip filter blackhole
+
+# manually add two addresses to the blackhole.
+nft add element filter blackhole { 10.2.3.4, 10.23.1.42 }</code></pre>
+</blockquote>
+<h2>MAP STATEMENT</h2>
+<p>The map statement is used to lookup data based on some specific input key.</p>
+<blockquote>
+<pre><code>expression map { MAP_ELEMENTS }
+
+MAP_ELEMENTS := MAP_ELEMENT [, MAP_ELEMENTS]
+MAP_ELEMENT  := key : value</code></pre>
+</blockquote>
+<p>The <em>key</em> is a value returned by <em>expression</em>.</p>
+<p><strong>Using the map statement</strong>.</p>
+<blockquote>
+<pre><code># select DNAT target based on TCP dport:
+# connections to port 80 are redirected to 192.168.1.100,
+# connections to port 8888 are redirected to 192.168.1.101
+nft add rule ip nat prerouting dnat tcp dport map { 80 : 192.168.1.100, 8888 : 192.168.1.101 }
+
+# source address based SNAT:
+# packets from net 192.168.1.0/24 will appear as originating from 10.0.0.1,
+# packets from net 192.168.2.0/24 will appear as originating from 10.0.0.2
+nft add rule ip nat postrouting snat to ip saddr map { 192.168.1.0/24 : 10.0.0.1, 192.168.2.0/24 : 10.0.0.2 }</code></pre>
+</blockquote>
+<h2>VMAP STATEMENT</h2>
+<p>The verdict map (vmap) statement works analogous to the map statement, but contains verdicts as values.</p>
+<blockquote>
+<pre><code>expression vmap { VMAP_ELEMENTS }
+
+VMAP_ELEMENTS := VMAP_ELEMENT [, VMAP_ELEMENTS]
+VMAP_ELEMENT  := key : verdict</code></pre>
+</blockquote>
+<p><strong>Using the vmap statement</strong>.</p>
+<blockquote>
+<pre><code># jump to different chains depending on layer 4 protocol type:
+nft add rule ip filter input ip protocol vmap { tcp : jump tcp-chain, udp : jump udp-chain , icmp : jump icmp-chain }</code></pre>
+</blockquote>
+<h1>ADDITIONAL COMMANDS</h1>
+<p>These are some additional commands included in nft.</p>
+<h2>MONITOR</h2>
+<p>The monitor command allows you to listen to Netlink events produced by the nf_tables subsystem, related to creation and deletion of objects. When they occur, nft will print to stdout the monitored events in either JSON or native nft format.</p>
+<p>To filter events related to a concrete object, use one of the keywords <em>tables</em>, <em>chains</em>, <em>sets</em>, <em>rules</em>, <em>elements</em>, <em>ruleset</em>.</p>
+<p>To filter events related to a concrete action, use keyword <em>new</em> or <em>destroy</em>.</p>
+<p>Hit ^C to finish the monitor operation.</p>
+<p><strong>Listen to all events, report in native nft format</strong>.</p>
+<blockquote>
+<pre><code>% nft monitor</code></pre>
+</blockquote>
+<p><strong>Listen to deleted rules, report in JSON format</strong>.</p>
+<blockquote>
+<pre><code>% nft -j monitor destroy rules</code></pre>
+</blockquote>
+<p><strong>Listen to both new and destroyed chains, in native nft format</strong>.</p>
+<blockquote>
+<pre><code>% nft monitor chains</code></pre>
+</blockquote>
+<p><strong>Listen to ruleset events such as table, chain, rule, set, counters and quotas, in native nft format</strong>.</p>
+<blockquote>
+<pre><code>% nft monitor ruleset</code></pre>
+</blockquote>
+<h1>ERROR REPORTING</h1>
+<p>When an error is detected, nft shows the line(s) containing the error, the position of the erroneous parts in the input stream and marks up the erroneous parts using carets (^). If the error results from the combination of two expressions or statements, the part imposing the constraints which are violated is marked using tildes (~).</p>
+<p>For errors returned by the kernel, nft cannot detect which parts of the input caused the error and the entire command is marked.</p>
+<p><strong>Error caused by single incorrect expression</strong>.</p>
+<blockquote>
+<pre><code>&lt;cmdline&gt;:1:19-22: Error: Interface does not exist
+filter output oif eth0
+                  ^^^^</code></pre>
+</blockquote>
+<p><strong>Error caused by invalid combination of two expressions</strong>.</p>
+<blockquote>
+<pre><code>&lt;cmdline&gt;:1:28-36: Error: Right hand side of relational expression (==) must be constant
+filter output tcp dport == tcp dport
+                        ~~ ^^^^^^^^^</code></pre>
+</blockquote>
+<p><strong>Error returned by the kernel</strong>.</p>
+<blockquote>
+<pre><code>&lt;cmdline&gt;:0:0-23: Error: Could not process rule: Operation not permitted
+filter output oif wlan0
+^^^^^^^^^^^^^^^^^^^^^^^</code></pre>
+</blockquote>
+<h1>EXIT STATUS</h1>
+<p>On success, nft exits with a status of 0. Unspecified errors cause it to exit with a status of 1, memory allocation errors with a status of 2, unable to open Netlink socket with 3.</p>
+<h1>SEE ALSO</h1>
+<blockquote>
+<pre><code>libnftables(3), libnftables-json(5), iptables(8), ip6tables(8), arptables(8), ebtables(8), ip(8), tc(8)</code></pre>
+</blockquote>
+<p>There is an official wiki at: https://wiki.nftables.org</p>
+<h1>AUTHORS</h1>
+<p>nftables was written by Patrick McHardy and Pablo Neira Ayuso, among many other contributors from the Netfilter community.</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright © 2008-2014 Patrick McHardy &lt;kaber@trash.net&gt; Copyright © 2013-2018 Pablo Neira Ayuso &lt;pablo@netfilter.org&gt;</p>
+<p>nftables is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 2 as published by the Free Software Foundation.</p>
+<p>This documentation is licensed under the terms of the Creative Commons Attribution-ShareAlike 4.0 license, CC BY-SA 4.0 http://creativecommons.org/licenses/by-sa/4.0/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

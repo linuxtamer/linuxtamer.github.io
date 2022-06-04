@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command adjtime</title><meta name="description" content="Linux command adjtime correct the time to synchronize the system clock"><meta name="keywords" content="linux, command, adjtime, bsd, correct the time to synchronize the system clock"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>adjtime - correct the time to synchronize the system clock</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/time.h&gt;
+
+int adjtime(const struct timeval *delta, struct timeval *olddelta);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>adjtime</strong>(): Since glibc 2.19: _DEFAULT_SOURCE Glibc 2.19 and earlier: _BSD_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>adjtime</strong>() function gradually adjusts the system clock (as returned by <strong>gettimeofday</strong>(2)). The amount of time by which the clock is to be adjusted is specified in the structure pointed to by <em>delta</em>. This structure has the following form:</p>
+<pre><code>struct timeval {
+    time_t      tv_sec;     /* seconds */
+    suseconds_t tv_usec;    /* microseconds */
+};</code></pre>
+<p>If the adjustment in <em>delta</em> is positive, then the system clock is speeded up by some small percentage (i.e., by adding a small amount of time to the clock value in each second) until the adjustment has been completed. If the adjustment in <em>delta</em> is negative, then the clock is slowed down in a similar fashion.</p>
+<p>If a clock adjustment from an earlier <strong>adjtime</strong>() call is already in progress at the time of a later <strong>adjtime</strong>() call, and <em>delta</em> is not NULL for the later call, then the earlier adjustment is stopped, but any already completed part of that adjustment is not undone.</p>
+<p>If <em>olddelta</em> is not NULL, then the buffer that it points to is used to return the amount of time remaining from any previous adjustment that has not yet been completed.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>adjtime</strong>() returns 0. On failure, -1 is returned, and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The adjustment in <em>delta</em> is outside the permitted range.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The caller does not have sufficient privilege to adjust the time. Under Linux, the <strong>CAP_SYS_TIME</strong> capability is required.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>adjtime</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>4.3BSD, System V.</p>
+<h1>NOTES</h1>
+<p>The adjustment that <strong>adjtime</strong>() makes to the clock is carried out in such a manner that the clock is always monotonically increasing. Using <strong>adjtime</strong>() to adjust the time prevents the problems that can be caused for certain applications (e.g., <strong>make</strong>(1)) by abrupt positive or negative jumps in the system time.</p>
+<p><strong>adjtime</strong>() is intended to be used to make small adjustments to the system time. Most systems impose a limit on the adjustment that can be specified in <em>delta</em>. In the glibc implementation, <em>delta</em> must be less than or equal to (INT_MAX / 1000000 - 2) and greater than or equal to (INT_MIN / 1000000 + 2) (respectively 2145 and -2145 seconds on i386).</p>
+<h1>BUGS</h1>
+<p>A longstanding bug meant that if <em>delta</em> was specified as NULL, no valid information about the outstanding clock adjustment was returned in <em>olddelta</em>. (In this circumstance, <strong>adjtime</strong>() should return the outstanding clock adjustment, without changing it.) This bug is fixed on systems with glibc 2.8 or later and Linux kernel 2.6.26 or later.</p>
+<h1>SEE ALSO</h1>
+<p><strong>adjtimex</strong>(2), <strong>gettimeofday</strong>(2), <strong>time</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

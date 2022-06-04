@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mallinfo</title><meta name="description" content="Linux command mallinfo obtain memory allocation information"><meta name="keywords" content="linux, command, mallinfo, bsd, obtain memory allocation information"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mallinfo - obtain memory allocation information</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;malloc.h&gt;</strong></p>
+<p><strong>struct mallinfo mallinfo(void);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>mallinfo</strong>() function returns a copy of a structure containing information about memory allocations performed by <strong>malloc</strong>(3) and related functions.</p>
+<p>Note that not all allocations are visible to <strong>mallinfo</strong>(); see BUGS and consider using <strong>malloc_info</strong>(3) instead.</p>
+<p>The returned structure is defined as follows:</p>
+<pre><code>struct mallinfo {
+    int arena;     /* Non-mmapped space allocated (bytes) */
+    int ordblks;   /* Number of free chunks */
+    int smblks;    /* Number of free fastbin blocks */
+    int hblks;     /* Number of mmapped regions */
+    int hblkhd;    /* Space allocated in mmapped regions (bytes) */
+    int usmblks;   /* See below */
+    int fsmblks;   /* Space in freed fastbin blocks (bytes) */
+    int uordblks;  /* Total allocated space (bytes) */
+    int fordblks;  /* Total free space (bytes) */
+    int keepcost;  /* Top-most, releasable space (bytes) */
+};</code></pre>
+<p>The fields of the <em>mallinfo</em> structure contain the following information:</p>
+<dl>
+<dt><em>arena</em></dt>
+<dd><p>The total amount of memory allocated by means other than <strong>mmap</strong>(2) (i.e., memory allocated on the heap). This figure includes both in-use blocks and blocks on the free list.</p>
+</dd>
+<dt><em>ordblks</em></dt>
+<dd><p>The number of ordinary (i.e., non-fastbin) free blocks.</p>
+</dd>
+<dt><em>smblks</em></dt>
+<dd><p>The number of fastbin free blocks (see <strong>mallopt</strong>(3)).</p>
+</dd>
+<dt><em>hblks</em></dt>
+<dd><p>The number of blocks currently allocated using <strong>mmap</strong>(2). (See the discussion of <strong>M_MMAP_THRESHOLD</strong> in <strong>mallopt</strong>(3).)</p>
+</dd>
+<dt><em>hblkhd</em></dt>
+<dd><p>The number of bytes in blocks currently allocated using <strong>mmap</strong>(2).</p>
+</dd>
+<dt><em>usmblks</em></dt>
+<dd><p>This field is unused, and is always 0. Historically, it was the "highwater mark" for allocated space—that is, the maximum amount of space that was ever allocated (in bytes); this field was maintained only in nonthreading environments.</p>
+</dd>
+<dt><em>fsmblks</em></dt>
+<dd><p>The total number of bytes in fastbin free blocks.</p>
+</dd>
+<dt><em>uordblks</em></dt>
+<dd><p>The total number of bytes used by in-use allocations.</p>
+</dd>
+<dt><em>fordblks</em></dt>
+<dd><p>The total number of bytes in free blocks.</p>
+</dd>
+<dt><em>keepcost</em></dt>
+<dd><p>The total amount of releasable free space at the top of the heap. This is the maximum number of bytes that could ideally (i.e., ignoring page alignment restrictions, and so on) be released by <strong>malloc_trim</strong>(3).</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>mallinfo</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe init const:mallopt</td>
+</tr>
+</tbody>
+</table>
+<p><strong>mallinfo</strong>() would access some global internal objects. If modify them with non-atomically, may get inconsistent results. The identifier <em>mallopt</em> in <em>const:mallopt</em> mean that <strong>mallopt</strong>() would modify the global internal objects with atomics, that make sure <strong>mallinfo</strong>() is safe enough, others modify with non-atomically maybe not.</p>
+<h1>CONFORMING TO</h1>
+<p>This function is not specified by POSIX or the C standards. A similar function exists on many System V derivatives, and was specified in the SVID.</p>
+<h1>BUGS</h1>
+<p><strong>Information is returned for only the main memory allocation area.</strong> Allocations in other arenas are excluded. See <strong>malloc_stats</strong>(3) and <strong>malloc_info</strong>(3) for alternatives that include information about other arenas.</p>
+<p>The fields of the <em>mallinfo</em> structure are typed as <em>int</em>. However, because some internal bookkeeping values may be of type <em>long</em>, the reported values may wrap around zero and thus be inaccurate.</p>
+<h1>EXAMPLES</h1>
+<p>The program below employs <strong>mallinfo</strong>() to retrieve memory allocation statistics before and after allocating and freeing some blocks of memory. The statistics are displayed on standard output.</p>
+<p>The first two command-line arguments specify the number and size of blocks to be allocated with <strong>malloc</strong>(3).</p>
+<p>The remaining three arguments specify which of the allocated blocks should be freed with <strong>free</strong>(3). These three arguments are optional, and specify (in order): the step size to be used in the loop that frees blocks (the default is 1, meaning free all blocks in the range); the ordinal position of the first block to be freed (default 0, meaning the first allocated block); and a number one greater than the ordinal position of the last block to be freed (default is one greater than the maximum block number). If these three arguments are omitted, then the defaults cause all allocated blocks to be freed.</p>
+<p>In the following example run of the program, 1000 allocations of 100 bytes are performed, and then every second allocated block is freed:</p>
+<pre><code>$ ./a.out 1000 100 2
+============== Before allocating blocks ==============
+Total non-mmapped bytes (arena):       0
+# of free chunks (ordblks):            1
+# of free fastbin blocks (smblks):     0
+# of mapped regions (hblks):           0
+Bytes in mapped regions (hblkhd):      0
+Max. total allocated space (usmblks):  0
+Free bytes held in fastbins (fsmblks): 0
+Total allocated space (uordblks):      0
+Total free space (fordblks):           0
+Topmost releasable block (keepcost):   0
+
+============== After allocating blocks ==============
+Total non-mmapped bytes (arena):       135168
+# of free chunks (ordblks):            1
+# of free fastbin blocks (smblks):     0
+# of mapped regions (hblks):           0
+Bytes in mapped regions (hblkhd):      0
+Max. total allocated space (usmblks):  0
+Free bytes held in fastbins (fsmblks): 0
+Total allocated space (uordblks):      104000
+Total free space (fordblks):           31168
+Topmost releasable block (keepcost):   31168
+
+============== After freeing blocks ==============
+Total non-mmapped bytes (arena):       135168
+# of free chunks (ordblks):            501
+# of free fastbin blocks (smblks):     0
+# of mapped regions (hblks):           0
+Bytes in mapped regions (hblkhd):      0
+Max. total allocated space (usmblks):  0
+Free bytes held in fastbins (fsmblks): 0
+Total allocated space (uordblks):      52000
+Total free space (fordblks):           83168
+Topmost releasable block (keepcost):   31168</code></pre>
+<h2>Program source</h2>
+<pre><code>#include &lt;malloc.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+static void
+display_mallinfo(void)
+{
+    struct mallinfo mi;
+
+    mi = mallinfo();
+
+    printf(&quot;Total non-mmapped bytes (arena):       %d\n&quot;, mi.arena);
+    printf(&quot;# of free chunks (ordblks):            %d\n&quot;, mi.ordblks);
+    printf(&quot;# of free fastbin blocks (smblks):     %d\n&quot;, mi.smblks);
+    printf(&quot;# of mapped regions (hblks):           %d\n&quot;, mi.hblks);
+    printf(&quot;Bytes in mapped regions (hblkhd):      %d\n&quot;, mi.hblkhd);
+    printf(&quot;Max. total allocated space (usmblks):  %d\n&quot;, mi.usmblks);
+    printf(&quot;Free bytes held in fastbins (fsmblks): %d\n&quot;, mi.fsmblks);
+    printf(&quot;Total allocated space (uordblks):      %d\n&quot;, mi.uordblks);
+    printf(&quot;Total free space (fordblks):           %d\n&quot;, mi.fordblks);
+    printf(&quot;Topmost releasable block (keepcost):   %d\n&quot;, mi.keepcost);
+}
+
+int
+main(int argc, char *argv[])
+{
+#define MAX_ALLOCS 2000000
+    char *alloc[MAX_ALLOCS];
+    int numBlocks, freeBegin, freeEnd, freeStep;
+    size_t blockSize;
+
+    if (argc &lt; 3 || strcmp(argv[1], &quot;--help&quot;) == 0) {
+        fprintf(stderr, &quot;%s num-blocks block-size [free-step &quot;
+                &quot;[start-free [end-free]]]\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    numBlocks = atoi(argv[1]);
+    blockSize = atoi(argv[2]);
+    freeStep = (argc &gt; 3) ? atoi(argv[3]) : 1;
+    freeBegin = (argc &gt; 4) ? atoi(argv[4]) : 0;
+    freeEnd = (argc &gt; 5) ? atoi(argv[5]) : numBlocks;
+
+    printf(&quot;============== Before allocating blocks ==============\n&quot;);
+    display_mallinfo();
+
+    for (int j = 0; j &lt; numBlocks; j++) {
+        if (numBlocks &gt;= MAX_ALLOCS) {
+            fprintf(stderr, &quot;Too many allocations\n&quot;);
+            exit(EXIT_FAILURE);
+        }
+
+        alloc[j] = malloc(blockSize);
+        if (alloc[j] == NULL) {
+            perror(&quot;malloc&quot;);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    printf(&quot;\n============== After allocating blocks ==============\n&quot;);
+    display_mallinfo();
+
+    for (int j = freeBegin; j &lt; freeEnd; j += freeStep)
+        free(alloc[j]);
+
+    printf(&quot;\n============== After freeing blocks ==============\n&quot;);
+    display_mallinfo();
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>mmap</strong>(2), <strong>malloc</strong>(3), <strong>malloc_info</strong>(3), <strong>malloc_stats</strong>(3), <strong>malloc_trim</strong>(3), <strong>mallopt</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

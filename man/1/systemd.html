@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd</title><meta name="description" content="Linux command systemd systemd system and service manager"><meta name="keywords" content="linux, command, systemd, bsd, systemd system and service manager"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd, init - systemd system and service manager</p>
+<h1>SYNOPSIS</h1>
+<p><strong>/lib/systemd/systemd</strong> [OPTIONS...]</p>
+<p><strong>init</strong> [OPTIONS...] {COMMAND}</p>
+<h1>DESCRIPTION</h1>
+<p>systemd is a system and service manager for Linux operating systems. When run as first process on boot (as PID 1), it acts as init system that brings up and maintains userspace services. Separate instances are started for logged-in users to start their services.</p>
+<p><strong>systemd</strong> is usually not invoked directly by the user, but is installed as the /sbin/init symlink and started during early boot. The user manager instances are started automatically through the <strong>user@.service</strong>(5) service.</p>
+<p>For compatibility with SysV, if the binary is called as <strong>init</strong> and is not the first process on the machine (PID is not 1), it will execute <strong>telinit</strong> and pass all command line arguments unmodified. That means <strong>init</strong> and <strong>telinit</strong> are mostly equivalent when invoked from normal login sessions. See <strong>telinit</strong>(8) for more information.</p>
+<p>When run as a system instance, systemd interprets the configuration file system.conf and the files in system.conf.d directories; when run as a user instance, systemd interprets the configuration file user.conf and the files in user.conf.d directories. See <strong>systemd-system.conf</strong>(5) for more information.</p>
+<h1>CONCEPTS</h1>
+<p>systemd provides a dependency system between various entities called "units" of 11 different types. Units encapsulate various objects that are relevant for system boot-up and maintenance. The majority of units are configured in unit configuration files, whose syntax and basic set of options is described in <strong>systemd.unit</strong>(5), however some are created automatically from other configuration, dynamically from system state or programmatically at runtime. Units may be "active" (meaning started, bound, plugged in, ..., depending on the unit type, see below), or "inactive" (meaning stopped, unbound, unplugged, ...), as well as in the process of being activated or deactivated, i.e. between the two states (these states are called "activating", "deactivating"). A special "failed" state is available as well, which is very similar to "inactive" and is entered when the service failed in some way (process returned error code on exit, or crashed, an operation timed out, or after too many restarts). If this state is entered, the cause will be logged, for later reference. Note that the various unit types may have a number of additional substates, which are mapped to the five generalized unit states described here.</p>
+<p>The following unit types are available:</p>
+<blockquote>
+<p>1.</p>
+<p>Service units, which start and control daemons and the processes they consist of. For details, see <strong>systemd.service</strong>(5).</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>Socket units, which encapsulate local IPC or network sockets in the system, useful for socket-based activation. For details about socket units, see <strong>systemd.socket</strong>(5), for details on socket-based activation and other forms of activation, see <strong>daemon</strong>(7).</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>Target units are useful to group units, or provide well-known synchronization points during boot-up, see <strong>systemd.target</strong>(5).</p>
+</blockquote>
+<blockquote>
+<p>4.</p>
+<p>Device units expose kernel devices in systemd and may be used to implement device-based activation. For details, see <strong>systemd.device</strong>(5).</p>
+</blockquote>
+<blockquote>
+<p>5.</p>
+<p>Mount units control mount points in the file system, for details see <strong>systemd.mount</strong>(5).</p>
+</blockquote>
+<blockquote>
+<p>6.</p>
+<p>Automount units provide automount capabilities, for on-demand mounting of file systems as well as parallelized boot-up. See <strong>systemd.automount</strong>(5).</p>
+</blockquote>
+<blockquote>
+<p>7.</p>
+<p>Timer units are useful for triggering activation of other units based on timers. You may find details in <strong>systemd.timer</strong>(5).</p>
+</blockquote>
+<blockquote>
+<p>8.</p>
+<p>Swap units are very similar to mount units and encapsulate memory swap partitions or files of the operating system. They are described in <strong>systemd.swap</strong>(5).</p>
+</blockquote>
+<blockquote>
+<p>9.</p>
+<p>Path units may be used to activate other services when file system objects change or are modified. See <strong>systemd.path</strong>(5).</p>
+</blockquote>
+<blockquote>
+<p>10.</p>
+<p>Slice units may be used to group units which manage system processes (such as service and scope units) in a hierarchical tree for resource management purposes. See <strong>systemd.slice</strong>(5).</p>
+</blockquote>
+<blockquote>
+<p>11.</p>
+<p>Scope units are similar to service units, but manage foreign processes instead of starting them as well. See <strong>systemd.scope</strong>(5).</p>
+</blockquote>
+<p>Units are named as their configuration files. Some units have special semantics. A detailed list is available in <strong>systemd.special</strong>(7).</p>
+<p>systemd knows various kinds of dependencies, including positive and negative requirement dependencies (i.e. <em>Requires=</em> and <em>Conflicts=</em>) as well as ordering dependencies (<em>After=</em> and <em>Before=</em>). NB: ordering and requirement dependencies are orthogonal. If only a requirement dependency exists between two units (e.g. foo.service requires bar.service), but no ordering dependency (e.g. foo.service after bar.service) and both are requested to start, they will be started in parallel. It is a common pattern that both requirement and ordering dependencies are placed between two units. Also note that the majority of dependencies are implicitly created and maintained by systemd. In most cases, it should be unnecessary to declare additional dependencies manually, however it is possible to do this.</p>
+<p>Application programs and units (via dependencies) may request state changes of units. In systemd, these requests are encapsulated as jobs and maintained in a job queue. Jobs may succeed or can fail, their execution is ordered based on the ordering dependencies of the units they have been scheduled for.</p>
+<p>On boot systemd activates the target unit default.target whose job is to activate on-boot services and other on-boot units by pulling them in via dependencies. Usually, the unit name is just an alias (symlink) for either graphical.target (for fully-featured boots into the UI) or multi-user.target (for limited console-only boots for use in embedded or server environments, or similar; a subset of graphical.target). However, it is at the discretion of the administrator to configure it as an alias to any other target unit. See <strong>systemd.special</strong>(7) for details about these target units.</p>
+<p>systemd only keeps a minimal set of units loaded into memory. Specifically, the only units that are kept loaded into memory are those for which at least one of the following conditions is true:</p>
+<blockquote>
+<p>1.</p>
+<p>It is in an active, activating, deactivating or failed state (i.e. in any unit state except for "inactive")</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>It has a job queued for it</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>It is a dependency of at least one other unit that is loaded into memory</p>
+</blockquote>
+<blockquote>
+<p>4.</p>
+<p>It has some form of resource still allocated (e.g. a service unit that is inactive but for which a process is still lingering that ignored the request to be terminated)</p>
+</blockquote>
+<blockquote>
+<p>5.</p>
+<p>It has been pinned into memory programmatically by a D-Bus call</p>
+</blockquote>
+<p>systemd will automatically and implicitly load units from disk — if they are not loaded yet — as soon as operations are requested for them. Thus, in many respects, the fact whether a unit is loaded or not is invisible to clients. Use <strong>systemctl list-units --all</strong> to comprehensively list all units currently loaded. Any unit for which none of the conditions above applies is promptly unloaded. Note that when a unit is unloaded from memory its accounting data is flushed out too. However, this data is generally not lost, as a journal log record is generated declaring the consumed resources whenever a unit shuts down.</p>
+<p>Processes systemd spawns are placed in individual Linux control groups named after the unit which they belong to in the private systemd hierarchy. (see <strong>cgroups.txt</strong>[1] for more information about control groups, or short "cgroups"). systemd uses this to effectively keep track of processes. Control group information is maintained in the kernel, and is accessible via the file system hierarchy (beneath /sys/fs/cgroup/systemd/), or in tools such as <strong>systemd-cgls</strong>(1) or <strong>ps</strong>(1) (<strong>ps xawf -eo pid,user,cgroup,args</strong> is particularly useful to list all processes and the systemd units they belong to.).</p>
+<p>systemd is compatible with the SysV init system to a large degree: SysV init scripts are supported and simply read as an alternative (though limited) configuration file format. The SysV /dev/initctl interface is provided, and compatibility implementations of the various SysV client tools are available. In addition to that, various established Unix functionality such as /etc/fstab or the utmp database are supported.</p>
+<p>systemd has a minimal transaction system: if a unit is requested to start up or shut down it will add it and all its dependencies to a temporary transaction. Then, it will verify if the transaction is consistent (i.e. whether the ordering of all units is cycle-free). If it is not, systemd will try to fix it up, and removes non-essential jobs from the transaction that might remove the loop. Also, systemd tries to suppress non-essential jobs in the transaction that would stop a running service. Finally it is checked whether the jobs of the transaction contradict jobs that have already been queued, and optionally the transaction is aborted then. If all worked out and the transaction is consistent and minimized in its impact it is merged with all already outstanding jobs and added to the run queue. Effectively this means that before executing a requested operation, systemd will verify that it makes sense, fixing it if possible, and only failing if it really cannot work.</p>
+<p>Note that transactions are generated independently of a units state at runtime, hence, for example, if a start job is requested on an already started unit, it will still generate a transaction and wake up any inactive dependencies (and cause propagation of other jobs as per the defined relationships). This is because the enqueued job is at the time of execution compared to the target units state and is marked successful and complete when both satisfy. However, this job also pulls in other dependencies due to the defined relationships and thus leads to, in our example, start jobs for any of those inactive units getting queued as well.</p>
+<p>systemd contains native implementations of various tasks that need to be executed as part of the boot process. For example, it sets the hostname or configures the loopback network device. It also sets up and mounts various API file systems, such as /sys/ or /proc/.</p>
+<p>For more information about the concepts and ideas behind systemd, please refer to the <strong>Original Design Document</strong>[2].</p>
+<p>Note that some but not all interfaces provided by systemd are covered by the <strong>Interface Portability and Stability Promise</strong>[3].</p>
+<p>Units may be generated dynamically at boot and system manager reload time, for example based on other configuration files or parameters passed on the kernel command line. For details, see <strong>systemd.generator</strong>(7).</p>
+<p>The D-Bus API of <strong>systemd</strong> is described in <strong>org.freedesktop.systemd1</strong>(5) and <strong>org.freedesktop.LogControl1</strong>(5).</p>
+<p>Systems which invoke systemd in a container or initrd environment should implement the <strong>Container Interface</strong>[4] or <strong>initrd Interface</strong>[5] specifications, respectively.</p>
+<h1>DIRECTORIES</h1>
+<p>System unit directories</p>
+<blockquote>
+<p>The systemd system manager reads unit configuration from various directories. Packages that want to install unit files shall place them in the directory returned by <strong>pkg-config systemd --variable=systemdsystemunitdir</strong>. Other directories checked are /usr/local/lib/systemd/system and /lib/systemd/system. User configuration always takes precedence. <strong>pkg-config systemd --variable=systemdsystemconfdir</strong> returns the path of the system configuration directory. Packages should alter the content of these directories only with the <strong>enable</strong> and <strong>disable</strong> commands of the <strong>systemctl</strong>(1) tool. Full list of directories is provided in <strong>systemd.unit</strong>(5).</p>
+</blockquote>
+<p>User unit directories</p>
+<blockquote>
+<p>Similar rules apply for the user unit directories. However, here the <strong>XDG Base Directory specification</strong>[6] is followed to find units. Applications should place their unit files in the directory returned by <strong>pkg-config systemd --variable=systemduserunitdir</strong>. Global configuration is done in the directory reported by <strong>pkg-config systemd --variable=systemduserconfdir</strong>. The <strong>enable</strong> and <strong>disable</strong> commands of the <strong>systemctl</strong>(1) tool can handle both global (i.e. for all users) and private (for one user) enabling/disabling of units. Full list of directories is provided in <strong>systemd.unit</strong>(5).</p>
+</blockquote>
+<p>SysV init scripts directory</p>
+<blockquote>
+<p>The location of the SysV init script directory varies between distributions. If systemd cannot find a native unit file for a requested service, it will look for a SysV init script of the same name (with the .service suffix removed).</p>
+</blockquote>
+<p>SysV runlevel link farm directory</p>
+<blockquote>
+<p>The location of the SysV runlevel link farm directory varies between distributions. systemd will take the link farm into account when figuring out whether a service shall be enabled. Note that a service unit with a native unit configuration file cannot be started by activating it in the SysV runlevel link farm.</p>
+</blockquote>
+<h1>SIGNALS</h1>
+<p><strong>SIGTERM</strong></p>
+<blockquote>
+<p>Upon receiving this signal the systemd system manager serializes its state, reexecutes itself and deserializes the saved state again. This is mostly equivalent to <strong>systemctl daemon-reexec</strong>.</p>
+<p>systemd user managers will start the exit.target unit when this signal is received. This is mostly equivalent to <strong>systemctl --user start exit.target --job-mode=replace-irreversibly</strong>.</p>
+</blockquote>
+<p><strong>SIGINT</strong></p>
+<blockquote>
+<p>Upon receiving this signal the systemd system manager will start the ctrl-alt-del.target unit. This is mostly equivalent to <strong>systemctl start ctrl-alt-del.target --job-mode=replace-irreversibly</strong>. If this signal is received more than 7 times per 2s, an immediate reboot is triggered. Note that pressing Ctrl+Alt+Del on the console will trigger this signal. Hence, if a reboot is hanging, pressing Ctrl+Alt+Del more than 7 times in 2 seconds is a relatively safe way to trigger an immediate reboot.</p>
+<p>systemd user managers treat this signal the same way as <strong>SIGTERM</strong>.</p>
+</blockquote>
+<p><strong>SIGWINCH</strong></p>
+<blockquote>
+<p>When this signal is received the systemd system manager will start the kbrequest.target unit. This is mostly equivalent to <strong>systemctl start kbrequest.target</strong>.</p>
+<p>This signal is ignored by systemd user managers.</p>
+</blockquote>
+<p><strong>SIGPWR</strong></p>
+<blockquote>
+<p>When this signal is received the systemd manager will start the sigpwr.target unit. This is mostly equivalent to <strong>systemctl start sigpwr.target</strong>.</p>
+</blockquote>
+<p><strong>SIGUSR1</strong></p>
+<blockquote>
+<p>When this signal is received the systemd manager will try to reconnect to the D-Bus bus.</p>
+</blockquote>
+<p><strong>SIGUSR2</strong></p>
+<blockquote>
+<p>When this signal is received the systemd manager will log its complete state in human-readable form. The data logged is the same as printed by <strong>systemd-analyze dump</strong>.</p>
+</blockquote>
+<p><strong>SIGHUP</strong></p>
+<blockquote>
+<p>Reloads the complete daemon configuration. This is mostly equivalent to <strong>systemctl daemon-reload</strong>.</p>
+</blockquote>
+<p><strong>SIGRTMIN+0</strong></p>
+<blockquote>
+<p>Enters default mode, starts the default.target unit. This is mostly equivalent to <strong>systemctl isolate default.target</strong>.</p>
+</blockquote>
+<p><strong>SIGRTMIN+1</strong></p>
+<blockquote>
+<p>Enters rescue mode, starts the rescue.target unit. This is mostly equivalent to <strong>systemctl isolate rescue.target</strong>.</p>
+</blockquote>
+<p><strong>SIGRTMIN+2</strong></p>
+<blockquote>
+<p>Enters emergency mode, starts the emergency.service unit. This is mostly equivalent to <strong>systemctl isolate emergency.service</strong>.</p>
+</blockquote>
+<p><strong>SIGRTMIN+3</strong></p>
+<blockquote>
+<p>Halts the machine, starts the halt.target unit. This is mostly equivalent to <strong>systemctl start halt.target --job-mode=replace-irreversibly</strong>.</p>
+</blockquote>
+<p><strong>SIGRTMIN+4</strong></p>
+<blockquote>
+<p>Powers off the machine, starts the poweroff.target unit. This is mostly equivalent to <strong>systemctl start poweroff.target --job-mode=replace-irreversibly</strong>.</p>
+</blockquote>
+<p><strong>SIGRTMIN+5</strong></p>
+<blockquote>
+<p>Reboots the machine, starts the reboot.target unit. This is mostly equivalent to <strong>systemctl start reboot.target --job-mode=replace-irreversibly</strong>.</p>
+</blockquote>
+<p><strong>SIGRTMIN+6</strong></p>
+<blockquote>
+<p>Reboots the machine via kexec, starts the kexec.target unit. This is mostly equivalent to <strong>systemctl start kexec.target --job-mode=replace-irreversibly</strong>.</p>
+</blockquote>
+<p><strong>SIGRTMIN+13</strong></p>
+<blockquote>
+<p>Immediately halts the machine.</p>
+</blockquote>
+<p><strong>SIGRTMIN+14</strong></p>
+<blockquote>
+<p>Immediately powers off the machine.</p>
+</blockquote>
+<p><strong>SIGRTMIN+15</strong></p>
+<blockquote>
+<p>Immediately reboots the machine.</p>
+</blockquote>
+<p><strong>SIGRTMIN+16</strong></p>
+<blockquote>
+<p>Immediately reboots the machine with kexec.</p>
+</blockquote>
+<p><strong>SIGRTMIN+20</strong></p>
+<blockquote>
+<p>Enables display of status messages on the console, as controlled via <em>systemd.show_status=1</em> on the kernel command line.</p>
+</blockquote>
+<p><strong>SIGRTMIN+21</strong></p>
+<blockquote>
+<p>Disables display of status messages on the console, as controlled via <em>systemd.show_status=0</em> on the kernel command line.</p>
+</blockquote>
+<p><strong>SIGRTMIN+22</strong></p>
+<blockquote>
+<p>Sets the service managers log level to "debug", in a fashion equivalent to <em>systemd.log_level=debug</em> on the kernel command line.</p>
+</blockquote>
+<p><strong>SIGRTMIN+23</strong></p>
+<blockquote>
+<p>Restores the log level to its configured value. The configured value is derived from – in order of priority – the value specified with <em>systemd.log-level=</em> on the kernel command line, or the value specified with <strong>LogLevel=</strong> in the configuration file, or the built-in default of "info".</p>
+</blockquote>
+<p><strong>SIGRTMIN+24</strong></p>
+<blockquote>
+<p>Immediately exits the manager (only available for --user instances).</p>
+</blockquote>
+<p><strong>SIGRTMIN+26</strong></p>
+<blockquote>
+<p>Restores the log target to its configured value. The configured value is derived from – in order of priority – the value specified with <em>systemd.log-target=</em> on the kernel command line, or the value specified with <strong>LogTarget=</strong> in the configuration file, or the built-in default.</p>
+</blockquote>
+<p><strong>SIGRTMIN+27</strong>, <strong>SIGRTMIN+28</strong></p>
+<blockquote>
+<p>Sets the log target to "console" on <strong>SIGRTMIN+27</strong> (or "kmsg" on <strong>SIGRTMIN+28</strong>), in a fashion equivalent to <em>systemd.log_target=console</em> (or <em>systemd.log_target=kmsg</em> on <strong>SIGRTMIN+28</strong>) on the kernel command line.</p>
+</blockquote>
+<h1>ENVIRONMENT</h1>
+<p><em>$SYSTEMD_LOG_COLOR</em></p>
+<blockquote>
+<p>Controls whether systemd highlights important log messages. This can be overridden with <strong>--log-color=</strong>.</p>
+</blockquote>
+<p><em>$SYSTEMD_LOG_LEVEL</em></p>
+<blockquote>
+<p>systemd reads the log level from this environment variable. This can be overridden with <strong>--log-level=</strong>.</p>
+</blockquote>
+<p><em>$SYSTEMD_LOG_LOCATION</em></p>
+<blockquote>
+<p>Controls whether systemd prints the code location along with log messages. This can be overridden with <strong>--log-location=</strong>.</p>
+</blockquote>
+<p><em>$SYSTEMD_LOG_TARGET</em></p>
+<blockquote>
+<p>systemd reads the log target from this environment variable. This can be overridden with <strong>--log-target=</strong>.</p>
+</blockquote>
+<p><em>$SYSTEMD_LOG_TIME</em></p>
+<blockquote>
+<p>Controls whether systemd prefixes log messages with the current time. This can be overridden with <strong>--log-time=</strong>.</p>
+</blockquote>
+<p><em>$SYSTEMD_LOG_TID</em></p>
+<blockquote>
+<p>Controls whether systemd prefixes log messages with the current thread ID (TID).</p>
+</blockquote>
+<p><em>$XDG_CONFIG_HOME</em>, <em>$XDG_CONFIG_DIRS</em>, <em>$XDG_DATA_HOME</em>, <em>$XDG_DATA_DIRS</em></p>
+<blockquote>
+<p>The systemd user manager uses these variables in accordance to the <strong>XDG Base Directory specification</strong>[6] to find its configuration.</p>
+</blockquote>
+<p><em>$SYSTEMD_UNIT_PATH</em>, <em>$SYSTEMD_GENERATOR_PATH</em>, <em>$SYSTEMD_ENVIRONMENT_GENERATOR_PATH</em></p>
+<blockquote>
+<p>Controls where systemd looks for unit files and generators.</p>
+<p>These variables may contain a list of paths, separated by colons (":"). When set, if the list ends with an empty component ("...:"), this list is prepended to the usual set of paths. Otherwise, the specified list replaces the usual set of paths.</p>
+</blockquote>
+<p><em>$SYSTEMD_SYSVINIT_PATH</em></p>
+<blockquote>
+<p>Controls where systemd looks for SysV init scripts.</p>
+</blockquote>
+<p><em>$SYSTEMD_SYSVRCND_PATH</em></p>
+<blockquote>
+<p>Controls where systemd looks for SysV init script runlevel link farms.</p>
+</blockquote>
+<p><em>$SYSTEMD_PAGER</em></p>
+<blockquote>
+<p>Pager to use when <strong>--no-pager</strong> is not given; overrides <em>$PAGER</em>. If neither <em>$SYSTEMD_PAGER</em> nor <em>$PAGER</em> are set, a set of well-known pager implementations are tried in turn, including <strong>less</strong>(1) and <strong>more</strong>(1), until one is found. If no pager implementation is discovered no pager is invoked. Setting this environment variable to an empty string or the value "cat" is equivalent to passing <strong>--no-pager</strong>.</p>
+</blockquote>
+<p><em>$SYSTEMD_LESS</em></p>
+<blockquote>
+<p>Override the options passed to <strong>less</strong> (by default "FRSXMK").</p>
+<p>Users might want to change two options in particular:</p>
+<p><strong>K</strong></p>
+<blockquote>
+<p>This option instructs the pager to exit immediately when Ctrl+C is pressed. To allow <strong>less</strong> to handle Ctrl+C itself to switch back to the pager command prompt, unset this option.</p>
+<p>If the value of <em>$SYSTEMD_LESS</em> does not include "K", and the pager that is invoked is <strong>less</strong>, Ctrl+C will be ignored by the executable, and needs to be handled by the pager.</p>
+</blockquote>
+<p><strong>X</strong></p>
+<blockquote>
+<p>This option instructs the pager to not send termcap initialization and deinitialization strings to the terminal. It is set by default to allow command output to remain visible in the terminal even after the pager exits. Nevertheless, this prevents some pager functionality from working, in particular paged output cannot be scrolled with the mouse.</p>
+</blockquote>
+<p>See <strong>less</strong>(1) for more discussion.</p>
+</blockquote>
+<p><em>$SYSTEMD_LESSCHARSET</em></p>
+<blockquote>
+<p>Override the charset passed to <strong>less</strong> (by default "utf-8", if the invoking terminal is determined to be UTF-8 compatible).</p>
+</blockquote>
+<p><em>$SYSTEMD_PAGERSECURE</em></p>
+<blockquote>
+<p>Takes a boolean argument. When true, the "secure" mode of the pager is enabled; if false, disabled. If <em>$SYSTEMD_PAGERSECURE</em> is not set at all, secure mode is enabled if the effective UID is not the same as the owner of the login session, see <strong>geteuid</strong>(2) and <strong>sd_pid_get_owner_uid</strong>(3). In secure mode, <strong>LESSSECURE=1</strong> will be set when invoking the pager, and the pager shall disable commands that open or create new files or start new subprocesses. When <em>$SYSTEMD_PAGERSECURE</em> is not set at all, pagers which are not known to implement secure mode will not be used. (Currently only <strong>less</strong>(1) implements secure mode.)</p>
+<p>Note: when commands are invoked with elevated privileges, for example under <strong>sudo</strong>(8) or <strong>pkexec</strong>(1), care must be taken to ensure that unintended interactive features are not enabled. "Secure" mode for the pager may be enabled automatically as describe above. Setting <em>SYSTEMD_PAGERSECURE=0</em> or not removing it from the inherited environment allows the user to invoke arbitrary commands. Note that if the <em>$SYSTEMD_PAGER</em> or <em>$PAGER</em> variables are to be honoured, <em>$SYSTEMD_PAGERSECURE</em> must be set too. It might be reasonable to completely disable the pager using <strong>--no-pager</strong> instead.</p>
+</blockquote>
+<p><em>$SYSTEMD_COLORS</em></p>
+<blockquote>
+<p>The value must be a boolean. Controls whether colorized output should be generated. This can be specified to override the decision that <strong>systemd</strong> makes based on <em>$TERM</em> and what the console is connected to.</p>
+</blockquote>
+<p><em>$SYSTEMD_URLIFY</em></p>
+<blockquote>
+<p>The value must be a boolean. Controls whether clickable links should be generated in the output for terminal emulators supporting this. This can be specified to override the decision that <strong>systemd</strong> makes based on <em>$TERM</em> and other conditions.</p>
+</blockquote>
+<p><em>$LISTEN_PID</em>, <em>$LISTEN_FDS</em>, <em>$LISTEN_FDNAMES</em></p>
+<blockquote>
+<p>Set by systemd for supervised processes during socket-based activation. See <strong>sd_listen_fds</strong>(3) for more information.</p>
+</blockquote>
+<p><em>$NOTIFY_SOCKET</em></p>
+<blockquote>
+<p>Set by systemd for supervised processes for status and start-up completion notification. See <strong>sd_notify</strong>(3) for more information.</p>
+</blockquote>
+<p>For further environment variables understood by systemd and its various components, see <strong>Known Environment Variables</strong>[7].</p>
+<h1>KERNEL COMMAND LINE</h1>
+<p>When run as the system instance systemd parses a number of options listed below. They can be specified as kernel command line arguments[8], or through the "SystemdOptions" EFI variable (on EFI systems). The kernel command line has higher priority. Following variables are understood:</p>
+<p><em>systemd.unit=</em>, <em>rd.systemd.unit=</em></p>
+<blockquote>
+<p>Overrides the unit to activate on boot. Defaults to default.target. This may be used to temporarily boot into a different boot unit, for example rescue.target or emergency.service. See <strong>systemd.special</strong>(7) for details about these units. The option prefixed with "rd." is honored only in the initial RAM disk (initrd), while the one that is not prefixed only in the main system.</p>
+</blockquote>
+<p><em>systemd.dump_core</em></p>
+<blockquote>
+<p>Takes a boolean argument or enables the option if specified without an argument. If enabled, the systemd manager (PID 1) dumps core when it crashes. Otherwise, no core dump is created. Defaults to enabled.</p>
+</blockquote>
+<p><em>systemd.crash_chvt</em></p>
+<blockquote>
+<p>Takes a positive integer, or a boolean argument. Can be also specified without an argument, with the same effect as a positive boolean. If a positive integer (in the range 1–63) is specified, the system manager (PID 1) will activate the specified virtual terminal when it crashes. Defaults to disabled, meaning that no such switch is attempted. If set to enabled, the virtual terminal the kernel messages are written to is used instead.</p>
+</blockquote>
+<p><em>systemd.crash_shell</em></p>
+<blockquote>
+<p>Takes a boolean argument or enables the option if specified without an argument. If enabled, the system manager (PID 1) spawns a shell when it crashes, after a 10s delay. Otherwise, no shell is spawned. Defaults to disabled, for security reasons, as the shell is not protected by password authentication.</p>
+</blockquote>
+<p><em>systemd.crash_reboot</em></p>
+<blockquote>
+<p>Takes a boolean argument or enables the option if specified without an argument. If enabled, the system manager (PID 1) will reboot the machine automatically when it crashes, after a 10s delay. Otherwise, the system will hang indefinitely. Defaults to disabled, in order to avoid a reboot loop. If combined with <em>systemd.crash_shell</em>, the system is rebooted after the shell exits.</p>
+</blockquote>
+<p><em>systemd.confirm_spawn</em></p>
+<blockquote>
+<p>Takes a boolean argument or a path to the virtual console where the confirmation messages should be emitted. Can be also specified without an argument, with the same effect as a positive boolean. If enabled, the system manager (PID 1) asks for confirmation when spawning processes using <strong>/dev/console</strong>. If a path or a console name (such as "ttyS0") is provided, the virtual console pointed to by this path or described by the give name will be used instead. Defaults to disabled.</p>
+</blockquote>
+<p><em>systemd.service_watchdogs=</em></p>
+<blockquote>
+<p>Takes a boolean argument. If disabled, all service runtime watchdogs (<strong>WatchdogSec=</strong>) and emergency actions (e.g. <strong>OnFailure=</strong> or <strong>StartLimitAction=</strong>) are ignored by the system manager (PID 1); see <strong>systemd.service</strong>(5). Defaults to enabled, i.e. watchdogs and failure actions are processed normally. The hardware watchdog is not affected by this option.</p>
+</blockquote>
+<p><em>systemd.show_status</em></p>
+<blockquote>
+<p>Takes a boolean argument or the constants <strong>error</strong> and <strong>auto</strong>. Can be also specified without an argument, with the same effect as a positive boolean. If enabled, the systemd manager (PID 1) shows terse service status updates on the console during bootup. With <strong>error</strong>, only messages about failures are shown, but boot is otherwise quiet. <strong>auto</strong> behaves like <strong>false</strong> until there is a significant delay in boot. Defaults to enabled, unless <strong>quiet</strong> is passed as kernel command line option, in which case it defaults to <strong>error</strong>. If specified overrides the system manager configuration file option <strong>ShowStatus=</strong>, see <strong>systemd-system.conf</strong>(5).</p>
+</blockquote>
+<p><em>systemd.status_unit_format=</em></p>
+<blockquote>
+<p>Takes either <strong>name</strong> or <strong>description</strong> as the value. If <strong>name</strong>, the system manager will use unit names in status messages. If specified, overrides the system manager configuration file option <strong>StatusUnitFormat=</strong>, see <strong>systemd-system.conf</strong>(5).</p>
+</blockquote>
+<p><em>systemd.log_color</em>, <em>systemd.log_level=</em>, <em>systemd.log_location</em>, <em>systemd.log_target=</em>, <em>systemd.log_time</em>, <em>systemd.log_tid</em></p>
+<blockquote>
+<p>Controls log output, with the same effect as the <em>$SYSTEMD_LOG_COLOR</em>, <em>$SYSTEMD_LOG_LEVEL</em>, <em>$SYSTEMD_LOG_LOCATION</em>, <em>$SYSTEMD_LOG_TARGET</em>, <em>$SYSTEMD_LOG_TIME</em>, and <em>$SYSTEMD_LOG_TID</em> environment variables described above. <em>systemd.log_color</em>, <em>systemd.log_location</em>, <em>systemd.log_time</em>, and <em>systemd.log_tid=</em> can be specified without an argument, with the same effect as a positive boolean.</p>
+</blockquote>
+<p><em>systemd.default_standard_output=</em>, <em>systemd.default_standard_error=</em></p>
+<blockquote>
+<p>Controls default standard output and error output for services and sockets. That is, controls the default for <strong>StandardOutput=</strong> and <strong>StandardError=</strong> (see <strong>systemd.exec</strong>(5) for details). Takes one of <strong>inherit</strong>, <strong>null</strong>, <strong>tty</strong>, <strong>journal</strong>, <strong>journal+console</strong>, <strong>kmsg</strong>, <strong>kmsg+console</strong>. If the argument is omitted <em>systemd.default-standard-output=</em> defaults to <strong>journal</strong> and <em>systemd.default-standard-error=</em> to <strong>inherit</strong>.</p>
+</blockquote>
+<p><em>systemd.setenv=</em></p>
+<blockquote>
+<p>Takes a string argument in the form VARIABLE=VALUE. May be used to set default environment variables to add to forked child processes. May be used more than once to set multiple variables.</p>
+</blockquote>
+<p><em>systemd.machine_id=</em></p>
+<blockquote>
+<p>Takes a 32 character hex value to be used for setting the machine-id. Intended mostly for network booting where the same machine-id is desired for every boot.</p>
+</blockquote>
+<p><em>systemd.unified_cgroup_hierarchy</em></p>
+<blockquote>
+<p>When specified without an argument or with a true argument, enables the usage of <strong>unified cgroup hierarchy</strong>[9] (a.k.a. cgroups-v2). When specified with a false argument, fall back to hybrid or full legacy cgroup hierarchy.</p>
+<p>If this option is not specified, the default behaviour is determined during compilation (the <strong>-Ddefault-hierarchy=</strong> meson option). If the kernel does not support unified cgroup hierarchy, the legacy hierarchy will be used even if this option is specified.</p>
+</blockquote>
+<p><em>systemd.legacy_systemd_cgroup_controller</em></p>
+<blockquote>
+<p>Takes effect if the full unified cgroup hierarchy is not used (see previous option). When specified without an argument or with a true argument, disables the use of "hybrid" cgroup hierarchy (i.e. a cgroups-v2 tree used for systemd, and <strong>legacy cgroup hierarchy</strong>[10], a.k.a. cgroups-v1, for other controllers), and forces a full "legacy" mode. When specified with a false argument, enables the use of "hybrid" hierarchy.</p>
+<p>If this option is not specified, the default behaviour is determined during compilation (the <strong>-Ddefault-hierarchy=</strong> meson option). If the kernel does not support unified cgroup hierarchy, the legacy hierarchy will be used even if this option is specified.</p>
+</blockquote>
+<p><em>quiet</em></p>
+<blockquote>
+<p>Turn off status output at boot, much like <em>systemd.show_status=no</em> would. Note that this option is also read by the kernel itself and disables kernel log output. Passing this option hence turns off the usual output from both the system manager and the kernel.</p>
+</blockquote>
+<p><em>debug</em></p>
+<blockquote>
+<p>Turn on debugging output. This is equivalent to <em>systemd.log_level=debug</em>. Note that this option is also read by the kernel itself and enables kernel debug output. Passing this option hence turns on the debug output from both the system manager and the kernel.</p>
+</blockquote>
+<p><em>emergency</em>, <em>rd.emergency</em>, <em>-b</em></p>
+<blockquote>
+<p>Boot into emergency mode. This is equivalent to <em>systemd.unit=emergency.target</em> or <em>rd.systemd.unit=emergency.target</em>, respectively, and provided for compatibility reasons and to be easier to type.</p>
+</blockquote>
+<p><em>rescue</em>, <em>rd.rescue</em>, <em>single</em>, <em>s</em>, <em>S</em>, <em>1</em></p>
+<blockquote>
+<p>Boot into rescue mode. This is equivalent to <em>systemd.unit=rescue.target</em> or <em>rd.systemd.unit=rescue.target</em>, respectively, and provided for compatibility reasons and to be easier to type.</p>
+</blockquote>
+<p><em>2</em>, <em>3</em>, <em>4</em>, <em>5</em></p>
+<blockquote>
+<p>Boot into the specified legacy SysV runlevel. These are equivalent to <em>systemd.unit=runlevel2.target</em>, <em>systemd.unit=runlevel3.target</em>, <em>systemd.unit=runlevel4.target</em>, and <em>systemd.unit=runlevel5.target</em>, respectively, and provided for compatibility reasons and to be easier to type.</p>
+</blockquote>
+<p><em>locale.LANG=</em>, <em>locale.LANGUAGE=</em>, <em>locale.LC_CTYPE=</em>, <em>locale.LC_NUMERIC=</em>, <em>locale.LC_TIME=</em>, <em>locale.LC_COLLATE=</em>, <em>locale.LC_MONETARY=</em>, <em>locale.LC_MESSAGES=</em>, <em>locale.LC_PAPER=</em>, <em>locale.LC_NAME=</em>, <em>locale.LC_ADDRESS=</em>, <em>locale.LC_TELEPHONE=</em>, <em>locale.LC_MEASUREMENT=</em>, <em>locale.LC_IDENTIFICATION=</em></p>
+<blockquote>
+<p>Set the system locale to use. This overrides the settings in /etc/locale.conf. For more information, see <strong>locale.conf</strong>(5) and <strong>locale</strong>(7).</p>
+</blockquote>
+<p>For other kernel command line parameters understood by components of the core OS, please refer to <strong>kernel-command-line</strong>(7).</p>
+<h1>OPTIONS</h1>
+<p><strong>systemd</strong> is only very rarely invoked directly, since it is started early and is already running by the time users may interact with it. Normally, tools like <strong>systemctl</strong>(1) are used to give commands to the manager. Since <strong>systemd</strong> is usually not invoked directly, the options listed below are mostly useful for debugging and special purposes.</p>
+<h2>Introspection and debugging options</h2>
+<p>Those options are used for testing and introspection, and <strong>systemd</strong> may be invoked with them at any time:</p>
+<p><strong>--dump-configuration-items</strong></p>
+<blockquote>
+<p>Dump understood unit configuration items. This outputs a terse but complete list of configuration items understood in unit definition files.</p>
+</blockquote>
+<p><strong>--dump-bus-properties</strong></p>
+<blockquote>
+<p>Dump exposed bus properties. This outputs a terse but complete list of properties exposed on D-Bus.</p>
+</blockquote>
+<p><strong>--test</strong></p>
+<blockquote>
+<p>Determine the initial start-up transaction (i.e. the list of jobs enqueued at start-up), dump it and exit — without actually executing any of the determined jobs. This option is useful for debugging only. Note that during regular service manager start-up additional units not shown by this operation may be started, because hardware, socket, bus or other kinds of activation might add additional jobs as the transaction is executed. Use <strong>--system</strong> to request the initial transaction of the system service manager (this is also the implied default), combine with <strong>--user</strong> to request the initial transaction of the per-user service manager instead.</p>
+</blockquote>
+<p><strong>--system</strong>, <strong>--user</strong></p>
+<blockquote>
+<p>When used in conjunction with <strong>--test</strong>, selects whether to calculate the initial transaction for the system instance or for a per-user instance. These options have no effect when invoked without <strong>--test</strong>, as during regular (i.e. non-<strong>--test</strong>) invocations the service manager will automatically detect whether it shall operate in system or per-user mode, by checking whether the PID it is run as is 1 or not. Note that it is not supported booting and maintaining a system with the service manager running in <strong>--system</strong> mode but with a PID other than 1.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<h2>Options that duplicate kernel command line settings</h2>
+<p>Those options correspond directly to options listed above in "Kernel Command Line". Both forms may be used equivalently for the system manager, but it is recommended to use the forms listed above in this context, because they are properly namespaced. When an option is specified both on the kernel command line and as a normal command line argument, the latter has higher precedence.</p>
+<p>When <strong>systemd</strong> is used as a user manager, the kernel command line is ignored and only the options described below are understood. Nevertheless, <strong>systemd</strong> is usually started in this mode through the <strong>user@.service</strong>(5) service, which is shared between all users, and it may be more convenient to use configuration files to modify settings (see <strong>systemd-user.conf</strong>(5)), or a drop-in that specifies one of the environment variables listed above in the Environment section (see the discussion of <em>Environment=</em> and <em>EnvironmentFile=</em> in <strong>systemd.exec</strong>(5)).</p>
+<p><strong>--unit=</strong></p>
+<blockquote>
+<p>Set default unit to activate on startup. If not specified, defaults to default.target. See <em>systemd.unit=</em> above.</p>
+</blockquote>
+<p><strong>--dump-core</strong></p>
+<blockquote>
+<p>Enable core dumping on crash. This switch has no effect when running as user instance. Same as <em>systemd.dump_core=</em> above.</p>
+</blockquote>
+<p><strong>--crash-vt=</strong><em>VT</em></p>
+<blockquote>
+<p>Switch to a specific virtual console (VT) on crash. This switch has no effect when running as user instance. Same as <em>systemd.crash_chvt=</em> above (but not the different spelling!).</p>
+</blockquote>
+<p><strong>--crash-shell</strong></p>
+<blockquote>
+<p>Run a shell on crash. This switch has no effect when running as user instance. See <em>systemd.crash_shell=</em> above.</p>
+</blockquote>
+<p><strong>--crash-reboot</strong></p>
+<blockquote>
+<p>Automatically reboot the system on crash. This switch has no effect when running as user instance. See <em>systemd.crash_reboot</em> above.</p>
+</blockquote>
+<p><strong>--confirm-spawn</strong></p>
+<blockquote>
+<p>Ask for confirmation when spawning processes. This switch has no effect when run as user instance. See <em>systemd.confirm_spawn</em> above.</p>
+</blockquote>
+<p><strong>--show-status</strong></p>
+<blockquote>
+<p>Show terse unit status information on the console during boot-up and shutdown. See <em>systemd.show_status</em> above.</p>
+</blockquote>
+<p><strong>--log-color</strong></p>
+<blockquote>
+<p>Highlight important log messages. See <em>systemd.log_color</em> above.</p>
+</blockquote>
+<p><strong>--log-level=</strong></p>
+<blockquote>
+<p>Set log level. See <em>systemd.log_level</em> above.</p>
+</blockquote>
+<p><strong>--log-location</strong></p>
+<blockquote>
+<p>Include code location in log messages. See <em>systemd.log_location</em> above.</p>
+</blockquote>
+<p><strong>--log-target=</strong></p>
+<blockquote>
+<p>Set log target. See <em>systemd.log_target</em> above.</p>
+</blockquote>
+<p><strong>--log-time=</strong></p>
+<blockquote>
+<p>Prefix messages with timestamp. See <em>systemd.log_time</em> above.</p>
+</blockquote>
+<p><strong>--machine-id=</strong></p>
+<blockquote>
+<p>Override the machine-id set on the hard drive. See <em>systemd.machine_id=</em> above.</p>
+</blockquote>
+<p><strong>--service-watchdogs</strong></p>
+<blockquote>
+<p>Globally enable/disable all service watchdog timeouts and emergency actions. See <em>systemd.service_watchdogs</em> above.</p>
+</blockquote>
+<p><strong>--default-standard-output=</strong>, <strong>--default-standard-error=</strong></p>
+<blockquote>
+<p>Sets the default output or error output for all services and sockets, respectively. See <em>systemd.default_standard_output=</em> and <em>systemd.default_standard_error=</em> above.</p>
+</blockquote>
+<h1>SOCKETS AND FIFOS</h1>
+<p>/run/systemd/notify</p>
+<blockquote>
+<p>Daemon status notification socket. This is an <strong>AF_UNIX</strong> datagram socket and is used to implement the daemon notification logic as implemented by <strong>sd_notify</strong>(3).</p>
+</blockquote>
+<p>/run/systemd/private</p>
+<blockquote>
+<p>Used internally as communication channel between <strong>systemctl</strong>(1) and the systemd process. This is an <strong>AF_UNIX</strong> stream socket. This interface is private to systemd and should not be used in external projects.</p>
+</blockquote>
+<p>/dev/initctl</p>
+<blockquote>
+<p>Limited compatibility support for the SysV client interface, as implemented by the systemd-initctl.service unit. This is a named pipe in the file system. This interface is obsolete and should not be used in new applications.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p>The <strong>systemd Homepage</strong>[11], <strong>systemd-system.conf</strong>(5), <strong>locale.conf</strong>(5), <strong>systemctl</strong>(1), <strong>journalctl</strong>(1), <strong>systemd-notify</strong>(1), <strong>daemon</strong>(7), <strong>sd-daemon</strong>(3), <strong>org.freedesktop.systemd1</strong>(5), <strong>systemd.unit</strong>(5), <strong>systemd.special</strong>(7), <strong>pkg-config</strong>(1), <strong>kernel-command-line</strong>(7), <strong>bootup</strong>(7), <strong>systemd.directives</strong>(7)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>cgroups.txt</p>
+<p>https://www.kernel.org/doc/Documentation/cgroup-v1/cgroups.txt</p></li>
+<li><p>Original Design Document</p>
+<p>http://0pointer.de/blog/projects/systemd.html</p></li>
+<li><p>Interface Portability and Stability Promise</p>
+<p>https://systemd.io/PORTABILITY_AND_STABILITY/</p></li>
+<li><p>Container Interface</p>
+<p>https://systemd.io/CONTAINER_INTERFACE</p></li>
+<li><p>initrd Interface</p>
+<p>https://systemd.io/INITRD_INTERFACE/</p></li>
+<li><p>XDG Base Directory specification</p>
+<p>http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html</p></li>
+<li><p>Known Environment Variables</p>
+<p>https://systemd.io/ENVIRONMENT</p></li>
+<li><p>If run inside a Linux container these arguments may be passed as command line arguments to systemd itself, next to any of the command line options listed in the Options section above. If run outside of Linux containers, these arguments are parsed from /proc/cmdline instead.</p></li>
+<li><p>unified cgroup hierarchy</p>
+<p>https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html</p></li>
+</ul>
+<ol start="10" type="1">
+<li><p>legacy cgroup hierarchy</p>
+<p>https://www.kernel.org/doc/Documentation/cgroup-v1/</p></li>
+<li><p>systemd Homepage</p>
+<p>https://www.freedesktop.org/wiki/Software/systemd/</p></li>
+</ol>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

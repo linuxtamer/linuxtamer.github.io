@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command getpgrp</title><meta name="description" content="Linux command getpgrp set/get process group"><meta name="keywords" content="linux, command, getpgrp, bsd, set/get process group"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>setpgid, getpgid, setpgrp, getpgrp - set/get process group</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/types.h&gt;</strong><br />
+<strong>#include &lt;unistd.h&gt;</strong></p>
+<p><strong>int setpgid(pid_t </strong><em>pid</em><strong>, pid_t </strong><em>pgid</em><strong>);</strong><br />
+<strong>pid_t getpgid(pid_t </strong><em>pid</em><strong>);</strong></p>
+<p><strong>pid_t getpgrp(void);</strong> /* POSIX.1 version */<br />
+<strong>pid_t getpgrp(pid_t </strong><em>pid</em><strong>); /* BSD version */</strong></p>
+<p><strong>int setpgrp(void);</strong> /* System V version */<br />
+<strong>int setpgrp(pid_t </strong><em>pid</em><strong>, pid_t </strong><em>pgid</em><strong>); /* BSD version */</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>getpgid</strong>():</p>
+<blockquote>
+<p>_XOPEN_SOURCE &gt;= 500 || /* Since glibc 2.12: */ _POSIX_C_SOURCE &gt;= 200809L</p>
+</blockquote>
+<p><strong>setpgrp</strong>() (POSIX.1):</p>
+<pre><code>    _XOPEN_SOURCE &gt;= 500
+        || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+        || /* Glibc versions &lt;= 2.19: */ _SVID_SOURCE</code></pre>
+<p><strong>setpgrp</strong>() (BSD), <strong>getpgrp</strong>() (BSD):</p>
+<pre><code>    [These are available only before glibc 2.19]
+    _BSD_SOURCE &amp;&amp;
+        ! (_POSIX_SOURCE || _POSIX_C_SOURCE || _XOPEN_SOURCE ||
+            _GNU_SOURCE || _SVID_SOURCE)</code></pre>
+<h1>DESCRIPTION</h1>
+<p>All of these interfaces are available on Linux, and are used for getting and setting the process group ID (PGID) of a process. The preferred, POSIX.1-specified ways of doing this are: <strong>getpgrp</strong>(void), for retrieving the calling process's PGID; and <strong>setpgid</strong>(), for setting a process's PGID.</p>
+<p><strong>setpgid</strong>() sets the PGID of the process specified by <em>pid</em> to <em>pgid</em>. If <em>pid</em> is zero, then the process ID of the calling process is used. If <em>pgid</em> is zero, then the PGID of the process specified by <em>pid</em> is made the same as its process ID. If <strong>setpgid</strong>() is used to move a process from one process group to another (as is done by some shells when creating pipelines), both process groups must be part of the same session (see <strong>setsid</strong>(2) and <strong>credentials</strong>(7)). In this case, the <em>pgid</em> specifies an existing process group to be joined and the session ID of that group must match the session ID of the joining process.</p>
+<p>The POSIX.1 version of <strong>getpgrp</strong>(), which takes no arguments, returns the PGID of the calling process.</p>
+<p><strong>getpgid</strong>() returns the PGID of the process specified by <em>pid</em>. If <em>pid</em> is zero, the process ID of the calling process is used. (Retrieving the PGID of a process other than the caller is rarely necessary, and the POSIX.1 <strong>getpgrp</strong>() is preferred for that task.)</p>
+<p>The System V-style <strong>setpgrp</strong>(), which takes no arguments, is equivalent to <em>setpgid(0, 0)</em>.</p>
+<p>The BSD-specific <strong>setpgrp</strong>() call, which takes arguments <em>pid</em> and <em>pgid</em>, is a wrapper function that calls</p>
+<p>setpgid(pid, pgid)</p>
+<p>Since glibc 2.19, the BSD-specific <strong>setpgrp</strong>() function is no longer exposed by <em>&lt;unistd.h&gt;</em>; calls should be replaced with the <strong>setpgid</strong>() call shown above.</p>
+<p>The BSD-specific <strong>getpgrp</strong>() call, which takes a single <em>pid</em> argument, is a wrapper function that calls</p>
+<p>getpgid(pid)</p>
+<p>Since glibc 2.19, the BSD-specific <strong>getpgrp</strong>() function is no longer exposed by <em>&lt;unistd.h&gt;</em>; calls should be replaced with calls to the POSIX.1 <strong>getpgrp</strong>() which takes no arguments (if the intent is to obtain the caller's PGID), or with the <strong>getpgid</strong>() call shown above.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>setpgid</strong>() and <strong>setpgrp</strong>() return zero. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<p>The POSIX.1 <strong>getpgrp</strong>() always returns the PGID of the caller.</p>
+<p><strong>getpgid</strong>(), and the BSD-specific <strong>getpgrp</strong>() return a process group on success. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>An attempt was made to change the process group ID of one of the children of the calling process and the child had already performed an <strong>execve</strong>(2) (<strong>setpgid</strong>(), <strong>setpgrp</strong>()).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>pgid</em> is less than 0 (<strong>setpgid</strong>(), <strong>setpgrp</strong>()).</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>An attempt was made to move a process into a process group in a different session, or to change the process group ID of one of the children of the calling process and the child was in a different session, or to change the process group ID of a session leader (<strong>setpgid</strong>(), <strong>setpgrp</strong>()).</p>
+</dd>
+<dt><strong>ESRCH</strong></dt>
+<dd><p>For <strong>getpgid</strong>(): <em>pid</em> does not match any process. For <strong>setpgid</strong>(): <em>pid</em> is not the calling process and not a child of the calling process.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p><strong>setpgid</strong>() and the version of <strong>getpgrp</strong>() with no arguments conform to POSIX.1-2001.</p>
+<p>POSIX.1-2001 also specifies <strong>getpgid</strong>() and the version of <strong>setpgrp</strong>() that takes no arguments. (POSIX.1-2008 marks this <strong>setpgrp</strong>() specification as obsolete.)</p>
+<p>The version of <strong>getpgrp</strong>() with one argument and the version of <strong>setpgrp</strong>() that takes two arguments derive from 4.2BSD, and are not specified by POSIX.1.</p>
+<h1>NOTES</h1>
+<p>A child created via <strong>fork</strong>(2) inherits its parent's process group ID. The PGID is preserved across an <strong>execve</strong>(2).</p>
+<p>Each process group is a member of a session and each process is a member of the session of which its process group is a member. (See <strong>credentials</strong>(7).)</p>
+<p>A session can have a controlling terminal. At any time, one (and only one) of the process groups in the session can be the foreground process group for the terminal; the remaining process groups are in the background. If a signal is generated from the terminal (e.g., typing the interrupt key to generate <strong>SIGINT</strong>), that signal is sent to the foreground process group. (See <strong>termios</strong>(3) for a description of the characters that generate signals.) Only the foreground process group may <strong>read</strong>(2) from the terminal; if a background process group tries to <strong>read</strong>(2) from the terminal, then the group is sent a <strong>SIGTTIN</strong> signal, which suspends it. The <strong>tcgetpgrp</strong>(3) and <strong>tcsetpgrp</strong>(3) functions are used to get/set the foreground process group of the controlling terminal.</p>
+<p>The <strong>setpgid</strong>() and <strong>getpgrp</strong>() calls are used by programs such as <strong>bash</strong>(1) to create process groups in order to implement shell job control.</p>
+<p>If the termination of a process causes a process group to become orphaned, and if any member of the newly orphaned process group is stopped, then a <strong>SIGHUP</strong> signal followed by a <strong>SIGCONT</strong> signal will be sent to each process in the newly orphaned process group. An orphaned process group is one in which the parent of every member of process group is either itself also a member of the process group or is a member of a process group in a different session (see also <strong>credentials</strong>(7)).</p>
+<h1>SEE ALSO</h1>
+<p><strong>getuid</strong>(2), <strong>setsid</strong>(2), <strong>tcgetpgrp</strong>(3), <strong>tcsetpgrp</strong>(3), <strong>termios</strong>(3), <strong>credentials</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

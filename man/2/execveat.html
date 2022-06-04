@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command execveat</title><meta name="description" content="Linux command execveat execute program relative to a directory file descriptor"><meta name="keywords" content="linux, command, execveat, bsd, execute program relative to a directory file descriptor"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>execveat - execute program relative to a directory file descriptor</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;unistd.h&gt;</strong></p>
+<p><strong>int execveat(int </strong><em>dirfd</em><strong>, const char *</strong><em>pathname</em><strong>,</strong><br />
+<strong> char *const </strong><em>argv</em><strong>[], char *const </strong><em>envp</em><strong>[],</strong><br />
+<strong> int </strong><em>flags</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>execveat</strong>() system call executes the program referred to by the combination of <em>dirfd</em> and <em>pathname</em>. It operates in exactly the same way as <strong>execve</strong>(2), except for the differences described in this manual page.</p>
+<p>If the pathname given in <em>pathname</em> is relative, then it is interpreted relative to the directory referred to by the file descriptor <em>dirfd</em> (rather than relative to the current working directory of the calling process, as is done by <strong>execve</strong>(2) for a relative pathname).</p>
+<p>If <em>pathname</em> is relative and <em>dirfd</em> is the special value <strong>AT_FDCWD</strong>, then <em>pathname</em> is interpreted relative to the current working directory of the calling process (like <strong>execve</strong>(2)).</p>
+<p>If <em>pathname</em> is absolute, then <em>dirfd</em> is ignored.</p>
+<p>If <em>pathname</em> is an empty string and the <strong>AT_EMPTY_PATH</strong> flag is specified, then the file descriptor <em>dirfd</em> specifies the file to be executed (i.e., <em>dirfd</em> refers to an executable file, rather than a directory).</p>
+<p>The <em>flags</em> argument is a bit mask that can include zero or more of the following flags:</p>
+<dl>
+<dt><strong>AT_EMPTY_PATH</strong></dt>
+<dd><p>If <em>pathname</em> is an empty string, operate on the file referred to by <em>dirfd</em> (which may have been obtained using the <strong>open</strong>(2) <strong>O_PATH</strong> flag).</p>
+</dd>
+<dt><strong>AT_SYMLINK_NOFOLLOW</strong></dt>
+<dd><p>If the file identified by <em>dirfd</em> and a non-NULL <em>pathname</em> is a symbolic link, then the call fails with the error <strong>ELOOP</strong>.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>execveat</strong>() does not return. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<p>The same errors that occur for <strong>execve</strong>(2) can also occur for <strong>execveat</strong>(). The following additional errors can occur for <strong>execveat</strong>():</p>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>dirfd</em> is not a valid file descriptor.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Invalid flag specified in <em>flags</em>.</p>
+</dd>
+<dt><strong>ELOOP</strong></dt>
+<dd><p><em>flags</em> includes <strong>AT_SYMLINK_NOFOLLOW</strong> and the file identified by <em>dirfd</em> and a non-NULL <em>pathname</em> is a symbolic link.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>The program identified by <em>dirfd</em> and <em>pathname</em> requires the use of an interpreter program (such as a script starting with "#!"), but the file descriptor <em>dirfd</em> was opened with the <strong>O_CLOEXEC</strong> flag, with the result that the program file is inaccessible to the launched interpreter. See BUGS.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p><em>pathname</em> is relative and <em>dirfd</em> is a file descriptor referring to a file other than a directory.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>execveat</strong>() was added to Linux in kernel 3.19. GNU C library support is pending.</p>
+<h1>CONFORMING TO</h1>
+<p>The <strong>execveat</strong>() system call is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>In addition to the reasons explained in <strong>openat</strong>(2), the <strong>execveat</strong>() system call is also needed to allow <strong>fexecve</strong>(3) to be implemented on systems that do not have the <em>/proc</em> filesystem mounted.</p>
+<p>When asked to execute a script file, the <em>argv[0]</em> that is passed to the script interpreter is a string of the form <em>/dev/fd/N</em> or <em>/dev/fd/N/P</em>, where <em>N</em> is the number of the file descriptor passed via the <em>dirfd</em> argument. A string of the first form occurs when <strong>AT_EMPTY_PATH</strong> is employed. A string of the second form occurs when the script is specified via both <em>dirfd</em> and <em>pathname</em>; in this case, <em>P</em> is the value given in <em>pathname</em>.</p>
+<p>For the same reasons described in <strong>fexecve</strong>(3), the natural idiom when using <strong>execveat</strong>() is to set the close-on-exec flag on <em>dirfd</em>. (But see BUGS.)</p>
+<h1>BUGS</h1>
+<p>The <strong>ENOENT</strong> error described above means that it is not possible to set the close-on-exec flag on the file descriptor given to a call of the form:</p>
+<p>execveat(fd, "", argv, envp, AT_EMPTY_PATH);</p>
+<p>However, the inability to set the close-on-exec flag means that a file descriptor referring to the script leaks through to the script itself. As well as wasting a file descriptor, this leakage can lead to file-descriptor exhaustion in scenarios where scripts recursively employ <strong>execveat</strong>().</p>
+<h1>SEE ALSO</h1>
+<p><strong>execve</strong>(2), <strong>openat</strong>(2), <strong>fexecve</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

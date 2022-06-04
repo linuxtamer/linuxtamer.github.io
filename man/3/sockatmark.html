@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sockatmark</title><meta name="description" content="Linux command sockatmark determine whether socket is at out-of-band mark"><meta name="keywords" content="linux, command, sockatmark, bsd, determine whether socket is at out-of-band mark"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sockatmark - determine whether socket is at out-of-band mark</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/socket.h&gt;</strong></p>
+<p><strong>int sockatmark(int </strong><em>sockfd</em><strong>);</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>sockatmark</strong>(): _POSIX_C_SOURCE &gt;= 200112L</p>
+<h1>DESCRIPTION</h1>
+<p><strong>sockatmark</strong>() returns a value indicating whether or not the socket referred to by the file descriptor <em>sockfd</em> is at the out-of-band mark. If the socket is at the mark, then 1 is returned; if the socket is not at the mark, 0 is returned. This function does not remove the out-of-band mark.</p>
+<h1>RETURN VALUE</h1>
+<p>A successful call to <strong>sockatmark</strong>() returns 1 if the socket is at the out-of-band mark, or 0 if it is not. On error, -1 is returned and <em>errno</em> is set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>sockfd</em> is not a valid file descriptor.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>sockfd</em> is not a file descriptor to which <strong>sockatmark</strong>() can be applied.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>sockatmark</strong>() was added to glibc in version 2.2.4.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sockatmark</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>If <strong>sockatmark</strong>() returns 1, then the out-of-band data can be read using the <strong>MSG_OOB</strong> flag of <strong>recv</strong>(2).</p>
+<p>Out-of-band data is supported only on some stream socket protocols.</p>
+<p><strong>sockatmark</strong>() can safely be called from a handler for the <strong>SIGURG</strong> signal.</p>
+<p><strong>sockatmark</strong>() is implemented using the <strong>SIOCATMARK</strong> <strong>ioctl</strong>(2) operation.</p>
+<h1>BUGS</h1>
+<p>Prior to glibc 2.4, <strong>sockatmark</strong>() did not work.</p>
+<h1>EXAMPLES</h1>
+<p>The following code can be used after receipt of a <strong>SIGURG</strong> signal to read (and discard) all data up to the mark, and then read the byte of data at the mark:</p>
+<pre><code>    char buf[BUF_LEN];
+    char oobdata;
+    int atmark, s;
+
+    for (;;) {
+        atmark = sockatmark(sockfd);
+        if (atmark == -1) {
+            perror(&quot;sockatmark&quot;);
+            break;
+        }
+
+        if (atmark)
+            break;
+
+        s = read(sockfd, buf, BUF_LEN);
+        if (s == -1)
+            perror(&quot;read&quot;);
+        if (s &lt;= 0)
+            break;
+    }
+
+    if (atmark == 1) {
+        if (recv(sockfd, &amp;oobdata, 1, MSG_OOB) == -1) {
+            perror(&quot;recv&quot;);
+            ...
+        }
+    }</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>fcntl</strong>(2), <strong>recv</strong>(2), <strong>send</strong>(2), <strong>tcp</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

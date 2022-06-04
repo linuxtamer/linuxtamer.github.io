@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command signal-safety</title><meta name="description" content="Linux command signal-safety async-signal-safe functions"><meta name="keywords" content="linux, command, signal-safety, bsd, async-signal-safe functions"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>signal-safety - async-signal-safe functions</p>
+<h1>DESCRIPTION</h1>
+<p>An <em>async-signal-safe</em> function is one that can be safely called from within a signal handler. Many functions are <em>not</em> async-signal-safe. In particular, nonreentrant functions are generally unsafe to call from a signal handler.</p>
+<p>The kinds of issues that render a function unsafe can be quickly understood when one considers the implementation of the <em>stdio</em> library, all of whose functions are not async-signal-safe.</p>
+<p>When performing buffered I/O on a file, the <em>stdio</em> functions must maintain a statically allocated data buffer along with associated counters and indexes (or pointers) that record the amount of data and the current position in the buffer. Suppose that the main program is in the middle of a call to a <em>stdio</em> function such as <strong>printf</strong>(3) where the buffer and associated variables have been partially updated. If, at that moment, the program is interrupted by a signal handler that also calls <strong>printf</strong>(3), then the second call to <strong>printf</strong>(3) will operate on inconsistent data, with unpredictable results.</p>
+<p>To avoid problems with unsafe functions, there are two possible choices:</p>
+<ol type="1">
+<li><p>Ensure that (a) the signal handler calls only async-signal-safe functions, and (b) the signal handler itself is reentrant with respect to global variables in the main program.</p></li>
+<li><p>Block signal delivery in the main program when calling functions that are unsafe or operating on global data that is also accessed by the signal handler.</p></li>
+</ol>
+<p>Generally, the second choice is difficult in programs of any complexity, so the first choice is taken.</p>
+<p>POSIX.1 specifies a set of functions that an implementation must make async-signal-safe. (An implementation may provide safe implementations of additional functions, but this is not required by the standard and other implementations may not provide the same guarantees.)</p>
+<p>In general, a function is async-signal-safe either because it is reentrant or because it is atomic with respect to signals (i.e., its execution can't be interrupted by a signal handler).</p>
+<p>The set of functions required to be async-signal-safe by POSIX.1 is shown in the following table. The functions not otherwise noted were required to be async-signal-safe in POSIX.1-2001; the table details changes in the subsequent standards.</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Function</td>
+<td style="text-align: left;">Notes</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>abort</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2001 TC1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>accept</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>access</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>aio_error</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>aio_return</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>aio_suspend</strong>(3)</td>
+<td style="text-align: left;">See notes below</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>alarm</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>bind</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>cfgetispeed</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>cfgetospeed</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>cfsetispeed</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>cfsetospeed</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>chdir</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>chmod</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>chown</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>clock_gettime</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>close</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>connect</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>creat</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>dup</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>dup2</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>execl</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008; see notes below</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>execle</strong>(3)</td>
+<td style="text-align: left;">See notes below</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>execv</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>execve</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>_exit</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>_Exit</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>faccessat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fchdir</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>fchmod</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fchmodat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>fchown</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fchownat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>fcntl</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fdatasync</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>fexecve</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>ffs</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>fork</strong>(2)</td>
+<td style="text-align: left;">See notes below</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fstat</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>fstatat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>fsync</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>ftruncate</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>futimens</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getegid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>geteuid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getgid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getgroups</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getpeername</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getpgrp</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getpid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getppid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getsockname</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getsockopt</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>getuid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>htonl</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>htons</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>kill</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>link</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>linkat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>listen</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>longjmp</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2; see notes below</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>lseek</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>lstat</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>memccpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>memchr</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>memcmp</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>memcpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>memmove</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>memset</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>mkdir</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>mkdirat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>mkfifo</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>mkfifoat</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>mknod</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>mknodat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>ntohl</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>ntohs</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>open</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>openat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>pause</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>pipe</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>poll</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>posix_trace_event</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>pselect</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>pthread_kill</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>pthread_self</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>pthread_sigmask</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>raise</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>read</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>readlink</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>readlinkat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>recv</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>recvfrom</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>recvmsg</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>rename</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>renameat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>rmdir</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>select</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sem_post</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>send</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sendmsg</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>sendto</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>setgid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>setpgid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>setsid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>setsockopt</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>setuid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>shutdown</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sigaction</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>sigaddset</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sigdelset</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>sigemptyset</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sigfillset</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>sigismember</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>siglongjmp</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2; see notes below</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>signal</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sigpause</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>sigpending</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sigprocmask</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>sigqueue</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sigset</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>sigsuspend</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>sleep</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>sockatmark</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2001 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>socket</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>socketpair</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>stat</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>stpcpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>stpncpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>strcat</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>strchr</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>strcmp</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>strcpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>strcspn</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>strlen</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>strncat</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>strncmp</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>strncpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>strnlen</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>strpbrk</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>strrchr</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>strspn</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>strstr</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>strtok_r</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>symlink</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>symlinkat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>tcdrain</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>tcflow</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>tcflush</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>tcgetattr</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>tcgetpgrp</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>tcsendbreak</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>tcsetattr</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>tcsetpgrp</strong>(3)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>time</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>timer_getoverrun</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>timer_gettime</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>timer_settime</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>times</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>umask</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>uname</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>unlink</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>unlinkat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>utime</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>utimensat</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>utimes</strong>(2)</td>
+<td style="text-align: left;">Added in POSIX.1-2008</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wait</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>waitpid</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wcpcpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wcpncpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wcscat</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wcschr</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wcscmp</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wcscpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wcscspn</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wcslen</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wcsncat</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wcsncmp</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wcsncpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wcsnlen</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wcspbrk</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wcsrchr</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wcsspn</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wcsstr</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wcstok</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wmemchr</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wmemcmp</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wmemcpy</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>wmemmove</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>wmemset</strong>(3)</td>
+<td style="text-align: left;">Added in POSIX.1-2008 TC2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>write</strong>(2)</td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ul>
+<li><p>POSIX.1-2001 and POSIX.1-2001 TC2 required the functions <strong>fpathconf</strong>(3), <strong>pathconf</strong>(3), and <strong>sysconf</strong>(3) to be async-signal-safe, but this requirement was removed in POSIX.1-2008.</p></li>
+<li><p>If a signal handler interrupts the execution of an unsafe function, and the handler terminates via a call to <strong>longjmp</strong>(3) or <strong>siglongjmp</strong>(3) and the program subsequently calls an unsafe function, then the behavior of the program is undefined.</p></li>
+<li><p>POSIX.1-2001 TC1 clarified that if an application calls <strong>fork</strong>(2) from a signal handler and any of the fork handlers registered by <strong>pthread_atfork</strong>(3) calls a function that is not async-signal-safe, the behavior is undefined. A future revision of the standard is likely to remove <strong>fork</strong>(2) from the list of async-signal-safe functions.</p></li>
+<li><p>Asynchronous signal handlers that call functions which are cancellation points and nest over regions of deferred cancellation may trigger cancellation whose behavior is as if asynchronous cancellation had occurred and may cause application state to become inconsistent.</p></li>
+</ul>
+<h2>errno</h2>
+<p>Fetching and setting the value of <em>errno</em> is async-signal-safe provided that the signal handler saves <em>errno</em> on entry and restores its value before returning.</p>
+<h2>Deviations in the GNU C library</h2>
+<p>The following known deviations from the standard occur in the GNU C library:</p>
+<ul>
+<li><p>Before glibc 2.24, <strong>execl</strong>(3) and <strong>execle</strong>(3) employed <strong>realloc</strong>(3) internally and were consequently not async-signal-safe. This was fixed in glibc 2.24.</p></li>
+<li><p>The glibc implementation of <strong>aio_suspend</strong>(3) is not async-signal-safe because it uses <strong>pthread_mutex_lock</strong>(3) internally.</p></li>
+</ul>
+<h1>SEE ALSO</h1>
+<p><strong>sigaction</strong>(2), <strong>signal</strong>(7), <strong>standards</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

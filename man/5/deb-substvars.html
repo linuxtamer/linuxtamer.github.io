@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command deb-substvars</title><meta name="description" content="Linux command deb-substvars Debian source substitution variables"><meta name="keywords" content="linux, command, deb-substvars, bsd, Debian source substitution variables"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>deb-substvars - Debian source substitution variables</p>
+<h1>SYNOPSIS</h1>
+<p><strong>debian/substvars</strong>, <strong>debian/</strong><em>binary-package</em><strong>.substvars</strong></p>
+<h1>DESCRIPTION</h1>
+<p>Before <strong>dpkg-source</strong>, <strong>dpkg-gencontrol</strong> and <strong>dpkg-genchanges</strong> write their control information (to the source control file <strong>.dsc</strong> for <strong>dpkg-source</strong> and to standard output for <strong>dpkg-gencontrol</strong> and <strong>dpkg-genchanges</strong>) they perform some variable substitutions on the output file.</p>
+<p>A variable substitution has the form <strong>${</strong><em>variable-name</em><strong>}</strong>. Variable names consist of alphanumerics (a-zA-Z0-9), hyphens (-) and colons (:) and start with an alphanumeric, and are case-sensitive, even though they might refer to other entities which are case-preserving. Variable substitutions are performed repeatedly until none are left; the full text of the field after the substitution is rescanned to look for more substitutions.</p>
+<p>After all the substitutions have been done each occurrence of the string <strong>${}</strong> (which is not a legal substitution) is replaced with a <strong>$</strong> sign.</p>
+<p>While variable substitution is done on all control fields, some of those fields are used and needed during the build when the substitution did not yet occur. That's why you can't use variables in the <strong>Package</strong>, <strong>Source</strong> and <strong>Architecture</strong> fields.</p>
+<p>Variable substitution happens on the content of the fields after they have been parsed, thus if you want a variable to expand over multiple lines you do not have to include a space after the newline. This is done implicitly when the field is output. For example, if the variable <strong>${Description}</strong> is set to foo is bar.${Newline}foo is great. and if you have the following field:</p>
+<p>Description: foo application ${Description} . More text.</p>
+<p>It will result in:</p>
+<p>Description: foo application foo is bar. foo is great. . More text.</p>
+<p>Variables can be set using the <strong>-V</strong> common option. They can be also specified in the file <strong>debian/substvars</strong> (or whatever other file is specified using the <strong>-T</strong> option). This file consists of lines of the form <em>name</em><strong>=</strong><em>value</em>. Trailing whitespace on each line, blank lines, and lines starting with a <strong>#</strong> symbol (comments) are ignored.</p>
+<p>Additionally, the following standard variables are available:</p>
+<ul>
+<li><p>The current host architecture (i.e. the architecture the package is being built for, the equivalent of <strong>DEB_HOST_ARCH</strong>).</p></li>
+<li><p>The current vendor name (since dpkg 1.20.0). This value comes from the <strong>Vendor</strong> field for the current vendor's origin file, as <strong>dpkg-vendor</strong>(1) would retrieve it.</p></li>
+<li><p>The current vendor ID (since dpkg 1.20.0). This is just the lowercase variant of <strong>vendor:Name</strong>.</p></li>
+<li><p>The source package version (since dpkg 1.13.19).</p></li>
+<li><p>The upstream source package version, including the Debian version epoch if any (since dpkg 1.13.19).</p></li>
+<li><p>The binary package version (which may differ from <strong>source:Version</strong> in a binNMU for example; since dpkg 1.13.19).</p></li>
+<li><p>The source package version (from the changelog file). This variable is now <strong>obsolete</strong> and emits an error when used as its meaning is different from its function, please use the <strong>source:Version</strong> or <strong>binary:Version</strong> as appropriate.</p></li>
+<li><p>The source package synopsis, extracted from the source stanza <strong>Description</strong> field, if it exists (since dpkg 1.19.0).</p></li>
+<li><p>The source package extended description, extracted from the source stanza <strong>Description</strong> field, if it exists (since dpkg 1.19.0).</p></li>
+<li><p>The approximate total size of the package's installed files. This value is copied into the corresponding control file field; setting it will modify the value of that field. If this variable is not set <strong>dpkg-gencontrol</strong> will compute the default value by accumulating the size of each regular file and symlink rounded to 1 KiB used units, and a baseline of 1 KiB for any other filesystem object type. With hardlinks only being counted once as a regular file. <strong>Note:</strong> Take into account that this can only ever be an approximation, as the actual size used on the installed system will depend greatly on the filesystem used and its parameters, which might end up using either more or less space than the specified in this field.</p></li>
+<li><p>Additional disk space used when the package is installed. If this variable is set its value is added to that of the <strong>Installed-Size</strong> variable (whether set explicitly or using the default value) before it is copied into the <strong>Installed-Size</strong> control file field.</p></li>
+<li><p>The value of the source stanza field <em>fieldname</em> (which must be given in the canonical capitalisation; since dpkg 1.18.11). Setting these variables has no effect other than on places where they are expanded explicitly. These variables are only available when generating binary control files.</p></li>
+<li><p>The value of the output field <em>fieldname</em> (which must be given in the canonical capitalisation). Setting these variables has no effect other than on places where they are expanded explicitly.</p></li>
+<li><p>The <strong>.changes</strong> file format version generated by this version of the source packaging scripts. If you set this variable the contents of the <strong>Format</strong> field in the <strong>.changes</strong> file will change too.</p></li>
+<li><p>These variables each hold the corresponding character.</p></li>
+<li><p>Variable settings with names of this form are generated by <strong>dpkg-shlibdeps</strong>.</p></li>
+<li><p>The upstream version of dpkg (since dpkg 1.13.19).</p></li>
+<li><p>The full version of dpkg (since dpkg 1.13.19).</p></li>
+</ul>
+<p>If a variable is referred to but not defined it generates a warning and an empty value is assumed.</p>
+<h1>FILES</h1>
+<ul>
+<li><p>List of substitution variables and values.</p></li>
+</ul>
+<h1>SEE ALSO</h1>
+<p><strong>dpkg</strong>(1), <strong>dpkg-vendor</strong>(1), <strong>dpkg-genchanges</strong>(1), <strong>dpkg-gencontrol</strong>(1), <strong>dpkg-shlibdeps</strong>(1), <strong>dpkg-source</strong>(1).</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command ntfssecaudit</title><meta name="description" content="Linux command ntfssecaudit NTFS Security Data Auditing"><meta name="keywords" content="linux, command, ntfssecaudit, bsd, NTFS Security Data Auditing"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>ntfssecaudit - NTFS Security Data Auditing</p>
+<h1>SYNOPSIS</h1>
+<p><strong>ntfssecaudit</strong> <strong>[</strong><em>options</em><strong>]</strong> <em>args</em></p>
+<p>Where <em>options</em> is a combination of :</p>
+<blockquote>
+<p>-a full auditing of security data (Linux only)</p>
+</blockquote>
+<blockquote>
+<p>-b backup ACLs</p>
+</blockquote>
+<blockquote>
+<p>-e setting extra backed-up parameters (in conjunction with -s)</p>
+</blockquote>
+<blockquote>
+<p>-h displaying hexadecimal security descriptors saved in a file</p>
+</blockquote>
+<blockquote>
+<p>-r recursing in a directory</p>
+</blockquote>
+<blockquote>
+<p>-s setting backed-up ACLs</p>
+</blockquote>
+<blockquote>
+<p>-u getting a user mapping proposal</p>
+</blockquote>
+<blockquote>
+<p>-v verbose (very verbose if set twice)</p>
+</blockquote>
+<p>and args define the parameters and the set of files acted upon.</p>
+<p>Typing secaudit with no args will display a summary of available options.</p>
+<h1>DESCRIPTION</h1>
+<p><strong>ntfssecaudit</strong> displays the ownership and permissions of a set of files on an NTFS file system, and checks their consistency. It can be started in terminal mode only (no graphical user interface is available.)</p>
+<p>When a <em>volume</em> is required, it has to be unmounted, and the command has to be issued as <strong>root</strong>. The <em>volume</em> can be either a block device (i.e. a disk partition) or an image file.</p>
+<p>When acting on a directory or volume, the command may produce a lot of information. It is therefore advisable to redirect the output to a file or pipe it to a text editor for examination.</p>
+<h1>OPTIONS</h1>
+<p>Below are the valid combinations of options and arguments that <strong>ntfssecaudit</strong> accepts. All the indicated arguments are mandatory and must be unique (if wildcards are used, they must resolve to a single name.)</p>
+<dl>
+<dt><strong>-h</strong> <em>file</em></dt>
+<dd><p>Displays in an human readable form the hexadecimal security descriptors saved in <em>file</em>. This can be used to turn a verbose output into a very verbose output.</p>
+</dd>
+<dt><strong>-a[rv]</strong> <em>volume</em></dt>
+<dd><p>Audits the volume : all the global security data on <em>volume</em> are scanned and errors are displayed. If option <strong>-r</strong> is present, all files and directories are also scanned and their relations to global security data are checked. This can produce a lot of data.</p>
+</dd>
+</dl>
+<p>This option is not effective on volumes formatted for old NTFS versions (pre NTFS 3.0). Such volumes have no global security data.</p>
+<p>When errors are signalled, it is advisable to repair the volume with an appropriate tool (such as <strong>chkdsk</strong> on Windows.)</p>
+<dl>
+<dt><strong>[-v]</strong> <em>volume</em> <em>file</em></dt>
+<dd><p>Displays the security parameters of <em>file</em> : its interpreted Linux mode (rwx flags in octal) and Posix ACL[1], its security key if any, and its security descriptor if verbose output.</p>
+</dd>
+<dt><strong>-r[v]</strong> <em>volume</em> <em>directory</em></dt>
+<dd><p>displays the security parameters of all files and subdirectories in <em>directory</em> : their interpreted Linux mode (rwx flags in octal) and Posix ACL[1], their security key if any, and their security descriptor if verbose output.</p>
+</dd>
+<dt><strong>-b[v] <em>volume</em> <em>[directory]</em></strong></dt>
+<dd><p>Recursively extracts to standard output the NTFS ACLs of files in <em>volume</em> and <em>directory</em>.</p>
+</dd>
+<dt><strong>-s[ev]</strong> <em>volume</em> <em>[backup-file]</em></dt>
+<dd><p>Sets the NTFS ACLS as indicated in <em>backup-file</em> or standard input. The input data must have been created on Linux. With option <strong>-e</strong>, also sets extra parameters (currently Windows attrib).</p>
+</dd>
+<dt><em>volume</em> <em>perms</em> <em>file</em></dt>
+<dd><p>Sets the security parameters of file to perms. Perms is the Linux requested mode (rwx flags, expressed in octal form as in chmod) or a Posix ACL[1] (expressed like in setfacl -m). This sets a new ACL which is effective for Linux and Windows.</p>
+</dd>
+<dt><strong>-r[v]</strong> <em>volume</em> <em>perms</em> <em>directory</em></dt>
+<dd><p>Sets the security parameters of all files and subdirectories in <em>directory</em> to <em>perms</em>. Perms is the Linux requested mode (rwx flags, expressed in octal form as in <strong>chmod</strong>), or a Posix ACL[1] (expressed like in <strong>setfacl -m</strong>.) This sets new ACLs which are effective for Linux and Windows.</p>
+</dd>
+<dt><strong>[-v]</strong> <em>mounted-file</em></dt>
+<dd><p>Displays the security parameters of <em>mounted-file</em> : its interpreted Linux mode (rwx flags in octal) and Posix ACL[1], its security key if any, and its security descriptor if verbose output. This is a special case which acts on a mounted file (or directory) and does not require being root. The Posix ACL interpretation can only be displayed if the full path to <em>mounted-file</em> from the root of the global file tree is provided.</p>
+</dd>
+<dt><strong>-u[v]</strong> <em>mounted-file</em></dt>
+<dd><p>Displays a proposed contents for a user mapping file, based on the ownership parameters set by Windows on <em>mounted-file</em>, assuming this file was created on Windows by the user who should be mapped to the current Linux user. The displayed information has to be copied to the file <strong>.NTFS-3G/UserMapping</strong> where <strong>.NTFS-3G</strong> is a hidden subdirectory of the root of the partition for which the mapping is to be defined. This will cause the ownership of files created on that partition to be the same as the original <em>mounted-file</em>.</p>
+</dd>
+</dl>
+<h1>NOTE</h1>
+<p>[1] provided the POSIX ACL option was selected at compile time. A Posix ACL specification looks like "<strong>[d:]{ugmo}:[id]:[perms],...</strong>" where id is a numeric user or group id, and perms an octal digit or a set from the letters r, w and x.</p>
+<blockquote>
+<p>Example : "<strong>u::7,g::5,o:0,u:510:rwx,g:500:5,d:u:510:7</strong>"</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>Audit the global security data on /dev/sda1</p>
+<blockquote>
+<p><strong>ntfssecaudit -ar /dev/sda1</strong></p>
+</blockquote>
+<p>Display the ownership and permissions parameters for files in directory /audio/music on device /dev/sda5, excluding sub-directories :</p>
+<blockquote>
+<p><strong>ntfssecaudit /dev/sda5 /audio/music</strong></p>
+</blockquote>
+<p>Set all files in directory /audio/music on device /dev/sda5 as writeable by owner and read-only for everybody :</p>
+<blockquote>
+<p><strong>ntfssecaudit -r /dev/sda5 644 /audio/music</strong></p>
+</blockquote>
+<h1>EXIT CODES</h1>
+<p><strong>ntfssecaudit</strong> exits with a value of 0 when no error was detected, and with a value of 1 when an error was detected.</p>
+<h1>KNOWN ISSUES</h1>
+<p>Please see</p>
+<blockquote>
+<p>http://www.tuxera.com/community/ntfs-3g-faq/</p>
+</blockquote>
+<p>for common questions and known issues. If you would find a new one in the latest release of the software then please send an email describing it in detail. You can contact the development team on the ntfs-3g-devel@lists.sf.net address.</p>
+<h1>AUTHORS</h1>
+<p><strong>ntfssecaudit</strong> has been developed by Jean-Pierre André.</p>
+<h1>THANKS</h1>
+<p>Several people made heroic efforts, often over five or more years which resulted the ntfs-3g driver. Most importantly they are Anton Altaparmakov, Richard Russon, Szabolcs Szakacsits, Yura Pakhuchiy, Yuval Fledel, and the author of the groundbreaking FUSE filesystem development framework, Miklos Szeredi.</p>
+<h1>SEE ALSO</h1>
+<p><strong>ntfsprogs</strong>(8), <strong>attr</strong>(5), <strong>getfattr</strong>(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

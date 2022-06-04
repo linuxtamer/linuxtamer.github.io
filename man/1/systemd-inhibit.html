@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-inhibit</title><meta name="description" content="Linux command systemd-inhibit Execute a program with an inhibition lock taken"><meta name="keywords" content="linux, command, systemd-inhibit, bsd, Execute a program with an inhibition lock taken"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-inhibit - Execute a program with an inhibition lock taken</p>
+<h1>SYNOPSIS</h1>
+<p><strong>systemd-inhibit [OPTIONS...] [COMMAND] [ARGUMENTS...]</strong></p>
+<p><strong>systemd-inhibit [OPTIONS...] --list</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>systemd-inhibit</strong> may be used to execute a program with a shutdown, sleep, or idle inhibitor lock taken. The lock will be acquired before the specified command line is executed and released afterwards.</p>
+<p>Inhibitor locks may be used to block or delay system sleep and shutdown requests from the user, as well as automatic idle handling of the OS. This is useful to avoid system suspends while an optical disc is being recorded, or similar operations that should not be interrupted.</p>
+<p>For more information see the <strong>Inhibitor Lock Developer Documentation</strong>[1].</p>
+<h1>OPTIONS</h1>
+<p>The following options are understood:</p>
+<p><strong>--what=</strong></p>
+<blockquote>
+<p>Takes a colon-separated list of one or more operations to inhibit: "shutdown", "sleep", "idle", "handle-power-key", "handle-suspend-key", "handle-hibernate-key", "handle-lid-switch", for inhibiting reboot/power-off/halt/kexec, suspending/hibernating, the automatic idle detection, or the low-level handling of the power/sleep key and the lid switch, respectively. If omitted, defaults to "idle:sleep:shutdown".</p>
+</blockquote>
+<p><strong>--who=</strong></p>
+<blockquote>
+<p>Takes a short, human-readable descriptive string for the program taking the lock. If not passed, defaults to the command line string.</p>
+</blockquote>
+<p><strong>--why=</strong></p>
+<blockquote>
+<p>Takes a short, human-readable descriptive string for the reason for taking the lock. Defaults to "Unknown reason".</p>
+</blockquote>
+<p><strong>--mode=</strong></p>
+<blockquote>
+<p>Takes either "block" or "delay" and describes how the lock is applied. If "block" is used (the default), the lock prohibits any of the requested operations without time limit, and only privileged users may override it. If "delay" is used, the lock can only delay the requested operations for a limited time. If the time elapses, the lock is ignored and the operation executed. The time limit may be specified in <strong>logind.conf</strong>(5). Note that "delay" is only available for "sleep" and "shutdown".</p>
+</blockquote>
+<p><strong>--list</strong></p>
+<blockquote>
+<p>Lists all active inhibition locks instead of acquiring one.</p>
+</blockquote>
+<p><strong>--no-pager</strong></p>
+<blockquote>
+<p>Do not pipe output into a pager.</p>
+</blockquote>
+<p><strong>--no-legend</strong></p>
+<blockquote>
+<p>Do not print the legend, i.e. column headers and the footer with hints.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<h1>EXIT STATUS</h1>
+<p>Returns the exit status of the executed program.</p>
+<h1>EXAMPLE</h1>
+<blockquote>
+<pre><code># systemd-inhibit wodim foobar.iso</code></pre>
+</blockquote>
+<p>This burns the ISO image foobar.iso on a CD using <strong>wodim</strong>(1), and inhibits system sleeping, shutdown and idle while doing so.</p>
+<h1>ENVIRONMENT</h1>
+<p><em>$SYSTEMD_PAGER</em></p>
+<blockquote>
+<p>Pager to use when <strong>--no-pager</strong> is not given; overrides <em>$PAGER</em>. If neither <em>$SYSTEMD_PAGER</em> nor <em>$PAGER</em> are set, a set of well-known pager implementations are tried in turn, including <strong>less</strong>(1) and <strong>more</strong>(1), until one is found. If no pager implementation is discovered no pager is invoked. Setting this environment variable to an empty string or the value "cat" is equivalent to passing <strong>--no-pager</strong>.</p>
+</blockquote>
+<p><em>$SYSTEMD_LESS</em></p>
+<blockquote>
+<p>Override the options passed to <strong>less</strong> (by default "FRSXMK").</p>
+<p>Users might want to change two options in particular:</p>
+<p><strong>K</strong></p>
+<blockquote>
+<p>This option instructs the pager to exit immediately when Ctrl+C is pressed. To allow <strong>less</strong> to handle Ctrl+C itself to switch back to the pager command prompt, unset this option.</p>
+<p>If the value of <em>$SYSTEMD_LESS</em> does not include "K", and the pager that is invoked is <strong>less</strong>, Ctrl+C will be ignored by the executable, and needs to be handled by the pager.</p>
+</blockquote>
+<p><strong>X</strong></p>
+<blockquote>
+<p>This option instructs the pager to not send termcap initialization and deinitialization strings to the terminal. It is set by default to allow command output to remain visible in the terminal even after the pager exits. Nevertheless, this prevents some pager functionality from working, in particular paged output cannot be scrolled with the mouse.</p>
+</blockquote>
+<p>See <strong>less</strong>(1) for more discussion.</p>
+</blockquote>
+<p><em>$SYSTEMD_LESSCHARSET</em></p>
+<blockquote>
+<p>Override the charset passed to <strong>less</strong> (by default "utf-8", if the invoking terminal is determined to be UTF-8 compatible).</p>
+</blockquote>
+<p><em>$SYSTEMD_PAGERSECURE</em></p>
+<blockquote>
+<p>Takes a boolean argument. When true, the "secure" mode of the pager is enabled; if false, disabled. If <em>$SYSTEMD_PAGERSECURE</em> is not set at all, secure mode is enabled if the effective UID is not the same as the owner of the login session, see <strong>geteuid</strong>(2) and <strong>sd_pid_get_owner_uid</strong>(3). In secure mode, <strong>LESSSECURE=1</strong> will be set when invoking the pager, and the pager shall disable commands that open or create new files or start new subprocesses. When <em>$SYSTEMD_PAGERSECURE</em> is not set at all, pagers which are not known to implement secure mode will not be used. (Currently only <strong>less</strong>(1) implements secure mode.)</p>
+<p>Note: when commands are invoked with elevated privileges, for example under <strong>sudo</strong>(8) or <strong>pkexec</strong>(1), care must be taken to ensure that unintended interactive features are not enabled. "Secure" mode for the pager may be enabled automatically as describe above. Setting <em>SYSTEMD_PAGERSECURE=0</em> or not removing it from the inherited environment allows the user to invoke arbitrary commands. Note that if the <em>$SYSTEMD_PAGER</em> or <em>$PAGER</em> variables are to be honoured, <em>$SYSTEMD_PAGERSECURE</em> must be set too. It might be reasonable to completely disable the pager using <strong>--no-pager</strong> instead.</p>
+</blockquote>
+<p><em>$SYSTEMD_COLORS</em></p>
+<blockquote>
+<p>The value must be a boolean. Controls whether colorized output should be generated. This can be specified to override the decision that <strong>systemd</strong> makes based on <em>$TERM</em> and what the console is connected to.</p>
+</blockquote>
+<p><em>$SYSTEMD_URLIFY</em></p>
+<blockquote>
+<p>The value must be a boolean. Controls whether clickable links should be generated in the output for terminal emulators supporting this. This can be specified to override the decision that <strong>systemd</strong> makes based on <em>$TERM</em> and other conditions.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>logind.conf</strong>(5)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>Inhibitor Lock Developer Documentation</p>
+<p>https://www.freedesktop.org/wiki/Software/systemd/inhibit</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

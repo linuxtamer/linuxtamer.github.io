@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command thd</title><meta name="description" content="Linux command thd - triggerhappy global hotkey daemon"><meta name="keywords" content="linux, command, thd, bsd, - triggerhappy global hotkey daemon"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>thd -- triggerhappy global hotkey daemon</p>
+<h1>SYNOPSIS</h1>
+<p><strong>thd</strong> [<strong>--help</strong>] [<strong>--user</strong> <em>name</em>] [<strong>--listevents</strong>] [<strong>--dump</strong>] [<strong>--socket</strong> <em>socket</em>] [<strong>--triggers</strong> <em>config</em>] [<strong>--daemon</strong>] [<strong>--pidfile</strong> <em>file</em>] [<strong>--uinput</strong> <em>device</em>][<strong>--ignore</strong> <em>event</em>] [<strong>--deviceglob</strong> <em>pattern</em>] [<em>devices...</em>]</p>
+<h1>DESCRIPTION</h1>
+<p>Triggerhappy is a hotkey daemon that operates on a system wide scale. It watches all configured input devices for key, switch or button events and can launch arbitrary commands specified by the administrator. In contrast to hotkey services provided by desktop environments, Triggerhappy is especially suited to hardware related switches like volume or wifi control; it works independently from a specific user being logged in and is also suitable for embedded systems that do not a graphical user interface.</p>
+<h1>OPTIONS</h1>
+<ul>
+<li><p>Shows usage instructions</p></li>
+<li><p>Prints a list of all known event names.</p></li>
+<li><p>Read trigger definitions from <em>conf</em>, which can either be a file or a directory. If a directory is specified, all its files matching the pattern *.conf are loaded.</p></li>
+<li><p>Dump all recognized events to STDOUT. This can also be utilized to create a skeleton trigger configuration by redirecting the printed configuration lines to a configuration file, adding the desired command and activating the generated line by removing the comment mark # at its beginning: thd --dump /dev/input/event* | grep ^# &gt; /etc/triggerhappy/triggers.d/skeleton.conf</p></li>
+<li><p>Open a unix domain socket at <em>file</em>; this socket can be used to send commands to the running daemon (by using the program th-cmd), e.g. for adding or removing devices.</p></li>
+<li><p>Run as a background daemon and detach from the terminal.</p></li>
+<li><p>Write PID to <em>file</em>.</p></li>
+<li><p>Open uinput file (probably <em>/dev/input/uinput</em>) to generate synthetic events.</p></li>
+<li><p>Ignore key and switch event labeled <em>eventname</em>. This can be used to suppress the FN key on some notebooks which only generates events sometimes and might screw up key combinations.</p></li>
+<li><p>Normalize REL and ABS events. If this option is enabled, the values of axis movement events are mapped to the three values -1, 0 and 1, depending on the sign of the value reported by the kernel.</p></li>
+<li><p>Change to user id <em>name</em> after opening files. This usually prevents thd from opening additional input devices, unless they are opened by the th-cmd program and their file descriptor are passed to the daemon.</p></li>
+<li><p>Open device files matching the glob <em>pattern</em>.</p></li>
+</ul>
+<p>Additional command line arguments are considered filenames of input devices.</p>
+<h1>CONFIGURATION</h1>
+<h2>Configuring event handlers</h2>
+<p>The hotkey bindings used by Triggerhappy are set in the configuration file specified by <strong>--triggers</strong>. Each line consists of three segments: The symbolic name of the key or event name to react on, the value carried by the expected event, and of course the command to be launched.</p>
+<p>The event names can be identified by operating the desired key or switch while running the triggerhappy daemon with the option <strong>--dump</strong>.</p>
+<p>Key events carry the value <em>1</em> for a key being pressed and transmit the payload <em>0</em> when it is released; holding the key down constantly yields events with a value of <em>2</em>.</p>
+<p>The command can include any number of arguments. Please include the full path to avoid trouble through different <code>$PATH</code> settings for the daemon and your interactive session.</p>
+<p>The three fields are separated by an arbitrary number of whitespaces, while anything behind a # character is ignored and considered a comment.</p>
+<h1>EXAMPLE</h1>
+<h2>Starting the daemon</h2>
+<p><strong>thd --dump /dev/input/event*</strong></p>
+<p>Dump all events processable by thd to the console; this is useful to find out the correct event name for a specific key.</p>
+<p><strong>thd --triggers /etc/triggerhappy/triggers.d/ /dev/input/event*</strong></p>
+<p>Read from all currently connected input devices and process events according to the files in <em>/etc/triggerhappy/triggers.d/</em>.</p>
+<p><strong>thd --triggers /etc/triggerhappy/triggers.conf --socket /var/run/thd.socket</strong></p>
+<p>Do not open any input devices yet, but bind the socket <em>/var/run/thd.socket</em> for th-cmd to connect to.</p>
+<h2>Configuration files</h2>
+<p>Any number of event handlers can be placed in the configuration file:</p>
+<p># /etc/triggerhappy/triggers.d/suspend.conf # # Suspend the system KEY_SLEEP 1 /usr/sbin/hibernate-ram KEY_SLEEP+KEY_LEFTSHIFT 1 /usr/sbin/hibernate-disk # /etc/triggerhappy/triggers.d/audio.conf # Change mixer volume when pressing the appropriate keys (or holding them) KEY_VOLUMEUP 1 /usr/bin/amixer set Master 5%+ KEY_VOLUMEUP 2 /usr/bin/amixer set Master 5%+ KEY_VOLUMEDOWN 1 /usr/bin/amixer set Master 5%- KEY_VOLUMEDOWN 2 /usr/bin/amixer set Master 5%-</p>
+<p>In more complex situations, triggerhappy can provide multiple modes that map a single event to different keys; triggers are bound to a specific mode by appending its name to the event name:</p>
+<p>KEY_KPPLUS@media 1 /usr/bin/mpc next KEY_KPMINUS@media 1 /usr/bin/mpc prev</p>
+<p>These two lines will only cause mpc to be called if the triggerhappy daemon is in media mode. Changing the mode can be achieved by placing a special trigger inside the configuration:</p>
+<p>KEY_F12@ 1 @media KEY_F12@media 1 @</p>
+<p>These two lines make the F12 key toggle between the (nameless) default mode and the newly defined media mode.</p>
+<p>Triggers with @ appended are only executed if the specified mode is active; all other triggers are enabled in every mode.</p>
+<p>When launched with the option <strong>--uinput</strong>, triggerhappy can be used to generate synthetic events. A virtual input device is created which emits specified key presses once a special trigger is reached:</p>
+<p>KEY_KPASTERISK 1 &lt;KEY_VOLUMEDOWN</p>
+<p>By prepending a keycode with the special character '&lt;', other applications will receive a press and release of the corresponding key. This is especially useful to remap or mirror events generated by devices exclusively serviced by the triggerhappy daemon.</p>
+<p>It is possible to create handlers that only react to specific devices: to achieve such behaviour, add the input device using <strong>th-cmd</strong> and supply it with a tag; this tag can then be used to limit the scope of a trigger to this device:</p>
+<p>&lt;remote&gt;KEY_ENTER 1 /usr/bin/mpc stop</p>
+<p>Defining the hotkey in this way will only trigger the handler if the event is received from a device tagged remote.</p>
+<h1>AUTHOR</h1>
+<p>Stefan Tomanek &lt;stefan.tomanek+th@wertarbyte.de&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command getrusage</title><meta name="description" content="Linux command getrusage get resource usage"><meta name="keywords" content="linux, command, getrusage, bsd, get resource usage"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getrusage - get resource usage</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/time.h&gt;</strong><br />
+<strong>#include &lt;sys/resource.h&gt;</strong></p>
+<p><strong>int getrusage(int </strong><em>who</em><strong>, struct rusage *</strong><em>usage</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p><strong>getrusage</strong>() returns resource usage measures for <em>who</em>, which can be one of the following:</p>
+<dl>
+<dt><strong>RUSAGE_SELF</strong></dt>
+<dd><p>Return resource usage statistics for the calling process, which is the sum of resources used by all threads in the process.</p>
+</dd>
+<dt><strong>RUSAGE_CHILDREN</strong></dt>
+<dd><p>Return resource usage statistics for all children of the calling process that have terminated and been waited for. These statistics will include the resources used by grandchildren, and further removed descendants, if all of the intervening descendants waited on their terminated children.</p>
+</dd>
+<dt><strong>RUSAGE_THREAD</strong> (since Linux 2.6.26)</dt>
+<dd><p>Return resource usage statistics for the calling thread. The <strong>_GNU_SOURCE</strong> feature test macro must be defined (before including <em>any</em> header file) in order to obtain the definition of this constant from <em>&lt;sys/resource.h&gt;</em>.</p>
+</dd>
+</dl>
+<p>The resource usages are returned in the structure pointed to by <em>usage</em>, which has the following form:</p>
+<pre><code>struct rusage {
+    struct timeval ru_utime; /* user CPU time used */
+    struct timeval ru_stime; /* system CPU time used */
+    long   ru_maxrss;        /* maximum resident set size */
+    long   ru_ixrss;         /* integral shared memory size */
+    long   ru_idrss;         /* integral unshared data size */
+    long   ru_isrss;         /* integral unshared stack size */
+    long   ru_minflt;        /* page reclaims (soft page faults) */
+    long   ru_majflt;        /* page faults (hard page faults) */
+    long   ru_nswap;         /* swaps */
+    long   ru_inblock;       /* block input operations */
+    long   ru_oublock;       /* block output operations */
+    long   ru_msgsnd;        /* IPC messages sent */
+    long   ru_msgrcv;        /* IPC messages received */
+    long   ru_nsignals;      /* signals received */
+    long   ru_nvcsw;         /* voluntary context switches */
+    long   ru_nivcsw;        /* involuntary context switches */
+};</code></pre>
+<p>Not all fields are completed; unmaintained fields are set to zero by the kernel. (The unmaintained fields are provided for compatibility with other systems, and because they may one day be supported on Linux.) The fields are interpreted as follows:</p>
+<dl>
+<dt><em>ru_utime</em></dt>
+<dd><p>This is the total amount of time spent executing in user mode, expressed in a <em>timeval</em> structure (seconds plus microseconds).</p>
+</dd>
+<dt><em>ru_stime</em></dt>
+<dd><p>This is the total amount of time spent executing in kernel mode, expressed in a <em>timeval</em> structure (seconds plus microseconds).</p>
+</dd>
+<dt><em>ru_maxrss</em> (since Linux 2.6.32)</dt>
+<dd><p>This is the maximum resident set size used (in kilobytes). For <strong>RUSAGE_CHILDREN</strong>, this is the resident set size of the largest child, not the maximum resident set size of the process tree.</p>
+</dd>
+<dt><em>ru_ixrss</em> (unmaintained)</dt>
+<dd><p>This field is currently unused on Linux.</p>
+</dd>
+<dt><em>ru_idrss</em> (unmaintained)</dt>
+<dd><p>This field is currently unused on Linux.</p>
+</dd>
+<dt><em>ru_isrss</em> (unmaintained)</dt>
+<dd><p>This field is currently unused on Linux.</p>
+</dd>
+<dt><em>ru_minflt</em></dt>
+<dd><p>The number of page faults serviced without any I/O activity; here I/O activity is avoided by “reclaiming” a page frame from the list of pages awaiting reallocation.</p>
+</dd>
+<dt><em>ru_majflt</em></dt>
+<dd><p>The number of page faults serviced that required I/O activity.</p>
+</dd>
+<dt><em>ru_nswap</em> (unmaintained)</dt>
+<dd><p>This field is currently unused on Linux.</p>
+</dd>
+<dt><em>ru_inblock</em> (since Linux 2.6.22)</dt>
+<dd><p>The number of times the filesystem had to perform input.</p>
+</dd>
+<dt><em>ru_oublock</em> (since Linux 2.6.22)</dt>
+<dd><p>The number of times the filesystem had to perform output.</p>
+</dd>
+<dt><em>ru_msgsnd</em> (unmaintained)</dt>
+<dd><p>This field is currently unused on Linux.</p>
+</dd>
+<dt><em>ru_msgrcv</em> (unmaintained)</dt>
+<dd><p>This field is currently unused on Linux.</p>
+</dd>
+<dt><em>ru_nsignals</em> (unmaintained)</dt>
+<dd><p>This field is currently unused on Linux.</p>
+</dd>
+<dt><em>ru_nvcsw</em> (since Linux 2.6)</dt>
+<dd><p>The number of times a context switch resulted due to a process voluntarily giving up the processor before its time slice was completed (usually to await availability of a resource).</p>
+</dd>
+<dt><em>ru_nivcsw</em> (since Linux 2.6)</dt>
+<dd><p>The number of times a context switch resulted due to a higher priority process becoming runnable or because the current process exceeded its time slice.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>usage</em> points outside the accessible address space.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>who</em> is invalid.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getrusage</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4, 4.3BSD. POSIX.1 specifies <strong>getrusage</strong>(), but specifies only the fields <em>ru_utime</em> and <em>ru_stime</em>.</p>
+<p><strong>RUSAGE_THREAD</strong> is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>Resource usage metrics are preserved across an <strong>execve</strong>(2).</p>
+<p>Including <em>&lt;sys/time.h&gt;</em> is not required these days, but increases portability. (Indeed, <em>struct timeval</em> is defined in <em>&lt;sys/time.h&gt;</em>.)</p>
+<p>In Linux kernel versions before 2.6.9, if the disposition of <strong>SIGCHLD</strong> is set to <strong>SIG_IGN</strong> then the resource usages of child processes are automatically included in the value returned by <strong>RUSAGE_CHILDREN</strong>, although POSIX.1-2001 explicitly prohibits this. This nonconformance is rectified in Linux 2.6.9 and later.</p>
+<p>The structure definition shown at the start of this page was taken from 4.3BSD Reno.</p>
+<p>Ancient systems provided a <strong>vtimes</strong>() function with a similar purpose to <strong>getrusage</strong>(). For backward compatibility, glibc (up until version 2.32) also provides <strong>vtimes</strong>(). All new applications should be written using <strong>getrusage</strong>().</p>
+<p>See also the description of <em>/proc/[pid]/stat</em> in <strong>proc</strong>(5).</p>
+<h1>SEE ALSO</h1>
+<p><strong>clock_gettime</strong>(2), <strong>getrlimit</strong>(2), <strong>times</strong>(2), <strong>wait</strong>(2), <strong>wait4</strong>(2), <strong>clock</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

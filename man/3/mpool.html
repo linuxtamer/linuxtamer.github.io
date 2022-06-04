@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mpool</title><meta name="description" content="Linux command mpool shared memory buffer pool"><meta name="keywords" content="linux, command, mpool, bsd, shared memory buffer pool"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mpool - shared memory buffer pool</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;db.h&gt;
+#include &lt;mpool.h&gt;
+
+MPOOL *mpool_open(DBT *key, int fd, pgno_t pagesize&quot;,pgno_t&quot;maxcache);
+
+void mpool_filter(MPOOL *mp, void (*pgin)(void *, pgno_t, void *),
+ void (*pgout)(void *, pgno_t, void *),
+ void *pgcookie);
+
+void *mpool_new(MPOOL *mp, pgno_t *pgnoaddr);
+
+void *mpool_get(MPOOL *mp, pgno_t pgno, unsigned int flags);
+
+int mpool_put(MPOOL *mp, void *pgaddr, unsigned int flags);
+
+int mpool_sync(MPOOL *mp);
+
+int mpool_close(MPOOL *mp);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><em>Note well</em>: This page documents interfaces provided in glibc up until version 2.1. Since version 2.2, glibc no longer provides these interfaces. Probably, you are looking for the APIs provided by the <em>libdb</em> library instead.</p>
+<p><em>Mpool</em> is the library interface intended to provide page oriented buffer management of files. The buffers may be shared between processes.</p>
+<p>The function <strong>mpool_open</strong>() initializes a memory pool. The <em>key</em> argument is the byte string used to negotiate between multiple processes wishing to share buffers. If the file buffers are mapped in shared memory, all processes using the same key will share the buffers. If <em>key</em> is NULL, the buffers are mapped into private memory. The <em>fd</em> argument is a file descriptor for the underlying file, which must be seekable. If <em>key</em> is non-NULL and matches a file already being mapped, the <em>fd</em> argument is ignored.</p>
+<p>The <em>pagesize</em> argument is the size, in bytes, of the pages into which the file is broken up. The <em>maxcache</em> argument is the maximum number of pages from the underlying file to cache at any one time. This value is not relative to the number of processes which share a file's buffers, but will be the largest value specified by any of the processes sharing the file.</p>
+<p>The <strong>mpool_filter</strong>() function is intended to make transparent input and output processing of the pages possible. If the <em>pgin</em> function is specified, it is called each time a buffer is read into the memory pool from the backing file. If the <em>pgout</em> function is specified, it is called each time a buffer is written into the backing file. Both functions are called with the <em>pgcookie</em> pointer, the page number and a pointer to the page to being read or written.</p>
+<p>The function <strong>mpool_new</strong>() takes an <em>MPOOL</em> pointer and an address as arguments. If a new page can be allocated, a pointer to the page is returned and the page number is stored into the <em>pgnoaddr</em> address. Otherwise, NULL is returned and <em>errno</em> is set.</p>
+<p>The function <strong>mpool_get</strong>() takes an <em>MPOOL</em> pointer and a page number as arguments. If the page exists, a pointer to the page is returned. Otherwise, NULL is returned and <em>errno</em> is set. The <em>flags</em> argument is not currently used.</p>
+<p>The function <strong>mpool_put</strong>() unpins the page referenced by <em>pgaddr</em>. <em>pgaddr</em> must be an address previously returned by <strong>mpool_get</strong>() or <strong>mpool_new</strong>(). The flag value is specified by ORing any of the following values:</p>
+<dl>
+<dt><strong>MPOOL_DIRTY</strong></dt>
+<dd><p>The page has been modified and needs to be written to the backing file.</p>
+</dd>
+</dl>
+<p><strong>mpool_put</strong>() returns 0 on success and -1 if an error occurs.</p>
+<p>The function <strong>mpool_sync</strong>() writes all modified pages associated with the <em>MPOOL</em> pointer to the backing file. <strong>mpool_sync</strong>() returns 0 on success and -1 if an error occurs.</p>
+<p>The <strong>mpool_close</strong>() function free's up any allocated memory associated with the memory pool cookie. Modified pages are <strong>not</strong> written to the backing file. <strong>mpool_close</strong>() returns 0 on success and -1 if an error occurs.</p>
+<h1>ERRORS</h1>
+<p>The <strong>mpool_open</strong>() function may fail and set <em>errno</em> for any of the errors specified for the library routine <strong>malloc</strong>(3).</p>
+<p>The <strong>mpool_get</strong>() function may fail and set <em>errno</em> for the following:</p>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The requested record doesn't exist.</p>
+</dd>
+</dl>
+<p>The <strong>mpool_new</strong>() and <strong>mpool_get</strong>() functions may fail and set <em>errno</em> for any of the errors specified for the library routines <strong>read</strong>(2), <strong>write</strong>(2), and <strong>malloc</strong>(3).</p>
+<p>The <strong>mpool_sync</strong>() function may fail and set <em>errno</em> for any of the errors specified for the library routine <strong>write</strong>(2).</p>
+<p>The <strong>mpool_close</strong>() function may fail and set <em>errno</em> for any of the errors specified for the library routine <strong>free</strong>(3).</p>
+<h1>CONFORMING TO</h1>
+<p>Not in POSIX.1. Present on the BSDs.</p>
+<h1>SEE ALSO</h1>
+<p><strong>btree</strong>(3), <strong>dbopen</strong>(3), <strong>hash</strong>(3), <strong>recno</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

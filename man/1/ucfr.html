@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command ucfr</title><meta name="description" content="Linux command ucfr Update Configuration File Registry: associate packages with configuration files"><meta name="keywords" content="linux, command, ucfr, bsd, Update Configuration File Registry: associate packages with configuration files"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>ucfr - Update Configuration File Registry: associate packages with configuration files</p>
+<h1>SYNOPSIS</h1>
+<p><strong>ucfr</strong> [<em>options</em>] <em>&lt;Package&gt;</em> <em>&lt;Path to configuration file&gt;</em></p>
+<h1>DESCRIPTION</h1>
+<p>Where <em>Package</em> is the package associated with the configuration file (and, in some sense, its owner), and <em>Path to configuration file</em> is the full path to the location (usually under /etc) where the configuration file lives, and is potentially modified by the end user. Please note that usually this means that we register actual files, and not symbolic links to files. <strong>ucfr</strong> will follow symbolic links and register the real file, and not the symbolic link.</p>
+<p>This script maintains an association between configuration files and packages, and is meant to help provide facilities that <em>dpkg</em> provides conffiles for configuration files and not shipped in a <strong>Debian</strong> package, but handled by the postinst by <em>ucf</em> instead. This script is idempotent, associating a package to a file multiple times is not an error. It is normally an error to try to associate a file which is already associated with another package, but this can be overridden by using the <em>--force</em> option.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-h, --help</strong></dt>
+<dd><p>Print a short usage message</p>
+</dd>
+<dt><strong>-n, --no-action</strong></dt>
+<dd><p>Dry run. Print the actions that would be taken if the script is invoked, but take no action.</p>
+</dd>
+<dt><strong>-d [n], --debug [n]</strong></dt>
+<dd><p>Set the debug level to the (optional) level <em>n</em> (n defaults to 1). This turns on copious debugging information.</p>
+</dd>
+<dt><strong>-p, --purge</strong></dt>
+<dd><p>Removes all vestiges of the association between the named package and the configuration file from the registry. The association must already exist; if the configuration file is associated with some other package, an error happens, unless the option <em>--force</em> is also given. In that case, the any associations for the configuration file are removed from the registry, whether or not the package name matches. This action is idempotent, asking for an association to be purged multiple times does not result in an error, since attempting to remove an non-existent association is silently ignored unless the <em>--verbose</em> option is used (in which case it just issues a diagnostic).</p>
+</dd>
+<dt><strong>-v, --verbose</strong></dt>
+<dd><p>Make the script be very verbose about setting internal variables.</p>
+</dd>
+<dt><strong>-f, --force</strong></dt>
+<dd><p>This option forces operations requested even if the configuration file in consideration is owned by another package. This allows a package to <em>hijack</em> a configuration file from another package, or to purge the association between the file and some other package in the registry.</p>
+</dd>
+<dt><strong>--state-dir /path/to/dir</strong></dt>
+<dd><p>Set the state directory to /path/to/dir instead of the default <em>/var/lib/ucf.</em> Used mostly for testing.</p>
+</dd>
+</dl>
+<h1>USAGE</h1>
+<p>The most common case usage is pretty simple: a single line invocation in the postinst on configure, and another single line in the postrm to tell <strong>ucfr</strong> to forget about the association with the configuration file on purge (using the --purge option) is all that is needed (assuming ucfr is still on the system).</p>
+<h1>FILES</h1>
+<p><em>/var/lib/ucf/registry,</em> and <em>/var/lib/ucf/registry.X,</em> where <em>X</em> is a small integer, where previous versions of the registry are stored.</p>
+<p><em>/etc/ucf.conf</em></p>
+<h1>EXAMPLES</h1>
+<p>If the package <em>foo</em> wants to use ucfr to associate itself with a configuration file <em>foo.conf,</em> a simple invocation of ucfr in the postinst file is all that is needed:</p>
+<p><strong>ucfr</strong> <em>foo</em> <em>/etc/foo.conf</em></p>
+<p>On purge, one should tell ucf to forget about the file (see detailed examples in /usr/share/doc/ucf/examples):</p>
+<p><strong>ucfr</strong> <em>--purge</em> <em>foo</em> <em>/etc/foo.conf</em></p>
+<p>If you want to remove all the conf files for a given package <em>foo,</em> the simplest way is to use <strong>ucfq.</strong> For example</p>
+<p><strong>ucfq</strong> <em>-w</em> <em>foo |</em> <strong>cut</strong> <em>-d : -f 1 |</em> <strong>while read</strong> <em>cfile ;</em> <strong>do</strong> <strong>ucfr</strong> <em>-v $cfile ;</em> <strong>done</strong></p>
+<h1>SEE ALSO</h1>
+<p>ucf(1), ucf.conf(5).</p>
+<h1>AUTHOR</h1>
+<p>This manual page was written Manoj Srivastava &lt;srivasta@debian.org&gt;, for the Debian GNU/Linux system.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

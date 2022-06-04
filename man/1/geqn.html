@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command geqn</title><meta name="description" content="Linux command geqn format equations for troff or MathML"><meta name="keywords" content="linux, command, geqn, bsd, format equations for troff or MathML"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>eqn - format equations for troff or MathML</p>
+<h1>SYNOPSIS</h1>
+<p><strong>eqn</strong> [ <strong>-rvCNR</strong> ] [ <strong>-d</strong> xy ] [ <strong>-T</strong> name ] [ <strong>-M</strong> dir ] [ <strong>-f</strong> F ] [ <strong>-s</strong> n ] [ <strong>-p</strong> n ] [ <strong>-m</strong> n ] [<em>file</em> . . .]</p>
+<h1>DESCRIPTION</h1>
+<p>This manual page describes the GNU version of <strong>eqn</strong>, which is part of the groff document formatting system. <strong>eqn</strong> compiles descriptions of equations embedded within <strong>troff</strong> input files into commands that are understood by <strong>troff</strong>. Normally, it should be invoked using the <strong>-e</strong> option of <strong>groff</strong>. The syntax is quite compatible with Unix eqn. The output of GNU <strong>eqn</strong> cannot be processed with Unix troff; it must be processed with GNU troff. If no files are given on the command line, the standard input is read. A filename of <strong>-</strong> causes the standard input to be read.</p>
+<p><strong>eqn</strong> searches for the file <em>eqnrc</em> in the directories given with the <strong>-M</strong> option first, then in <em>/usr/lib/groff/site-tmac</em>, <em>/usr/share/groff/site-tmac</em>, and finally in the standard macro directory <em>/usr/share/groff/1.22.4/tmac</em>. If it exists, <strong>eqn</strong> processes it before the other input files. The <strong>-R</strong> option prevents this.</p>
+<p>GNU <strong>eqn</strong> does not provide the functionality of neqn: it does not support low-resolution, typewriter-like devices (although it may work adequately for very simple input).</p>
+<h1>OPTIONS</h1>
+<p>Whitespace is permitted between a command-line option and its argument.</p>
+<dl>
+<dt><strong>-d</strong><em>xy</em></dt>
+<dd><p>Specify delimiters <em>x</em> and  <em>y</em> for the left and right end, respectively, of in-line equations. Any <strong>delim</strong> statements in the source file overrides this.</p>
+</dd>
+<dt><strong>-C</strong></dt>
+<dd><p>Recognize <strong>.EQ</strong> and <strong>.EN</strong> even when followed by a character other than space or newline. Also, the statement ‘<strong>delim on</strong>’ is not handled specially.</p>
+</dd>
+<dt><strong>-N</strong></dt>
+<dd><p>Don't allow newlines within delimiters. This option allows <strong>eqn</strong> to recover better from missing closing delimiters.</p>
+</dd>
+<dt><strong>-v</strong></dt>
+<dd><p>Print the version number.</p>
+</dd>
+<dt><strong>-r</strong></dt>
+<dd><p>Only one size reduction.</p>
+</dd>
+<dt><strong>-m</strong><em>n</em></dt>
+<dd><p>The minimum point-size is  <em>n</em>. <strong>eqn</strong> does not reduce the size of subscripts or superscripts to a smaller size than  <em>n</em>.</p>
+</dd>
+<dt><strong>-T</strong><em>name</em></dt>
+<dd><p>The output is for device <em>name</em>. Normally, the only effect of this is to define a macro <em>name</em> with a value of  <strong>1</strong>; <em>eqnrc</em> uses this to provide definitions appropriate for the output device. However, if the specified device is “MathML”, the output is MathML markup rather than troff commands, and <em>eqnrc</em> is not loaded at all. The default output device is <strong>ps</strong>.</p>
+</dd>
+<dt><strong>-M</strong><em>dir</em></dt>
+<dd><p>Search <em>dir</em> for <em>eqnrc</em> before the default directories.</p>
+</dd>
+<dt><strong>-R</strong></dt>
+<dd><p>Don't load <em>eqnrc</em>.</p>
+</dd>
+<dt><strong>-f</strong><em>F</em></dt>
+<dd><p>This is equivalent to a <strong>gfont </strong><em>F</em> command.</p>
+</dd>
+<dt><strong>-s</strong><em>n</em></dt>
+<dd><p>This is equivalent to a <strong>gsize </strong><em>n</em> command. This option is deprecated. <strong>eqn</strong> normally sets equations at whatever the current point size is when the equation is encountered.</p>
+</dd>
+<dt><strong>-p</strong><em>n</em></dt>
+<dd><p>This says that subscripts and superscripts should be <em>n</em> points smaller than the surrounding text. This option is deprecated. Normally <strong>eqn</strong> sets subscripts and superscripts at 70% of the size of the surrounding text.</p>
+</dd>
+</dl>
+<h1>USAGE</h1>
+<p>Only the differences between GNU <strong>eqn</strong> and Unix eqn are described here.</p>
+<p>GNU <strong>eqn</strong> emits Presentation MathML output when invoked with the <strong>-T MathML</strong> option.</p>
+<p>GNU eqn sets the input token <strong>"..."</strong> as three periods or low dots, rather than the three centered dots of classic eqn. To get three centered dots, write <strong>cdots</strong> or <strong>cdot cdot cdot</strong>.</p>
+<p>Most of the new features of the GNU <strong>eqn</strong> input language are based on . There are some references to the differences between and GNU <strong>eqn</strong> below; these may safely be ignored if you do not know .</p>
+<h2>Controlling delimiters</h2>
+<p>If not in compatibility mode, <strong>eqn</strong> recognizes</p>
+<blockquote>
+<p><strong>delim on</strong></p>
+</blockquote>
+<p>to restore the delimiters which have been previously disabled with a call to ‘<strong>delim off</strong>’. If delimiters haven't been specified, the call has no effect.</p>
+<h2>Automatic spacing</h2>
+<p><strong>eqn</strong> gives each component of an equation a type, and adjusts the spacing between components using that type. Possible types are described in the table below.</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">ordinary</td>
+<td style="text-align: left;">an ordinary character such as ‘1’ or ‘<em>x</em>’</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">operator</td>
+<td style="text-align: left;">a large operator such as ‘Σ’</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">binary</td>
+<td style="text-align: left;">a binary operator such as ‘+’</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">relation</td>
+<td style="text-align: left;">a relation such as ‘=’</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">opening</td>
+<td style="text-align: left;">a opening bracket such as ‘(’</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">closing</td>
+<td style="text-align: left;">a closing bracket such as ‘)’</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">punctuation</td>
+<td style="text-align: left;">a punctuation character such as ‘,’</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">inner</td>
+<td style="text-align: left;">a subformula contained within brackets</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">suppress</td>
+<td style="text-align: left;">a type that suppresses automatic spacing adjustment</td>
+</tr>
+</tbody>
+</table>
+<p>Components of an equation get a type in one of two ways.</p>
+<dl>
+<dt><strong>type </strong><em>t e</em></dt>
+<dd><p>This yields an equation component that contains  <em>e</em> but that has type  <em>t</em>, where <em>t</em> is one of the types mentioned above. For example, <strong>times</strong> is defined as</p>
+<blockquote>
+<p><strong>type "binary" \(mu</strong></p>
+</blockquote>
+<p>The name of the type doesn't have to be quoted, but quoting protects from macro expansion.</p>
+</dd>
+<dt><strong>chartype </strong><em>t text</em></dt>
+<dd><p>Unquoted groups of characters are split up into individual characters, and the type of each character is looked up; this changes the type that is stored for each character; it says that the characters in <em>text</em> from now on have type  <em>t</em>. For example,</p>
+<blockquote>
+<p><strong>chartype "punctuation" .,;:</strong></p>
+</blockquote>
+<p>would make the characters ‘.,;:’ have type punctuation whenever they subsequently appeared in an equation. The type  <em>t</em> can also be <strong>letter</strong> or <strong>digit</strong>; in these cases <strong>chartype</strong> changes the font type of the characters. See subsection “Fonts” below.</p>
+</dd>
+</dl>
+<h2>New primitives</h2>
+<dl>
+<dt><strong>big </strong><em>e</em></dt>
+<dd><p>Enlarges the expression it modifies; intended to have semantics like CSS ‘large’. In troff output, the point size is increased by 5; in MathML output, the expression uses</p>
+<pre><code>&lt;mstyle mathsize=&#39;big&#39;&gt;</code></pre>
+</dd>
+<dt><em>e1 </em><strong>smallover </strong><em>e2</em></dt>
+<dd><p>This is similar to <strong>over</strong>; <strong>smallover</strong> reduces the size of <em>e1</em> and <em>e2</em>; it also puts less vertical space between <em>e1</em> or <em>e2</em> and the fraction bar. The <strong>over</strong> primitive corresponds to the <strong>\over</strong> primitive in display styles; <strong>smallover</strong> corresponds to <strong>\over</strong> in non-display styles.</p>
+</dd>
+<dt><strong>vcenter </strong><em>e</em></dt>
+<dd><p>This vertically centers <em>e</em> about the math axis. The math axis is the vertical position about which characters such as ‘+’ and ‘−’ are centered; also it is the vertical position used for the bar of fractions. For example, <strong>sum</strong> is defined as</p>
+<blockquote>
+<p><strong>{ type "operator" vcenter size +5 \(*S }</strong></p>
+</blockquote>
+<p>(Note that vcenter is silently ignored when generating MathML.)</p>
+</dd>
+<dt><em>e1 </em><strong>accent </strong><em>e2</em></dt>
+<dd><p>This sets <em>e2</em> as an accent over <em>e1</em>. <em>e2</em> is assumed to be at the correct height for a lowercase letter; <em>e2</em> is moved down according to whether <em>e1</em> is taller or shorter than a lowercase letter. For example, <strong>hat</strong> is defined as</p>
+<blockquote>
+<p><strong>accent { "^" }</strong></p>
+</blockquote>
+<p><strong>dotdot</strong>, <strong>dot</strong>, <strong>tilde</strong>, <strong>vec</strong>, and <strong>dyad</strong> are also defined using the <strong>accent</strong> primitive.</p>
+</dd>
+<dt><em>e1 </em><strong>uaccent </strong><em>e2</em></dt>
+<dd><p>This sets <em>e2</em> as an accent under <em>e1</em>. <em>e2</em> is assumed to be at the correct height for a character without a descender; <em>e2</em> is moved down if <em>e1</em> has a descender. <strong>utilde</strong> is pre-defined using <strong>uaccent</strong> as a tilde accent below the baseline.</p>
+</dd>
+<dt><strong>split "</strong><em>text</em><strong>"</strong></dt>
+<dd><p>This has the same effect as simply</p>
+<blockquote>
+<p><em>text</em></p>
+</blockquote>
+<p>but <em>text</em> is not subject to macro expansion because it is quoted; <em>text</em> is split up and the spacing between individual characters is adjusted.</p>
+</dd>
+<dt><strong>nosplit </strong><em>text</em></dt>
+<dd><p>This has the same effect as</p>
+<blockquote>
+<p><strong>"</strong><em>text</em><strong>"</strong></p>
+</blockquote>
+<p>but because <em>text</em> is not quoted it is subject to macro expansion; <em>text</em> is not split up and the spacing between individual characters is not adjusted.</p>
+</dd>
+<dt><em>e </em><strong>opprime</strong></dt>
+<dd><p>This is a variant of <strong>prime</strong> that acts as an operator on  <em>e</em>. It produces a different result from <strong>prime</strong> in a case such as <strong>A opprime sub 1</strong>: with <strong>opprime</strong> the  <strong>1</strong> is tucked under the prime as a subscript to the  <strong>A</strong> (as is conventional in mathematical typesetting), whereas with <strong>prime</strong> the  <strong>1</strong> is a subscript to the prime character. The precedence of <strong>opprime</strong> is the same as that of <strong>bar</strong> and <strong>under</strong>, which is higher than that of everything except <strong>accent</strong> and <strong>uaccent</strong>. In unquoted text a  <strong>'</strong> that is not the first character is treated like <strong>opprime</strong>.</p>
+</dd>
+<dt><strong>special </strong><em>text e</em></dt>
+<dd><p>This constructs a new object from  <em>e</em> using a <strong>troff</strong>(1) macro named <em>text</em>. When the macro is called, the string <strong>0s</strong> contains the output for  <em>e</em>, and the number registers <strong>0w</strong>, <strong>0h</strong>, <strong>0d</strong>, <strong>0skern</strong>, and <strong>0skew</strong> contain the width, height, depth, subscript kern, and skew of  <em>e</em>. (The <em>subscript kern</em> of an object says how much a subscript on that object should be tucked in; the <em>skew</em> of an object says how far to the right of the center of the object an accent over the object should be placed.) The macro must modify <strong>0s</strong> so that it outputs the desired result with its origin at the current point, and increase the current horizontal position by the width of the object. The number registers must also be modified so that they correspond to the result.</p>
+<p>For example, suppose you wanted a construct that ‘cancels’ an expression by drawing a diagonal line through it.</p>
+<p><br />
+.EQ<br />
+define cancel 'special Ca'<br />
+.EN<br />
+.de Ca<br />
+. ds 0s \<br />
+\Z'\\*(0s'\<br />
+\v'\\n(0du'\<br />
+\D'l \\n(0wu -\\n(0hu-\\n(0du'\<br />
+\v'\\n(0hu'<br />
+..</p>
+<p>Then you could cancel an expression  <em>e</em> with <strong>cancel { </strong><em>e </em><strong>}</strong></p>
+<p>Here's a more complicated construct that draws a box round an expression:</p>
+<p>.EQ<br />
+define box 'special Bx'<br />
+.EN<br />
+.de Bx<br />
+. ds 0s \<br />
+\Z'\h'1n'\\*(0s'\<br />
+\Z'\<br />
+\v'\\n(0du+1n'\<br />
+\D'l \\n(0wu+2n 0'\<br />
+\D'l 0 -\\n(0hu-\\n(0du-2n'\<br />
+\D'l -\\n(0wu-2n 0'\<br />
+\D'l 0 \\n(0hu+\\n(0du+2n'\<br />
+'\<br />
+\h'\\n(0wu+2n'<br />
+. nr 0w +2n<br />
+. nr 0d +1n<br />
+. nr 0h +1n<br />
+..</p>
+</dd>
+<dt><strong>space </strong><em>n</em></dt>
+<dd><p>A positive value of the integer  <em>n</em> (in hundredths of an em) sets the vertical spacing before the equation, a negative value sets the spacing after the equation, replacing the default values. This primitive provides an interface to <strong>groff</strong>'s <strong>\x</strong> escape (but with opposite sign).</p>
+<p>This keyword has no effect if the equation is part of a <strong>pic</strong> picture.</p>
+</dd>
+</dl>
+<h2>Extended primitives</h2>
+<dl>
+<dt><strong>col </strong><em>n </em><strong>{ </strong><em>. . . </em><strong>}</strong><br />
+<strong>ccol </strong><em>n </em><strong>{ </strong><em>. . . </em><strong>}</strong><br />
+<strong>lcol </strong><em>n </em><strong>{ </strong><em>. . . </em><strong>}</strong><br />
+<strong>rcol </strong><em>n </em><strong>{ </strong><em>. . . </em><strong>}</strong><br />
+<strong>pile </strong><em>n </em><strong>{ </strong><em>. . . </em><strong>}</strong><br />
+<strong>cpile </strong><em>n </em><strong>{ </strong><em>. . . </em><strong>}</strong><br />
+<strong>lpile </strong><em>n </em><strong>{ </strong><em>. . . </em><strong>}</strong><br />
+<strong>rpile </strong><em>n </em><strong>{ </strong><em>. . . </em><strong>}</strong></dt>
+<dd><p>The integer value  <em>n</em> (in hundredths of an em) increases the vertical spacing between rows, using <strong>groff</strong>'s <strong>\x</strong> escape (the value has no effect in MathML mode). Negative values are possible but have no effect. If there is more than a single value given in a matrix, the biggest one is used.</p>
+</dd>
+</dl>
+<h2>Customization</h2>
+<p>When <strong>eqn</strong> is generating troff markup, the appearance of equations is controlled by a large number of parameters. They have no effect when generating MathML mode, which pushes typesetting and fine motions downstream to a MathML rendering engine. These parameters can be set using the <strong>set</strong> command.</p>
+<dl>
+<dt><strong>set </strong><em>p n</em></dt>
+<dd><p>This sets parameter  <em>p</em> to value  <em>n</em>; <em>n</em> is an integer. For example,</p>
+<blockquote>
+<p><strong>set x_height 45</strong></p>
+</blockquote>
+<p>says that <strong>eqn</strong> should assume an x height of 0.45 ems.</p>
+<p>Possible parameters are as follows. Values are in units of hundredths of an em unless otherwise stated. These descriptions are intended to be expository rather than definitive.</p>
+<dl>
+<dt><strong>minimum_size</strong></dt>
+<dd><p><strong>eqn</strong> doesn't set anything at a smaller point-size than this. The value is in points.</p>
+</dd>
+<dt><strong>fat_offset</strong></dt>
+<dd><p>The <strong>fat</strong> primitive emboldens an equation by overprinting two copies of the equation horizontally offset by this amount. This parameter is not used in MathML mode; instead, fat text uses</p>
+<pre><code>&lt;mstyle mathvariant=&#39;double-struck&#39;&gt;</code></pre>
+</dd>
+<dt><strong>over_hang</strong></dt>
+<dd><p>A fraction bar is longer by twice this amount than the maximum of the widths of the numerator and denominator; in other words, it overhangs the numerator and denominator by at least this amount.</p>
+</dd>
+<dt><strong>accent_width</strong></dt>
+<dd><p>When <strong>bar</strong> or <strong>under</strong> is applied to a single character, the line is this long. Normally, <strong>bar</strong> or <strong>under</strong> produces a line whose length is the width of the object to which it applies; in the case of a single character, this tends to produce a line that looks too long.</p>
+</dd>
+<dt><strong>delimiter_factor</strong></dt>
+<dd><p>Extensible delimiters produced with the <strong>left</strong> and <strong>right</strong> primitives have a combined height and depth of at least this many thousandths of twice the maximum amount by which the sub-equation that the delimiters enclose extends away from the axis.</p>
+</dd>
+<dt><strong>delimiter_shortfall</strong></dt>
+<dd><p>Extensible delimiters produced with the <strong>left</strong> and <strong>right</strong> primitives have a combined height and depth not less than the difference of twice the maximum amount by which the sub-equation that the delimiters enclose extends away from the axis and this amount.</p>
+</dd>
+<dt><strong>null_delimiter_space</strong></dt>
+<dd><p>This much horizontal space is inserted on each side of a fraction.</p>
+</dd>
+<dt><strong>script_space</strong></dt>
+<dd><p>The width of subscripts and superscripts is increased by this amount.</p>
+</dd>
+<dt><strong>thin_space</strong></dt>
+<dd><p>This amount of space is automatically inserted after punctuation characters.</p>
+</dd>
+<dt><strong>medium_space</strong></dt>
+<dd><p>This amount of space is automatically inserted on either side of binary operators.</p>
+</dd>
+<dt><strong>thick_space</strong></dt>
+<dd><p>This amount of space is automatically inserted on either side of relations.</p>
+</dd>
+<dt><strong>x_height</strong></dt>
+<dd><p>The height of lowercase letters without ascenders such as ‘x’.</p>
+</dd>
+<dt><strong>axis_height</strong></dt>
+<dd><p>The height above the baseline of the center of characters such as ‘+’ and ‘−’. It is important that this value is correct for the font you are using.</p>
+</dd>
+<dt><strong>default_rule_thickness</strong></dt>
+<dd><p>This should set to the thickness of the <strong>\(ru</strong> character, or the thickness of horizontal lines produced with the <strong>\D</strong> escape sequence.</p>
+</dd>
+<dt><strong>num1</strong></dt>
+<dd><p>The <strong>over</strong> command shifts up the numerator by at least this amount.</p>
+</dd>
+<dt><strong>num2</strong></dt>
+<dd><p>The <strong>smallover</strong> command shifts up the numerator by at least this amount.</p>
+</dd>
+<dt><strong>denom1</strong></dt>
+<dd><p>The <strong>over</strong> command shifts down the denominator by at least this amount.</p>
+</dd>
+<dt><strong>denom2</strong></dt>
+<dd><p>The <strong>smallover</strong> command shifts down the denominator by at least this amount.</p>
+</dd>
+<dt><strong>sup1</strong></dt>
+<dd><p>Normally superscripts are shifted up by at least this amount.</p>
+</dd>
+<dt><strong>sup2</strong></dt>
+<dd><p>Superscripts within superscripts or upper limits or numerators of <strong>smallover</strong> fractions are shifted up by at least this amount. This is usually less than sup1.</p>
+</dd>
+<dt><strong>sup3</strong></dt>
+<dd><p>Superscripts within denominators or square roots or subscripts or lower limits are shifted up by at least this amount. This is usually less than sup2.</p>
+</dd>
+<dt><strong>sub1</strong></dt>
+<dd><p>Subscripts are normally shifted down by at least this amount.</p>
+</dd>
+<dt><strong>sub2</strong></dt>
+<dd><p>When there is both a subscript and a superscript, the subscript is shifted down by at least this amount.</p>
+</dd>
+<dt><strong>sup_drop</strong></dt>
+<dd><p>The baseline of a superscript is no more than this much amount below the top of the object on which the superscript is set.</p>
+</dd>
+<dt><strong>sub_drop</strong></dt>
+<dd><p>The baseline of a subscript is at least this much below the bottom of the object on which the subscript is set.</p>
+</dd>
+<dt><strong>big_op_spacing1</strong></dt>
+<dd><p>The baseline of an upper limit is at least this much above the top of the object on which the limit is set.</p>
+</dd>
+<dt><strong>big_op_spacing2</strong></dt>
+<dd><p>The baseline of a lower limit is at least this much below the bottom of the object on which the limit is set.</p>
+</dd>
+<dt><strong>big_op_spacing3</strong></dt>
+<dd><p>The bottom of an upper limit is at least this much above the top of the object on which the limit is set.</p>
+</dd>
+<dt><strong>big_op_spacing4</strong></dt>
+<dd><p>The top of a lower limit is at least this much below the bottom of the object on which the limit is set.</p>
+</dd>
+<dt><strong>big_op_spacing5</strong></dt>
+<dd><p>This much vertical space is added above and below limits.</p>
+</dd>
+<dt><strong>baseline_sep</strong></dt>
+<dd><p>The baselines of the rows in a pile or matrix are normally this far apart. In most cases this should be equal to the sum of <strong>num1</strong> and <strong>denom1</strong>.</p>
+</dd>
+<dt><strong>shift_down</strong></dt>
+<dd><p>The midpoint between the top baseline and the bottom baseline in a matrix or pile is shifted down by this much from the axis. In most cases this should be equal to <strong>axis_height</strong>.</p>
+</dd>
+<dt><strong>column_sep</strong></dt>
+<dd><p>This much space is added between columns in a matrix.</p>
+</dd>
+<dt><strong>matrix_side_sep</strong></dt>
+<dd><p>This much space is added at each side of a matrix.</p>
+</dd>
+<dt><strong>draw_lines</strong></dt>
+<dd><p>If this is non-zero, lines are drawn using the <strong>\D</strong> escape sequence, rather than with the <strong>\l</strong> escape sequence and the <strong>\(ru</strong> character.</p>
+</dd>
+<dt><strong>body_height</strong></dt>
+<dd><p>The amount by which the height of the equation exceeds this is added as extra space before the line containing the equation (using <strong>\x</strong>). The default value is 85.</p>
+</dd>
+<dt><strong>body_depth</strong></dt>
+<dd><p>The amount by which the depth of the equation exceeds this is added as extra space after the line containing the equation (using <strong>\x</strong>). The default value is 35.</p>
+</dd>
+<dt><strong>nroff</strong></dt>
+<dd><p>If this is non-zero, then <strong>ndefine</strong> behaves like <strong>define</strong> and <strong>tdefine</strong> is ignored, otherwise <strong>tdefine</strong> behaves like <strong>define</strong> and <strong>ndefine</strong> is ignored. The default value is 0 (This is typically changed to 1 by the <em>eqnrc</em> file for the <strong>ascii</strong>, <strong>latin1</strong>, <strong>utf8</strong>, and <strong>cp1047</strong> devices.)</p>
+</dd>
+</dl>
+<p>A more precise description of the role of many of these parameters can be found in Appendix H of <em>The book</em>.</p>
+</dd>
+</dl>
+<h2>Macros</h2>
+<p>Macros can take arguments. In a macro body, <strong>$</strong><em>n</em> where <em>n</em> is between 1 and 9, is replaced by the <em>n</em>th argument if the macro is called with arguments; if there are fewer than <em>n</em> arguments, it is replaced by nothing. A word containing a left parenthesis where the part of the word before the left parenthesis has been defined using the <strong>define</strong> command is recognized as a macro call with arguments; characters following the left parenthesis up to a matching right parenthesis are treated as comma-separated arguments; commas inside nested parentheses do not terminate an argument.</p>
+<dl>
+<dt><strong>sdefine </strong><em>name X anything X</em></dt>
+<dd><p>This is like the <strong>define</strong> command, but <em>name</em> is not recognized if called with arguments.</p>
+</dd>
+<dt><strong>include "</strong><em>file</em><strong>"</strong><br />
+<strong>copy "</strong><em>file</em><strong>"</strong></dt>
+<dd><p>Include the contents of <em>file</em> (<strong>include</strong> and <strong>copy</strong> are synonyms). Lines of <em>file</em> beginning with <strong>.EQ</strong> or <strong>.EN</strong> are ignored.</p>
+</dd>
+<dt><strong>ifdef </strong><em>name X anything X</em></dt>
+<dd><p>If <em>name</em> has been defined by <strong>define</strong> (or has been automatically defined because <em>name</em> is the output device) process <em>anything</em>; otherwise ignore <em>anything</em>. <em>X</em> can be any character not appearing in <em>anything</em>.</p>
+</dd>
+<dt><strong>undef </strong><em>name</em></dt>
+<dd><p>Remove definition of <em>name</em>, making it undefined.</p>
+</dd>
+</dl>
+<p>Besides the macros mentioned above, the following definitions are available: <strong>Alpha</strong>, <strong>Beta</strong>, . . ., <strong>Omega</strong> (this is the same as <strong>ALPHA</strong>, <strong>BETA</strong>, . . ., <strong>OMEGA</strong>), <strong>ldots</strong> (three dots on the base line), and <strong>dollar</strong>.</p>
+<h2>Fonts</h2>
+<p><strong>eqn</strong> normally uses at least two fonts to set an equation: an italic font for letters, and a roman font for everything else. The existing <strong>gfont</strong> command changes the font that is used as the italic font. By default this is  <strong>I</strong>. The font that is used as the roman font can be changed using the new <strong>grfont</strong> command.</p>
+<dl>
+<dt><strong>grfont </strong><em>f</em></dt>
+<dd><p>Set the roman font to  <em>f</em>.</p>
+</dd>
+</dl>
+<p>The <strong>italic</strong> primitive uses the current italic font set by <strong>gfont</strong>; the <strong>roman</strong> primitive uses the current roman font set by <strong>grfont</strong>. There is also a new <strong>gbfont</strong> command, which changes the font used by the <strong>bold</strong> primitive. If you only use the <strong>roman</strong>, <strong>italic</strong> and <strong>bold</strong> primitives to changes fonts within an equation, you can change all the fonts used by your equations just by using <strong>gfont</strong>, <strong>grfont</strong> and <strong>gbfont</strong> commands.</p>
+<p>You can control which characters are treated as letters (and therefore set in italics) by using the <strong>chartype</strong> command described above. A type of <strong>letter</strong> causes a character to be set in italic type. A type of <strong>digit</strong> causes a character to be set in roman type.</p>
+<h1>FILES</h1>
+<dl>
+<dt><em>/usr/share/groff/1.22.4/tmac/eqnrc</em></dt>
+<dd><p>Initialization file.</p>
+</dd>
+</dl>
+<h1>MATHML MODE LIMITATIONS</h1>
+<p>MathML is designed on the assumption that it cannot know the exact physical characteristics of the media and devices on which it will be rendered. It does not support fine control of motions and sizes to the same degree troff does. Thus:</p>
+<ul>
+<li><p><strong>eqn</strong> parameters have no effect on the generated MathML.</p></li>
+<li><p>The <strong>special</strong>, <strong>up</strong>, <strong>down</strong>, <strong>fwd</strong>, and <strong>back</strong> operations cannot be implemented, and yield a MathML ‘&lt;merror&gt;’ message instead.</p></li>
+<li><p>The <strong>vcenter</strong> keyword is silently ignored, as centering on the math axis is the MathML default.</p></li>
+<li><p>Characters that <strong>eqn</strong> over troff sets extra large – notably the integral sign – may appear too small and need to have their ‘&lt;mstyle&gt;’ wrappers adjusted by hand.</p></li>
+</ul>
+<p>As in its troff mode, <strong>eqn</strong> in MathML mode leaves the <strong>.EQ</strong> and <strong>.EN</strong> delimiters in place for displayed equations, but emits no explicit delimiters around inline equations. They can, however, be recognized as strings that begin with ‘&lt;math&gt;’ and end with ‘&lt;/math&gt;’ and do not cross line boundaries.</p>
+<p>See section “Bugs” below for translation limits specific to <strong>eqn</strong>.</p>
+<h1>BUGS</h1>
+<p>Inline equations are set at the point size that is current at the beginning of the input line.</p>
+<p>In MathML mode, the <strong>mark</strong> and <strong>lineup</strong> features don't work. These could, in theory, be implemented with ‘&lt;maligngroup&gt;’ elements.</p>
+<p>In MathML mode, each digit of a numeric literal gets a separate ‘&lt;mn&gt;&lt;/mn&gt;’ pair, and decimal points are tagged with ‘&lt;mo&gt;&lt;/mo&gt;’. This is allowed by the specification, but inefficient.</p>
+<h1>SEE ALSO</h1>
+<p><strong>groff</strong>(1), <strong>troff</strong>(1), <strong>pic</strong>(1), <strong>groff_font</strong>(5), <em>The book</em></p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

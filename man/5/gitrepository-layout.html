@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command gitrepository-layout</title><meta name="description" content="Linux command gitrepository-layout Git Repository Layout"><meta name="keywords" content="linux, command, gitrepository-layout, bsd, Git Repository Layout"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>gitrepository-layout - Git Repository Layout</p>
+<h1>SYNOPSIS</h1>
+<p>$GIT_DIR/*</p>
+<h1>DESCRIPTION</h1>
+<p>A Git repository comes in two different flavours:</p>
+<blockquote>
+<p>·</p>
+<p>a <strong>.git</strong> directory at the root of the working tree;</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>a <strong>&lt;project&gt;.git</strong> directory that is a <em>bare</em> repository (i.e. without its own working tree), that is typically used for exchanging histories with others by pushing into it and fetching from it.</p>
+</blockquote>
+<p><strong>Note</strong>: Also you can have a plain text file <strong>.git</strong> at the root of your working tree, containing <strong>gitdir: &lt;path&gt;</strong> to point at the real directory that has the repository. This mechanism is often used for a working tree of a submodule checkout, to allow you in the containing superproject to <strong>git checkout</strong> a branch that does not have the submodule. The <strong>checkout</strong> has to remove the entire submodule working tree, without losing the submodule repository.</p>
+<p>These things may exist in a Git repository.</p>
+<p>objects</p>
+<blockquote>
+<p>Object store associated with this repository. Usually an object store is self sufficient (i.e. all the objects that are referred to by an object found in it are also found in it), but there are a few ways to violate it.</p>
+<blockquote>
+<p>1.</p>
+<p>You could have an incomplete but locally usable repository by creating a shallow clone. See <strong>git-clone</strong>(1).</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>You could be using the <strong>objects/info/alternates</strong> or <strong>$GIT_ALTERNATE_OBJECT_DIRECTORIES</strong> mechanisms to <em>borrow</em> objects from other object stores. A repository with this kind of incomplete object store is not suitable to be published for use with dumb transports but otherwise is OK as long as <strong>objects/info/alternates</strong> points at the object stores it borrows from.</p>
+<p>This directory is ignored if $GIT_COMMON_DIR is set and "$GIT_COMMON_DIR/objects" will be used instead.</p>
+</blockquote>
+</blockquote>
+<p>objects/[0-9a-f][0-9a-f]</p>
+<blockquote>
+<p>A newly created object is stored in its own file. The objects are splayed over 256 subdirectories using the first two characters of the sha1 object name to keep the number of directory entries in <strong>objects</strong> itself to a manageable number. Objects found here are often called <em>unpacked</em> (or <em>loose</em>) objects.</p>
+</blockquote>
+<p>objects/pack</p>
+<blockquote>
+<p>Packs (files that store many objects in compressed form, along with index files to allow them to be randomly accessed) are found in this directory.</p>
+</blockquote>
+<p>objects/info</p>
+<blockquote>
+<p>Additional information about the object store is recorded in this directory.</p>
+</blockquote>
+<p>objects/info/packs</p>
+<blockquote>
+<p>This file is to help dumb transports discover what packs are available in this object store. Whenever a pack is added or removed, <strong>git update-server-info</strong> should be run to keep this file up to date if the repository is published for dumb transports. <em>git repack</em> does this by default.</p>
+</blockquote>
+<p>objects/info/alternates</p>
+<blockquote>
+<p>This file records paths to alternate object stores that this object store borrows objects from, one pathname per line. Note that not only native Git tools use it locally, but the HTTP fetcher also tries to use it remotely; this will usually work if you have relative paths (relative to the object database, not to the repository!) in your alternates file, but it will not work if you use absolute paths unless the absolute path in filesystem and web URL is the same. See also <strong>objects/info/http-alternates</strong>.</p>
+</blockquote>
+<p>objects/info/http-alternates</p>
+<blockquote>
+<p>This file records URLs to alternate object stores that this object store borrows objects from, to be used when the repository is fetched over HTTP.</p>
+</blockquote>
+<p>refs</p>
+<blockquote>
+<p>References are stored in subdirectories of this directory. The <em>git prune</em> command knows to preserve objects reachable from refs found in this directory and its subdirectories. This directory is ignored (except refs/bisect, refs/rewritten and refs/worktree) if $GIT_COMMON_DIR is set and "$GIT_COMMON_DIR/refs" will be used instead.</p>
+</blockquote>
+<p>refs/heads/<strong>name</strong></p>
+<blockquote>
+<p>records tip-of-the-tree commit objects of branch <strong>name</strong></p>
+</blockquote>
+<p>refs/tags/<strong>name</strong></p>
+<blockquote>
+<p>records any object name (not necessarily a commit object, or a tag object that points at a commit object).</p>
+</blockquote>
+<p>refs/remotes/<strong>name</strong></p>
+<blockquote>
+<p>records tip-of-the-tree commit objects of branches copied from a remote repository.</p>
+</blockquote>
+<p>refs/replace/<strong>&lt;obj-sha1&gt;</strong></p>
+<blockquote>
+<p>records the SHA-1 of the object that replaces <strong>&lt;obj-sha1&gt;</strong>. This is similar to info/grafts and is internally used and maintained by <strong>git-replace</strong>(1). Such refs can be exchanged between repositories while grafts are not.</p>
+</blockquote>
+<p>packed-refs</p>
+<blockquote>
+<p>records the same information as refs/heads/, refs/tags/, and friends record in a more efficient way. See <strong>git-pack-refs</strong>(1). This file is ignored if $GIT_COMMON_DIR is set and "$GIT_COMMON_DIR/packed-refs" will be used instead.</p>
+</blockquote>
+<p>HEAD</p>
+<blockquote>
+<p>A symref (see glossary) to the <strong>refs/heads/</strong> namespace describing the currently active branch. It does not mean much if the repository is not associated with any working tree (i.e. a <em>bare</em> repository), but a valid Git repository <strong>must</strong> have the HEAD file; some porcelains may use it to guess the designated "default" branch of the repository (usually <em>master</em>). It is legal if the named branch <em>name</em> does not (yet) exist. In some legacy setups, it is a symbolic link instead of a symref that points at the current branch.</p>
+<p>HEAD can also record a specific commit directly, instead of being a symref to point at the current branch. Such a state is often called <em>detached HEAD.</em> See <strong>git-checkout</strong>(1) for details.</p>
+</blockquote>
+<p>config</p>
+<blockquote>
+<p>Repository specific configuration file. This file is ignored if $GIT_COMMON_DIR is set and "$GIT_COMMON_DIR/config" will be used instead.</p>
+</blockquote>
+<p>config.worktree</p>
+<blockquote>
+<p>Working directory specific configuration file for the main working directory in multiple working directory setup (see <strong>git-worktree</strong>(1)).</p>
+</blockquote>
+<p>branches</p>
+<blockquote>
+<p>A slightly deprecated way to store shorthands to be used to specify a URL to <em>git fetch</em>, <em>git pull</em> and <em>git push</em>. A file can be stored as <strong>branches/&lt;name&gt;</strong> and then <em>name</em> can be given to these commands in place of <em>repository</em> argument. See the REMOTES section in <strong>git-fetch</strong>(1) for details. This mechanism is legacy and not likely to be found in modern repositories. This directory is ignored if $GIT_COMMON_DIR is set and "$GIT_COMMON_DIR/branches" will be used instead.</p>
+</blockquote>
+<p>hooks</p>
+<blockquote>
+<p>Hooks are customization scripts used by various Git commands. A handful of sample hooks are installed when <em>git init</em> is run, but all of them are disabled by default. To enable, the <strong>.sample</strong> suffix has to be removed from the filename by renaming. Read <strong>githooks</strong>(5) for more details about each hook. This directory is ignored if $GIT_COMMON_DIR is set and "$GIT_COMMON_DIR/hooks" will be used instead.</p>
+</blockquote>
+<p>common</p>
+<blockquote>
+<p>When multiple working trees are used, most of files in $GIT_DIR are per-worktree with a few known exceptions. All files under <em>common</em> however will be shared between all working trees.</p>
+</blockquote>
+<p>index</p>
+<blockquote>
+<p>The current index file for the repository. It is usually not found in a bare repository.</p>
+</blockquote>
+<p>sharedindex.&lt;SHA-1&gt;</p>
+<blockquote>
+<p>The shared index part, to be referenced by $GIT_DIR/index and other temporary index files. Only valid in split index mode.</p>
+</blockquote>
+<p>info</p>
+<blockquote>
+<p>Additional information about the repository is recorded in this directory. This directory is ignored if $GIT_COMMON_DIR is set and "$GIT_COMMON_DIR/info" will be used instead.</p>
+</blockquote>
+<p>info/refs</p>
+<blockquote>
+<p>This file helps dumb transports discover what refs are available in this repository. If the repository is published for dumb transports, this file should be regenerated by <em>git update-server-info</em> every time a tag or branch is created or modified. This is normally done from the <strong>hooks/update</strong> hook, which is run by the <em>git-receive-pack</em> command when you <em>git push</em> into the repository.</p>
+</blockquote>
+<p>info/grafts</p>
+<blockquote>
+<p>This file records fake commit ancestry information, to pretend the set of parents a commit has is different from how the commit was actually created. One record per line describes a commit and its fake parents by listing their 40-byte hexadecimal object names separated by a space and terminated by a newline.</p>
+<p>Note that the grafts mechanism is outdated and can lead to problems transferring objects between repositories; see <strong>git-replace</strong>(1) for a more flexible and robust system to do the same thing.</p>
+</blockquote>
+<p>info/exclude</p>
+<blockquote>
+<p>This file, by convention among Porcelains, stores the exclude pattern list. <strong>.gitignore</strong> is the per-directory ignore file. <em>git status</em>, <em>git add</em>, <em>git rm</em> and <em>git clean</em> look at it but the core Git commands do not look at it. See also: <strong>gitignore</strong>(5).</p>
+</blockquote>
+<p>info/attributes</p>
+<blockquote>
+<p>Defines which attributes to assign to a path, similar to per-directory <strong>.gitattributes</strong> files. See also: <strong>gitattributes</strong>(5).</p>
+</blockquote>
+<p>info/sparse-checkout</p>
+<blockquote>
+<p>This file stores sparse checkout patterns. See also: <strong>git-read-tree</strong>(1).</p>
+</blockquote>
+<p>remotes</p>
+<blockquote>
+<p>Stores shorthands for URL and default refnames for use when interacting with remote repositories via <em>git fetch</em>, <em>git pull</em> and <em>git push</em> commands. See the REMOTES section in <strong>git-fetch</strong>(1) for details. This mechanism is legacy and not likely to be found in modern repositories. This directory is ignored if $GIT_COMMON_DIR is set and "$GIT_COMMON_DIR/remotes" will be used instead.</p>
+</blockquote>
+<p>logs</p>
+<blockquote>
+<p>Records of changes made to refs are stored in this directory. See <strong>git-update-ref</strong>(1) for more information. This directory is ignored (except logs/HEAD) if $GIT_COMMON_DIR is set and "$GIT_COMMON_DIR/logs" will be used instead.</p>
+</blockquote>
+<p>logs/refs/heads/<strong>name</strong></p>
+<blockquote>
+<p>Records all changes made to the branch tip named <strong>name</strong>.</p>
+</blockquote>
+<p>logs/refs/tags/<strong>name</strong></p>
+<blockquote>
+<p>Records all changes made to the tag named <strong>name</strong>.</p>
+</blockquote>
+<p>shallow</p>
+<blockquote>
+<p>This is similar to <strong>info/grafts</strong> but is internally used and maintained by shallow clone mechanism. See <strong>--depth</strong> option to <strong>git-clone</strong>(1) and <strong>git-fetch</strong>(1). This file is ignored if $GIT_COMMON_DIR is set and "$GIT_COMMON_DIR/shallow" will be used instead.</p>
+</blockquote>
+<p>commondir</p>
+<blockquote>
+<p>If this file exists, $GIT_COMMON_DIR (see <strong>git</strong>(1)) will be set to the path specified in this file if it is not explicitly set. If the specified path is relative, it is relative to $GIT_DIR. The repository with commondir is incomplete without the repository pointed by "commondir".</p>
+</blockquote>
+<p>modules</p>
+<blockquote>
+<p>Contains the git-repositories of the submodules.</p>
+</blockquote>
+<p>worktrees</p>
+<blockquote>
+<p>Contains administrative data for linked working trees. Each subdirectory contains the working tree-related part of a linked working tree. This directory is ignored if $GIT_COMMON_DIR is set, in which case "$GIT_COMMON_DIR/worktrees" will be used instead.</p>
+</blockquote>
+<p>worktrees/&lt;id&gt;/gitdir</p>
+<blockquote>
+<p>A text file containing the absolute path back to the .git file that points to here. This is used to check if the linked repository has been manually removed and there is no need to keep this directory any more. The mtime of this file should be updated every time the linked repository is accessed.</p>
+</blockquote>
+<p>worktrees/&lt;id&gt;/locked</p>
+<blockquote>
+<p>If this file exists, the linked working tree may be on a portable device and not available. The presence of this file prevents <strong>worktrees/&lt;id&gt;</strong> from being pruned either automatically or manually by <strong>git worktree prune</strong>. The file may contain a string explaining why the repository is locked.</p>
+</blockquote>
+<p>worktrees/&lt;id&gt;/config.worktree</p>
+<blockquote>
+<p>Working directory specific configuration file.</p>
+</blockquote>
+<h1>GIT REPOSITORY FORMAT VERSIONS</h1>
+<p>Every git repository is marked with a numeric version in the <strong>core.repositoryformatversion</strong> key of its <strong>config</strong> file. This version specifies the rules for operating on the on-disk repository data. An implementation of git which does not understand a particular version advertised by an on-disk repository MUST NOT operate on that repository; doing so risks not only producing wrong results, but actually losing data.</p>
+<p>Because of this rule, version bumps should be kept to an absolute minimum. Instead, we generally prefer these strategies:</p>
+<blockquote>
+<p>·</p>
+<p>bumping format version numbers of individual data files (e.g., index, packfiles, etc). This restricts the incompatibilities only to those files.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>introducing new data that gracefully degrades when used by older clients (e.g., pack bitmap files are ignored by older clients, which simply do not take advantage of the optimization they provide).</p>
+</blockquote>
+<p>A whole-repository format version bump should only be part of a change that cannot be independently versioned. For instance, if one were to change the reachability rules for objects, or the rules for locking refs, that would require a bump of the repository format version.</p>
+<p>Note that this applies only to accessing the repository’s disk contents directly. An older client which understands only format <strong>0</strong> may still connect via <strong>git://</strong> to a repository using format <strong>1</strong>, as long as the server process understands format <strong>1</strong>.</p>
+<p>The preferred strategy for rolling out a version bump (whether whole repository or for a single file) is to teach git to read the new format, and allow writing the new format with a config switch or command line option (for experimentation or for those who do not care about backwards compatibility with older gits). Then after a long period to allow the reading capability to become common, we may switch to writing the new format by default.</p>
+<p>The currently defined format versions are:</p>
+<h2>Version <strong>0</strong></h2>
+<p>This is the format defined by the initial version of git, including but not limited to the format of the repository directory, the repository configuration file, and the object and ref storage. Specifying the complete behavior of git is beyond the scope of this document.</p>
+<h2>Version <strong>1</strong></h2>
+<p>This format is identical to version <strong>0</strong>, with the following exceptions:</p>
+<blockquote>
+<p>1.</p>
+<p>When reading the <strong>core.repositoryformatversion</strong> variable, a git implementation which supports version 1 MUST also read any configuration keys found in the <strong>extensions</strong> section of the configuration file.</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>If a version-1 repository specifies any <strong>extensions.*</strong> keys that the running git has not implemented, the operation MUST NOT proceed. Similarly, if the value of any known key is not understood by the implementation, the operation MUST NOT proceed.</p>
+</blockquote>
+<p>Note that if no extensions are specified in the config file, then <strong>core.repositoryformatversion</strong> SHOULD be set to <strong>0</strong> (setting it to <strong>1</strong> provides no benefit, and makes the repository incompatible with older implementations of git).</p>
+<p>This document will serve as the master list for extensions. Any implementation wishing to define a new extension should make a note of it here, in order to claim the name.</p>
+<p>The defined extensions are:</p>
+<p><br />
+</p>
+<p><strong>noop</strong></p>
+<blockquote>
+<p>This extension does not change git’s behavior at all. It is useful only for testing format-1 compatibility.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>preciousObjects</strong></p>
+<blockquote>
+<p>When the config key <strong>extensions.preciousObjects</strong> is set to <strong>true</strong>, objects in the repository MUST NOT be deleted (e.g., by <strong>git-prune</strong> or <strong>git repack -d</strong>).</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>partialclone</strong></p>
+<blockquote>
+<p>When the config key <strong>extensions.partialclone</strong> is set, it indicates that the repo was created with a partial clone (or later performed a partial fetch) and that the remote may have omitted sending certain unwanted objects. Such a remote is called a "promisor remote" and it promises that all such omitted objects can be fetched from it in the future.</p>
+<p>The value of this key is the name of the promisor remote.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>worktreeConfig</strong></p>
+<blockquote>
+<p>If set, by default "git config" reads from both "config" and "config.worktree" file from GIT_DIR in that order. In multiple working directory mode, "config" file is shared while "config.worktree" is per-working directory (i.e., it’s in GIT_COMMON_DIR/worktrees/&lt;id&gt;/config.worktree)</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>git-init</strong>(1), <strong>git-clone</strong>(1), <strong>git-fetch</strong>(1), <strong>git-pack-refs</strong>(1), <strong>git-gc</strong>(1), <strong>git-checkout</strong>(1), <strong>gitglossary</strong>(7), <strong>The Git User’s Manual</strong>[1]</p>
+<h1>GIT</h1>
+<p>Part of the <strong>git</strong>(1) suite</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>The Git User’s Manual</p>
+<p>file:///usr/share/doc/git/html/user-manual.html</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

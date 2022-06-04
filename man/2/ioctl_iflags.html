@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command ioctl_iflags</title><meta name="description" content="Linux command ioctl_iflags ioctl() operations for inode flags"><meta name="keywords" content="linux, command, ioctl_iflags, bsd, ioctl() operations for inode flags"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>ioctl_iflags - ioctl() operations for inode flags</p>
+<h1>DESCRIPTION</h1>
+<p>Various Linux filesystems support the notion of <em>inode flags</em>—attributes that modify the semantics of files and directories. These flags can be retrieved and modified using two <strong>ioctl</strong>(2) operations:</p>
+<pre><code>int attr;
+fd = open(&quot;pathname&quot;, ...);
+
+ioctl(fd, FS_IOC_GETFLAGS, &amp;attr);  /* Place current flags
+                                       in &#39;attr&#39; */
+attr |= FS_NOATIME_FL;              /* Tweak returned bit mask */
+ioctl(fd, FS_IOC_SETFLAGS, &amp;attr);  /* Update flags for inode
+                                       referred to by &#39;fd&#39; */</code></pre>
+<p>The <strong>lsattr</strong>(1) and <strong>chattr</strong>(1) shell commands provide interfaces to these two operations, allowing a user to view and modify the inode flags associated with a file.</p>
+<p>The following flags are supported (shown along with the corresponding letter used to indicate the flag by <strong>lsattr</strong>(1) and <strong>chattr</strong>(1)):</p>
+<dl>
+<dt><strong>FS_APPEND_FL</strong> 'a'</dt>
+<dd><p>The file can be opened only with the <strong>O_APPEND</strong> flag. (This restriction applies even to the superuser.) Only a privileged process (<strong>CAP_LINUX_IMMUTABLE</strong>) can set or clear this attribute.</p>
+</dd>
+<dt><strong>FS_COMPR_FL</strong> 'c'</dt>
+<dd><p>Store the file in a compressed format on disk. This flag is <em>not</em> supported by most of the mainstream filesystem implementations; one exception is <strong>btrfs</strong>(5).</p>
+</dd>
+<dt><strong>FS_DIRSYNC_FL</strong> 'D' (since Linux 2.6.0)</dt>
+<dd><p>Write directory changes synchronously to disk. This flag provides semantics equivalent to the <strong>mount</strong>(2) <strong>MS_DIRSYNC</strong> option, but on a per-directory basis. This flag can be applied only to directories.</p>
+</dd>
+<dt><strong>FS_IMMUTABLE_FL</strong> 'i'</dt>
+<dd><p>The file is immutable: no changes are permitted to the file contents or metadata (permissions, timestamps, ownership, link count and so on). (This restriction applies even to the superuser.) Only a privileged process (<strong>CAP_LINUX_IMMUTABLE</strong>) can set or clear this attribute.</p>
+</dd>
+<dt><strong>FS_JOURNAL_DATA_FL</strong> 'j'</dt>
+<dd><p>Enable journaling of file data on <strong>ext3</strong>(5) and <strong>ext4</strong>(5) filesystems. On a filesystem that is journaling in <em>ordered</em> or <em>writeback</em> mode, a privileged (<strong>CAP_SYS_RESOURCE</strong>) process can set this flag to enable journaling of data updates on a per-file basis.</p>
+</dd>
+<dt><strong>FS_NOATIME_FL</strong> 'A'</dt>
+<dd><p>Don't update the file last access time when the file is accessed. This can provide I/O performance benefits for applications that do not care about the accuracy of this timestamp. This flag provides functionality similar to the <strong>mount</strong>(2) <strong>MS_NOATIME</strong> flag, but on a per-file basis.</p>
+</dd>
+<dt><strong>FS_NOCOW_FL</strong> 'C' (since Linux 2.6.39)</dt>
+<dd><p>The file will not be subject to copy-on-write updates. This flag has an effect only on filesystems that support copy-on-write semantics, such as Btrfs. See <strong>chattr</strong>(1) and <strong>btrfs</strong>(5).</p>
+</dd>
+<dt><strong>FS_NODUMP_FL</strong> 'd'</dt>
+<dd><p>Don't include this file in backups made using <strong>dump</strong>(8).</p>
+</dd>
+<dt><strong>FS_NOTAIL_FL</strong> 't'</dt>
+<dd><p>This flag is supported only on Reiserfs. It disables the Reiserfs tail-packing feature, which tries to pack small files (and the final fragment of larger files) into the same disk block as the file metadata.</p>
+</dd>
+<dt><strong>FS_PROJINHERIT_FL</strong> 'P' (since Linux 4.5)</dt>
+<dd><p>Inherit the quota project ID. Files and subdirectories will inherit the project ID of the directory. This flag can be applied only to directories.</p>
+</dd>
+<dt><strong>FS_SECRM_FL</strong> 's'</dt>
+<dd><p>Mark the file for secure deletion. This feature is not implemented by any filesystem, since the task of securely erasing a file from a recording medium is surprisingly difficult.</p>
+</dd>
+<dt><strong>FS_SYNC_FL</strong> 'S'</dt>
+<dd><p>Make file updates synchronous. For files, this makes all writes synchronous (as though all opens of the file were with the <strong>O_SYNC</strong> flag). For directories, this has the same effect as the <strong>FS_DIRSYNC_FL</strong> flag.</p>
+</dd>
+<dt><strong>FS_TOPDIR_FL</strong> 'T'</dt>
+<dd><p>Mark a directory for special treatment under the Orlov block-allocation strategy. See <strong>chattr</strong>(1) for details. This flag can be applied only to directories and has an effect only for ext2, ext3, and ext4.</p>
+</dd>
+<dt><strong>FS_UNRM_FL</strong> 'u'</dt>
+<dd><p>Allow the file to be undeleted if it is deleted. This feature is not implemented by any filesystem, since it is possible to implement file-recovery mechanisms outside the kernel.</p>
+</dd>
+</dl>
+<p>In most cases, when any of the above flags is set on a directory, the flag is inherited by files and subdirectories created inside that directory. Exceptions include <strong>FS_TOPDIR_FL</strong>, which is not inheritable, and <strong>FS_DIRSYNC_FL</strong>, which is inherited only by subdirectories.</p>
+<h1>CONFORMING TO</h1>
+<p>Inode flags are a nonstandard Linux extension.</p>
+<h1>NOTES</h1>
+<p>In order to change the inode flags of a file using the <strong>FS_IOC_SETFLAGS</strong> operation, the effective user ID of the caller must match the owner of the file, or the caller must have the <strong>CAP_FOWNER</strong> capability.</p>
+<p>The type of the argument given to the <strong>FS_IOC_GETFLAGS</strong> and <strong>FS_IOC_SETFLAGS</strong> operations is <em>int *</em>, notwithstanding the implication in the kernel source file <em>include/uapi/linux/fs.h</em> that the argument is <em>long *</em>.</p>
+<h1>SEE ALSO</h1>
+<p><strong>chattr</strong>(1), <strong>lsattr</strong>(1), <strong>mount</strong>(2), <strong>btrfs</strong>(5), <strong>ext4</strong>(5), <strong>xfs</strong>(5), <strong>xattr</strong>(7), <strong>mount</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

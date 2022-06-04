@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command set_tid_address</title><meta name="description" content="Linux command set_tid_address set pointer to thread ID"><meta name="keywords" content="linux, command, set_tid_address, bsd, set pointer to thread ID"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>set_tid_address - set pointer to thread ID</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;linux/unistd.h&gt;
+
+pid_t set_tid_address(int *tidptr);</code></pre>
+<p><em>Note</em>: There is no glibc wrapper for this system call; see NOTES.</p>
+<h1>DESCRIPTION</h1>
+<p>For each thread, the kernel maintains two attributes (addresses) called <em>set_child_tid</em> and <em>clear_child_tid</em>. These two attributes contain the value NULL by default.</p>
+<dl>
+<dt><em>set_child_tid</em></dt>
+<dd><p>If a thread is started using <strong>clone</strong>(2) with the <strong>CLONE_CHILD_SETTID</strong> flag, <em>set_child_tid</em> is set to the value passed in the <em>ctid</em> argument of that system call.</p>
+<p>When <em>set_child_tid</em> is set, the very first thing the new thread does is to write its thread ID at this address.</p>
+</dd>
+<dt><em>clear_child_tid</em></dt>
+<dd><p>If a thread is started using <strong>clone</strong>(2) with the <strong>CLONE_CHILD_CLEARTID</strong> flag, <em>clear_child_tid</em> is set to the value passed in the <em>ctid</em> argument of that system call.</p>
+</dd>
+</dl>
+<p>The system call <strong>set_tid_address</strong>() sets the <em>clear_child_tid</em> value for the calling thread to <em>tidptr</em>.</p>
+<p>When a thread whose <em>clear_child_tid</em> is not NULL terminates, then, if the thread is sharing memory with other threads, then 0 is written at the address specified in <em>clear_child_tid</em> and the kernel performs the following operation:</p>
+<p>futex(clear_child_tid, FUTEX_WAKE, 1, NULL, NULL, 0);</p>
+<p>The effect of this operation is to wake a single thread that is performing a futex wait on the memory location. Errors from the futex wake operation are ignored.</p>
+<h1>RETURN VALUE</h1>
+<p><strong>set_tid_address</strong>() always returns the caller's thread ID.</p>
+<h1>ERRORS</h1>
+<p><strong>set_tid_address</strong>() always succeeds.</p>
+<h1>VERSIONS</h1>
+<p>This call is present since Linux 2.5.48. Details as given here are valid since Linux 2.5.49.</p>
+<h1>CONFORMING TO</h1>
+<p>This system call is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>Glibc does not provide a wrapper for this system call; call it using <strong>syscall</strong>(2).</p>
+<h1>SEE ALSO</h1>
+<p><strong>clone</strong>(2), <strong>futex</strong>(2), <strong>gettid</strong>(2)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command vsock</title><meta name="description" content="Linux command vsock Linux VSOCK address family"><meta name="keywords" content="linux, command, vsock, bsd, Linux VSOCK address family"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>vsock - Linux VSOCK address family</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/socket.h&gt;</strong><br />
+<strong>#include &lt;linux/vm_sockets.h&gt;</strong></p>
+<p><em>stream_socket</em><strong> = socket(AF_VSOCK, SOCK_STREAM, 0);</strong><br />
+<em>datagram_socket</em><strong> = socket(AF_VSOCK, SOCK_DGRAM, 0);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>The VSOCK address family facilitates communication between virtual machines and the host they are running on. This address family is used by guest agents and hypervisor services that need a communications channel that is independent of virtual machine network configuration.</p>
+<p>Valid socket types are <strong>SOCK_STREAM</strong> and <strong>SOCK_DGRAM</strong>. <strong>SOCK_STREAM</strong> provides connection-oriented byte streams with guaranteed, in-order delivery. <strong>SOCK_DGRAM</strong> provides a connectionless datagram packet service with best-effort delivery and best-effort ordering. Availability of these socket types is dependent on the underlying hypervisor.</p>
+<p>A new socket is created with</p>
+<pre><code>socket(AF_VSOCK, socket_type, 0);</code></pre>
+<p>When a process wants to establish a connection, it calls <strong>connect</strong>(2) with a given destination socket address. The socket is automatically bound to a free port if unbound.</p>
+<p>A process can listen for incoming connections by first binding to a socket address using <strong>bind</strong>(2) and then calling <strong>listen</strong>(2).</p>
+<p>Data is transmitted using the <strong>send</strong>(2) or <strong>write</strong>(2) families of system calls and data is received using the <strong>recv</strong>(2) or <strong>read</strong>(2) families of system calls.</p>
+<h2>Address format</h2>
+<p>A socket address is defined as a combination of a 32-bit Context Identifier (CID) and a 32-bit port number. The CID identifies the source or destination, which is either a virtual machine or the host. The port number differentiates between multiple services running on a single machine.</p>
+<pre><code>struct sockaddr_vm {
+    sa_family_t    svm_family;     /* Address family: AF_VSOCK */
+    unsigned short svm_reserved1;
+    unsigned int   svm_port;       /* Port # in host byte order */
+    unsigned int   svm_cid;        /* Address in host byte order */
+    unsigned char  svm_zero[sizeof(struct sockaddr) -
+                            sizeof(sa_family_t) -
+                            sizeof(unsigned short) -
+                            sizeof(unsigned int) -
+                            sizeof(unsigned int)];
+};</code></pre>
+<p><em>svm_family</em> is always set to <strong>AF_VSOCK</strong>. <em>svm_reserved1</em> is always set to 0. <em>svm_port</em> contains the port number in host byte order. The port numbers below 1024 are called <em>privileged ports</em>. Only a process with the <strong>CAP_NET_BIND_SERVICE</strong> capability may <strong>bind</strong>(2) to these port numbers. <em>svm_zero</em> must be zero-filled.</p>
+<p>There are several special addresses: <strong>VMADDR_CID_ANY</strong> (-1U) means any address for binding; <strong>VMADDR_CID_HYPERVISOR</strong> (0) is reserved for services built into the hypervisor; <strong>VMADDR_CID_LOCAL</strong> (1) is the well-known address for local communication (loopback); <strong>VMADDR_CID_HOST</strong> (2) is the well-known address of the host.</p>
+<p>The special constant <strong>VMADDR_PORT_ANY</strong> (-1U) means any port number for binding.</p>
+<h2>Live migration</h2>
+<p>Sockets are affected by live migration of virtual machines. Connected <strong>SOCK_STREAM</strong> sockets become disconnected when the virtual machine migrates to a new host. Applications must reconnect when this happens.</p>
+<p>The local CID may change across live migration if the old CID is not available on the new host. Bound sockets are automatically updated to the new CID.</p>
+<h2>Ioctls</h2>
+<dl>
+<dt><strong>IOCTL_VM_SOCKETS_GET_LOCAL_CID</strong></dt>
+<dd><p>Get the CID of the local machine. The argument is a pointer to an <em>unsigned int</em>.</p>
+<pre><code>ioctl(socket, IOCTL_VM_SOCKETS_GET_LOCAL_CID, &amp;cid);</code></pre>
+<p>Consider using <strong>VMADDR_CID_ANY</strong> when binding instead of getting the local CID with <strong>IOCTL_VM_SOCKETS_GET_LOCAL_CID</strong>.</p>
+</dd>
+</dl>
+<h2>Local communication</h2>
+<p><strong>VMADDR_CID_LOCAL</strong> (1) directs packets to the same host that generated them. This is useful for testing applications on a single host and for debugging.</p>
+<p>The local CID obtained with <strong>IOCTL_VM_SOCKETS_GET_LOCAL_CID</strong> can be used for the same purpose, but it is preferable to use <strong>VMADDR_CID_LOCAL .</strong></p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>Unable to bind to a privileged port without the <strong>CAP_NET_BIND_SERVICE</strong> capability.</p>
+</dd>
+<dt><strong>EADDRINUSE</strong></dt>
+<dd><p>Unable to bind to a port that is already in use.</p>
+</dd>
+<dt><strong>EADDRNOTAVAIL</strong></dt>
+<dd><p>Unable to find a free port for binding or unable to bind to a nonlocal CID.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Invalid parameters. This includes: attempting to bind a socket that is already bound, providing an invalid struct <em>sockaddr_vm</em>, and other input validation errors.</p>
+</dd>
+<dt><strong>ENOPROTOOPT</strong></dt>
+<dd><p>Invalid socket option in <strong>setsockopt</strong>(2) or <strong>getsockopt</strong>(2).</p>
+</dd>
+<dt><strong>ENOTCONN</strong></dt>
+<dd><p>Unable to perform operation on an unconnected socket.</p>
+</dd>
+<dt><strong>EOPNOTSUPP</strong></dt>
+<dd><p>Operation not supported. This includes: the <strong>MSG_OOB</strong> flag that is not implemented for the <strong>send</strong>(2) family of syscalls and <strong>MSG_PEEK</strong> for the <strong>recv</strong>(2) family of syscalls.</p>
+</dd>
+<dt><strong>EPROTONOSUPPORT</strong></dt>
+<dd><p>Invalid socket protocol number. The protocol should always be 0.</p>
+</dd>
+<dt><strong>ESOCKTNOSUPPORT</strong></dt>
+<dd><p>Unsupported socket type in <strong>socket</strong>(2). Only <strong>SOCK_STREAM</strong> and <strong>SOCK_DGRAM</strong> are valid.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>Support for VMware (VMCI) has been available since Linux 3.9. KVM (virtio) is supported since Linux 4.8. Hyper-V is supported since Linux 4.14.</p>
+<p>VMADDR_CID_LOCAL is supported since Linux 5.6. Local communication in the guest and on the host is available since Linux 5.6. Previous versions supported only local communication within a guest (not on the host), and with only some transports (VMCI and virtio).</p>
+<h1>SEE ALSO</h1>
+<p><strong>bind</strong>(2), <strong>connect</strong>(2), <strong>listen</strong>(2), <strong>recv</strong>(2), <strong>send</strong>(2), <strong>socket</strong>(2), <strong>capabilities</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

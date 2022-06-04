@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command ip-netns</title><meta name="description" content="Linux command ip-netns process network namespace management"><meta name="keywords" content="linux, command, ip-netns, bsd, process network namespace management"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>ip-netns - process network namespace management</p>
+<h1>SYNOPSIS</h1>
+<p><strong>ip</strong> [ <em>OPTIONS</em> ] <strong>netns</strong> { <em>COMMAND</em> | <strong>help</strong> }</p>
+<p><strong>ip netns</strong> [ <strong>list</strong> ]</p>
+<p><strong>ip netns add</strong> <em>NETNSNAME</em></p>
+<p><strong>ip netns attach</strong> <em>NETNSNAME PID</em></p>
+<p><strong>ip [-all] netns del</strong> [ <em>NETNSNAME</em> ]</p>
+<p><strong>ip netns set</strong> <em>NETNSNAME NETNSID</em></p>
+<p><em>NETNSID</em> := <em>auto</em> | <em>POSITIVE-INT</em></p>
+<p><strong>ip netns identify</strong> [ <em>PID</em> ]</p>
+<p><strong>ip netns pids</strong> <em>NETNSNAME</em></p>
+<p><strong>ip [-all] netns exec </strong> [ <em>NETNSNAME</em> ] <em>command</em>...</p>
+<p><strong>ip netns monitor</strong></p>
+<p><strong>ip netns list-id</strong> [ target-nsid <em>POSITIVE-INT</em> ] [ nsid <em>POSITIVE-INT</em> ]</p>
+<h1>DESCRIPTION</h1>
+<p>A network namespace is logically another copy of the network stack, with its own routes, firewall rules, and network devices.</p>
+<p>By default a process inherits its network namespace from its parent. Initially all the processes share the same default network namespace from the init process.</p>
+<p>By convention a named network namespace is an object at <strong>/run/netns/</strong>NAME that can be opened. The file descriptor resulting from opening <strong>/run/netns/</strong>NAME refers to the specified network namespace. Holding that file descriptor open keeps the network namespace alive. The file descriptor can be used with the <strong>setns(2)</strong> system call to change the network namespace associated with a task.</p>
+<p>For applications that are aware of network namespaces, the convention is to look for global network configuration files first in <strong>/etc/netns/</strong>NAME<strong>/</strong> then in <strong>/etc/</strong>. For example, if you want a different version of <strong>/etc/resolv.conf</strong> for a network namespace used to isolate your vpn you would name it <strong>/etc/netns/myvpn/resolv.conf.</strong></p>
+<p><strong>ip netns exec</strong> automates handling of this configuration, file convention for network namespace unaware applications, by creating a mount namespace and bind mounting all of the per network namespace configure files into their traditional location in /etc.</p>
+<dl>
+<dt><strong>ip netns list - show all of the named network namespaces</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>This command displays all of the network namespaces in /run/netns</p>
+<dl>
+<dt><strong>ip netns add NAME - create a new named network namespace</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>If NAME is available in /run/netns this command creates a new network namespace and assigns NAME.</p>
+<dl>
+<dt><strong>ip netns attach NAME PID - create a new named network namespace</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>If NAME is available in /run/netns this command attaches the network namespace of the process PID to NAME as if it were created with ip netns.</p>
+<dl>
+<dt><strong>ip [-all] netns delete [ NAME ] - delete the name of a network namespace(s)</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>If NAME is present in /run/netns it is umounted and the mount point is removed. If this is the last user of the network namespace the network namespace will be freed and all physical devices will be moved to the default one, otherwise the network namespace persists until it has no more users. ip netns delete may fail if the mount point is in use in another mount namespace.</p>
+<p>If <strong>-all</strong> option was specified then all the network namespace names will be removed.</p>
+<p>It is possible to lose the physical device when it was moved to netns and then this netns was deleted with a running process:</p>
+<blockquote>
+<p>$ ip netns add net0</p>
+</blockquote>
+<blockquote>
+<p>$ ip link set dev eth0 netns net0</p>
+</blockquote>
+<blockquote>
+<p>$ ip netns exec net0 SOME_PROCESS_IN_BACKGROUND</p>
+</blockquote>
+<blockquote>
+<p>$ ip netns del net0</p>
+</blockquote>
+<blockquote>
+<p>and eth0 will appear in the default netns only after SOME_PROCESS_IN_BACKGROUND will exit or will be killed. To prevent this the processes running in net0 should be killed before deleting the netns:</p>
+</blockquote>
+<blockquote>
+<p>$ ip netns pids net0 | xargs kill</p>
+</blockquote>
+<blockquote>
+<p>$ ip netns del net0</p>
+</blockquote>
+<dl>
+<dt><strong>ip netns set NAME NETNSID - assign an id to a peer network namespace</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>This command assigns a id to a peer network namespace. This id is valid only in the current network namespace. If the keyword "auto" is specified an available nsid will be chosen. This id will be used by the kernel in some netlink messages. If no id is assigned when the kernel needs it, it will be automatically assigned by the kernel. Once it is assigned, it's not possible to change it.</p>
+<dl>
+<dt><strong>ip netns identify [PID] - Report network namespaces names for process</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>This command walks through /run/netns and finds all the network namespace names for network namespace of the specified process, if PID is not specified then the current process will be used.</p>
+<dl>
+<dt><strong>ip netns pids NAME - Report processes in the named network namespace</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>This command walks through proc and finds all of the process who have the named network namespace as their primary network namespace.</p>
+<dl>
+<dt><strong>ip [-all] netns exec [ NAME ] cmd ... - Run cmd in the named network namespace</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>This command allows applications that are network namespace unaware to be run in something other than the default network namespace with all of the configuration for the specified network namespace appearing in the customary global locations. A network namespace and bind mounts are used to move files from their network namespace specific location to their default locations without affecting other processes.</p>
+<p>If <strong>-all</strong> option was specified then <strong>cmd</strong> will be executed synchronously on the each named network namespace even if <strong>cmd</strong> fails on some of them. Network namespace name is printed on each <strong>cmd</strong> executing.</p>
+<dl>
+<dt><strong>ip netns monitor - Report as network namespace names are added and deleted</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>This command watches network namespace name addition and deletion events and prints a line for each event it sees.</p>
+<dl>
+<dt><strong>ip netns list-id [target-nsid POSITIVE-INT] [nsid POSITIVE-INT] - list network namespace ids (nsid)</strong></dt>
+<dd>
+</dd>
+</dl>
+<p>Network namespace ids are used to identify a peer network namespace. This command displays nsids of the current network namespace and provides the corresponding iproute2 netns name (from /run/netns) if any.</p>
+<p>The <strong>target-nsid</strong> option enables to display nsids of the specified network namespace instead of the current network namespace. This <strong>target-nsid</strong> is a nsid from the current network namespace.</p>
+<p>The <strong>nsid</strong> option enables to display only this nsid. It is a nsid from the current network namespace. In combination with the <strong>target-nsid</strong> option, it enables to convert a specific nsid from the current network namespace to a nsid of the <strong>target-nsid</strong> network namespace.</p>
+<h1>EXAMPLES</h1>
+<p>ip netns list</p>
+<blockquote>
+<p>Shows the list of current named network namespaces</p>
+</blockquote>
+<p>ip netns add vpn</p>
+<blockquote>
+<p>Creates a network namespace and names it vpn</p>
+</blockquote>
+<p>ip netns exec vpn ip link set lo up</p>
+<blockquote>
+<p>Bring up the loopback interface in the vpn network namespace.</p>
+</blockquote>
+<p>ip netns add foo<br />
+ip netns add bar<br />
+ip netns set foo 12<br />
+ip netns set bar 13<br />
+ip -n foo netns set foo 22<br />
+ip -n foo netns set bar 23<br />
+ip -n bar netns set foo 32<br />
+ip -n bar netns set bar 33<br />
+ip netns list-id target-nsid 12</p>
+<blockquote>
+<p>Shows the list of nsids from the network namespace foo.</p>
+</blockquote>
+<p>ip netns list-id target-nsid 12 nsid 13</p>
+<blockquote>
+<p>Get nsid of bar from the network namespace foo (result is 23).</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><br />
+<strong>ip</strong>(8)</p>
+<h1>AUTHOR</h1>
+<p>Original Manpage by Eric W. Biederman<br />
+Manpage revised by Nicolas Dichtel &lt;nicolas.dichtel@6wind.com&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

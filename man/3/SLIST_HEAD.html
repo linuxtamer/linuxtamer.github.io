@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command SLIST_HEAD</title><meta name="description" content="Linux command SLIST_HEAD implementation of a singly linked list"><meta name="keywords" content="linux, command, SLIST_HEAD, bsd, implementation of a singly linked list"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>SLIST_EMPTY, SLIST_ENTRY, SLIST_FIRST, SLIST_FOREACH, SLIST_HEAD, SLIST_HEAD_INITIALIZER, SLIST_INIT, SLIST_INSERT_AFTER, SLIST_INSERT_HEAD, SLIST_NEXT, SLIST_REMOVE, SLIST_REMOVE_HEAD - implementation of a singly linked list</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/queue.h&gt;
+
+int SLIST_EMPTY(SLIST_HEAD *head);
+
+SLIST_ENTRY(TYPE);
+
+struct TYPE *SLIST_FIRST(SLIST_HEAD *head);
+
+SLIST_FOREACH(struct TYPE *var, SLIST_HEAD *head, SLIST_ENTRY NAME);
+
+SLIST_HEAD(HEADNAME, TYPE);
+
+SLIST_HEAD SLIST_HEAD_INITIALIZER(SLIST_HEAD head);
+
+void SLIST_INIT(SLIST_HEAD *head);
+
+void SLIST_INSERT_AFTER(struct TYPE *listelm, struct TYPE *elm,
+ SLIST_ENTRY NAME);
+
+void SLIST_INSERT_HEAD(SLIST_HEAD *head, struct TYPE *elm,
+ SLIST_ENTRY NAME);
+
+struct TYPE *SLIST_NEXT(struct TYPE *elm, SLIST_ENTRY NAME);
+
+void SLIST_REMOVE(SLIST_HEAD *head, struct TYPE *elm, SLIST_ENTRY NAME);
+
+void SLIST_REMOVE_HEAD(SLIST_HEAD *head, SLIST_ENTRY NAME);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>These macros define and operate on doubly linked lists.</p>
+<p>In the macro definitions, <em>TYPE</em> is the name of a user-defined structure, that must contain a field of type <em>SLIST_ENTRY</em>, named <em>NAME</em>. The argument <em>HEADNAME</em> is the name of a user-defined structure that must be declared using the macro <strong>SLIST_HEAD</strong>().</p>
+<p>A singly linked list is headed by a structure defined by the <strong>SLIST_HEAD</strong>() macro. This structure contains a single pointer to the first element on the list. The elements are singly linked for minimum space and pointer manipulation overhead at the expense of O(n) removal for arbitrary elements. New elements can be added to the list after an existing element or at the head of the list. An <em>SLIST_HEAD</em> structure is declared as follows:</p>
+<pre><code>SLIST_HEAD(HEADNAME, TYPE) head;</code></pre>
+<p>where <em>struct HEADNAME</em> is the structure to be defined, and <em>struct TYPE</em> is the type of the elements to be linked into the list. A pointer to the head of the list can later be declared as:</p>
+<pre><code>struct HEADNAME *headp;</code></pre>
+<p>(The names <em>head</em> and <em>headp</em> are user selectable.)</p>
+<p>The macro <strong>SLIST_HEAD_INITIALIZER</strong>() evaluates to an initializer for the list <em>head</em>.</p>
+<p>The macro <strong>SLIST_EMPTY</strong>() evaluates to true if there are no elements in the list.</p>
+<p>The macro <strong>SLIST_ENTRY</strong>() declares a structure that connects the elements in the list.</p>
+<p>The macro <strong>SLIST_FIRST</strong>() returns the first element in the list or NULL if the list is empty.</p>
+<p>The macro <strong>SLIST_FOREACH</strong>() traverses the list referenced by <em>head</em> in the forward direction, assigning each element in turn to <em>var</em>.</p>
+<p>The macro <strong>SLIST_INIT</strong>() initializes the list referenced by <em>head</em>.</p>
+<p>The macro <strong>SLIST_INSERT_HEAD</strong>() inserts the new element <em>elm</em> at the head of the list.</p>
+<p>The macro <strong>SLIST_INSERT_AFTER</strong>() inserts the new element <em>elm</em> after the element <em>listelm</em>.</p>
+<p>The macro <strong>SLIST_NEXT</strong>() returns the next element in the list.</p>
+<p>The macro <strong>SLIST_REMOVE_HEAD</strong>() removes the element <em>elm</em> from the head of the list. For optimum efficiency, elements being removed from the head of the list should explicitly use this macro instead of the generic <em>SLIST_REMOVE</em> macro.</p>
+<p>The macro <strong>SLIST_REMOVE</strong>() removes the element <em>elm</em> from the list.</p>
+<h1>RETURN VALUE</h1>
+<p><strong>SLIST_EMPTY</strong>() returns nonzero if the list is empty, and zero if the list contains at least one entry.</p>
+<p><strong>SLIST_FIRST</strong>(), and <strong>SLIST_NEXT</strong>() return a pointer to the first or next <em>TYPE</em> structure, respectively.</p>
+<p><strong>SLIST_HEAD_INITIALIZER</strong>() returns an initializer that can be assigned to the list <em>head</em>.</p>
+<h1>CONFORMING TO</h1>
+<p>Not in POSIX.1, POSIX.1-2001 or POSIX.1-2008. Present on the BSDs (SLIST macros first appeared in 4.4BSD).</p>
+<h1>BUGS</h1>
+<p>The macro <strong>SLIST_FOREACH</strong>() doesn't allow <em>var</em> to be removed or freed within the loop, as it would interfere with the traversal. The macro <strong>SLIST_FOREACH_SAFE</strong>(), which is present on the BSDs but is not present in glibc, fixes this limitation by allowing <em>var</em> to safely be removed from the list and freed from within the loop without interfering with the traversal.</p>
+<h1>EXAMPLES</h1>
+<pre><code>#include &lt;stddef.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/queue.h&gt;
+
+struct entry {
+    int data;
+    SLIST_ENTRY(entry) entries;             /* Singly linked List. */
+};
+
+SLIST_HEAD(slisthead, entry);
+
+int
+main(void)
+{
+    struct entry *n1, *n2, *n3, *np;
+    struct slisthead head;                  /* Singly linked List
+                                               head. */
+
+    SLIST_INIT(&amp;head);                      /* Initialize the queue. */
+
+    n1 = malloc(sizeof(struct entry));      /* Insert at the head. */
+    SLIST_INSERT_HEAD(&amp;head, n1, entries);
+
+    n2 = malloc(sizeof(struct entry));      /* Insert after. */
+    SLIST_INSERT_AFTER(n1, n2, entries);
+
+    SLIST_REMOVE(&amp;head, n2, entry, entries);/* Deletion. */
+    free(n2);
+
+    n3 = SLIST_FIRST(&amp;head);
+    SLIST_REMOVE_HEAD(&amp;head, entries);      /* Deletion from the head. */
+    free(n3);
+
+    for (int i = 0; i &lt; 5; i++) {
+        n1 = malloc(sizeof(struct entry));
+        SLIST_INSERT_HEAD(&amp;head, n1, entries);
+        n1-&gt;data = i;
+    }
+
+                                            /* Forward traversal. */
+    SLIST_FOREACH(np, &amp;head, entries)
+        printf(&quot;%i\n&quot;, np-&gt;data);
+
+    while (!SLIST_EMPTY(&amp;head)) {           /* List Deletion. */
+        n1 = SLIST_FIRST(&amp;head);
+        SLIST_REMOVE_HEAD(&amp;head, entries);
+        free(n1);
+    }
+    SLIST_INIT(&amp;head);
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>insque</strong>(3), <strong>queue</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

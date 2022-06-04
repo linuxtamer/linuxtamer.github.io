@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command tc-actions</title><meta name="description" content="Linux command tc-actions independently defined actions in tc"><meta name="keywords" content="linux, command, tc-actions, bsd, independently defined actions in tc"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>actions - independently defined actions in tc</p>
+<h1>SYNOPSIS</h1>
+<p><strong>tc</strong> [ <em>TC_OPTIONS</em> ] <strong>actions</strong> <strong>add</strong> | <strong>change</strong> | <strong>replace</strong> <em>ACTSPEC</em></p>
+<p><strong>tc</strong> [ <em>TC_OPTIONS</em> ] <strong>actions</strong> <strong>get</strong> | <strong>delete</strong> <em>ACTISPEC</em></p>
+<p><strong>tc</strong> [ <em>TC_OPTIONS</em> ] <strong>actions flush</strong> <em>ACTNAMESPEC</em></p>
+<p><strong>tc</strong> [ <em>TC_OPTIONS</em> ] <strong>actions</strong> <strong>ls</strong> | <strong>list</strong> <em>ACTNAMESPEC</em> [ <em>ACTFILTER</em> ]</p>
+<p><em>ACTSPEC</em> := <strong>action</strong> <em>ACTDETAIL</em> [ <em>INDEXSPEC</em> ] [ <em>COOKIESPEC</em> ] [ <em>FLAGS</em> ] [ <em>HWSTATSSPEC</em> ] [ <em>CONTROL</em> ]</p>
+<p><em>ACTISPEC</em> := <em>ACTNAMESPEC INDEXSPEC</em></p>
+<p><em>ACTNAMESPEC</em> := <strong>action</strong> ACTNAME</p>
+<p><em>INDEXSPEC</em> := <strong>index</strong><em> INDEX</em></p>
+<p><em>ACTFILTER</em> := <strong>since</strong><em> MSTIME</em></p>
+<p><em>COOKIESPEC</em> := <strong>cookie</strong><em> COOKIE</em></p>
+<p><em>FLAGS</em> := <em>no_percpu</em></p>
+<p><em>HWSTATSSPEC</em> := <strong>hw_stats</strong> { <em>immediate</em> | <em>delayed</em> | <em>disabled</em> }</p>
+<p><em>ACTDETAIL</em> := <em>ACTNAME ACTPARAMS</em></p>
+<p><em>ACTNAME</em> may be any valid action type: gact, mirred, bpf, connmark, csum, police, etc.</p>
+<p><em>MSTIME</em> Time since last update.</p>
+<p><em>CONTROL</em> := { <em>reclassify</em> | <em>pipe</em> | <em>drop</em> | <em>continue</em> | <em>ok</em> }</p>
+<p><em>TC_OPTIONS</em> These are the options that are specific to <strong>tc</strong> and not only the options. Refer to <strong>tc(8)</strong> for more information.</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>actions</strong> object in <strong>tc</strong> allows a user to define actions independently of a classifier (filter). These actions can then be assigned to one or more filters, with any packets matching the classifier's criteria having that action performed on them.</p>
+<p>Each action type (mirred, police, etc.) will have its own table to store all created actions.</p>
+<h1>OPERATIONS</h1>
+<dl>
+<dt><strong>add</strong></dt>
+<dd><p>Create a new action in that action's table.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>change</strong><br />
+<strong>replace</strong></dt>
+<dd><p>Make modifications to an existing action.</p>
+</dd>
+<dt><strong>get</strong></dt>
+<dd><p>Display the action with the specified index value. When combined with the <strong>-s</strong> option for <strong>tc</strong>, display the statistics for that action.</p>
+</dd>
+<dt><strong>delete</strong></dt>
+<dd><p>Delete the action with the specified index value. If the action is already associated with a classifier, it does not delete the classifier.</p>
+</dd>
+<dt><strong>ls</strong><br />
+<strong>list</strong></dt>
+<dd><p>List all the actions in the specified table. When combined with the <strong>-s</strong> option for <strong>tc</strong>, display the statistics for all actions in the specified table. When combined with the option <strong>since</strong> allows doing a millisecond time-filter since the last time an action was used in the datapath.</p>
+</dd>
+<dt><strong>flush</strong></dt>
+<dd><p>Delete all actions stored in the specified table.</p>
+</dd>
+</dl>
+<h1>ACTION OPTIONS</h1>
+<p>Note that these options are available to all action types.</p>
+<dl>
+<dt><strong>index</strong><em> INDEX</em></dt>
+<dd><p>Specify the table index value of an action. <em>INDEX</em> is a 32-bit value that is unique to the specific type of action referenced.</p>
+</dd>
+</dl>
+<blockquote>
+<p>For <strong>add</strong>, <strong>change</strong>, and <strong>replace</strong> operations, the index is <strong>optional.</strong> When adding a new action, specifying an index value will assign the action to that index unless that index value has already been assigned. Omitting the index value for an add operation will cause the kernel to assign a value to the new action.</p>
+</blockquote>
+<blockquote>
+<p>For <strong>get</strong> and <strong>delete</strong> operations, the index is <strong>required</strong> to identify the specific action to be displayed or deleted.</p>
+</blockquote>
+<dl>
+<dt><strong>cookie</strong><em> COOKIE</em></dt>
+<dd><p>In addition to the specific action, mark the matching packet with the value specified by <em>COOKIE</em>. The <em>COOKIE</em> is a 128-bit value that will not be interpreted by the kernel whatsoever. As such, it can be used as a correlating value for maintaining user state. The value to be stored is completely arbitrary and does not require a specific format. It is stored inside the action structure itself.</p>
+</dd>
+</dl>
+<dl>
+<dt><em>FLAGS</em></dt>
+<dd><p>Action-specific flags. Currently, the only supported flag is <em>no_percpu</em> which indicates that action is expected to have minimal software data-path traffic and doesn't need to allocate stat counters with percpu allocator. This option is intended to be used by hardware-offloaded actions.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>hw_stats</strong><em> HW_STATS</em></dt>
+<dd><p>Specifies the type of HW stats of new action. If omitted, any stats counter type is going to be used, according to driver and its resources. The <em>HW_STATS</em> indicates the type. Any of the following are valid:</p>
+<dl>
+<dt><strong>immediate</strong></dt>
+<dd><p>Means that in dump, user gets the current HW stats state from the device queried at the dump time.</p>
+</dd>
+<dt><strong>delayed</strong></dt>
+<dd><p>Means that in dump, user gets HW stats that might be out of date for some time, maybe couple of seconds. This is the case when driver polls stats updates periodically or when it gets async stats update from the device.</p>
+</dd>
+<dt><strong>disabled</strong></dt>
+<dd><p>No HW stats are going to be available in dump.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl>
+<dt><strong>since</strong><em> MSTIME</em></dt>
+<dd><p>When dumping large number of actions, a millisecond time-filter can be specified <em>MSTIME</em>. The <em>MSTIME</em> is a millisecond count since last time a packet hit the action. As an example specifying "since 20000" implies to dump all actions that have seen packets in the last 20 seconds. This option is useful when the kernel has a large number of actions and you are only interested in recently used actions.</p>
+</dd>
+</dl>
+<dl>
+<dt><em>CONTROL</em></dt>
+<dd><p>The <em>CONTROL</em> indicates how <strong>tc</strong> should proceed after executing the action. Any of the following are valid:</p>
+<dl>
+<dt><strong>reclassify</strong></dt>
+<dd><p>Restart the classifiction by jumping back to the first filter attached to the action's parent.</p>
+</dd>
+<dt><strong>pipe</strong></dt>
+<dd><p>Continue with the next action. This is the default control.</p>
+</dd>
+<dt><strong>drop</strong></dt>
+<dd><p>Drop the packed without running any further actions.</p>
+</dd>
+<dt><strong>continue</strong></dt>
+<dd><p>Continue the classification with the next filter.</p>
+</dd>
+<dt><strong>pass</strong></dt>
+<dd><p>Return to the calling qdisc for packet processing, and end classification of this packet.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>tc</strong>(8), <strong>tc-bpf</strong>(8), <strong>tc-connmark</strong>(8), <strong>tc-csum</strong>(8), <strong>tc-ife</strong>(8), <strong>tc-mirred</strong>(8), <strong>tc-nat</strong>(8), <strong>tc-pedit</strong>(8), <strong>tc-police</strong>(8), <strong>tc-simple</strong>(8), <strong>tc-skbedit</strong>(8), <strong>tc-skbmod</strong>(8), <strong>tc-tunnel_key</strong>(8), <strong>tc-vlan</strong>(8), <strong>tc-xt</strong>(8)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

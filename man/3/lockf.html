@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command lockf</title><meta name="description" content="Linux command lockf apply, test or remove a POSIX lock on an open file"><meta name="keywords" content="linux, command, lockf, bsd, apply, test or remove a POSIX lock on an open file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>lockf - apply, test or remove a POSIX lock on an open file</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;unistd.h&gt;</strong></p>
+<p><strong>int lockf(int </strong><em>fd</em><strong>, int </strong><em>cmd</em><strong>, off_t </strong><em>len</em><strong>);</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>lockf</strong>():</p>
+<blockquote>
+<p>_XOPEN_SOURCE &gt;= 500 || /* Glibc since 2.19: */ _DEFAULT_SOURCE || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE || _SVID_SOURCE</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>Apply, test or remove a POSIX lock on a section of an open file. The file is specified by <em>fd</em>, a file descriptor open for writing, the action by <em>cmd</em>, and the section consists of byte positions <em>pos</em>..<em>pos</em>+<em>len</em>-1 if <em>len</em> is positive, and <em>pos</em>-<em>len</em>..<em>pos</em>-1 if <em>len</em> is negative, where <em>pos</em> is the current file position, and if <em>len</em> is zero, the section extends from the current file position to infinity, encompassing the present and future end-of-file positions. In all cases, the section may extend past current end-of-file.</p>
+<p>On Linux, <strong>lockf</strong>() is just an interface on top of <strong>fcntl</strong>(2) locking. Many other systems implement <strong>lockf</strong>() in this way, but note that POSIX.1 leaves the relationship between <strong>lockf</strong>() and <strong>fcntl</strong>(2) locks unspecified. A portable application should probably avoid mixing calls to these interfaces.</p>
+<p>Valid operations are given below:</p>
+<dl>
+<dt><strong>F_LOCK</strong></dt>
+<dd><p>Set an exclusive lock on the specified section of the file. If (part of) this section is already locked, the call blocks until the previous lock is released. If this section overlaps an earlier locked section, both are merged. File locks are released as soon as the process holding the locks closes some file descriptor for the file. A child process does not inherit these locks.</p>
+</dd>
+<dt><strong>F_TLOCK</strong></dt>
+<dd><p>Same as <strong>F_LOCK</strong> but the call never blocks and returns an error instead if the file is already locked.</p>
+</dd>
+<dt><strong>F_ULOCK</strong></dt>
+<dd><p>Unlock the indicated section of the file. This may cause a locked section to be split into two locked sections.</p>
+</dd>
+<dt><strong>F_TEST</strong></dt>
+<dd><p>Test the lock: return 0 if the specified section is unlocked or locked by this process; return -1, set <em>errno</em> to <strong>EAGAIN</strong> (<strong>EACCES</strong> on some other systems), if another process holds a lock.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EACCES</strong> or <strong>EAGAIN</strong></dt>
+<dd><p>The file is locked and <strong>F_TLOCK</strong> or <strong>F_TEST</strong> was specified, or the operation is prohibited because the file has been memory-mapped by another process.</p>
+</dd>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not an open file descriptor; or <em>cmd</em> is <strong>F_LOCK</strong> or <strong>F_TLOCK</strong> and <em>fd</em> is not a writable file descriptor.</p>
+</dd>
+<dt><strong>EDEADLK</strong></dt>
+<dd><p>The command was <strong>F_LOCK</strong> and this lock operation would cause a deadlock.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>While waiting to acquire a lock, the call was interrupted by delivery of a signal caught by a handler; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>An invalid operation was specified in <em>cmd</em>.</p>
+</dd>
+<dt><strong>ENOLCK</strong></dt>
+<dd><p>Too many segment locks open, lock table is full.</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>lockf</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4.</p>
+<h1>SEE ALSO</h1>
+<p><strong>fcntl</strong>(2), <strong>flock</strong>(2)</p>
+<p><em>locks.txt</em> and <em>mandatory-locking.txt</em> in the Linux kernel source directory <em>Documentation/filesystems</em> (on older kernels, these files are directly under the <em>Documentation</em> directory, and <em>mandatory-locking.txt</em> is called <em>mandatory.txt</em>)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

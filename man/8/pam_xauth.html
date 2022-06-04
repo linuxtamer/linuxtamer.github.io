@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pam_xauth</title><meta name="description" content="Linux command pam_xauth PAM module to forward xauth keys between users"><meta name="keywords" content="linux, command, pam_xauth, bsd, PAM module to forward xauth keys between users"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>pam_xauth - PAM module to forward xauth keys between users</p>
+<h1>SYNOPSIS</h1>
+<p><strong>pam_xauth.so</strong> [debug] [xauthpath=<em>/path/to/xauth</em>] [systemuser=<em>UID</em>] [targetuser=<em>UID</em>]</p>
+<h1>DESCRIPTION</h1>
+<p>The pam_xauth PAM module is designed to forward xauth keys (sometimes referred to as "cookies") between users.</p>
+<p>Without pam_xauth, when xauth is enabled and a user uses the <strong>su</strong>(1) command to assume another users privileges, that user is no longer able to access the original users X display because the new user does not have the key needed to access the display. pam_xauth solves the problem by forwarding the key from the user running su (the source user) to the user whose identity the source user is assuming (the target user) when the session is created, and destroying the key when the session is torn down.</p>
+<p>This means, for example, that when you run <strong>su</strong>(1) from an xterm session, you will be able to run X programs without explicitly dealing with the <strong>xauth</strong>(1) xauth command or ~/.Xauthority files.</p>
+<p>pam_xauth will only forward keys if xauth can list a key connected to the $DISPLAY environment variable.</p>
+<p>Primitive access control is provided by ~/.xauth/export in the invoking users home directory and ~/.xauth/import in the target users home directory.</p>
+<p>If a user has a ~/.xauth/import file, the user will only receive cookies from users listed in the file. If there is no ~/.xauth/import file, the user will accept cookies from any other user.</p>
+<p>If a user has a .xauth/export file, the user will only forward cookies to users listed in the file. If there is no ~/.xauth/export file, and the invoking user is not <strong>root</strong>, the user will forward cookies to any other user. If there is no ~/.xauth/export file, and the invoking user is <strong>root</strong>, the user will <em>not</em> forward cookies to other users.</p>
+<p>Both the import and export files support wildcards (such as <em>*</em>). Both the import and export files can be empty, signifying that no users are allowed.</p>
+<h1>OPTIONS</h1>
+<p><strong>debug</strong></p>
+<blockquote>
+<p>Print debug information.</p>
+</blockquote>
+<p><strong>xauthpath=</strong><em>/path/to/xauth</em></p>
+<blockquote>
+<p>Specify the path the xauth program (it is expected in /usr/X11R6/bin/xauth, /usr/bin/xauth, or /usr/bin/X11/xauth by default).</p>
+</blockquote>
+<p><strong>systemuser=</strong><em>UID</em></p>
+<blockquote>
+<p>Specify the highest UID which will be assumed to belong to a "system" user. pam_xauth will refuse to forward credentials to users with UID less than or equal to this number, except for root and the "targetuser", if specified.</p>
+</blockquote>
+<p><strong>targetuser=</strong><em>UID</em></p>
+<blockquote>
+<p>Specify a single target UID which is exempt from the systemuser check.</p>
+</blockquote>
+<h1>MODULE TYPES PROVIDED</h1>
+<p>Only the <strong>session</strong> type is provided.</p>
+<h1>RETURN VALUES</h1>
+<p>PAM_BUF_ERR</p>
+<blockquote>
+<p>Memory buffer error.</p>
+</blockquote>
+<p>PAM_PERM_DENIED</p>
+<blockquote>
+<p>Permission denied by import/export file.</p>
+</blockquote>
+<p>PAM_SESSION_ERR</p>
+<blockquote>
+<p>Cannot determine user name, UID or access users home directory.</p>
+</blockquote>
+<p>PAM_SUCCESS</p>
+<blockquote>
+<p>Success.</p>
+</blockquote>
+<p>PAM_USER_UNKNOWN</p>
+<blockquote>
+<p>User not known.</p>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>Add the following line to /etc/pam.d/su to forward xauth keys between users when calling su:</p>
+<blockquote>
+<pre><code>session  optional  pam_xauth.so
+      </code></pre>
+</blockquote>
+<h1>IMPLEMENTATION DETAILS</h1>
+<p>pam_xauth will work <em>only</em> if it is used from a setuid application in which the <strong>getuid</strong>() call returns the id of the user running the application, and for which PAM can supply the name of the account that the user is attempting to assume. The typical application of this type is <strong>su</strong>(1). The application must call both <strong>pam_open_session</strong>() and <strong>pam_close_session</strong>() with the ruid set to the uid of the calling user and the euid set to root, and must have provided as the PAM_USER item the name of the target user.</p>
+<p>pam_xauth calls <strong>xauth</strong>(1) as the source user to extract the key for $DISPLAY, then calls xauth as the target user to merge the key into the a temporary database and later remove the database.</p>
+<p>pam_xauth cannot be told to not remove the keys when the session is closed.</p>
+<h1>FILES</h1>
+<p>~/.xauth/import</p>
+<blockquote>
+<p>XXX</p>
+</blockquote>
+<p>~/.xauth/export</p>
+<blockquote>
+<p>XXX</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>pam.conf</strong>(5), <strong>pam.d</strong>(5), <strong>pam</strong>(7)</p>
+<h1>AUTHOR</h1>
+<p>pam_xauth was written by Nalin Dahyabhai &lt;nalin@redhat.com&gt;, based on original version by Michael K. Johnson &lt;johnsonm@redhat.com&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

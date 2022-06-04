@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fake-hwclock</title><meta name="description" content="Linux command fake-hwclock Control fake hardware clock"><meta name="keywords" content="linux, command, fake-hwclock, bsd, Control fake hardware clock"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>fake-hwclock - Control fake hardware clock</p>
+<h1>SYNOPSIS</h1>
+<p><strong>fake-hwclock</strong> [ <em>command</em> ] [ <strong>force</strong> ]</p>
+<h1>BACKGROUND</h1>
+<p>Many embedded Linux systems do not have a functional hardware clock. Either they simply don't have a hardware clock at all or they have a hardware clock but it is not usable (e.g. because Linux doesn't know how to use it or because no battery is present).</p>
+<p>This can lead to time moving backwards to some default value (often 1970) when the system is rebooted. Since lots of software assumes that time only moves forward this is a bad thing. NTP can (and should where practical) be used to sync with an external timeserver but it is not available early in the boot process and may be unavailable for other reasons.</p>
+<p>The design expectation of <strong>fake-hwclock</strong> is that it will be run very late at shutdown and very early at boot. This will ensure that fsck has a vaguely sensible idea of system time at boot and won't complain that the last-modified time in the filesystem is not hugely in the past or future. Some users may not worry about this too use case, in which case it is possible to modify the init system configuration to move things earlier/later as appropriate.</p>
+<h1>DESCRIPTION</h1>
+<p><strong>fake-hwclock</strong> sets and queries a fake "hardware clock" which stores the time in a file. This program may be run by the system administrator directly but is typically run by init (to load the time on startup and save it on shutdown) and cron (to save the time hourly).</p>
+<p>If no command is given then fake-hwclock acts as if the save command was used.</p>
+<h1>COMMANDS</h1>
+<h2></h2>
+<dl>
+<dt><strong>save</strong></dt>
+<dd><p>Save the time to the file. As a sanity check, fake-hwclock will not move the saved clock backwards to a time/date earlier than its own release date. Use "force" to over-ride this check.</p>
+</dd>
+<dt><strong>load</strong></dt>
+<dd><p>Load the time from the file. If force is specified fake-hwclock will move the clock either backwards or forwards. Otherwise it will only move it forwards.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<h2></h2>
+<dl>
+<dt><strong>/etc/fake-hwclock.data</strong></dt>
+<dd><p>The file used to store the time</p>
+</dd>
+<dt><strong>/etc/init.d/fake-hwclock</strong></dt>
+<dd><p>The init script used to run fake-hwclock on startup and shutdown</p>
+</dd>
+<dt><strong>/lib/systemd/system/fake-hwclock.service</strong></dt>
+<dd><p>systemd service used to run fake-hwclock on startup and shutdown</p>
+</dd>
+<dt><strong>/etc/default/fake-hwclock</strong></dt>
+<dd><p>Settings file for the init script.</p>
+</dd>
+<dt><strong>/etc/cron.hourly/fake-hwclock</strong></dt>
+<dd><p>Cron job used to save the time hourly</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT VARIABLES</h1>
+<h2></h2>
+<dl>
+<dt><strong>FILE</strong></dt>
+<dd><p>set the file used by fake-hwclock</p>
+</dd>
+</dl>
+<h1>RETURN VALUES</h1>
+<p>1 is returned for invalid commands. 0 is returned in all other cases.</p>
+<h1>BUGS</h1>
+<p>This approach can only provide a crude approximation of what a real hardware clock provides. Use of NTP or another method to keep the time in sync is strongly advised.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

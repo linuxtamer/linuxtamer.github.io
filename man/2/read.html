@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command read</title><meta name="description" content="Linux command read read from a file descriptor"><meta name="keywords" content="linux, command, read, bsd, read from a file descriptor"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>read - read from a file descriptor</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+
+ssize_t read(int fd, void *buf, size_t count);</code></pre>
+<h1>DESCRIPTION</h1>
+<p><strong>read</strong>() attempts to read up to <em>count</em> bytes from file descriptor <em>fd</em> into the buffer starting at <em>buf</em>.</p>
+<p>On files that support seeking, the read operation commences at the file offset, and the file offset is incremented by the number of bytes read. If the file offset is at or past the end of file, no bytes are read, and <strong>read</strong>() returns zero.</p>
+<p>If <em>count</em> is zero, <strong>read</strong>() <em>may</em> detect the errors described below. In the absence of any errors, or if <strong>read</strong>() does not check for errors, a <strong>read</strong>() with a <em>count</em> of 0 returns zero and has no other effects.</p>
+<p>According to POSIX.1, if <em>count</em> is greater than <strong>SSIZE_MAX</strong>, the result is implementation-defined; see NOTES for the upper limit on Linux.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, the number of bytes read is returned (zero indicates end of file), and the file position is advanced by this number. It is not an error if this number is smaller than the number of bytes requested; this may happen for example because fewer bytes are actually available right now (maybe because we were close to end-of-file, or because we are reading from a pipe, or from a terminal), or because <strong>read</strong>() was interrupted by a signal. See also NOTES.</p>
+<p>On error, -1 is returned, and <em>errno</em> is set appropriately. In this case, it is left unspecified whether the file position (if any) changes.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>The file descriptor <em>fd</em> refers to a file other than a socket and has been marked nonblocking (<strong>O_NONBLOCK</strong>), and the read would block. See <strong>open</strong>(2) for further details on the <strong>O_NONBLOCK</strong> flag.</p>
+</dd>
+<dt><strong>EAGAIN</strong> or <strong>EWOULDBLOCK</strong></dt>
+<dd><p>The file descriptor <em>fd</em> refers to a socket and has been marked nonblocking (<strong>O_NONBLOCK</strong>), and the read would block. POSIX.1-2001 allows either error to be returned for this case, and does not require these constants to have the same value, so a portable application should check for both possibilities.</p>
+</dd>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not a valid file descriptor or is not open for reading.</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>buf</em> is outside your accessible address space.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>The call was interrupted by a signal before any data was read; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>fd</em> is attached to an object which is unsuitable for reading; or the file was opened with the <strong>O_DIRECT</strong> flag, and either the address specified in <em>buf</em>, the value specified in <em>count</em>, or the file offset is not suitably aligned.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>fd</em> was created via a call to <strong>timerfd_create</strong>(2) and the wrong size buffer was given to <strong>read</strong>(); see <strong>timerfd_create</strong>(2) for further information.</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>I/O error. This will happen for example when the process is in a background process group, tries to read from its controlling terminal, and either it is ignoring or blocking <strong>SIGTTIN</strong> or its process group is orphaned. It may also occur when there is a low-level I/O error while reading from a disk or tape. A further possible cause of <strong>EIO</strong> on networked filesystems is when an advisory lock had been taken out on the file descriptor and this lock has been lost. See the <em>Lost locks</em> section of <strong>fcntl</strong>(2) for further details.</p>
+</dd>
+<dt><strong>EISDIR</strong></dt>
+<dd><p><em>fd</em> refers to a directory.</p>
+</dd>
+</dl>
+<p>Other errors may occur, depending on the object connected to <em>fd</em>.</p>
+<h1>CONFORMING TO</h1>
+<p>SVr4, 4.3BSD, POSIX.1-2001.</p>
+<h1>NOTES</h1>
+<p>The types <em>size_t</em> and <em>ssize_t</em> are, respectively, unsigned and signed integer data types specified by POSIX.1.</p>
+<p>On Linux, <strong>read</strong>() (and similar system calls) will transfer at most 0x7ffff000 (2,147,479,552) bytes, returning the number of bytes actually transferred. (This is true on both 32-bit and 64-bit systems.)</p>
+<p>On NFS filesystems, reading small amounts of data will update the timestamp only the first time, subsequent calls may not do so. This is caused by client side attribute caching, because most if not all NFS clients leave <em>st_atime</em> (last file access time) updates to the server, and client side reads satisfied from the client's cache will not cause <em>st_atime</em> updates on the server as there are no server-side reads. UNIX semantics can be obtained by disabling client-side attribute caching, but in most situations this will substantially increase server load and decrease performance.</p>
+<h1>BUGS</h1>
+<p>According to POSIX.1-2008/SUSv4 Section XSI 2.9.7 ("Thread Interactions with Regular File Operations"):</p>
+<blockquote>
+<p>All of the following functions shall be atomic with respect to each other in the effects specified in POSIX.1-2008 when they operate on regular files or symbolic links: ...</p>
+</blockquote>
+<p>Among the APIs subsequently listed are <strong>read</strong>() and <strong>readv</strong>(2). And among the effects that should be atomic across threads (and processes) are updates of the file offset. However, on Linux before version 3.14, this was not the case: if two processes that share an open file description (see <strong>open</strong>(2)) perform a <strong>read</strong>() (or <strong>readv</strong>(2)) at the same time, then the I/O operations were not atomic with respect updating the file offset, with the result that the reads in the two processes might (incorrectly) overlap in the blocks of data that they obtained. This problem was fixed in Linux 3.14.</p>
+<h1>SEE ALSO</h1>
+<p><strong>close</strong>(2), <strong>fcntl</strong>(2), <strong>ioctl</strong>(2), <strong>lseek</strong>(2), <strong>open</strong>(2), <strong>pread</strong>(2), <strong>readdir</strong>(2), <strong>readlink</strong>(2), <strong>readv</strong>(2), <strong>select</strong>(2), <strong>write</strong>(2), <strong>fread</strong>(3)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

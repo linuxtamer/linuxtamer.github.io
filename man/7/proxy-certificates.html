@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command proxy-certificates</title><meta name="description" content="Linux command proxy-certificates Proxy certificates in OpenSSL"><meta name="keywords" content="linux, command, proxy-certificates, bsd, Proxy certificates in OpenSSL"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>proxy-certificates - Proxy certificates in OpenSSL</p>
+<h1>DESCRIPTION</h1>
+<p>Proxy certificates are defined in RFC 3820. They are used to extend rights to some other entity (a computer process, typically, or sometimes to the user itself). This allows the entity to perform operations on behalf of the owner of the EE (End Entity) certificate.</p>
+<p>The requirements for a valid proxy certificate are:</p>
+<ul>
+<li><p>They are issued by an End Entity, either a normal EE certificate, or another proxy certificate.</p></li>
+<li><p>They must not have the <strong>subjectAltName</strong> or <strong>issuerAltName</strong> extensions.</p></li>
+<li><p>They must have the <strong>proxyCertInfo</strong> extension.</p></li>
+<li><p>They must have the subject of their issuer, with one <strong>commonName</strong> added.</p></li>
+</ul>
+<h2>Enabling proxy certificate verification</h2>
+<p>OpenSSL expects applications that want to use proxy certificates to be specially aware of them, and make that explicit. This is done by setting an X509 verification flag:</p>
+<p>X509_STORE_CTX_set_flags(ctx, X509_V_FLAG_ALLOW_PROXY_CERTS);</p>
+<p>or</p>
+<p>X509_VERIFY_PARAM_set_flags(param, X509_V_FLAG_ALLOW_PROXY_CERTS);</p>
+<p>See NOTES for a discussion on this requirement.</p>
+<h2>Creating proxy certificates</h2>
+<p>Creating proxy certificates can be done using the <strong>openssl-x509</strong> (1) command, with some extra extensions:</p>
+<p>[ v3_proxy ] # A proxy certificate MUST NEVER be a CA certificate. basicConstraints=CA:FALSE # Usual authority key ID authorityKeyIdentifier=keyid,issuer:always # The extension which marks this certificate as a proxy proxyCertInfo=critical,language:id-ppl-anyLanguage,pathlen:1,policy:text:AB</p>
+<p>It's also possible to specify the proxy extension in a separate section:</p>
+<p>proxyCertInfo=critical,@proxy_ext [ proxy_ext ] language=id-ppl-anyLanguage pathlen=0 policy=text:BC</p>
+<p>The policy value has a specific syntax, <em>syntag</em>:<em>string</em>, where the <em>syntag</em> determines what will be done with the string. The following <em>syntag</em>s are recognised:</p>
+<ul>
+<li><p>indicates that the string is a byte sequence, without any encoding: policy=text:ra\k:.ksmo\k:.rga\k:°'u-0)/2u'(des</p></li>
+<li><p>indicates the string is encoded hexadecimal encoded binary data, with colons between each byte (every second hex digit): policy=hex:72:E4:6B:73:6D:F6:72:67:E5:73</p></li>
+<li><p>indicates that the text of the policy should be taken from a file. The string is then a filename. This is useful for policies that are large (more than a few lines, e.g. XML documents).</p></li>
+</ul>
+<p><em>NOTE: The proxy policy value is what determines the rights granted</em> to the process during the proxy certificate. It's up to the application to interpret and combine these policies.</p>
+<p>With a proxy extension, creating a proxy certificate is a matter of two commands:</p>
+<p>openssl req -new -config proxy.cnf \ -out proxy.req -keyout proxy.key \ -subj "/DC=org/DC=openssl/DC=users/CN=proxy 1" openssl x509 -req -CAcreateserial -in proxy.req -out proxy.crt \ -CA user.crt -CAkey user.key -days 7 \ -extfile proxy.cnf -extensions v3_proxy1</p>
+<p>You can also create a proxy certificate using another proxy certificate as issuer (note: using a different configuration section for the proxy extensions):</p>
+<p>openssl req -new -config proxy.cnf \ -out proxy2.req -keyout proxy2.key \ -subj "/DC=org/DC=openssl/DC=users/CN=proxy 1/CN=proxy 2" openssl x509 -req -CAcreateserial -in proxy2.req -out proxy2.crt \ -CA proxy.crt -CAkey proxy.key -days 7 \ -extfile proxy.cnf -extensions v3_proxy2</p>
+<h2>Using proxy certs in applications</h2>
+<p>To interpret proxy policies, the application would normally start with some default rights (perhaps none at all), then compute the resulting rights by checking the rights against the chain of proxy certificates, user certificate and CA certificates.</p>
+<p>The complicated part is figuring out how to pass data between your application and the certificate validation procedure.</p>
+<p>The following ingredients are needed for such processing:</p>
+<ul>
+<li><p>a callback function that will be called for every certificate being validated. The callback is called several times for each certificate, so you must be careful to do the proxy policy interpretation at the right time. You also need to fill in the defaults when the EE certificate is checked.</p></li>
+<li><p>a data structure that is shared between your application code and the callback.</p></li>
+<li><p>a wrapper function that sets it all up.</p></li>
+<li><p>an ex_data index function that creates an index into the generic ex_data store that is attached to an X509 validation context.</p></li>
+</ul>
+<p>The following skeleton code can be used as a starting point:</p>
+<p>#include &lt;string.h&gt; #include &lt;netdb.h&gt; #include &lt;openssl/x509.h&gt; #include &lt;openssl/x509v3.h&gt; #define total_rights 25 /* * In this example, I will use a view of granted rights as a bit * array, one bit for each possible right. */ typedef struct your_rights { unsigned char rights[(total_rights + 7) / 8]; } YOUR_RIGHTS; /* * The following procedure will create an index for the ex_data * store in the X509 validation context the first time its * called. Subsequent calls will return the same index. */ static int get_proxy_auth_ex_data_idx(X509_STORE_CTX *ctx) { static volatile int idx = -1; if (idx &lt; 0) { X509_STORE_lock(X509_STORE_CTX_get0_store(ctx)); if (idx &lt; 0) { idx = X509_STORE_CTX_get_ex_new_index(0, "for verify callback", NULL,NULL,NULL); } X509_STORE_unlock(X509_STORE_CTX_get0_store(ctx)); } return idx; } /* Callback to be given to the X509 validation procedure. */ static int verify_callback(int ok, X509_STORE_CTX *ctx) { if (ok == 1) { /* * Its REALLY important you keep the proxy policy check * within this section. Its important to know that when * ok is 1, the certificates are checked from top to * bottom. You get the CA root first, followed by the * possible chain of intermediate CAs, followed by the EE * certificate, followed by the possible proxy * certificates. */ X509 *xs = X509_STORE_CTX_get_current_cert(ctx); if (X509_get_extension_flags(xs) &amp; EXFLAG_PROXY) { YOUR_RIGHTS *rights = (YOUR_RIGHTS *)X509_STORE_CTX_get_ex_data(ctx, get_proxy_auth_ex_data_idx(ctx)); PROXY_CERT_INFO_EXTENSION *pci = X509_get_ext_d2i(xs, NID_proxyCertInfo, NULL, NULL); switch (OBJ_obj2nid(pci-&gt;proxyPolicy-&gt;policyLanguage)) { case NID_Independent: /* * Do whatever you need to grant explicit rights * to this particular proxy certificate, usually * by pulling them from some database. If there * are none to be found, clear all rights (making * this and any subsequent proxy certificate void * of any rights). */ memset(rights-&gt;rights, 0, sizeof(rights-&gt;rights)); break; case NID_id_ppl_inheritAll: /* * This is basically a NOP, we simply let the * current rights stand as they are. */ break; default: /* * This is usually the most complex section of * code. You really do whatever you want as long * as you follow RFC 3820. In the example we use * here, the simplest thing to do is to build * another, temporary bit array and fill it with * the rights granted by the current proxy * certificate, then use it as a mask on the * accumulated rights bit array, and voila, you * now have a new accumulated rights bit array. */ { int i; YOUR_RIGHTS tmp_rights; memset(tmp_rights.rights, 0, sizeof(tmp_rights.rights)); /* * process_rights() is supposed to be a * procedure that takes a string and its * length, interprets it and sets the bits * in the YOUR_RIGHTS pointed at by the * third argument. */ process_rights((char *) pci-&gt;proxyPolicy-&gt;policy-&gt;data, pci-&gt;proxyPolicy-&gt;policy-&gt;length, &amp;tmp_rights); for(i = 0; i &lt; total_rights / 8; i++) rights-&gt;rights[i] &amp;= tmp_rights.rights[i]; } break; } PROXY_CERT_INFO_EXTENSION_free(pci); } else if (!(X509_get_extension_flags(xs) &amp; EXFLAG_CA)) { /* We have an EE certificate, lets use it to set default! */ YOUR_RIGHTS *rights = (YOUR_RIGHTS *)X509_STORE_CTX_get_ex_data(ctx, get_proxy_auth_ex_data_idx(ctx)); /* * The following procedure finds out what rights the * owner of the current certificate has, and sets them * in the YOUR_RIGHTS structure pointed at by the * second argument. */ set_default_rights(xs, rights); } } return ok; } static int my_X509_verify_cert(X509_STORE_CTX *ctx, YOUR_RIGHTS *needed_rights) { int ok; int (*save_verify_cb)(int ok,X509_STORE_CTX *ctx) = X509_STORE_CTX_get_verify_cb(ctx); YOUR_RIGHTS rights; X509_STORE_CTX_set_verify_cb(ctx, verify_callback); X509_STORE_CTX_set_ex_data(ctx, get_proxy_auth_ex_data_idx(ctx), &amp;rights); X509_STORE_CTX_set_flags(ctx, X509_V_FLAG_ALLOW_PROXY_CERTS); ok = X509_verify_cert(ctx); if (ok == 1) { ok = check_needed_rights(rights, needed_rights); } X509_STORE_CTX_set_verify_cb(ctx, save_verify_cb); return ok; }</p>
+<p>If you use SSL or TLS, you can easily set up a callback to have the certificates checked properly, using the code above:</p>
+<p>SSL_CTX_set_cert_verify_callback(s_ctx, my_X509_verify_cert, &amp;needed_rights);</p>
+<h1>NOTES</h1>
+<p>To this date, it seems that proxy certificates have only been used in environments that are aware of them, and no one seems to have investigated how they can be used or misused outside of such an environment.</p>
+<p>For that reason, OpenSSL requires that applications aware of proxy certificates must also make that explicit.</p>
+<p><strong>subjectAltName</strong> and <strong>issuerAltName</strong> are forbidden in proxy certificates, and this is enforced in OpenSSL. The subject must be the same as the issuer, with one commonName added on.</p>
+<h1>SEE ALSO</h1>
+<p><strong>X509_STORE_CTX_set_flags</strong> (3), <strong>X509_STORE_CTX_set_verify_cb</strong> (3), <strong>X509_VERIFY_PARAM_set_flags</strong> (3), <strong>SSL_CTX_set_cert_verify_callback</strong> (3), <strong>openssl-req</strong> (1), <strong>openssl-x509</strong> (1), RFC 3820 &lt;https://tools.ietf.org/html/rfc3820&gt;</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright 2019 The OpenSSL Project Authors. All Rights Reserved.</p>
+<p>Licensed under the Apache License 2.0 (the License). You may not use this file except in compliance with the License. You can obtain a copy in the file LICENSE in the source distribution or at &lt;https://www.openssl.org/source/license.html&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

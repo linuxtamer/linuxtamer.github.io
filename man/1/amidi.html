@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command amidi</title><meta name="description" content="Linux command amidi read from and write to ALSA RawMIDI ports"><meta name="keywords" content="linux, command, amidi, bsd, read from and write to ALSA RawMIDI ports"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>amidi - read from and write to ALSA RawMIDI ports</p>
+<h1>SYNOPSIS</h1>
+<p><strong>amidi</strong> [<em>-p port</em>] [<em>-s file</em> | <em>-S data</em>] [<em>-r file</em>] [<em>-d</em>] [<em>-t seconds</em>] [<em>-a</em>]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>amidi</strong> is a command-line utility which allows one to receive and send SysEx (system exclusive) data from/to external MIDI devices. It can also send any other MIDI commands.</p>
+<p><strong>amidi</strong> handles only files containing raw MIDI commands, without timing information. <strong>amidi</strong> does not support Standard MIDI (.mid) files, but <strong>aplaymidi(1)</strong> and <strong>arecordmidi(1)</strong> do.</p>
+<h1>OPTIONS</h1>
+<p>Use the <em>-h,</em> <em>-V,</em> <em>-l,</em> or <em>-L</em> options to display information; or use at least one of the <em>-s,</em> <em>-r,</em> <em>-S,</em> or <em>-d</em> options to specify what data to send or receive.</p>
+<dl>
+<dt><em>-h, --help</em></dt>
+<dd><p>Help: prints a list of options.</p>
+</dd>
+</dl>
+<dl>
+<dt><em>-V, --version</em></dt>
+<dd><p>Prints the current version.</p>
+</dd>
+</dl>
+<dl>
+<dt><em>-l, --list-devices</em></dt>
+<dd><p>Prints a list of all hardware MIDI ports.</p>
+</dd>
+</dl>
+<dl>
+<dt><em>-L, --list-rawmidis</em></dt>
+<dd><p>Prints all RawMIDI definitions. (used when debugging configuration files)</p>
+</dd>
+</dl>
+<dl>
+<dt><em>-p, --port=name</em></dt>
+<dd><p>Sets the name of the ALSA RawMIDI port to use. If this is not specified, <strong>amidi</strong> uses the default port defined in the configuration file (the default for this is port 0 on card 0, which may not exist).</p>
+</dd>
+</dl>
+<dl>
+<dt><em>-s, --send=filename</em></dt>
+<dd><p>Sends the contents of the specified file to the MIDI port. The file must contain raw MIDI commands (e.g. a .syx file); for Standard MIDI (.mid) files, use <strong>aplaymidi(1).</strong></p>
+</dd>
+</dl>
+<dl>
+<dt><em>-r, --receive=filename</em></dt>
+<dd><p>Writes data received from the MIDI port into the specified file. The file will contain raw MIDI commands (such as in a .syx file); to record a Standard MIDI (.mid) file, use <strong>arecordmidi(1).</strong></p>
+</dd>
+</dl>
+<p><strong>amidi</strong> will filter out any Active Sensing and Clock bytes (FEh, F8h), unless the <em>-a</em> or <em>-c</em> options have been given.</p>
+<dl>
+<dt><em>-S, --send-hex="..."</em></dt>
+<dd><p>Sends the bytes specified as hexadecimal numbers to the MIDI port.</p>
+</dd>
+</dl>
+<dl>
+<dt><em>-d, --dump</em></dt>
+<dd><p>Prints data received from the MIDI port as hexadecimal bytes. Active Sensing and Clock bytes (FEh, F8h) will not be shown, unless the <em>-a</em> or <em>-c</em> options have been given.</p>
+</dd>
+</dl>
+<p>This option is useful for debugging.</p>
+<dl>
+<dt><em>-t, --timeout=seconds</em></dt>
+<dd><p>Stops receiving data when no data has been received for the specified amount of time.</p>
+</dd>
+</dl>
+<p>If this option has not been given, you must press Ctrl+C (or kill <strong>amidi)</strong> to stop receiving data.</p>
+<dl>
+<dt><em>-a, --active-sensing</em></dt>
+<dd><p>Does not ignore Active Sensing bytes (FEh) when saving or printing received MIDI commands.</p>
+</dd>
+</dl>
+<dl>
+<dt><em>-c, --clock</em></dt>
+<dd><p>Does not ignore Clock bytes (F8h) when saving or printing received MIDI commands.</p>
+</dd>
+</dl>
+<dl>
+<dt><em>-i, --sysex-interval=mseconds</em></dt>
+<dd><p>Adds a delay in between each SysEx message sent to a device. It is useful when sending firmware updates via SysEx messages to a remote device.</p>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<dl>
+<dt><strong>amidi -p hw:0 -s my_settings.syx</strong></dt>
+<dd><p>will send the MIDI commands in <em>my_settings.syx</em> to port <em>hw:0.</em></p>
+</dd>
+</dl>
+<dl>
+<dt><strong>amidi -p hw:1,0,0 -s firmware.syx -i 100</strong></dt>
+<dd><p>will send the MIDI commands in <em>firmware.syx</em> to port <em>hw:1,0,0</em> with 100 milliseconds delay in between each SysEx message.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>amidi -S 'F0 43 10 4C 00 00 7E 00 F7'</strong></dt>
+<dd><p>sends an XG Reset to the default port.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>amidi -p hw:1,2 -S F0411042110C000000000074F7 -r dump.syx -t 1</strong></dt>
+<dd><p>sends a “Parameter Dump Request” to a GS device, saves the received parameter data to the file <em>dump.syx,</em> and stops after the device has finished sending data (when no data has been received for one second).</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>amidi -p virtual -d</strong></dt>
+<dd><p>creates a virtual RawMIDI port and prints all data sent to this port.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<p><em>/usr/share/alsa/alsa.conf</em> default rawmidi definitions<br />
+<em>/etc/asound.conf</em> system-wide rawmidi definitions<br />
+<em>~/.asoundrc</em> user specific rawmidi definitions</p>
+<h1>SEE ALSO</h1>
+<p>aplaymidi(1)<br />
+arecordmidi(1)</p>
+<h1>AUTHOR</h1>
+<p>Clemens Ladisch &lt;clemens@ladisch.de&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

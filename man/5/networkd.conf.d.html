@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command networkd.conf.d</title><meta name="description" content="Linux command networkd.conf.d Global Network configuration files"><meta name="keywords" content="linux, command, networkd.conf.d, bsd, Global Network configuration files"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>networkd.conf, networkd.conf.d - Global Network configuration files</p>
+<h1>SYNOPSIS</h1>
+<p>/etc/systemd/networkd.conf</p>
+<p>/etc/systemd/networkd.conf.d/*.conf</p>
+<p>/lib/systemd/networkd.conf.d/*.conf</p>
+<h1>DESCRIPTION</h1>
+<p>These configuration files control global network parameters. Currently the DHCP Unique Identifier (DUID).</p>
+<h1>CONFIGURATION DIRECTORIES AND PRECEDENCE</h1>
+<p>The default configuration is defined during compilation, so a configuration file is only needed when it is necessary to deviate from those defaults. By default, the configuration file in /etc/systemd/ contains commented out entries showing the defaults as a guide to the administrator. This file can be edited to create local overrides.</p>
+<p>When packages need to customize the configuration, they can install configuration snippets in /usr/lib/systemd/*.conf.d/ or /usr/local/lib/systemd/*.conf.d/. The main configuration file is read before any of the configuration directories, and has the lowest precedence; entries in a file in any configuration directory override entries in the single configuration file. Files in the *.conf.d/ configuration subdirectories are sorted by their filename in lexicographic order, regardless of in which of the subdirectories they reside. When multiple files specify the same option, for options which accept just a single value, the entry in the file with the lexicographically latest name takes precedence. For options which accept a list of values, entries are collected as they occur in files sorted lexicographically.</p>
+<p>Files in /etc/ are reserved for the local administrator, who may use this logic to override the configuration files installed by vendor packages. It is recommended to prefix all filenames in those subdirectories with a two-digit number and a dash, to simplify the ordering of the files.</p>
+<p>To disable a configuration file supplied by the vendor, the recommended way is to place a symlink to /dev/null in the configuration directory in /etc/, with the same filename as the vendor configuration file.</p>
+<h1>[NETWORK] SECTION OPTIONS</h1>
+<p>The following options are available in the [Network] section:</p>
+<p><em>SpeedMeter=</em></p>
+<blockquote>
+<p>Takes a boolean. If set to yes, then <strong>systemd-networkd</strong> measures the traffic of each interface, and <strong>networkctl status </strong><em>INTERFACE</em> shows the measured speed. Defaults to no.</p>
+</blockquote>
+<p><em>SpeedMeterIntervalSec=</em></p>
+<blockquote>
+<p>Specifies the time interval to calculate the traffic speed of each interface. If <em>SpeedMeter=no</em>, the value is ignored. Defaults to 10sec.</p>
+</blockquote>
+<p><em>ManageForeignRoutes=</em></p>
+<blockquote>
+<p>A boolean. When true, <strong>systemd-networkd</strong> will store any routes configured by other tools in its memory. When false, <strong>systemd-networkd</strong> will not manage the foreign routes, thus they are kept even if <em>KeepConfiguration=</em> is false. Defaults to yes.</p>
+</blockquote>
+<h1>[DHCP] SECTION OPTIONS</h1>
+<p>This section configures the DHCP Unique Identifier (DUID) value used by DHCP protocol. DHCPv6 client protocol sends the DHCP Unique Identifier and the interface Identity Association Identifier (IAID) to a DHCP server when acquiring a dynamic IPv6 address. DHCPv4 client protocol sends IAID and DUID to the DHCP server when acquiring a dynamic IPv4 address if <strong>ClientIdentifier=duid</strong>. IAID and DUID allows a DHCP server to uniquely identify the machine and the interface requesting a DHCP IP. To configure IAID and ClientIdentifier, see <strong>systemd.network</strong>(5).</p>
+<p>The following options are understood:</p>
+<p><em>DUIDType=</em></p>
+<blockquote>
+<p>Specifies how the DUID should be generated. See <strong>RFC 3315</strong>[1] for a description of all the options.</p>
+<p>The following values are understood:</p>
+<p><strong>vendor</strong></p>
+<blockquote>
+<p>If "DUIDType=vendor", then the DUID value will be generated using "43793" as the vendor identifier (systemd) and hashed contents of <strong>machine-id</strong>(5). This is the default if <em>DUIDType=</em> is not specified.</p>
+</blockquote>
+<p><strong>uuid</strong></p>
+<blockquote>
+<p>If "DUIDType=uuid", and <em>DUIDRawData=</em> is not set, then the product UUID is used as a DUID value. If a system does not have valid product UUID, then an application-specific <strong>machine-id</strong>(5) is used as a DUID value. About the application-specific machine ID, see <strong>sd_id128_get_machine_app_specific</strong>(3).</p>
+</blockquote>
+<p><strong>link-layer-time[:</strong><em>TIME</em><strong>]</strong>, <strong>link-layer</strong></p>
+<blockquote>
+<p>If "link-layer-time" or "link-layer" is specified, then the MAC address of the interface is used as a DUID value. The value "link-layer-time" can take additional time value after a colon, e.g. "link-layer-time:2018-01-23 12:34:56 UTC". The default time value is "2000-01-01 00:00:00 UTC".</p>
+</blockquote>
+<p>In all cases, <em>DUIDRawData=</em> can be used to override the actual DUID value that is used.</p>
+</blockquote>
+<p><em>DUIDRawData=</em></p>
+<blockquote>
+<p>Specifies the DHCP DUID value as a single newline-terminated, hexadecimal string, with each byte separated by ":". The DUID that is sent is composed of the DUID type specified by <em>DUIDType=</em> and the value configured here.</p>
+<p>The DUID value specified here overrides the DUID that <strong>systemd-networkd.service</strong>(8) generates from the machine ID. To configure DUID per-network, see <strong>systemd.network</strong>(5). The configured DHCP DUID should conform to the specification in <strong>RFC 3315</strong>[2], <strong>RFC 6355</strong>[3]. To configure IAID, see <strong>systemd.network</strong>(5).</p>
+<p><strong>Example 1. A DUIDType=vendor with a custom value</strong></p>
+<blockquote>
+<pre><code>DUIDType=vendor
+DUIDRawData=00:00:ab:11:f9:2a:c2:77:29:f9:5c:00</code></pre>
+</blockquote>
+<p>This specifies a 14 byte DUID, with the type DUID-EN ("00:02"), enterprise number 43793 ("00:00:ab:11"), and identifier value "f9:2a:c2:77:29:f9:5c:00".</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemd.network</strong>(5), <strong>systemd-networkd.service</strong>(8), <strong>machine-id</strong>(5), <strong>sd_id128_get_machine_app_specific</strong>(3)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>RFC 3315</p>
+<p>https://tools.ietf.org/html/rfc3315#section-9</p></li>
+<li><p>RFC 3315</p>
+<p>http://tools.ietf.org/html/rfc3315#section-9</p></li>
+<li><p>RFC 6355</p>
+<p>http://tools.ietf.org/html/rfc6355</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

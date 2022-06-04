@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command flock</title><meta name="description" content="Linux command flock manage locks from shell scripts"><meta name="keywords" content="linux, command, flock, bsd, manage locks from shell scripts"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>flock - manage locks from shell scripts</p>
+<h1>SYNOPSIS</h1>
+<p><strong>flock</strong> [options] <em>file</em>|<em>directory command </em>[<em>arguments</em>]<br />
+<strong>flock</strong> [options] <em>file</em>|<em>directory</em> <strong>-c</strong><em> command</em><br />
+<strong>flock</strong> [options]<em> number</em></p>
+<h1>DESCRIPTION</h1>
+<p>This utility manages <strong>flock</strong>(2) locks from within shell scripts or from the command line.</p>
+<p>The first and second of the above forms wrap the lock around the execution of a <em>command</em>, in a manner similar to <strong>su</strong>(1) or <strong>newgrp</strong>(1). They lock a specified <em>file</em> or <em>directory</em>, which is created (assuming appropriate permissions) if it does not already exist. By default, if the lock cannot be immediately acquired, <strong>flock</strong> waits until the lock is available.</p>
+<p>The third form uses an open file by its file descriptor <em>number</em>. See the examples below for how that can be used.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-c</strong>,<strong> --command </strong><em>command</em></dt>
+<dd><p>Pass a single <em>command</em>, without arguments, to the shell with <strong>-c</strong>.</p>
+</dd>
+<dt><strong>-E</strong>,<strong> --conflict-exit-code </strong><em>number</em></dt>
+<dd><p>The exit status used when the <strong>-n</strong><em> option is in use, and the</em> conflicting lock exists, or the <strong>-w</strong><em> option is in use,</em> and the timeout is reached. The default value is <strong>1</strong>. The <em>number</em> has to be in the range of 0 to 255.</p>
+</dd>
+<dt><strong>-F</strong>,<strong> --no-fork</strong></dt>
+<dd><p>Do not fork before executing <em>command</em>. Upon execution the flock process is replaced by <em>command</em> which continues to hold the lock. This option is incompatible with <strong>--close</strong> as there would otherwise be nothing left to hold the lock.</p>
+</dd>
+<dt><strong>-e</strong>,<strong> -x</strong>,<strong> --exclusive</strong></dt>
+<dd><p>Obtain an exclusive lock, sometimes called a write lock. This is the default.</p>
+</dd>
+<dt><strong>-n</strong>,<strong> --nb</strong>,<strong> --nonblock</strong></dt>
+<dd><p>Fail rather than wait if the lock cannot be immediately acquired. See the <strong>-E</strong> option for the exit status used.</p>
+</dd>
+<dt><strong>-o</strong>,<strong> --close</strong></dt>
+<dd><p>Close the file descriptor on which the lock is held before executing <em>command</em>. This is useful if <em>command</em> spawns a child process which should not be holding the lock.</p>
+</dd>
+<dt><strong>-s</strong>,<strong> --shared</strong></dt>
+<dd><p>Obtain a shared lock, sometimes called a read lock.</p>
+</dd>
+<dt><strong>-u</strong>,<strong> --unlock</strong></dt>
+<dd><p>Drop a lock. This is usually not required, since a lock is automatically dropped when the file is closed. However, it may be required in special cases, for example if the enclosed command group may have forked a background process which should not be holding the lock.</p>
+</dd>
+<dt><strong>-w</strong>,<strong> --wait</strong>,<strong> --timeout </strong><em>seconds</em></dt>
+<dd><p>Fail if the lock cannot be acquired within <em>seconds</em>. Decimal fractional values are allowed. See the <strong>-E</strong> option for the exit status used. The zero number of <em>seconds</em> is interpreted as <strong>--nonblock</strong>.</p>
+</dd>
+<dt><strong>--verbose</strong></dt>
+<dd><p>Report how long it took to acquire the lock, or why the lock could not be obtained.</p>
+</dd>
+<dt><strong>-V</strong>,<strong> --version</strong></dt>
+<dd><p>Display version information and exit.</p>
+</dd>
+<dt><strong>-h</strong>,<strong> --help</strong></dt>
+<dd><p>Display help text and exit.</p>
+</dd>
+</dl>
+<h1>EXIT STATUS</h1>
+<p>The command uses <strong>sysexits.h</strong> exit status values for everything, except when using either of the options <strong>-n</strong> or <strong>-w</strong> which report a failure to acquire the lock with a exit status given by the <strong>-E</strong> option, or 1 by default. The exit status given by <strong>-E has to be in the range of 0 to 255.</strong></p>
+<p>When using the <em>command</em> variant, and executing the child worked, then the exit status is that of the child command.</p>
+<h1>EXAMPLES</h1>
+<p>Note that "shell&gt; " in examples is a command line prompt.</p>
+<dl>
+<dt>shell1&gt; flock /tmp -c cat<br />
+shell2&gt; flock -w .007 /tmp -c echo; /bin/echo $?</dt>
+<dd><p>Set exclusive lock to directory /tmp and the second command will fail.</p>
+</dd>
+<dt>shell1&gt; flock -s /tmp -c cat<br />
+shell2&gt; flock -s -w .007 /tmp -c echo; /bin/echo $?</dt>
+<dd><p>Set shared lock to directory /tmp and the second command will not fail. Notice that attempting to get exclusive lock with second command would fail.</p>
+</dd>
+<dt>shell&gt; flock -x local-lock-file echo 'a b c'</dt>
+<dd><p>Grab the exclusive lock "local-lock-file" before running echo with 'a b c'.</p>
+</dd>
+<dt>(<br />
+flock -n 9 || exit 1<br />
+# ... commands executed under lock ...<br />
+) 9&gt;/var/lock/mylockfile</dt>
+<dd><p>The form is convenient inside shell scripts. The mode used to open the file doesn't matter to <strong>flock</strong>; using <em>&gt;</em> or <em>&gt;&gt;</em> allows the lockfile to be created if it does not already exist, however, write permission is required. Using <em>&lt;</em> requires that the file already exists but only read permission is required.</p>
+</dd>
+<dt>[ "${FLOCKER}" != "$0" ] &amp;&amp; exec env FLOCKER="$0" flock -en "$0" "$0" "$@" || :</dt>
+<dd><p>This is useful boilerplate code for shell scripts. Put it at the top of the shell script you want to lock and it'll automatically lock itself on the first run. If the env var $FLOCKER is not set to the shell script that is being run, then execute flock and grab an exclusive non-blocking lock (using the script itself as the lock file) before re-execing itself with the right arguments. It also sets the FLOCKER env var to the right value so it doesn't run again.</p>
+</dd>
+<dt>shell&gt; exec 4&lt;&gt;/var/lock/mylockfile<br />
+shell&gt; flock -n 4</dt>
+<dd><p>This form is convenient for locking a file without spawning a subprocess. The shell opens the lock file for reading and writing as file descriptor 4, then flock is used to lock the descriptor.</p>
+</dd>
+</dl>
+<h1>AUTHORS</h1>
+<p><a href="hpa@zytor.com">H. Peter Anvin</a></p>
+<h1>COPYRIGHT</h1>
+<p>Copyright © 2003-2006 H. Peter Anvin.<br />
+This is free software; see the source for copying conditions. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</p>
+<h1>SEE ALSO</h1>
+<p><strong>flock</strong>(2)</p>
+<h1>AVAILABILITY</h1>
+<p>The flock command is part of the util-linux package and is available from <a href="https://www.kernel.org/pub/linux/utils/util-linux/">Linux Kernel Archive</a>.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

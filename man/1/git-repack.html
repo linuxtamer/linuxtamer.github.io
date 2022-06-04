@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command git-repack</title><meta name="description" content="Linux command git-repack Pack unpacked objects in a repository"><meta name="keywords" content="linux, command, git-repack, bsd, Pack unpacked objects in a repository"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>git-repack - Pack unpacked objects in a repository</p>
+<h1>SYNOPSIS</h1>
+<pre><code>git repack [-a] [-A] [-d] [-f] [-F] [-l] [-n] [-q] [-b] [--window=&lt;n&gt;] [--depth=&lt;n&gt;] [--threads=&lt;n&gt;] [--keep-pack=&lt;pack-name&gt;]</code></pre>
+<h1>DESCRIPTION</h1>
+<p>This command is used to combine all objects that do not currently reside in a "pack", into a pack. It can also be used to re-organize existing packs into a single, more efficient pack.</p>
+<p>A pack is a collection of objects, individually compressed, with delta compression applied, stored in a single file, with an associated index file.</p>
+<p>Packs are used to reduce the load on mirror systems, backup engines, disk storage, etc.</p>
+<h1>OPTIONS</h1>
+<p>-a</p>
+<blockquote>
+<p>Instead of incrementally packing the unpacked objects, pack everything referenced into a single pack. Especially useful when packing a repository that is used for private development. Use with <strong>-d</strong>. This will clean up the objects that <strong>git prune</strong> leaves behind, but <strong>git fsck --full --dangling</strong> shows as dangling.</p>
+<p>Note that users fetching over dumb protocols will have to fetch the whole new pack in order to get any contained object, no matter how many other objects in that pack they already have locally.</p>
+<p>Promisor packfiles are repacked separately: if there are packfiles that have an associated ".promisor" file, these packfiles will be repacked into another separate pack, and an empty ".promisor" file corresponding to the new separate pack will be written.</p>
+</blockquote>
+<p>-A</p>
+<blockquote>
+<p>Same as <strong>-a</strong>, unless <strong>-d</strong> is used. Then any unreachable objects in a previous pack become loose, unpacked objects, instead of being left in the old pack. Unreachable objects are never intentionally added to a pack, even when repacking. This option prevents unreachable objects from being immediately deleted by way of being left in the old pack and then removed. Instead, the loose unreachable objects will be pruned according to normal expiry rules with the next <em>git gc</em> invocation. See <strong>git-gc</strong>(1).</p>
+</blockquote>
+<p>-d</p>
+<blockquote>
+<p>After packing, if the newly created packs make some existing packs redundant, remove the redundant packs. Also run <em>git prune-packed</em> to remove redundant loose object files.</p>
+</blockquote>
+<p>-l</p>
+<blockquote>
+<p>Pass the <strong>--local</strong> option to <em>git pack-objects</em>. See <strong>git-pack-objects</strong>(1).</p>
+</blockquote>
+<p>-f</p>
+<blockquote>
+<p>Pass the <strong>--no-reuse-delta</strong> option to <strong>git-pack-objects</strong>, see <strong>git-pack-objects</strong>(1).</p>
+</blockquote>
+<p>-F</p>
+<blockquote>
+<p>Pass the <strong>--no-reuse-object</strong> option to <strong>git-pack-objects</strong>, see <strong>git-pack-objects</strong>(1).</p>
+</blockquote>
+<p>-q</p>
+<blockquote>
+<p>Pass the <strong>-q</strong> option to <em>git pack-objects</em>. See <strong>git-pack-objects</strong>(1).</p>
+</blockquote>
+<p>-n</p>
+<blockquote>
+<p>Do not update the server information with <em>git update-server-info</em>. This option skips updating local catalog files needed to publish this repository (or a direct copy of it) over HTTP or FTP. See <strong>git-update-server-info</strong>(1).</p>
+</blockquote>
+<p>--window=&lt;n&gt;, --depth=&lt;n&gt;</p>
+<blockquote>
+<p>These two options affect how the objects contained in the pack are stored using delta compression. The objects are first internally sorted by type, size and optionally names and compared against the other objects within <strong>--window</strong> to see if using delta compression saves space. <strong>--depth</strong> limits the maximum delta depth; making it too deep affects the performance on the unpacker side, because delta data needs to be applied that many times to get to the necessary object.</p>
+<p>The default value for --window is 10 and --depth is 50. The maximum depth is 4095.</p>
+</blockquote>
+<p>--threads=&lt;n&gt;</p>
+<blockquote>
+<p>This option is passed through to <strong>git pack-objects</strong>.</p>
+</blockquote>
+<p>--window-memory=&lt;n&gt;</p>
+<blockquote>
+<p>This option provides an additional limit on top of <strong>--window</strong>; the window size will dynamically scale down so as to not take up more than <em>&lt;n&gt;</em> bytes in memory. This is useful in repositories with a mix of large and small objects to not run out of memory with a large window, but still be able to take advantage of the large window for the smaller objects. The size can be suffixed with "k", "m", or "g". <strong>--window-memory=0</strong> makes memory usage unlimited. The default is taken from the <strong>pack.windowMemory</strong> configuration variable. Note that the actual memory usage will be the limit multiplied by the number of threads used by <strong>git-pack-objects</strong>(1).</p>
+</blockquote>
+<p>--max-pack-size=&lt;n&gt;</p>
+<blockquote>
+<p>Maximum size of each output pack file. The size can be suffixed with "k", "m", or "g". The minimum size allowed is limited to 1 MiB. If specified, multiple packfiles may be created, which also prevents the creation of a bitmap index. The default is unlimited, unless the config variable <strong>pack.packSizeLimit</strong> is set.</p>
+</blockquote>
+<p>-b, --write-bitmap-index</p>
+<blockquote>
+<p>Write a reachability bitmap index as part of the repack. This only makes sense when used with <strong>-a</strong> or <strong>-A</strong>, as the bitmaps must be able to refer to all reachable objects. This option overrides the setting of <strong>repack.writeBitmaps</strong>. This option has no effect if multiple packfiles are created.</p>
+</blockquote>
+<p>--pack-kept-objects</p>
+<blockquote>
+<p>Include objects in <strong>.keep</strong> files when repacking. Note that we still do not delete <strong>.keep</strong> packs after <strong>pack-objects</strong> finishes. This means that we may duplicate objects, but this makes the option safe to use when there are concurrent pushes or fetches. This option is generally only useful if you are writing bitmaps with <strong>-b</strong> or <strong>repack.writeBitmaps</strong>, as it ensures that the bitmapped packfile has the necessary objects.</p>
+</blockquote>
+<p>--keep-pack=&lt;pack-name&gt;</p>
+<blockquote>
+<p>Exclude the given pack from repacking. This is the equivalent of having <strong>.keep</strong> file on the pack. <strong>&lt;pack-name&gt;</strong> is the pack file name without leading directory (e.g. <strong>pack-123.pack</strong>). The option could be specified multiple times to keep multiple packs.</p>
+</blockquote>
+<p>--unpack-unreachable=&lt;when&gt;</p>
+<blockquote>
+<p>When loosening unreachable objects, do not bother loosening any objects older than <strong>&lt;when&gt;</strong>. This can be used to optimize out the write of any objects that would be immediately pruned by a follow-up <strong>git prune</strong>.</p>
+</blockquote>
+<p>-k, --keep-unreachable</p>
+<blockquote>
+<p>When used with <strong>-ad</strong>, any unreachable objects from existing packs will be appended to the end of the packfile instead of being removed. In addition, any unreachable loose objects will be packed (and their loose counterparts removed).</p>
+</blockquote>
+<p>-i, --delta-islands</p>
+<blockquote>
+<p>Pass the <strong>--delta-islands</strong> option to <strong>git-pack-objects</strong>, see <strong>git-pack-objects</strong>(1).</p>
+</blockquote>
+<h1>CONFIGURATION</h1>
+<p>By default, the command passes <strong>--delta-base-offset</strong> option to <em>git pack-objects</em>; this typically results in slightly smaller packs, but the generated packs are incompatible with versions of Git older than version 1.4.4. If you need to share your repository with such ancient Git versions, either directly or via the dumb http protocol, then you need to set the configuration variable <strong>repack.UseDeltaBaseOffset</strong> to "false" and repack. Access from old Git versions over the native protocol is unaffected by this option as the conversion is performed on the fly as needed in that case.</p>
+<h1>SEE ALSO</h1>
+<p><strong>git-pack-objects</strong>(1) <strong>git-prune-packed</strong>(1)</p>
+<h1>GIT</h1>
+<p>Part of the <strong>git</strong>(1) suite</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

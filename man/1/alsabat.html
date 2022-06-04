@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command alsabat</title><meta name="description" content="Linux command alsabat command-line sound tester for ALSA sound card driver"><meta name="keywords" content="linux, command, alsabat, bsd, command-line sound tester for ALSA sound card driver"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>alsabat - command-line sound tester for ALSA sound card driver</p>
+<h1>SYNOPSIS</h1>
+<p><strong>alsabat</strong> [<em>flags</em>]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>ALSABAT(ALSA Basic Audio Tester)</strong> is a simple command-line utility intended to help automate audio driver and sound server testing with little human interaction. ALSABAT can be used to test audio quality, stress test features and test audio before and after PM state changes.</p>
+<p>ALSABAT's design is relatively simple. ALSABAT plays an audio stream and captures the same stream in either a digital or analog loop back. It then compares the captured stream using a FFT to the original to determine if the test case passes or fails.</p>
+<p>ALSABAT can either run wholly on the target machine being tested (standalone mode) or can run as a client/server mode where by alsabat client runs on the target and runs as a server on a separate tester machine. The client/server mode still requires some manual interaction for synchronization, but this is actively being developed for future releases.</p>
+<p>The hardware testing configuration may require the use of an analog cable connecting target to tester machines or a cable to create an analog loopback if no loopback mode is available on the sound hardware that is being tested. An analog loopback cable can be used to connect the "line in" to "line out" jacks to create a loopback. If only headphone and mic jacks (or combo jack) are available then the following simple circuit can be used to create an analog loopback :-</p>
+<p>https://source.android.com/devices/audio/loopback.html</p>
+<p>If tinyalsa is installed in system, user can choose tinyalsa as backend lib of alsabat, with configure option "--enable-alsabat-backend-tiny".</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><em>-h, --help</em></dt>
+<dd><p>Help: show syntax.</p>
+</dd>
+<dt><em>-D</em></dt>
+<dd><p>Select sound card to be tested by name.</p>
+</dd>
+<dt><em>-P</em></dt>
+<dd><p>Select the playback PCM device.</p>
+</dd>
+<dt><em>-C</em></dt>
+<dd><p>Select the capture PCM device.</p>
+</dd>
+<dt><em>-f</em></dt>
+<dd><p>Sample format<br />
+Recognized sample formats are: U8 S16_LE S24_3LE S32_LE<br />
+Some of these may not be available on selected hardware<br />
+The available format shortcuts are:</p>
+</dd>
+</dl>
+<pre><code>-f cd (16 bit little endian, 44100, stereo) [-f S16_LE -c2 -r44100]
+-f dat (16 bit little endian, 48000, stereo) [-f S16_LE -c2 -r48000]</code></pre>
+<p>If no format is given S16_LE is used.</p>
+<dl>
+<dt><em>-c</em></dt>
+<dd><p>The number of channels. The default is one channel. Valid values at the moment are 1 or 2.</p>
+</dd>
+<dt><em>-r</em></dt>
+<dd><p>Sampling rate in Hertz. The default rate is 44100 Hertz. Valid values depends on hardware support.</p>
+</dd>
+<dt><em>-n</em></dt>
+<dd><p>Duration of generated signal. The value could be either of the two forms:<br />
+1. Decimal integer, means number of frames;<br />
+2. Floating point with suffix 's', means number of seconds.<br />
+The default is 2 seconds.</p>
+</dd>
+<dt><em>-k</em></dt>
+<dd><p>Sigma k value for analysis.<br />
+The analysis function reads data from WAV file, run FFT against the data to get magnitude of frequency vectors, and then calculates the average value and standard deviation of frequency vectors. After that, we define a threshold:<br />
+threshold = k * standard_deviation + mean_value<br />
+Frequencies with amplitude larger than threshold will be recognized as a peak, and the frequency with largest peak value will be recognized as a detected frequency.<br />
+ALSABAT then compares the detected frequency to target frequency, to decide if the detecting passes or fails.<br />
+The default value is 3.0.</p>
+</dd>
+<dt><em>-F</em></dt>
+<dd><p>Target frequency for signal generation and analysis, in Hertz. The default is 997.0 Hertz. Valid range is (DC_THRESHOLD, 40% * Sampling rate).</p>
+</dd>
+<dt><em>-p</em></dt>
+<dd><p>Total number of periods to play or capture.</p>
+</dd>
+<dt><em>--log=#</em></dt>
+<dd><p>Write stderr and stdout output to this log file.</p>
+</dd>
+<dt><em>--file=#</em></dt>
+<dd><p>Input WAV file for playback.</p>
+</dd>
+<dt><em>--saveplay=#</em></dt>
+<dd><p>Target WAV file to save capture test content.</p>
+</dd>
+<dt><em>--local</em></dt>
+<dd><p>Internal loopback mode. Playback, capture and analysis internal to ALSABAT only. This is intended for developers to test new ALSABAT features as no audio is routed outside of ALSABAT.</p>
+</dd>
+<dt><em>--standalone</em></dt>
+<dd><p>Add support for standalone mode where ALSABAT will run on a different machine to the one being tested. In standalone mode, the sound data can be generated, playback and captured just like in normal mode, but will not be analyzed. The ALSABAT being built without libfftw3 support is always in standalone mode. The ALSABAT in normal mode can also bypass data analysis using option "--standalone".</p>
+</dd>
+<dt><em>--roundtriplatency</em></dt>
+<dd><p>Round trip latency test. Audio latency is the time delay as an audio signal passes through a system. There are many kinds of audio latency metrics. One useful metric is the round trip latency, which is the sum of output latency and input latency.</p>
+</dd>
+<dt><em>--snr-db=#</em></dt>
+<dd><p>Noise detection threshold in SNR (dB). 26dB indicates 5% noise in amplitude. ALSABAT will return error if signal SNR is smaller than the threshold.</p>
+</dd>
+<dt><em>--snr-pc=#</em></dt>
+<dd><p>Noise detection threshold in percentage of noise amplitude (%). ALSABAT will return error if the noise amplitude is larger than the threshold.</p>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<dl>
+<dt><strong>alsabat -P plughw:0,0 -C plughw:0,0 -c 2 -f S32_LE -F 250</strong></dt>
+<dd><p>Generate and play a sine wave of 250 Hertz with 2 channel and S32_LE format, and then capture and analyze.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>alsabat -P plughw:0,0 -C plughw:0,0 --file 500Hz.wav</strong></dt>
+<dd><p>Play the RIFF WAV file "500Hz.wav" which contains 500 Hertz waveform LPCM data, and then capture and analyze.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p><br />
+On success, returns 0.<br />
+If no peak be detected, returns -1001;<br />
+If only DC be detected, returns -1002;<br />
+If peak frequency does not match with the target frequency, returns -1003.</p>
+<h1>SEE ALSO</h1>
+<p>aplay(1)</p>
+<h1>BUGS</h1>
+<p>Currently only support RIFF WAV format with PCM data. Please report any bugs to the alsa-devel mailing list.</p>
+<h1>AUTHOR</h1>
+<p><strong>alsabat</strong> is by Liam Girdwood &lt;liam.r.girdwood@linux.intel.com&gt;, Bernard Gautier &lt;bernard.gautier@intel.com&gt; and Han Lu &lt;han.lu@intel.com&gt;. This document is by Liam Girdwood &lt;liam.r.girdwood@linux.intel.com&gt; and Han Lu &lt;han.lu@intel.com&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

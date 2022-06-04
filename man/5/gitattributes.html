@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command gitattributes</title><meta name="description" content="Linux command gitattributes Defining attributes per path"><meta name="keywords" content="linux, command, gitattributes, bsd, Defining attributes per path"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>gitattributes - Defining attributes per path</p>
+<h1>SYNOPSIS</h1>
+<p>$GIT_DIR/info/attributes, .gitattributes</p>
+<h1>DESCRIPTION</h1>
+<p>A <strong>gitattributes</strong> file is a simple text file that gives <strong>attributes</strong> to pathnames.</p>
+<p>Each line in <strong>gitattributes</strong> file is of form:</p>
+<blockquote>
+<pre><code>pattern attr1 attr2 ...</code></pre>
+</blockquote>
+<p>That is, a pattern followed by an attributes list, separated by whitespaces. Leading and trailing whitespaces are ignored. Lines that begin with <em>#</em> are ignored. Patterns that begin with a double quote are quoted in C style. When the pattern matches the path in question, the attributes listed on the line are given to the path.</p>
+<p>Each attribute can be in one of these states for a given path:</p>
+<p>Set</p>
+<blockquote>
+<p>The path has the attribute with special value "true"; this is specified by listing only the name of the attribute in the attribute list.</p>
+</blockquote>
+<p>Unset</p>
+<blockquote>
+<p>The path has the attribute with special value "false"; this is specified by listing the name of the attribute prefixed with a dash <strong>-</strong> in the attribute list.</p>
+</blockquote>
+<p>Set to a value</p>
+<blockquote>
+<p>The path has the attribute with specified string value; this is specified by listing the name of the attribute followed by an equal sign <strong>=</strong> and its value in the attribute list.</p>
+</blockquote>
+<p>Unspecified</p>
+<blockquote>
+<p>No pattern matches the path, and nothing says if the path has or does not have the attribute, the attribute for the path is said to be Unspecified.</p>
+</blockquote>
+<p>When more than one pattern matches the path, a later line overrides an earlier line. This overriding is done per attribute.</p>
+<p>The rules by which the pattern matches paths are the same as in <strong>.gitignore</strong> files (see <strong>gitignore</strong>(5)), with a few exceptions:</p>
+<blockquote>
+<p>·</p>
+<p>negative patterns are forbidden</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>patterns that match a directory do not recursively match paths inside that directory (so using the trailing-slash <strong>path/</strong> syntax is pointless in an attributes file; use <strong>path/**</strong> instead)</p>
+</blockquote>
+<p>When deciding what attributes are assigned to a path, Git consults <strong>$GIT_DIR/info/attributes</strong> file (which has the highest precedence), <strong>.gitattributes</strong> file in the same directory as the path in question, and its parent directories up to the toplevel of the work tree (the further the directory that contains <strong>.gitattributes</strong> is from the path in question, the lower its precedence). Finally global and system-wide files are considered (they have the lowest precedence).</p>
+<p>When the <strong>.gitattributes</strong> file is missing from the work tree, the path in the index is used as a fall-back. During checkout process, <strong>.gitattributes</strong> in the index is used and then the file in the working tree is used as a fall-back.</p>
+<p>If you wish to affect only a single repository (i.e., to assign attributes to files that are particular to one user’s workflow for that repository), then attributes should be placed in the <strong>$GIT_DIR/info/attributes</strong> file. Attributes which should be version-controlled and distributed to other repositories (i.e., attributes of interest to all users) should go into <strong>.gitattributes</strong> files. Attributes that should affect all repositories for a single user should be placed in a file specified by the <strong>core.attributesFile</strong> configuration option (see <strong>git-config</strong>(1)). Its default value is $XDG_CONFIG_HOME/git/attributes. If $XDG_CONFIG_HOME is either not set or empty, $HOME/.config/git/attributes is used instead. Attributes for all users on a system should be placed in the <strong>$(prefix)/etc/gitattributes</strong> file.</p>
+<p>Sometimes you would need to override a setting of an attribute for a path to <strong>Unspecified</strong> state. This can be done by listing the name of the attribute prefixed with an exclamation point <strong>!</strong>.</p>
+<h1>EFFECTS</h1>
+<p>Certain operations by Git can be influenced by assigning particular attributes to a path. Currently, the following operations are attributes-aware.</p>
+<h2>Checking-out and checking-in</h2>
+<p>These attributes affect how the contents stored in the repository are copied to the working tree files when commands such as <em>git switch</em>, <em>git checkout</em> and <em>git merge</em> run. They also affect how Git stores the contents you prepare in the working tree in the repository upon <em>git add</em> and <em>git commit</em>.</p>
+<p><br />
+</p>
+<p><strong>text</strong></p>
+<blockquote>
+<p>This attribute enables and controls end-of-line normalization. When a text file is normalized, its line endings are converted to LF in the repository. To control what line ending style is used in the working directory, use the <strong>eol</strong> attribute for a single file and the <strong>core.eol</strong> configuration variable for all text files. Note that setting <strong>core.autocrlf</strong> to <strong>true</strong> or <strong>input</strong> overrides <strong>core.eol</strong> (see the definitions of those options in <strong>git-config</strong>(1)).</p>
+<p>Set</p>
+<blockquote>
+<p>Setting the <strong>text</strong> attribute on a path enables end-of-line normalization and marks the path as a text file. End-of-line conversion takes place without guessing the content type.</p>
+</blockquote>
+<p>Unset</p>
+<blockquote>
+<p>Unsetting the <strong>text</strong> attribute on a path tells Git not to attempt any end-of-line conversion upon checkin or checkout.</p>
+</blockquote>
+<p>Set to string value "auto"</p>
+<blockquote>
+<p>When <strong>text</strong> is set to "auto", the path is marked for automatic end-of-line conversion. If Git decides that the content is text, its line endings are converted to LF on checkin. When the file has been committed with CRLF, no conversion is done.</p>
+</blockquote>
+<p>Unspecified</p>
+<blockquote>
+<p>If the <strong>text</strong> attribute is unspecified, Git uses the <strong>core.autocrlf</strong> configuration variable to determine if the file should be converted.</p>
+</blockquote>
+<p>Any other value causes Git to act as if <strong>text</strong> has been left unspecified.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>eol</strong></p>
+<blockquote>
+<p>This attribute sets a specific line-ending style to be used in the working directory. It enables end-of-line conversion without any content checks, effectively setting the <strong>text</strong> attribute. Note that setting this attribute on paths which are in the index with CRLF line endings may make the paths to be considered dirty. Adding the path to the index again will normalize the line endings in the index.</p>
+<p>Set to string value "crlf"</p>
+<blockquote>
+<p>This setting forces Git to normalize line endings for this file on checkin and convert them to CRLF when the file is checked out.</p>
+</blockquote>
+<p>Set to string value "lf"</p>
+<blockquote>
+<p>This setting forces Git to normalize line endings to LF on checkin and prevents conversion to CRLF when the file is checked out.</p>
+</blockquote>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Backwards compatibility with crlf attribute</strong></p>
+<blockquote>
+<p>For backwards compatibility, the <strong>crlf</strong> attribute is interpreted as follows:</p>
+<blockquote>
+<pre><code>crlf            text
+-crlf           -text
+crlf=input      eol=lf</code></pre>
+</blockquote>
+</blockquote>
+<p><br />
+</p>
+<p><strong>End-of-line conversion</strong></p>
+<blockquote>
+<p>While Git normally leaves file contents alone, it can be configured to normalize line endings to LF in the repository and, optionally, to convert them to CRLF when files are checked out.</p>
+<p>If you simply want to have CRLF line endings in your working directory regardless of the repository you are working with, you can set the config variable "core.autocrlf" without using any attributes.</p>
+<blockquote>
+<pre><code>[core]
+        autocrlf = true</code></pre>
+</blockquote>
+<p>This does not force normalization of text files, but does ensure that text files that you introduce to the repository have their line endings normalized to LF when they are added, and that files that are already normalized in the repository stay normalized.</p>
+<p>If you want to ensure that text files that any contributor introduces to the repository have their line endings normalized, you can set the <strong>text</strong> attribute to "auto" for <em>all</em> files.</p>
+<blockquote>
+<pre><code>*       text=auto</code></pre>
+</blockquote>
+<p>The attributes allow a fine-grained control, how the line endings are converted. Here is an example that will make Git normalize .txt, .vcproj and .sh files, ensure that .vcproj files have CRLF and .sh files have LF in the working directory, and prevent .jpg files from being normalized regardless of their content.</p>
+<blockquote>
+<pre><code>*               text=auto
+*.txt           text
+*.vcproj        text eol=crlf
+*.sh            text eol=lf
+*.jpg           -text</code></pre>
+</blockquote>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+</p>
+<p>When <strong>text=auto</strong> conversion is enabled in a cross-platform project using push and pull to a central repository the text files containing CRLFs should be normalized.</p>
+</blockquote>
+<p>From a clean working directory:</p>
+<blockquote>
+<pre><code>$ echo &quot;* text=auto&quot; &gt;.gitattributes
+$ git add --renormalize .
+$ git status        # Show files that will be normalized
+$ git commit -m &quot;Introduce end-of-line normalization&quot;</code></pre>
+</blockquote>
+<p>If any files that should not be normalized show up in <em>git status</em>, unset their <strong>text</strong> attribute before running <em>git add -u</em>.</p>
+<blockquote>
+<pre><code>manual.pdf      -text</code></pre>
+</blockquote>
+<p>Conversely, text files that Git does not detect can have normalization enabled manually.</p>
+<blockquote>
+<pre><code>weirdchars.txt  text</code></pre>
+</blockquote>
+<p>If <strong>core.safecrlf</strong> is set to "true" or "warn", Git verifies if the conversion is reversible for the current setting of <strong>core.autocrlf</strong>. For "true", Git rejects irreversible conversions; for "warn", Git only prints a warning but accepts an irreversible conversion. The safety triggers to prevent such a conversion done to the files in the work tree, but there are a few exceptions. Even though...</p>
+<blockquote>
+<p>·</p>
+<p><em>git add</em> itself does not touch the files in the work tree, the next checkout would, so the safety triggers;</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><em>git apply</em> to update a text file with a patch does touch the files in the work tree, but the operation is about text files and CRLF conversion is about fixing the line ending inconsistencies, so the safety does not trigger;</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><em>git diff</em> itself does not touch the files in the work tree, it is often run to inspect the changes you intend to next <em>git add</em>. To catch potential problems early, safety triggers.</p>
+</blockquote>
+</blockquote>
+<p><br />
+</p>
+<p><strong>working-tree-encoding</strong></p>
+<blockquote>
+<p>Git recognizes files encoded in ASCII or one of its supersets (e.g. UTF-8, ISO-8859-1, ...) as text files. Files encoded in certain other encodings (e.g. UTF-16) are interpreted as binary and consequently built-in Git text processing tools (e.g. <em>git diff</em>) as well as most Git web front ends do not visualize the contents of these files by default.</p>
+<p>In these cases you can tell Git the encoding of a file in the working directory with the <strong>working-tree-encoding</strong> attribute. If a file with this attribute is added to Git, then Git re-encodes the content from the specified encoding to UTF-8. Finally, Git stores the UTF-8 encoded content in its internal data structure (called "the index"). On checkout the content is re-encoded back to the specified encoding.</p>
+<p>Please note that using the <strong>working-tree-encoding</strong> attribute may have a number of pitfalls:</p>
+<blockquote>
+<p>·</p>
+<p>Alternative Git implementations (e.g. JGit or libgit2) and older Git versions (as of March 2018) do not support the <strong>working-tree-encoding</strong> attribute. If you decide to use the <strong>working-tree-encoding</strong> attribute in your repository, then it is strongly recommended to ensure that all clients working with the repository support it.</p>
+<p>For example, Microsoft Visual Studio resources files (<strong>*.rc</strong>) or PowerShell script files (<strong>*.ps1</strong>) are sometimes encoded in UTF-16. If you declare <strong>*.ps1</strong> as files as UTF-16 and you add <strong>foo.ps1</strong> with a <strong>working-tree-encoding</strong> enabled Git client, then <strong>foo.ps1</strong> will be stored as UTF-8 internally. A client without <strong>working-tree-encoding</strong> support will checkout <strong>foo.ps1</strong> as UTF-8 encoded file. This will typically cause trouble for the users of this file.</p>
+<p>If a Git client that does not support the <strong>working-tree-encoding</strong> attribute adds a new file <strong>bar.ps1</strong>, then <strong>bar.ps1</strong> will be stored "as-is" internally (in this example probably as UTF-16). A client with <strong>working-tree-encoding</strong> support will interpret the internal contents as UTF-8 and try to convert it to UTF-16 on checkout. That operation will fail and cause an error.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Reencoding content to non-UTF encodings can cause errors as the conversion might not be UTF-8 round trip safe. If you suspect your encoding to not be round trip safe, then add it to <strong>core.checkRoundtripEncoding</strong> to make Git check the round trip encoding (see <strong>git-config</strong>(1)). SHIFT-JIS (Japanese character set) is known to have round trip issues with UTF-8 and is checked by default.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p>Reencoding content requires resources that might slow down certain Git operations (e.g <em>git checkout</em> or <em>git add</em>).</p>
+</blockquote>
+<p>Use the <strong>working-tree-encoding</strong> attribute only if you cannot store a file in UTF-8 encoding and if you want Git to be able to process the content as text.</p>
+<p>As an example, use the following attributes if your <em>*.ps1</em> files are UTF-16 encoded with byte order mark (BOM) and you want Git to perform automatic line ending conversion based on your platform.</p>
+<blockquote>
+<pre><code>*.ps1           text working-tree-encoding=UTF-16</code></pre>
+</blockquote>
+<p>Use the following attributes if your <em>*.ps1</em> files are UTF-16 little endian encoded without BOM and you want Git to use Windows line endings in the working directory (use <strong>UTF-16LE-BOM</strong> instead of <strong>UTF-16LE</strong> if you want UTF-16 little endian with BOM). Please note, it is highly recommended to explicitly define the line endings with <strong>eol</strong> if the <strong>working-tree-encoding</strong> attribute is used to avoid ambiguity.</p>
+<blockquote>
+<pre><code>*.ps1           text working-tree-encoding=UTF-16LE eol=CRLF</code></pre>
+</blockquote>
+<p>You can get a list of all available encodings on your platform with the following command:</p>
+<blockquote>
+<pre><code>iconv --list</code></pre>
+</blockquote>
+<p>If you do not know the encoding of a file, then you can use the <strong>file</strong> command to guess the encoding:</p>
+<blockquote>
+<pre><code>file foo.ps1</code></pre>
+</blockquote>
+</blockquote>
+<p><br />
+</p>
+<p><strong>ident</strong></p>
+<blockquote>
+<p>When the attribute <strong>ident</strong> is set for a path, Git replaces <strong>$Id$</strong> in the blob object with <strong>$Id:</strong>, followed by the 40-character hexadecimal blob object name, followed by a dollar sign <strong>$</strong> upon checkout. Any byte sequence that begins with <strong>$Id:</strong> and ends with <strong>$</strong> in the worktree file is replaced with <strong>$Id$</strong> upon check-in.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>filter</strong></p>
+<blockquote>
+<p>A <strong>filter</strong> attribute can be set to a string value that names a filter driver specified in the configuration.</p>
+<p>A filter driver consists of a <strong>clean</strong> command and a <strong>smudge</strong> command, either of which can be left unspecified. Upon checkout, when the <strong>smudge</strong> command is specified, the command is fed the blob object from its standard input, and its standard output is used to update the worktree file. Similarly, the <strong>clean</strong> command is used to convert the contents of worktree file upon checkin. By default these commands process only a single blob and terminate. If a long running <strong>process</strong> filter is used in place of <strong>clean</strong> and/or <strong>smudge</strong> filters, then Git can process all blobs with a single filter command invocation for the entire life of a single Git command, for example <strong>git add --all</strong>. If a long running <strong>process</strong> filter is configured then it always takes precedence over a configured single blob filter. See section below for the description of the protocol used to communicate with a <strong>process</strong> filter.</p>
+<p>One use of the content filtering is to massage the content into a shape that is more convenient for the platform, filesystem, and the user to use. For this mode of operation, the key phrase here is "more convenient" and not "turning something unusable into usable". In other words, the intent is that if someone unsets the filter driver definition, or does not have the appropriate filter program, the project should still be usable.</p>
+<p>Another use of the content filtering is to store the content that cannot be directly used in the repository (e.g. a UUID that refers to the true content stored outside Git, or an encrypted content) and turn it into a usable form upon checkout (e.g. download the external content, or decrypt the encrypted content).</p>
+<p>These two filters behave differently, and by default, a filter is taken as the former, massaging the contents into more convenient shape. A missing filter driver definition in the config, or a filter driver that exits with a non-zero status, is not an error but makes the filter a no-op passthru.</p>
+<p>You can declare that a filter turns a content that by itself is unusable into a usable content by setting the filter.&lt;driver&gt;.required configuration variable to <strong>true</strong>.</p>
+<p>Note: Whenever the clean filter is changed, the repo should be renormalized: $ git add --renormalize .</p>
+<p>For example, in .gitattributes, you would assign the <strong>filter</strong> attribute for paths.</p>
+<blockquote>
+<pre><code>*.c     filter=indent</code></pre>
+</blockquote>
+<p>Then you would define a "filter.indent.clean" and "filter.indent.smudge" configuration in your .git/config to specify a pair of commands to modify the contents of C programs when the source files are checked in ("clean" is run) and checked out (no change is made because the command is "cat").</p>
+<blockquote>
+<pre><code>[filter &quot;indent&quot;]
+        clean = indent
+        smudge = cat</code></pre>
+</blockquote>
+<p>For best results, <strong>clean</strong> should not alter its output further if it is run twice ("clean→clean" should be equivalent to "clean"), and multiple <strong>smudge</strong> commands should not alter <strong>clean</strong>s output ("smudge→smudge→clean" should be equivalent to "clean"). See the section on merging below.</p>
+<p>The "indent" filter is well-behaved in this regard: it will not modify input that is already correctly indented. In this case, the lack of a smudge filter means that the clean filter <em>must</em> accept its own output without modifying it.</p>
+<p>If a filter <em>must</em> succeed in order to make the stored contents usable, you can declare that the filter is <strong>required</strong>, in the configuration:</p>
+<blockquote>
+<pre><code>[filter &quot;crypt&quot;]
+        clean = openssl enc ...
+        smudge = openssl enc -d ...
+        required</code></pre>
+</blockquote>
+<p>Sequence "%f" on the filter command line is replaced with the name of the file the filter is working on. A filter might use this in keyword substitution. For example:</p>
+<blockquote>
+<pre><code>[filter &quot;p4&quot;]
+        clean = git-p4-filter --clean %f
+        smudge = git-p4-filter --smudge %f</code></pre>
+</blockquote>
+<p>Note that "%f" is the name of the path that is being worked on. Depending on the version that is being filtered, the corresponding file on disk may not exist, or may have different contents. So, smudge and clean commands should not try to access the file on disk, but only act as filters on the content provided to them on standard input.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Long Running Filter Process</strong></p>
+<blockquote>
+<p>If the filter command (a string value) is defined via <strong>filter.&lt;driver&gt;.process</strong> then Git can process all blobs with a single filter invocation for the entire life of a single Git command. This is achieved by using the long-running process protocol (described in technical/long-running-process-protocol.txt).</p>
+<p>When Git encounters the first file that needs to be cleaned or smudged, it starts the filter and performs the handshake. In the handshake, the welcome message sent by Git is "git-filter-client", only version 2 is supported, and the supported capabilities are "clean", "smudge", and "delay".</p>
+<p>Afterwards Git sends a list of "key=value" pairs terminated with a flush packet. The list will contain at least the filter command (based on the supported capabilities) and the pathname of the file to filter relative to the repository root. Right after the flush packet Git sends the content split in zero or more pkt-line packets and a flush packet to terminate content. Please note, that the filter must not send any response before it received the content and the final flush packet. Also note that the "value" of a "key=value" pair can contain the "=" character whereas the key would never contain that character.</p>
+<blockquote>
+<pre><code>packet:          git&gt; command=smudge
+packet:          git&gt; pathname=path/testfile.dat
+packet:          git&gt; 0000
+packet:          git&gt; CONTENT
+packet:          git&gt; 0000</code></pre>
+</blockquote>
+<p>The filter is expected to respond with a list of "key=value" pairs terminated with a flush packet. If the filter does not experience problems then the list must contain a "success" status. Right after these packets the filter is expected to send the content in zero or more pkt-line packets and a flush packet at the end. Finally, a second list of "key=value" pairs terminated with a flush packet is expected. The filter can change the status in the second list or keep the status as is with an empty list. Please note that the empty list must be terminated with a flush packet regardless.</p>
+<blockquote>
+<pre><code>packet:          git&lt; status=success
+packet:          git&lt; 0000
+packet:          git&lt; SMUDGED_CONTENT
+packet:          git&lt; 0000
+packet:          git&lt; 0000  # empty list, keep &quot;status=success&quot; unchanged!</code></pre>
+</blockquote>
+<p>If the result content is empty then the filter is expected to respond with a "success" status and a flush packet to signal the empty content.</p>
+<blockquote>
+<pre><code>packet:          git&lt; status=success
+packet:          git&lt; 0000
+packet:          git&lt; 0000  # empty content!
+packet:          git&lt; 0000  # empty list, keep &quot;status=success&quot; unchanged!</code></pre>
+</blockquote>
+<p>In case the filter cannot or does not want to process the content, it is expected to respond with an "error" status.</p>
+<blockquote>
+<pre><code>packet:          git&lt; status=error
+packet:          git&lt; 0000</code></pre>
+</blockquote>
+<p>If the filter experiences an error during processing, then it can send the status "error" after the content was (partially or completely) sent.</p>
+<blockquote>
+<pre><code>packet:          git&lt; status=success
+packet:          git&lt; 0000
+packet:          git&lt; HALF_WRITTEN_ERRONEOUS_CONTENT
+packet:          git&lt; 0000
+packet:          git&lt; status=error
+packet:          git&lt; 0000</code></pre>
+</blockquote>
+<p>In case the filter cannot or does not want to process the content as well as any future content for the lifetime of the Git process, then it is expected to respond with an "abort" status at any point in the protocol.</p>
+<blockquote>
+<pre><code>packet:          git&lt; status=abort
+packet:          git&lt; 0000</code></pre>
+</blockquote>
+<p>Git neither stops nor restarts the filter process in case the "error"/"abort" status is set. However, Git sets its exit code according to the <strong>filter.&lt;driver&gt;.required</strong> flag, mimicking the behavior of the <strong>filter.&lt;driver&gt;.clean</strong> / <strong>filter.&lt;driver&gt;.smudge</strong> mechanism.</p>
+<p>If the filter dies during the communication or does not adhere to the protocol then Git will stop the filter process and restart it with the next file that needs to be processed. Depending on the <strong>filter.&lt;driver&gt;.required</strong> flag Git will interpret that as error.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Delay</strong></p>
+<blockquote>
+<p>If the filter supports the "delay" capability, then Git can send the flag "can-delay" after the filter command and pathname. This flag denotes that the filter can delay filtering the current blob (e.g. to compensate network latencies) by responding with no content but with the status "delayed" and a flush packet.</p>
+<blockquote>
+<pre><code>packet:          git&gt; command=smudge
+packet:          git&gt; pathname=path/testfile.dat
+packet:          git&gt; can-delay=1
+packet:          git&gt; 0000
+packet:          git&gt; CONTENT
+packet:          git&gt; 0000
+packet:          git&lt; status=delayed
+packet:          git&lt; 0000</code></pre>
+</blockquote>
+<p>If the filter supports the "delay" capability then it must support the "list_available_blobs" command. If Git sends this command, then the filter is expected to return a list of pathnames representing blobs that have been delayed earlier and are now available. The list must be terminated with a flush packet followed by a "success" status that is also terminated with a flush packet. If no blobs for the delayed paths are available, yet, then the filter is expected to block the response until at least one blob becomes available. The filter can tell Git that it has no more delayed blobs by sending an empty list. As soon as the filter responds with an empty list, Git stops asking. All blobs that Git has not received at this point are considered missing and will result in an error.</p>
+<blockquote>
+<pre><code>packet:          git&gt; command=list_available_blobs
+packet:          git&gt; 0000
+packet:          git&lt; pathname=path/testfile.dat
+packet:          git&lt; pathname=path/otherfile.dat
+packet:          git&lt; 0000
+packet:          git&lt; status=success
+packet:          git&lt; 0000</code></pre>
+</blockquote>
+<p>After Git received the pathnames, it will request the corresponding blobs again. These requests contain a pathname and an empty content section. The filter is expected to respond with the smudged content in the usual way as explained above.</p>
+<blockquote>
+<pre><code>packet:          git&gt; command=smudge
+packet:          git&gt; pathname=path/testfile.dat
+packet:          git&gt; 0000
+packet:          git&gt; 0000  # empty content!
+packet:          git&lt; status=success
+packet:          git&lt; 0000
+packet:          git&lt; SMUDGED_CONTENT
+packet:          git&lt; 0000
+packet:          git&lt; 0000  # empty list, keep &quot;status=success&quot; unchanged!</code></pre>
+</blockquote>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Example</strong></p>
+<blockquote>
+<p>A long running filter demo implementation can be found in <strong>contrib/long-running-filter/example.pl</strong> located in the Git core repository. If you develop your own long running filter process then the <strong>GIT_TRACE_PACKET</strong> environment variables can be very helpful for debugging (see <strong>git</strong>(1)).</p>
+<p>Please note that you cannot use an existing <strong>filter.&lt;driver&gt;.clean</strong> or <strong>filter.&lt;driver&gt;.smudge</strong> command with <strong>filter.&lt;driver&gt;.process</strong> because the former two use a different inter process communication protocol than the latter one.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Interaction between checkin/checkout attributes</strong></p>
+<blockquote>
+<p>In the check-in codepath, the worktree file is first converted with <strong>filter</strong> driver (if specified and corresponding driver defined), then the result is processed with <strong>ident</strong> (if specified), and then finally with <strong>text</strong> (again, if specified and applicable).</p>
+<p>In the check-out codepath, the blob content is first converted with <strong>text</strong>, and then <strong>ident</strong> and fed to <strong>filter</strong>.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Merging branches with differing checkin/checkout attributes</strong></p>
+<blockquote>
+<p>If you have added attributes to a file that cause the canonical repository format for that file to change, such as adding a clean/smudge filter or text/eol/ident attributes, merging anything where the attribute is not in place would normally cause merge conflicts.</p>
+<p>To prevent these unnecessary merge conflicts, Git can be told to run a virtual check-out and check-in of all three stages of a file when resolving a three-way merge by setting the <strong>merge.renormalize</strong> configuration variable. This prevents changes caused by check-in conversion from causing spurious merge conflicts when a converted file is merged with an unconverted file.</p>
+<p>As long as a "smudge→clean" results in the same output as a "clean" even on files that are already smudged, this strategy will automatically resolve all filter-related conflicts. Filters that do not act in this way may cause additional merge conflicts that must be resolved manually.</p>
+</blockquote>
+<h2>Generating diff text</h2>
+<p><br />
+</p>
+<p><strong>diff</strong></p>
+<blockquote>
+<p>The attribute <strong>diff</strong> affects how Git generates diffs for particular files. It can tell Git whether to generate a textual patch for the path or to treat the path as a binary file. It can also affect what line is shown on the hunk header <strong>@@ -k,l +n,m @@</strong> line, tell Git to use an external command to generate the diff, or ask Git to convert binary files to a text format before generating the diff.</p>
+<p>Set</p>
+<blockquote>
+<p>A path to which the <strong>diff</strong> attribute is set is treated as text, even when they contain byte values that normally never appear in text files, such as NUL.</p>
+</blockquote>
+<p>Unset</p>
+<blockquote>
+<p>A path to which the <strong>diff</strong> attribute is unset will generate <strong>Binary files differ</strong> (or a binary patch, if binary patches are enabled).</p>
+</blockquote>
+<p>Unspecified</p>
+<blockquote>
+<p>A path to which the <strong>diff</strong> attribute is unspecified first gets its contents inspected, and if it looks like text and is smaller than core.bigFileThreshold, it is treated as text. Otherwise it would generate <strong>Binary files differ</strong>.</p>
+</blockquote>
+<p>String</p>
+<blockquote>
+<p>Diff is shown using the specified diff driver. Each driver may specify one or more options, as described in the following section. The options for the diff driver "foo" are defined by the configuration variables in the "diff.foo" section of the Git config file.</p>
+</blockquote>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Defining an external diff driver</strong></p>
+<blockquote>
+<p>The definition of a diff driver is done in <strong>gitconfig</strong>, not <strong>gitattributes</strong> file, so strictly speaking this manual page is a wrong place to talk about it. However...</p>
+<p>To define an external diff driver <strong>jcdiff</strong>, add a section to your <strong>$GIT_DIR/config</strong> file (or <strong>$HOME/.gitconfig</strong> file) like this:</p>
+<blockquote>
+<pre><code>[diff &quot;jcdiff&quot;]
+        command = j-c-diff</code></pre>
+</blockquote>
+<p>When Git needs to show you a diff for the path with <strong>diff</strong> attribute set to <strong>jcdiff</strong>, it calls the command you specified with the above configuration, i.e. <strong>j-c-diff</strong>, with 7 parameters, just like <strong>GIT_EXTERNAL_DIFF</strong> program is called. See <strong>git</strong>(1) for details.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Defining a custom hunk-header</strong></p>
+<blockquote>
+<p>Each group of changes (called a "hunk") in the textual diff output is prefixed with a line of the form:</p>
+<blockquote>
+<pre><code>@@ -k,l +n,m @@ TEXT</code></pre>
+</blockquote>
+<p>This is called a <em>hunk header</em>. The "TEXT" portion is by default a line that begins with an alphabet, an underscore or a dollar sign; this matches what GNU <em>diff -p</em> output uses. This default selection however is not suited for some contents, and you can use a customized pattern to make a selection.</p>
+<p>First, in .gitattributes, you would assign the <strong>diff</strong> attribute for paths.</p>
+<blockquote>
+<pre><code>*.tex   diff=tex</code></pre>
+</blockquote>
+<p>Then, you would define a "diff.tex.xfuncname" configuration to specify a regular expression that matches a line that you would want to appear as the hunk header "TEXT". Add a section to your <strong>$GIT_DIR/config</strong> file (or <strong>$HOME/.gitconfig</strong> file) like this:</p>
+<blockquote>
+<pre><code>[diff &quot;tex&quot;]
+        xfuncname = &quot;^(\\\\(sub)*section\\{.*)$&quot;</code></pre>
+</blockquote>
+<p>Note. A single level of backslashes are eaten by the configuration file parser, so you would need to double the backslashes; the pattern above picks a line that begins with a backslash, and zero or more occurrences of <strong>sub</strong> followed by <strong>section</strong> followed by open brace, to the end of line.</p>
+<p>There are a few built-in patterns to make this easier, and <strong>tex</strong> is one of them, so you do not have to write the above in your configuration file (you still need to enable this with the attribute mechanism, via <strong>.gitattributes</strong>). The following built in patterns are available:</p>
+<blockquote>
+<p>·</p>
+<p><strong>ada</strong> suitable for source code in the Ada language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>bash</strong> suitable for source code in the Bourne-Again SHell language. Covers a superset of POSIX shell function definitions.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>bibtex</strong> suitable for files with BibTeX coded references.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>cpp</strong> suitable for source code in the C and C++ languages.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>csharp</strong> suitable for source code in the C# language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>css</strong> suitable for cascading style sheets.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>dts</strong> suitable for devicetree (DTS) files.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>elixir</strong> suitable for source code in the Elixir language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>fortran</strong> suitable for source code in the Fortran language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>fountain</strong> suitable for Fountain documents.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>golang</strong> suitable for source code in the Go language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>html</strong> suitable for HTML/XHTML documents.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>java</strong> suitable for source code in the Java language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>markdown</strong> suitable for Markdown documents.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>matlab</strong> suitable for source code in the MATLAB and Octave languages.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>objc</strong> suitable for source code in the Objective-C language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>pascal</strong> suitable for source code in the Pascal/Delphi language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>perl</strong> suitable for source code in the Perl language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>php</strong> suitable for source code in the PHP language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>python</strong> suitable for source code in the Python language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>ruby</strong> suitable for source code in the Ruby language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>rust</strong> suitable for source code in the Rust language.</p>
+</blockquote>
+<blockquote>
+<p>·</p>
+<p><strong>tex</strong> suitable for source code for LaTeX documents.</p>
+</blockquote>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Customizing word diff</strong></p>
+<blockquote>
+<p>You can customize the rules that <strong>git diff --word-diff</strong> uses to split words in a line, by specifying an appropriate regular expression in the "diff.*.wordRegex" configuration variable. For example, in TeX a backslash followed by a sequence of letters forms a command, but several such commands can be run together without intervening whitespace. To separate them, use a regular expression in your <strong>$GIT_DIR/config</strong> file (or <strong>$HOME/.gitconfig</strong> file) like this:</p>
+<blockquote>
+<pre><code>[diff &quot;tex&quot;]
+        wordRegex = &quot;\\\\[a-zA-Z]+|[{}]|\\\\.|[^\\{}[:space:]]+&quot;</code></pre>
+</blockquote>
+<p>A built-in pattern is provided for all languages listed in the previous section.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Performing text diffs of binary files</strong></p>
+<blockquote>
+<p>Sometimes it is desirable to see the diff of a text-converted version of some binary files. For example, a word processor document can be converted to an ASCII text representation, and the diff of the text shown. Even though this conversion loses some information, the resulting diff is useful for human viewing (but cannot be applied directly).</p>
+<p>The <strong>textconv</strong> config option is used to define a program for performing such a conversion. The program should take a single argument, the name of a file to convert, and produce the resulting text on stdout.</p>
+<p>For example, to show the diff of the exif information of a file instead of the binary information (assuming you have the exif tool installed), add the following section to your <strong>$GIT_DIR/config</strong> file (or <strong>$HOME/.gitconfig</strong> file):</p>
+<blockquote>
+<pre><code>[diff &quot;jpg&quot;]
+        textconv = exif</code></pre>
+</blockquote>
+<blockquote>
+<p><br />
+</p>
+<p><strong>Note</strong></p>
+<p><br />
+</p>
+<p>The text conversion is generally a one-way conversion; in this example, we lose the actual image contents and focus just on the text data. This means that diffs generated by textconv are <em>not</em> suitable for applying. For this reason, only <strong>git diff</strong> and the <strong>git log</strong> family of commands (i.e., log, whatchanged, show) will perform text conversion. <strong>git format-patch</strong> will never generate this output. If you want to send somebody a text-converted diff of a binary file (e.g., because it quickly conveys the changes you have made), you should generate it separately and send it as a comment <em>in addition to</em> the usual binary diff that you might send.</p>
+</blockquote>
+<p>Because text conversion can be slow, especially when doing a large number of them with <strong>git log -p</strong>, Git provides a mechanism to cache the output and use it in future diffs. To enable caching, set the "cachetextconv" variable in your diff driver’s config. For example:</p>
+<blockquote>
+<pre><code>[diff &quot;jpg&quot;]
+        textconv = exif
+        cachetextconv = true</code></pre>
+</blockquote>
+<p>This will cache the result of running "exif" on each blob indefinitely. If you change the textconv config variable for a diff driver, Git will automatically invalidate the cache entries and re-run the textconv filter. If you want to invalidate the cache manually (e.g., because your version of "exif" was updated and now produces better output), you can remove the cache manually with <strong>git update-ref -d refs/notes/textconv/jpg</strong> (where "jpg" is the name of the diff driver, as in the example above).</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Choosing textconv versus external diff</strong></p>
+<blockquote>
+<p>If you want to show differences between binary or specially-formatted blobs in your repository, you can choose to use either an external diff command, or to use textconv to convert them to a diff-able text format. Which method you choose depends on your exact situation.</p>
+<p>The advantage of using an external diff command is flexibility. You are not bound to find line-oriented changes, nor is it necessary for the output to resemble unified diff. You are free to locate and report changes in the most appropriate way for your data format.</p>
+<p>A textconv, by comparison, is much more limiting. You provide a transformation of the data into a line-oriented text format, and Git uses its regular diff tools to generate the output. There are several advantages to choosing this method:</p>
+<blockquote>
+<p>1.</p>
+<p>Ease of use. It is often much simpler to write a binary to text transformation than it is to perform your own diff. In many cases, existing programs can be used as textconv filters (e.g., exif, odt2txt).</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>Git diff features. By performing only the transformation step yourself, you can still utilize many of Git’s diff features, including colorization, word-diff, and combined diffs for merges.</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>Caching. Textconv caching can speed up repeated diffs, such as those you might trigger by running <strong>git log -p</strong>.</p>
+</blockquote>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Marking files as binary</strong></p>
+<blockquote>
+<p>Git usually guesses correctly whether a blob contains text or binary data by examining the beginning of the contents. However, sometimes you may want to override its decision, either because a blob contains binary data later in the file, or because the content, while technically composed of text characters, is opaque to a human reader. For example, many postscript files contain only ASCII characters, but produce noisy and meaningless diffs.</p>
+<p>The simplest way to mark a file as binary is to unset the diff attribute in the <strong>.gitattributes</strong> file:</p>
+<blockquote>
+<pre><code>*.ps -diff</code></pre>
+</blockquote>
+<p>This will cause Git to generate <strong>Binary files differ</strong> (or a binary patch, if binary patches are enabled) instead of a regular diff.</p>
+<p>However, one may also want to specify other diff driver attributes. For example, you might want to use <strong>textconv</strong> to convert postscript files to an ASCII representation for human viewing, but otherwise treat them as binary files. You cannot specify both <strong>-diff</strong> and <strong>diff=ps</strong> attributes. The solution is to use the <strong>diff.*.binary</strong> config option:</p>
+<blockquote>
+<pre><code>[diff &quot;ps&quot;]
+  textconv = ps2ascii
+  binary = true</code></pre>
+</blockquote>
+</blockquote>
+<h2>Performing a three-way merge</h2>
+<p><br />
+</p>
+<p><strong>merge</strong></p>
+<blockquote>
+<p>The attribute <strong>merge</strong> affects how three versions of a file are merged when a file-level merge is necessary during <strong>git merge</strong>, and other commands such as <strong>git revert</strong> and <strong>git cherry-pick</strong>.</p>
+<p>Set</p>
+<blockquote>
+<p>Built-in 3-way merge driver is used to merge the contents in a way similar to <em>merge</em> command of <strong>RCS</strong> suite. This is suitable for ordinary text files.</p>
+</blockquote>
+<p>Unset</p>
+<blockquote>
+<p>Take the version from the current branch as the tentative merge result, and declare that the merge has conflicts. This is suitable for binary files that do not have a well-defined merge semantics.</p>
+</blockquote>
+<p>Unspecified</p>
+<blockquote>
+<p>By default, this uses the same built-in 3-way merge driver as is the case when the <strong>merge</strong> attribute is set. However, the <strong>merge.default</strong> configuration variable can name different merge driver to be used with paths for which the <strong>merge</strong> attribute is unspecified.</p>
+</blockquote>
+<p>String</p>
+<blockquote>
+<p>3-way merge is performed using the specified custom merge driver. The built-in 3-way merge driver can be explicitly specified by asking for "text" driver; the built-in "take the current branch" driver can be requested with "binary".</p>
+</blockquote>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Built-in merge drivers</strong></p>
+<blockquote>
+<p>There are a few built-in low-level merge drivers defined that can be asked for via the <strong>merge</strong> attribute.</p>
+<p>text</p>
+<blockquote>
+<p>Usual 3-way file level merge for text files. Conflicted regions are marked with conflict markers <strong>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</strong>, <strong>=======</strong> and <strong>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</strong>. The version from your branch appears before the <strong>=======</strong> marker, and the version from the merged branch appears after the <strong>=======</strong> marker.</p>
+</blockquote>
+<p>binary</p>
+<blockquote>
+<p>Keep the version from your branch in the work tree, but leave the path in the conflicted state for the user to sort out.</p>
+</blockquote>
+<p>union</p>
+<blockquote>
+<p>Run 3-way file level merge for text files, but take lines from both versions, instead of leaving conflict markers. This tends to leave the added lines in the resulting file in random order and the user should verify the result. Do not use this if you do not understand the implications.</p>
+</blockquote>
+</blockquote>
+<p><br />
+</p>
+<p><strong>Defining a custom merge driver</strong></p>
+<blockquote>
+<p>The definition of a merge driver is done in the <strong>.git/config</strong> file, not in the <strong>gitattributes</strong> file, so strictly speaking this manual page is a wrong place to talk about it. However...</p>
+<p>To define a custom merge driver <strong>filfre</strong>, add a section to your <strong>$GIT_DIR/config</strong> file (or <strong>$HOME/.gitconfig</strong> file) like this:</p>
+<blockquote>
+<pre><code>[merge &quot;filfre&quot;]
+        name = feel-free merge driver
+        driver = filfre %O %A %B %L %P
+        recursive = binary</code></pre>
+</blockquote>
+<p>The <strong>merge.*.name</strong> variable gives the driver a human-readable name.</p>
+<p>The ‘merge.*.driver` variable’s value is used to construct a command to run to merge ancestor’s version (<strong>%O</strong>), current version (<strong>%A</strong>) and the other branches’ version (<strong>%B</strong>). These three tokens are replaced with the names of temporary files that hold the contents of these versions when the command line is built. Additionally, %L will be replaced with the conflict marker size (see below).</p>
+<p>The merge driver is expected to leave the result of the merge in the file named with <strong>%A</strong> by overwriting it, and exit with zero status if it managed to merge them cleanly, or non-zero if there were conflicts.</p>
+<p>The <strong>merge.*.recursive</strong> variable specifies what other merge driver to use when the merge driver is called for an internal merge between common ancestors, when there are more than one. When left unspecified, the driver itself is used for both internal merge and the final merge.</p>
+<p>The merge driver can learn the pathname in which the merged result will be stored via placeholder <strong>%P</strong>.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>conflict-marker-size</strong></p>
+<blockquote>
+<p>This attribute controls the length of conflict markers left in the work tree file during a conflicted merge. Only setting to the value to a positive integer has any meaningful effect.</p>
+<p>For example, this line in <strong>.gitattributes</strong> can be used to tell the merge machinery to leave much longer (instead of the usual 7-character-long) conflict markers when merging the file <strong>Documentation/git-merge.txt</strong> results in a conflict.</p>
+<blockquote>
+<pre><code>Documentation/git-merge.txt     conflict-marker-size=32</code></pre>
+</blockquote>
+</blockquote>
+<h2>Checking whitespace errors</h2>
+<p><br />
+</p>
+<p><strong>whitespace</strong></p>
+<blockquote>
+<p>The <strong>core.whitespace</strong> configuration variable allows you to define what <em>diff</em> and <em>apply</em> should consider whitespace errors for all paths in the project (See <strong>git-config</strong>(1)). This attribute gives you finer control per path.</p>
+<p>Set</p>
+<blockquote>
+<p>Notice all types of potential whitespace errors known to Git. The tab width is taken from the value of the <strong>core.whitespace</strong> configuration variable.</p>
+</blockquote>
+<p>Unset</p>
+<blockquote>
+<p>Do not notice anything as error.</p>
+</blockquote>
+<p>Unspecified</p>
+<blockquote>
+<p>Use the value of the <strong>core.whitespace</strong> configuration variable to decide what to notice as error.</p>
+</blockquote>
+<p>String</p>
+<blockquote>
+<p>Specify a comma separate list of common whitespace problems to notice in the same format as the <strong>core.whitespace</strong> configuration variable.</p>
+</blockquote>
+</blockquote>
+<h2>Creating an archive</h2>
+<p><br />
+</p>
+<p><strong>export-ignore</strong></p>
+<blockquote>
+<p>Files and directories with the attribute <strong>export-ignore</strong> won’t be added to archive files.</p>
+</blockquote>
+<p><br />
+</p>
+<p><strong>export-subst</strong></p>
+<blockquote>
+<p>If the attribute <strong>export-subst</strong> is set for a file then Git will expand several placeholders when adding this file to an archive. The expansion depends on the availability of a commit ID, i.e., if <strong>git-archive</strong>(1) has been given a tree instead of a commit or a tag then no replacement will be done. The placeholders are the same as those for the option <strong>--pretty=format:</strong> of <strong>git-log</strong>(1), except that they need to be wrapped like this: <strong>$Format:PLACEHOLDERS$</strong> in the file. E.g. the string <strong>$Format:%H$</strong> will be replaced by the commit hash.</p>
+</blockquote>
+<h2>Packing objects</h2>
+<p><br />
+</p>
+<p><strong>delta</strong></p>
+<blockquote>
+<p>Delta compression will not be attempted for blobs for paths with the attribute <strong>delta</strong> set to false.</p>
+</blockquote>
+<h2>Viewing files in GUI tools</h2>
+<p><br />
+</p>
+<p><strong>encoding</strong></p>
+<blockquote>
+<p>The value of this attribute specifies the character encoding that should be used by GUI tools (e.g. <strong>gitk</strong>(1) and <strong>git-gui</strong>(1)) to display the contents of the relevant file. Note that due to performance considerations <strong>gitk</strong>(1) does not use this attribute unless you manually enable per-file encodings in its options.</p>
+<p>If this attribute is not set or has an invalid value, the value of the <strong>gui.encoding</strong> configuration variable is used instead (See <strong>git-config</strong>(1)).</p>
+</blockquote>
+<h1>USING MACRO ATTRIBUTES</h1>
+<p>You do not want any end-of-line conversions applied to, nor textual diffs produced for, any binary file you track. You would need to specify e.g.</p>
+<blockquote>
+<pre><code>*.jpg -text -diff</code></pre>
+</blockquote>
+<p>but that may become cumbersome, when you have many attributes. Using macro attributes, you can define an attribute that, when set, also sets or unsets a number of other attributes at the same time. The system knows a built-in macro attribute, <strong>binary</strong>:</p>
+<blockquote>
+<pre><code>*.jpg binary</code></pre>
+</blockquote>
+<p>Setting the "binary" attribute also unsets the "text" and "diff" attributes as above. Note that macro attributes can only be "Set", though setting one might have the effect of setting or unsetting other attributes or even returning other attributes to the "Unspecified" state.</p>
+<h1>DEFINING MACRO ATTRIBUTES</h1>
+<p>Custom macro attributes can be defined only in top-level gitattributes files (<strong>$GIT_DIR/info/attributes</strong>, the <strong>.gitattributes</strong> file at the top level of the working tree, or the global or system-wide gitattributes files), not in <strong>.gitattributes</strong> files in working tree subdirectories. The built-in macro attribute "binary" is equivalent to:</p>
+<blockquote>
+<pre><code>[attr]binary -diff -merge -text</code></pre>
+</blockquote>
+<h1>EXAMPLES</h1>
+<p>If you have these three <strong>gitattributes</strong> file:</p>
+<blockquote>
+<pre><code>(in $GIT_DIR/info/attributes)
+
+a*      foo !bar -baz
+
+(in .gitattributes)
+abc     foo bar baz
+
+(in t/.gitattributes)
+ab*     merge=filfre
+abc     -foo -bar
+*.c     frotz</code></pre>
+</blockquote>
+<p>the attributes given to path <strong>t/abc</strong> are computed as follows:</p>
+<blockquote>
+<p>1.</p>
+<p>By examining <strong>t/.gitattributes</strong> (which is in the same directory as the path in question), Git finds that the first line matches. <strong>merge</strong> attribute is set. It also finds that the second line matches, and attributes <strong>foo</strong> and <strong>bar</strong> are unset.</p>
+</blockquote>
+<blockquote>
+<p>2.</p>
+<p>Then it examines <strong>.gitattributes</strong> (which is in the parent directory), and finds that the first line matches, but <strong>t/.gitattributes</strong> file already decided how <strong>merge</strong>, <strong>foo</strong> and <strong>bar</strong> attributes should be given to this path, so it leaves <strong>foo</strong> and <strong>bar</strong> unset. Attribute <strong>baz</strong> is set.</p>
+</blockquote>
+<blockquote>
+<p>3.</p>
+<p>Finally it examines <strong>$GIT_DIR/info/attributes</strong>. This file is used to override the in-tree settings. The first line is a match, and <strong>foo</strong> is set, <strong>bar</strong> is reverted to unspecified state, and <strong>baz</strong> is unset.</p>
+</blockquote>
+<p>As the result, the attributes assignment to <strong>t/abc</strong> becomes:</p>
+<blockquote>
+<pre><code>foo     set to true
+bar     unspecified
+baz     set to false
+merge   set to string value &quot;filfre&quot;
+frotz   unspecified</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>git-check-attr</strong>(1).</p>
+<h1>GIT</h1>
+<p>Part of the <strong>git</strong>(1) suite</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

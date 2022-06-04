@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command pkeyutl</title><meta name="description" content="Linux command pkeyutl public key algorithm utility"><meta name="keywords" content="linux, command, pkeyutl, bsd, public key algorithm utility"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>openssl-pkeyutl, pkeyutl - public key algorithm utility</p>
+<h1>SYNOPSIS</h1>
+<p><strong>openssl</strong> <strong>pkeyutl</strong> [<strong>-help</strong>] [<strong>-in file</strong>] [<strong>-out file</strong>] [<strong>-sigfile file</strong>] [<strong>-inkey file</strong>] [<strong>-keyform PEM|DER|ENGINE</strong>] [<strong>-passin arg</strong>] [<strong>-peerkey file</strong>] [<strong>-peerform PEM|DER|ENGINE</strong>] [<strong>-pubin</strong>] [<strong>-certin</strong>] [<strong>-rev</strong>] [<strong>-sign</strong>] [<strong>-verify</strong>] [<strong>-verifyrecover</strong>] [<strong>-encrypt</strong>] [<strong>-decrypt</strong>] [<strong>-derive</strong>] [<strong>-kdf algorithm</strong>] [<strong>-kdflen length</strong>] [<strong>-pkeyopt opt:value</strong>] [<strong>-hexdump</strong>] [<strong>-asn1parse</strong>] [<strong>-rand file...</strong>] [<strong>-writerand file</strong>] [<strong>-engine id</strong>] [<strong>-engine_impl</strong>]</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>pkeyutl</strong> command can be used to perform low-level public key operations using any supported algorithm.</p>
+<h1>OPTIONS</h1>
+<ul>
+<li><p>Print out a usage message.</p></li>
+<li><p>This specifies the input filename to read data from or standard input if this option is not specified.</p></li>
+<li><p>Specifies the output filename to write to or standard output by default.</p></li>
+<li><p>Signature file, required for <strong>verify</strong> operations only</p></li>
+<li><p>The input key file, by default it should be a private key.</p></li>
+<li><p>The key format PEM, DER or ENGINE. Default is PEM.</p></li>
+<li><p>The input key password source. For more information about the format of <strong>arg</strong> see Pass Phrase Options in <strong>openssl</strong> (1).</p></li>
+<li><p>The peer key file, used by key derivation (agreement) operations.</p></li>
+<li><p>The peer key format PEM, DER or ENGINE. Default is PEM.</p></li>
+<li><p>The input file is a public key.</p></li>
+<li><p>The input is a certificate containing a public key.</p></li>
+<li><p>Reverse the order of the input buffer. This is useful for some libraries (such as CryptoAPI) which represent the buffer in little endian format.</p></li>
+<li><p>Sign the input data (which must be a hash) and output the signed result. This requires a private key.</p></li>
+<li><p>Verify the input data (which must be a hash) against the signature file and indicate if the verification succeeded or failed.</p></li>
+<li><p>Verify the input data (which must be a hash) and output the recovered data.</p></li>
+<li><p>Encrypt the input data using a public key.</p></li>
+<li><p>Decrypt the input data using a private key.</p></li>
+<li><p>Derive a shared secret using the peer key.</p></li>
+<li><p>Use key derivation function <strong>algorithm</strong>. The supported algorithms are at present <strong>TLS1-PRF</strong> and <strong>HKDF</strong>. Note: additional parameters and the KDF output length will normally have to be set for this to work. See <strong>EVP_PKEY_CTX_set_hkdf_md</strong> (3) and <strong>EVP_PKEY_CTX_set_tls1_prf_md</strong> (3) for the supported string parameters of each algorithm.</p></li>
+<li><p>Set the output length for KDF.</p></li>
+<li><p>Public key options specified as opt:value. See NOTES below for more details.</p></li>
+<li><p>hex dump the output data.</p></li>
+<li><p>Parse the ASN.1 output data, this is useful when combined with the <strong>-verifyrecover</strong> option when an ASN1 structure is signed.</p></li>
+<li><p>A file or files containing random data used to seed the random number generator. Multiple files can be specified separated by an OS-dependent character. The separator is <strong>;</strong> for MS-Windows, <strong>,</strong> for OpenVMS, and <strong>:</strong> for all others.</p></li>
+<li><p>Writes random data to the specified <em>file</em> upon exit. This can be used with a subsequent <strong>-rand</strong> flag.</p></li>
+<li><p>Specifying an engine (by its unique <strong>id</strong> string) will cause <strong>pkeyutl</strong> to attempt to obtain a functional reference to the specified engine, thus initialising it if needed. The engine will then be set as the default for all available algorithms.</p></li>
+<li><p>When used with the <strong>-engine</strong> option, it specifies to also use engine <strong>id</strong> for crypto operations.</p></li>
+</ul>
+<h1>NOTES</h1>
+<p>The operations and options supported vary according to the key algorithm and its implementation. The OpenSSL operations and options are indicated below.</p>
+<p>Unless otherwise mentioned all algorithms support the <strong>digest:alg</strong> option which specifies the digest in use for sign, verify and verifyrecover operations. The value <strong>alg</strong> should represent a digest name as used in the <strong>EVP_get_digestbyname()</strong> function for example <strong>sha1</strong>. This value is not used to hash the input data. It is used (by some algorithms) for sanity-checking the lengths of data passed in to the <strong>pkeyutl</strong> and for creating the structures that make up the signature (e.g. <strong>DigestInfo</strong> in RSASSA PKCS#1 v1.5 signatures).</p>
+<p>This utility does not hash the input data but rather it will use the data directly as input to the signature algorithm. Depending on the key type, signature type, and mode of padding, the maximum acceptable lengths of input data differ. The signed data can't be longer than the key modulus with RSA. In case of ECDSA and DSA the data shouldn't be longer than the field size, otherwise it will be silently truncated to the field size. In any event the input size must not be larger than the largest supported digest size.</p>
+<p>In other words, if the value of digest is <strong>sha1</strong> the input should be the 20 bytes long binary encoding of the SHA-1 hash function output.</p>
+<p>The Ed25519 and Ed448 signature algorithms are not supported by this utility. They accept non-hashed input, but this utility can only be used to sign hashed input.</p>
+<h1>RSA ALGORITHM</h1>
+<p>The RSA algorithm generally supports the encrypt, decrypt, sign, verify and verifyrecover operations. However, some padding modes support only a subset of these operations. The following additional <strong>pkeyopt</strong> values are supported:</p>
+<ul>
+<li><p>This sets the RSA padding mode. Acceptable values for <strong>mode</strong> are <strong>pkcs1</strong> for PKCS#1 padding, <strong>sslv23</strong> for SSLv23 padding, <strong>none</strong> for no padding, <strong>oaep</strong> for <strong>OAEP</strong> mode, <strong>x931</strong> for X9.31 mode and <strong>pss</strong> for PSS. In PKCS#1 padding if the message digest is not set then the supplied data is signed or verified directly instead of using a <strong>DigestInfo</strong> structure. If a digest is set then the a <strong>DigestInfo</strong> structure is used and its the length must correspond to the digest type. For <strong>oaep</strong> mode only encryption and decryption is supported. For <strong>x931</strong> if the digest type is set it is used to format the block data otherwise the first byte is used to specify the X9.31 digest ID. Sign, verify and verifyrecover are can be performed in this mode. For <strong>pss</strong> mode only sign and verify are supported and the digest type must be specified.</p></li>
+<li><p>For <strong>pss</strong> mode only this option specifies the salt length. Three special values are supported: digest sets the salt length to the digest length, max sets the salt length to the maximum permissible value. When verifying auto causes the salt length to be automatically determined based on the <strong>PSS</strong> block structure.</p></li>
+<li><p>For PSS and OAEP padding sets the MGF1 digest. If the MGF1 digest is not explicitly set in PSS mode then the signing digest is used.</p></li>
+<li><p>Sets the digest used for the OAEP hash function. If not explicitly set then SHA1 is used.</p></li>
+</ul>
+<h1>RSA-PSS ALGORITHM</h1>
+<p>The RSA-PSS algorithm is a restricted version of the RSA algorithm which only supports the sign and verify operations with PSS padding. The following additional <strong>pkeyopt</strong> values are supported:</p>
+<ul>
+<li><p>These have the same meaning as the <strong>RSA</strong> algorithm with some additional restrictions. The padding mode can only be set to <strong>pss</strong> which is the default value. If the key has parameter restrictions than the digest, MGF1 digest and salt length are set to the values specified in the parameters. The digest and MG cannot be changed and the salt length cannot be set to a value less than the minimum restriction.</p></li>
+</ul>
+<h1>DSA ALGORITHM</h1>
+<p>The DSA algorithm supports signing and verification operations only. Currently there are no additional <strong>-pkeyopt</strong> options other than <strong>digest</strong>. The SHA1 digest is assumed by default.</p>
+<h1>DH ALGORITHM</h1>
+<p>The DH algorithm only supports the derivation operation and no additional <strong>-pkeyopt</strong> options.</p>
+<h1>EC ALGORITHM</h1>
+<p>The EC algorithm supports sign, verify and derive operations. The sign and verify operations use ECDSA and derive uses ECDH. SHA1 is assumed by default for the <strong>-pkeyopt</strong> <strong>digest</strong> option.</p>
+<h1>X25519 and X448 ALGORITHMS</h1>
+<p>The X25519 and X448 algorithms support key derivation only. Currently there are no additional options.</p>
+<h1>EXAMPLES</h1>
+<p>Sign some data using a private key:</p>
+<p>openssl pkeyutl -sign -in file -inkey key.pem -out sig</p>
+<p>Recover the signed data (e.g. if an RSA key is used):</p>
+<p>openssl pkeyutl -verifyrecover -in sig -inkey key.pem</p>
+<p>Verify the signature (e.g. a DSA key):</p>
+<p>openssl pkeyutl -verify -in file -sigfile sig -inkey key.pem</p>
+<p>Sign data using a message digest value (this is currently only valid for RSA):</p>
+<p>openssl pkeyutl -sign -in file -inkey key.pem -out sig -pkeyopt digest:sha256</p>
+<p>Derive a shared secret value:</p>
+<p>openssl pkeyutl -derive -inkey key.pem -peerkey pubkey.pem -out secret</p>
+<p>Hexdump 48 bytes of TLS1 PRF using digest <strong>SHA256</strong> and shared secret and seed consisting of the single byte 0xFF:</p>
+<p>openssl pkeyutl -kdf TLS1-PRF -kdflen 48 -pkeyopt md:SHA256 \ -pkeyopt hexsecret:ff -pkeyopt hexseed:ff -hexdump</p>
+<p>Decrypt some data using a private key with OAEP padding using SHA256:</p>
+<p>openssl pkeyutl -decrypt -in file -inkey key.pem -out secret \ -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256</p>
+<h1>SEE ALSO</h1>
+<p><strong>genpkey</strong> (1), <strong>pkey</strong> (1), <strong>rsautl</strong> (1) <strong>dgst</strong> (1), <strong>rsa</strong> (1), <strong>genrsa</strong> (1), <strong>EVP_PKEY_CTX_set_hkdf_md</strong> (3), <strong>EVP_PKEY_CTX_set_tls1_prf_md</strong> (3)</p>
+<h1>COPYRIGHT</h1>
+<p>Copyright 2006-2021 The OpenSSL Project Authors. All Rights Reserved.</p>
+<p>Licensed under the OpenSSL license (the License). You may not use this file except in compliance with the License. You can obtain a copy in the file LICENSE in the source distribution or at &lt;https://www.openssl.org/source/license.html&gt;.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

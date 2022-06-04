@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command basename</title><meta name="description" content="Linux command basename parse pathname components"><meta name="keywords" content="linux, command, basename, bsd, parse pathname components"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>basename, dirname - parse pathname components</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;libgen.h&gt;
+
+char *dirname(char *path);
+
+char *basename(char *path);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>Warning: there are two different functions <strong>basename</strong>() - see below.</p>
+<p>The functions <strong>dirname</strong>() and <strong>basename</strong>() break a null-terminated pathname string into directory and filename components. In the usual case, <strong>dirname</strong>() returns the string up to, but not including, the final '/', and <strong>basename</strong>() returns the component following the final '/'. Trailing '/' characters are not counted as part of the pathname.</p>
+<p>If <em>path</em> does not contain a slash, <strong>dirname</strong>() returns the string "." while <strong>basename</strong>() returns a copy of <em>path</em>. If <em>path</em> is the string "/", then both <strong>dirname</strong>() and <strong>basename</strong>() return the string "/". If <em>path</em> is a null pointer or points to an empty string, then both <strong>dirname</strong>() and <strong>basename</strong>() return the string ".".</p>
+<p>Concatenating the string returned by <strong>dirname</strong>(), a "/", and the string returned by <strong>basename</strong>() yields a complete pathname.</p>
+<p>Both <strong>dirname</strong>() and <strong>basename</strong>() may modify the contents of <em>path</em>, so it may be desirable to pass a copy when calling one of these functions.</p>
+<p>These functions may return pointers to statically allocated memory which may be overwritten by subsequent calls. Alternatively, they may return a pointer to some part of <em>path</em>, so that the string referred to by <em>path</em> should not be modified or freed until the pointer returned by the function is no longer required.</p>
+<p>The following list of examples (taken from SUSv2) shows the strings returned by <strong>dirname</strong>() and <strong>basename</strong>() for different paths:</p>
+<blockquote>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">path</td>
+<td style="text-align: left;">dirname</td>
+<td style="text-align: left;">basename</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">/usr/lib</td>
+<td style="text-align: left;">/usr</td>
+<td style="text-align: left;">lib</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">/usr/</td>
+<td style="text-align: left;">/</td>
+<td style="text-align: left;">usr</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">usr</td>
+<td style="text-align: left;">.</td>
+<td style="text-align: left;">usr</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">/</td>
+<td style="text-align: left;">/</td>
+<td style="text-align: left;">/</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">.</td>
+<td style="text-align: left;">.</td>
+<td style="text-align: left;">.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">..</td>
+<td style="text-align: left;">.</td>
+<td style="text-align: left;">..</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+<h1>RETURN VALUE</h1>
+<p>Both <strong>dirname</strong>() and <strong>basename</strong>() return pointers to null-terminated strings. (Do not pass these pointers to <strong>free</strong>(3).)</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>basename</strong>(), <strong>dirname</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>There are two different versions of <strong>basename</strong>() - the POSIX version described above, and the GNU version, which one gets after</p>
+<pre><code> #define _GNU_SOURCE /* See feature_test_macros(7) */
+ #include &lt;string.h&gt;</code></pre>
+<p>The GNU version never modifies its argument, and returns the empty string when <em>path</em> has a trailing slash, and in particular also when it is "/". There is no GNU version of <strong>dirname</strong>().</p>
+<p>With glibc, one gets the POSIX version of <strong>basename</strong>() when <em>&lt;libgen.h&gt;</em> is included, and the GNU version otherwise.</p>
+<h1>BUGS</h1>
+<p>In the glibc implementation, the POSIX versions of these functions modify the <em>path</em> argument, and segfault when called with a static string such as "/usr/".</p>
+<p>Before glibc 2.2.1, the glibc version of <strong>dirname</strong>() did not correctly handle pathnames with trailing '/' characters, and generated a segfault if given a NULL argument.</p>
+<h1>EXAMPLES</h1>
+<p>The following code snippet demonstrates the use of <strong>basename</strong>() and <strong>dirname</strong>():</p>
+<pre><code>char *dirc, *basec, *bname, *dname;
+char *path = &quot;/etc/passwd&quot;;
+
+dirc = strdup(path);
+basec = strdup(path);
+dname = dirname(dirc);
+bname = basename(basec);
+printf(&quot;dirname=%s, basename=%s\n&quot;, dname, bname);</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>basename</strong>(1), <strong>dirname</strong>(1)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

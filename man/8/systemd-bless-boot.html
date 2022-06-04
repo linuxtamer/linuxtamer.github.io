@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-bless-boot</title><meta name="description" content="Linux command systemd-bless-boot Mark current boot process as successful"><meta name="keywords" content="linux, command, systemd-bless-boot, bsd, Mark current boot process as successful"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-bless-boot.service, systemd-bless-boot - Mark current boot process as successful</p>
+<h1>SYNOPSIS</h1>
+<p>systemd-bless-boot.service</p>
+<p>/lib/systemd/system-bless-boot</p>
+<h1>DESCRIPTION</h1>
+<p>systemd-bless-boot.service is a system service that marks the current boot process as successful. Its automatically pulled into the initial transaction when <strong>systemd-bless-boot-generator</strong>(8) detects that <strong>systemd-boot</strong>(7) style boot counting is used.</p>
+<p>Internally, the service operates based on the <em>LoaderBootCountPath</em> EFI variable (of the vendor UUID <strong>4a67b082-0a4c-41cf-b6c7-440b29bb8c4</strong>), which is passed from the boot loader to the OS. It contains a file system path (relative to the EFI system partition) of the <strong>Boot Loader Specification</strong>[1] compliant boot loader entry file or unified kernel image file that was used to boot up the system. <strong>systemd-bless-boot.service</strong> removes the two tries done and tries left numeric boot counters from the filename, which indicates to future invocations of the boot loader that the entry has completed booting successfully at least once. (This service will hence rename the boot loader entry file or unified kernel image file on the first successful boot.)</p>
+<h1>OPTIONS</h1>
+<p>The /lib/systemd/system-bless-boot executable may also be invoked from the command line, taking one of the following command arguments:</p>
+<p><strong>status</strong></p>
+<blockquote>
+<p>The current status of the boot loader entry file or unified kernel image file is shown. This outputs one of "good", "bad", "indeterminate", "clean", depending on the state and previous invocations of the command. The string "indeterminate" is shown initially after boot, before it has been marked as "good" or "bad". The string "good" is shown after the boot was marked as "good" with the <strong>good</strong> command below, and "bad" conversely after the <strong>bad</strong> command was invoked. The string "clean" is returned when boot counting is currently not in effect.</p>
+<p>This command is implied if no command argument is specified.</p>
+</blockquote>
+<p><strong>good</strong></p>
+<blockquote>
+<p>When invoked, the current boot loader entry file or unified kernel image file will be marked as "good", executing the file rename operation described above. This command is intended to be invoked at the end of a successful boot. The systemd-bless-boot.service unit invokes this command.</p>
+</blockquote>
+<p><strong>bad</strong></p>
+<blockquote>
+<p>When called the tries left counter in the boot loader entry file name or unified kernel image file name is set to zero, marking the boot loader entry or kernel image as "bad", so that the boot loader wont consider it anymore on future boots (at least as long as there are other entries available that are not marked "bad" yet). This command is normally not executed, but can be used to instantly put an end to the boot counting logic if a problem is detected and persistently mark the boot entry as bad.</p>
+</blockquote>
+<p><strong>indeterminate</strong></p>
+<blockquote>
+<p>This command undoes any marking of the current boot loader entry file or unified kernel image file as good or bad. This is implemented by renaming the boot loader entry file or unified kernel image file back to the path encoded in the <em>LoaderBootCountPath</em> EFI variable.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemd-boot</strong>(7), <strong>systemd.special</strong>(7)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>Boot Loader Specification</p>
+<p>https://systemd.io/BOOT_LOADER_SPECIFICATION</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

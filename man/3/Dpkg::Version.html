@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command Dpkg::Version</title><meta name="description" content="Linux command Dpkg::Version handling and comparing dpkg-style version numbers"><meta name="keywords" content="linux, command, Dpkg::Version, bsd, handling and comparing dpkg-style version numbers"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<pre><code></code></pre>
+<p><br />
+</p>
+<h1>NAME</h1>
+<p>Dpkg::Version - handling and comparing dpkg-style version numbers</p>
+<h1>DESCRIPTION</h1>
+<p>The Dpkg::Version module provides pure-Perl routines to compare dpkg-style version numbers (as used in Debian packages) and also an object oriented interface overriding perl operators to do the right thing when you compare Dpkg::Version object between them.</p>
+<h1>METHODS</h1>
+<ul>
+<li><p>Create a new Dpkg::Version object corresponding to the version indicated in the string (scalar) <code>$version</code>. By default it will accepts any string and consider it as a valid version. If you pass the option check =&gt; 1, it will return undef if the version is invalid (see version_check for details). You can always call <code>$v</code>-&gt;<strong>is_valid()</strong> later on to verify that the version is valid.</p></li>
+<li><p>When the Dpkg::Version object is used in a boolean evaluation (for example in if ($v) or $v ? \$v\ : 'default') it returns true if the version stored is valid ($v-&gt;<strong>is_valid()</strong>) and false otherwise. <strong>Notice</strong>: Between dpkg 1.15.7.2 and 1.19.1 this overload used to return <code>$v</code>-&gt;<strong>as_string()</strong> if <code>$v</code>-&gt;<strong>is_valid()</strong>, a breaking change in behavior that caused 0 versions to be evaluated as false. To catch any possibly intended code that relied on those semantics, this overload will emit a warning with category Dpkg::Version::semantic_change::overload::bool until dpkg 1.20.x. Once fixed, or for already valid code the warning can be quiesced with no if $Dpkg::Version::VERSION ge 1.02, warnings =&gt; qw(Dpkg::Version::semantic_change::overload::bool); added after the <code>use Dpkg::Version</code>.</p></li>
+<li><p>Returns true if the version is valid, false otherwise.</p></li>
+<li><p>Returns the corresponding part of the full version string.</p></li>
+<li><p>Returns true if the version is native, false if it has a revision.</p></li>
+<li><p>Numerical comparison of various versions numbers. One of the two operands needs to be a Dpkg::Version, the other one can be anything provided that its string representation is a version number.</p></li>
+<li><p>Accepts an optional option hash reference, affecting the string conversion. Options:</p>
+<ul>
+<li><p>Omit the epoch, if present, in the output string.</p></li>
+<li><p>Omit the revision, if present, in the output string.</p></li>
+</ul>
+<p>Returns the string representation of the version number.</p></li>
+</ul>
+<h1>FUNCTIONS</h1>
+<p>All the functions are exported by default.</p>
+<ul>
+<li><p>Returns -1 if <code>$a</code> is earlier than <code>$b</code>, 0 if they are equal and 1 if <code>$a</code> is later than <code>$b</code>. If <code>$a</code> or <code>$b</code> are not valid version numbers, it dies with an error.</p></li>
+<li><p>Returns the result (0 or 1) of the given comparison operation. This function is implemented on top of <strong>version_compare()</strong>. Allowed values for <code>$rel</code> are the exported constants REL_GT, REL_GE, REL_EQ, REL_LE, REL_LT. Use <strong>version_normalize_relation()</strong> if you have an input string containing the operator.</p></li>
+<li><p>Returns the normalized constant of the relation <code>$rel</code> (a value among REL_GT, REL_GE, REL_EQ, REL_LE and REL_LT). Supported relations names in input are: gt, ge, eq, le, lt, &gt;&gt;, &gt;=, =, &lt;=, &lt;&lt;. &gt; and &lt; are also supported but should not be used as they are obsolete aliases of &gt;= and &lt;=.</p></li>
+<li><p>String comparison function used for comparing non-numerical parts of version numbers. Returns -1 if <code>$a</code> is earlier than <code>$b</code>, 0 if they are equal and 1 if <code>$a</code> is later than <code>$b</code>. The ~ character always sort lower than anything else. Digits sort lower than non-digits. Among remaining characters alphabetic characters (A-Z, a-z) sort lower than the other ones. Within each range, the ASCII decimal value of the character is used to sort between characters.</p></li>
+<li><p>Compare two corresponding sub-parts of a version number (either upstream version or debian revision). Each parameter is split by <strong>version_split_digits()</strong> and resulting items are compared together. As soon as a difference happens, it returns -1 if <code>$a</code> is earlier than <code>$b</code>, 0 if they are equal and 1 if <code>$a</code> is later than <code>$b</code>.</p></li>
+<li><p>Splits a string in items that are each entirely composed either of digits or of non-digits. For instance for 1.024~beta1+svn234 it would return (1, ., 024, ~beta, 1, +svn, 234).</p></li>
+<li></li>
+</ul>
+<ul>
+<li></li>
+</ul>
+<p>Checks the validity of <code>$version</code> as a version number. Returns 1 in <code>$ok</code> if the version is valid, 0 otherwise. In the latter case, <code>$msg</code> contains a description of the problem with the <code>$version</code> scalar.</p>
+<h1>CHANGES</h1>
+<h2>Version 1.03 (dpkg 1.20.0)</h2>
+<p>Remove deprecation warning from semantic change in 1.02.</p>
+<h2>Version 1.02 (dpkg 1.19.1)</h2>
+<p>Semantic change: bool evaluation semantics restored to their original behavior.</p>
+<h2>Version 1.01 (dpkg 1.17.0)</h2>
+<p>New argument: Accept an options argument in <code>$v</code>-&gt;<strong>as_string()</strong>.</p>
+<p>New method: <code>$v</code>-&gt;<strong>is_native()</strong>.</p>
+<h2>Version 1.00 (dpkg 1.15.6)</h2>
+<p>Mark the module as public.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

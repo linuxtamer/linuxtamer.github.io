@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command mq_notify</title><meta name="description" content="Linux command mq_notify register for notification when a message is available"><meta name="keywords" content="linux, command, mq_notify, bsd, register for notification when a message is available"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>mq_notify - register for notification when a message is available</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;mqueue.h&gt;
+
+int mq_notify(mqd_t mqdes, const struct sigevent *sevp);</code></pre>
+<p>Link with <em>-lrt</em>.</p>
+<h1>DESCRIPTION</h1>
+<p><strong>mq_notify</strong>() allows the calling process to register or unregister for delivery of an asynchronous notification when a new message arrives on the empty message queue referred to by the message queue descriptor <em>mqdes</em>.</p>
+<p>The <em>sevp</em> argument is a pointer to a <em>sigevent</em> structure. For the definition and general details of this structure, see <strong>sigevent</strong>(7).</p>
+<p>If <em>sevp</em> is a non-null pointer, then <strong>mq_notify</strong>() registers the calling process to receive message notification. The <em>sigev_notify</em> field of the <em>sigevent</em> structure to which <em>sevp</em> points specifies how notification is to be performed. This field has one of the following values:</p>
+<dl>
+<dt><strong>SIGEV_NONE</strong></dt>
+<dd><p>A "null" notification: the calling process is registered as the target for notification, but when a message arrives, no notification is sent.</p>
+</dd>
+<dt><strong>SIGEV_SIGNAL</strong></dt>
+<dd><p>Notify the process by sending the signal specified in <em>sigev_signo</em>. See <strong>sigevent</strong>(7) for general details. The <em>si_code</em> field of the <em>siginfo_t</em> structure will be set to <strong>SI_MESGQ</strong>. In addition, <em>si_pid</em> will be set to the PID of the process that sent the message, and <em>si_uid</em> will be set to the real user ID of the sending process.</p>
+</dd>
+<dt><strong>SIGEV_THREAD</strong></dt>
+<dd><p>Upon message delivery, invoke <em>sigev_notify_function</em> as if it were the start function of a new thread. See <strong>sigevent</strong>(7) for details.</p>
+</dd>
+</dl>
+<p>Only one process can be registered to receive notification from a message queue.</p>
+<p>If <em>sevp</em> is NULL, and the calling process is currently registered to receive notifications for this message queue, then the registration is removed; another process can then register to receive a message notification for this queue.</p>
+<p>Message notification occurs only when a new message arrives and the queue was previously empty. If the queue was not empty at the time <strong>mq_notify</strong>() was called, then a notification will occur only after the queue is emptied and a new message arrives.</p>
+<p>If another process or thread is waiting to read a message from an empty queue using <strong>mq_receive</strong>(3), then any message notification registration is ignored: the message is delivered to the process or thread calling <strong>mq_receive</strong>(3), and the message notification registration remains in effect.</p>
+<p>Notification occurs once: after a notification is delivered, the notification registration is removed, and another process can register for message notification. If the notified process wishes to receive the next notification, it can use <strong>mq_notify</strong>() to request a further notification. This should be done before emptying all unread messages from the queue. (Placing the queue in nonblocking mode is useful for emptying the queue of messages without blocking once it is empty.)</p>
+<h1>RETURN VALUE</h1>
+<p>On success <strong>mq_notify</strong>() returns 0; on error, -1 is returned, with <em>errno</em> set to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p>The message queue descriptor specified in <em>mqdes</em> is invalid.</p>
+</dd>
+<dt><strong>EBUSY</strong></dt>
+<dd><p>Another process has already registered to receive notification for this message queue.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p><em>sevp-&gt;sigev_notify</em> is not one of the permitted values; or <em>sevp-&gt;sigev_notify</em> is <strong>SIGEV_SIGNAL</strong> and <em>sevp-&gt;sigev_signo</em> is not a valid signal number.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient memory.</p>
+</dd>
+</dl>
+<p>POSIX.1-2008 says that an implementation <em>may</em> generate an <strong>EINVAL</strong> error if <em>sevp</em> is NULL, and the caller is not currently registered to receive notifications for the queue <em>mqdes</em>.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>mq_notify</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001.</p>
+<h1>NOTES</h1>
+<h2>C library/kernel differences</h2>
+<p>In the glibc implementation, the <strong>mq_notify</strong>() library function is implemented on top of the system call of the same name. When <em>sevp</em> is NULL, or specifies a notification mechanism other than <strong>SIGEV_THREAD</strong>, the library function directly invokes the system call. For <strong>SIGEV_THREAD</strong>, much of the implementation resides within the library, rather than the kernel. (This is necessarily so, since the thread involved in handling the notification is one that must be managed by the C library POSIX threads implementation.) The implementation involves the use of a raw <strong>netlink</strong>(7) socket and creates a new thread for each notification that is delivered to the process.</p>
+<h1>EXAMPLES</h1>
+<p>The following program registers a notification request for the message queue named in its command-line argument. Notification is performed by creating a thread. The thread executes a function which reads one message from the queue and then terminates the process.</p>
+<h2>Program source</h2>
+<pre><code>#include &lt;pthread.h&gt;
+#include &lt;mqueue.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+#define handle_error(msg) \
+    do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+static void                     /* Thread start function */
+tfunc(union sigval sv)
+{
+    struct mq_attr attr;
+    ssize_t nr;
+    void *buf;
+    mqd_t mqdes = *((mqd_t *) sv.sival_ptr);
+
+    /* Determine max. msg size; allocate buffer to receive msg */
+
+    if (mq_getattr(mqdes, &amp;attr) == -1)
+        handle_error(&quot;mq_getattr&quot;);
+    buf = malloc(attr.mq_msgsize);
+    if (buf == NULL)
+        handle_error(&quot;malloc&quot;);
+
+    nr = mq_receive(mqdes, buf, attr.mq_msgsize, NULL);
+    if (nr == -1)
+        handle_error(&quot;mq_receive&quot;);
+
+    printf(&quot;Read %zd bytes from MQ\n&quot;, nr);
+    free(buf);
+    exit(EXIT_SUCCESS);         /* Terminate the process */
+}
+
+int
+main(int argc, char *argv[])
+{
+    mqd_t mqdes;
+    struct sigevent sev;
+
+    if (argc != 2) {
+        fprintf(stderr, &quot;Usage: %s &lt;mq-name&gt;\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    mqdes = mq_open(argv[1], O_RDONLY);
+    if (mqdes == (mqd_t) -1)
+        handle_error(&quot;mq_open&quot;);
+
+    sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_notify_function = tfunc;
+    sev.sigev_notify_attributes = NULL;
+    sev.sigev_value.sival_ptr = &amp;mqdes;   /* Arg. to thread func. */
+    if (mq_notify(mqdes, &amp;sev) == -1)
+        handle_error(&quot;mq_notify&quot;);
+
+    pause();    /* Process will be terminated by thread function */
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>mq_close</strong>(3), <strong>mq_getattr</strong>(3), <strong>mq_open</strong>(3), <strong>mq_receive</strong>(3), <strong>mq_send</strong>(3), <strong>mq_unlink</strong>(3), <strong>mq_overview</strong>(7), <strong>sigevent</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

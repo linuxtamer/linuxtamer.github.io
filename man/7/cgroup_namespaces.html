@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command cgroup_namespaces</title><meta name="description" content="Linux command cgroup_namespaces overview of Linux cgroup namespaces"><meta name="keywords" content="linux, command, cgroup_namespaces, bsd, overview of Linux cgroup namespaces"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>cgroup_namespaces - overview of Linux cgroup namespaces</p>
+<h1>DESCRIPTION</h1>
+<p>For an overview of namespaces, see <strong>namespaces</strong>(7).</p>
+<p>Cgroup namespaces virtualize the view of a process's cgroups (see <strong>cgroups</strong>(7)) as seen via <em>/proc/[pid]/cgroup</em> and <em>/proc/[pid]/mountinfo</em>.</p>
+<p>Each cgroup namespace has its own set of cgroup root directories. These root directories are the base points for the relative locations displayed in the corresponding records in the <em>/proc/[pid]/cgroup</em> file. When a process creates a new cgroup namespace using <strong>clone</strong>(2) or <strong>unshare</strong>(2) with the <strong>CLONE_NEWCGROUP</strong> flag, its current cgroups directories become the cgroup root directories of the new namespace. (This applies both for the cgroups version 1 hierarchies and the cgroups version 2 unified hierarchy.)</p>
+<p>When reading the cgroup memberships of a "target" process from <em>/proc/[pid]/cgroup</em>, the pathname shown in the third field of each record will be relative to the reading process's root directory for the corresponding cgroup hierarchy. If the cgroup directory of the target process lies outside the root directory of the reading process's cgroup namespace, then the pathname will show <em>../</em> entries for each ancestor level in the cgroup hierarchy.</p>
+<p>The following shell session demonstrates the effect of creating a new cgroup namespace.</p>
+<p>First, (as superuser) in a shell in the initial cgroup namespace, we create a child cgroup in the <em>freezer</em> hierarchy, and place a process in that cgroup that we will use as part of the demonstration below:</p>
+<pre><code># mkdir -p /sys/fs/cgroup/freezer/sub2
+# sleep 10000 &amp;     # Create a process that lives for a while
+[1] 20124
+# echo 20124 &gt; /sys/fs/cgroup/freezer/sub2/cgroup.procs</code></pre>
+<p>We then create another child cgroup in the <em>freezer</em> hierarchy and put the shell into that cgroup:</p>
+<pre><code># mkdir -p /sys/fs/cgroup/freezer/sub
+# echo $$                      # Show PID of this shell
+30655
+# echo 30655 &gt; /sys/fs/cgroup/freezer/sub/cgroup.procs
+# cat /proc/self/cgroup | grep freezer
+7:freezer:/sub</code></pre>
+<p>Next, we use <strong>unshare</strong>(1) to create a process running a new shell in new cgroup and mount namespaces:</p>
+<pre><code># PS1=&quot;sh2# &quot; unshare -Cm bash</code></pre>
+<p>From the new shell started by <strong>unshare</strong>(1), we then inspect the <em>/proc/[pid]/cgroup</em> files of, respectively, the new shell, a process that is in the initial cgroup namespace (<em>init</em>, with PID 1), and the process in the sibling cgroup (<em>sub2</em>):</p>
+<pre><code>sh2# cat /proc/self/cgroup | grep freezer
+7:freezer:/
+sh2# cat /proc/1/cgroup | grep freezer
+7:freezer:/..
+sh2# cat /proc/20124/cgroup | grep freezer
+7:freezer:/../sub2</code></pre>
+<p>From the output of the first command, we see that the freezer cgroup membership of the new shell (which is in the same cgroup as the initial shell) is shown defined relative to the freezer cgroup root directory that was established when the new cgroup namespace was created. (In absolute terms, the new shell is in the <em>/sub</em> freezer cgroup, and the root directory of the freezer cgroup hierarchy in the new cgroup namespace is also <em>/sub</em>. Thus, the new shell's cgroup membership is displayed as '/'.)</p>
+<p>However, when we look in <em>/proc/self/mountinfo</em> we see the following anomaly:</p>
+<pre><code>sh2# cat /proc/self/mountinfo | grep freezer
+155 145 0:32 /.. /sys/fs/cgroup/freezer ...</code></pre>
+<p>The fourth field of this line (<em>/..</em>) should show the directory in the cgroup filesystem which forms the root of this mount. Since by the definition of cgroup namespaces, the process's current freezer cgroup directory became its root freezer cgroup directory, we should see '/' in this field. The problem here is that we are seeing a mount entry for the cgroup filesystem corresponding to the initial cgroup namespace (whose cgroup filesystem is indeed rooted at the parent directory of <em>sub</em>). To fix this problem, we must remount the freezer cgroup filesystem from the new shell (i.e., perform the mount from a process that is in the new cgroup namespace), after which we see the expected results:</p>
+<pre><code>sh2# mount --make-rslave /     # Don&#39;t propagate mount events
+                               # to other namespaces
+sh2# umount /sys/fs/cgroup/freezer
+sh2# mount -t cgroup -o freezer freezer /sys/fs/cgroup/freezer
+sh2# cat /proc/self/mountinfo | grep freezer
+155 145 0:32 / /sys/fs/cgroup/freezer rw,relatime ...</code></pre>
+<h1>CONFORMING TO</h1>
+<p>Namespaces are a Linux-specific feature.</p>
+<h1>NOTES</h1>
+<p>Use of cgroup namespaces requires a kernel that is configured with the <strong>CONFIG_CGROUPS</strong> option.</p>
+<p>The virtualization provided by cgroup namespaces serves a number of purposes:</p>
+<ul>
+<li><p>It prevents information leaks whereby cgroup directory paths outside of a container would otherwise be visible to processes in the container. Such leakages could, for example, reveal information about the container framework to containerized applications.</p></li>
+<li><p>It eases tasks such as container migration. The virtualization provided by cgroup namespaces allows containers to be isolated from knowledge of the pathnames of ancestor cgroups. Without such isolation, the full cgroup pathnames (displayed in <em>/proc/self/cgroups</em>) would need to be replicated on the target system when migrating a container; those pathnames would also need to be unique, so that they don't conflict with other pathnames on the target system.</p></li>
+<li><p>It allows better confinement of containerized processes, because it is possible to mount the container's cgroup filesystems such that the container processes can't gain access to ancestor cgroup directories. Consider, for example, the following scenario:</p>
+<ul>
+<li><p>We have a cgroup directory, <em>/cg/1</em>, that is owned by user ID 9000.</p></li>
+<li><p>We have a process, <em>X</em>, also owned by user ID 9000, that is namespaced under the cgroup <em>/cg/1/2</em> (i.e., <em>X</em> was placed in a new cgroup namespace via <strong>clone</strong>(2) or <strong>unshare</strong>(2) with the <strong>CLONE_NEWCGROUP</strong> flag).</p></li>
+</ul>
+<p>In the absence of cgroup namespacing, because the cgroup directory <em>/cg/1</em> is owned (and writable) by UID 9000 and process <em>X</em> is also owned by user ID 9000, process <em>X</em> would be able to modify the contents of cgroups files (i.e., change cgroup settings) not only in <em>/cg/1/2</em> but also in the ancestor cgroup directory <em>/cg/1</em>. Namespacing process <em>X</em> under the cgroup directory <em>/cg/1/2</em>, in combination with suitable mount operations for the cgroup filesystem (as shown above), prevents it modifying files in <em>/cg/1</em>, since it cannot even see the contents of that directory (or of further removed cgroup ancestor directories). Combined with correct enforcement of hierarchical limits, this prevents process <em>X</em> from escaping the limits imposed by ancestor cgroups.</p></li>
+</ul>
+<h1>SEE ALSO</h1>
+<p><strong>unshare</strong>(1), <strong>clone</strong>(2), <strong>setns</strong>(2), <strong>unshare</strong>(2), <strong>proc</strong>(5), <strong>cgroups</strong>(7), <strong>credentials</strong>(7), <strong>namespaces</strong>(7), <strong>user_namespaces</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

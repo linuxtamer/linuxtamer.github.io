@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command gpg-wks-server</title><meta name="description" content="Linux command gpg-wks-server Server providing the Web Key Service"><meta name="keywords" content="linux, command, gpg-wks-server, bsd, Server providing the Web Key Service"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p><strong>gpg-wks-server</strong> - Server providing the Web Key Service</p>
+<h1>SYNOPSIS</h1>
+<p><strong>gpg-wks-server</strong> [<em>options</em>] <strong>--receive</strong><br />
+<strong>gpg-wks-server</strong> [<em>options</em>] <strong>--cron</strong><br />
+<strong>gpg-wks-server</strong> [<em>options</em>] <strong>--list-domains</strong><br />
+<strong>gpg-wks-server</strong> [<em>options</em>] <strong>--check-key</strong> <em>user-id</em><br />
+<strong>gpg-wks-server</strong> [<em>options</em>] <strong>--install-key</strong> <em>file</em> <em>user-id</em><br />
+<strong>gpg-wks-server</strong> [<em>options</em>] <strong>--remove-key</strong> <em>user-id</em><br />
+<strong>gpg-wks-server</strong> [<em>options</em>] <strong>--revoke-key</strong> <em>user-id</em></p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>gpg-wks-server</strong> is a server site implementation of the Web Key Service. It receives requests for publication, sends confirmation requests, receives confirmations, and published the key. It also has features to ease the setup and maintenance of a Web Key Directory.</p>
+<p>When used with the command <strong>--receive</strong> a single Web Key Service mail is processed. Commonly this command is used with the option <strong>--send</strong> to directly send the crerated mails back. See below for an installation example.</p>
+<p>The command <strong>--cron</strong> is used for regualr cleanup tasks. For example non-confirmed requested should be removed after their expire time. It is best to run this command once a day from a cronjob.</p>
+<p>The command <strong>--list-domains</strong> prints all configured domains. Further it creates missing directories for the configuration and prints warnings pertaining to problems in the configuration.</p>
+<p>The command <strong>--check-key</strong> (or just <strong>--check</strong>) checks whether a key with the given user-id is installed. The process returns success in this case; to also print a diagnostic use the option <strong>-v</strong>. If the key is not installed a diagnostic is printed and the process returns failure; to suppress the diagnostic, use option <strong>-q</strong>. More than one user-id can be given; see also option <strong>with-file</strong>.</p>
+<p>The command <strong>--install-key</strong> manually installs a key into the WKD. The arguments are a file with the keyblock and the user-id to install. If the first argument resembles a fingerprint the key is taken from the current keyring; to force the use of a file, prefix the first argument with "./". If no arguments are given the parameters are read from stdin; the expected format are lines with the fingerprint and the mailbox separated by a space.</p>
+<p>The command <strong>--remove-key</strong> uninstalls a key from the WKD. The process returns success in this case; to also print a diagnostic, use option <strong>-v</strong>. If the key is not installed a diagnostic is printed and the process returns failure; to suppress the diagnostic, use option <strong>-q</strong>.</p>
+<p>The command <strong>--revoke-key</strong> is not yet functional.</p>
+<h1>OPTIONS</h1>
+<p><strong>gpg-wks-server</strong> understands these options:</p>
+<dl>
+<dt><strong>-C <em>dir</em></strong><br />
+<strong>--directory <em>dir</em></strong></dt>
+<dd><p>Use <em>dir</em> as top level directory for domains. The default is ‘<em>/var/lib/gnupg/wks</em>’.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--from <em>mailaddr</em></strong></dt>
+<dd><p>Use <em>mailaddr</em> as the default sender address.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--header <em>name</em>=<em>value</em></strong></dt>
+<dd><p>Add the mail header "<em>name</em>: <em>value</em>" to all outgoing mails.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--send</strong></dt>
+<dd><p>Directly send created mails using the <strong>sendmail</strong> command. Requires installation of that command.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>-o <em>file</em></strong><br />
+<strong>--output <em>file</em></strong></dt>
+<dd><p>Write the created mail also to <em>file</em>. Note that the value <strong>-</strong> for <em>file</em> would write it to stdout.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--with-dir</strong></dt>
+<dd><p>When used with the command <strong>--list-domains</strong> print for each installed domain the domain name and its directory name.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--with-file</strong></dt>
+<dd><p>When used with the command <strong>--check-key</strong> print for each user-id, the address, 'i' for installed key or 'n' for not installed key, and the filename.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--verbose</strong></dt>
+<dd><p>Enable extra informational output.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--quiet</strong></dt>
+<dd><p>Disable almost all informational output.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--version</strong></dt>
+<dd><p>Print version of the program and exit.</p>
+</dd>
+</dl>
+<dl>
+<dt><strong>--help</strong></dt>
+<dd><p>Display a brief help page and exit.</p>
+</dd>
+</dl>
+<h1>EXAMPLES</h1>
+<p>The Web Key Service requires a working directory to store keys pending for publication. As root create a working directory:</p>
+<blockquote>
+<pre><code>  # mkdir /var/lib/gnupg/wks
+  # chown webkey:webkey /var/lib/gnupg/wks
+  # chmod 2750 /var/lib/gnupg/wks</code></pre>
+</blockquote>
+<p>Then under your webkey account create directories for all your domains. Here we do it for "example.net":</p>
+<blockquote>
+<pre><code>  $ mkdir /var/lib/gnupg/wks/example.net</code></pre>
+</blockquote>
+<p>Finally run</p>
+<blockquote>
+<pre><code>  $ gpg-wks-server --list-domains</code></pre>
+</blockquote>
+<p>to create the required sub-directories with the permissions set correctly. For each domain a submission address needs to be configured. All service mails are directed to that address. It can be the same address for all configured domains, for example:</p>
+<blockquote>
+<pre><code>  $ cd /var/lib/gnupg/wks/example.net
+  $ echo key-submission@example.net &gt;submission-address</code></pre>
+</blockquote>
+<p>The protocol requires that the key to be published is send with an encrypted mail to the service. Thus you need to create a key for the submission address:</p>
+<blockquote>
+<pre><code>  $ gpg --batch --passphrase &#39;&#39; --quick-gen-key key-submission@example.net
+  $ gpg -K key-submission@example.net</code></pre>
+</blockquote>
+<p>The output of the last command looks similar to this:</p>
+<blockquote>
+<pre><code>  sec   rsa3072 2016-08-30 [SC]
+        C0FCF8642D830C53246211400346653590B3795B
+  uid           [ultimate] key-submission@example.net
+  ssb   rsa3072 2016-08-30 [E]</code></pre>
+</blockquote>
+<p>Take the fingerprint from that output and manually publish the key:</p>
+<blockquote>
+<pre><code>  $ gpg-wks-server --install-key C0FCF8642D830C53246211400346653590B3795B \
+  &gt;                key-submission@example.net</code></pre>
+</blockquote>
+<p>Finally that submission address needs to be redirected to a script running <strong>gpg-wks-server</strong>. The <strong>procmail</strong> command can be used for this: Redirect the submission address to the user "webkey" and put this into webkey's ‘<em>.procmailrc</em>’:</p>
+<blockquote>
+<pre><code>:0
+* !^From: webkey@example.net
+* !^X-WKS-Loop: webkey.example.net
+|gpg-wks-server -v --receive \
+     --header X-WKS-Loop=webkey.example.net \
+     --from webkey@example.net --send</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>gpg-wks-client</strong>(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

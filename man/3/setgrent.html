@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command setgrent</title><meta name="description" content="Linux command setgrent get group file entry"><meta name="keywords" content="linux, command, setgrent, bsd, get group file entry"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>getgrent, setgrent, endgrent - get group file entry</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;grp.h&gt;
+
+struct group *getgrent(void);
+
+void setgrent(void);
+
+void endgrent(void);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>setgrent</strong>():</p>
+<blockquote>
+<p>_XOPEN_SOURCE &gt;= 500 || /* Glibc since 2.19: */ _DEFAULT_SOURCE || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE || _SVID_SOURCE</p>
+</blockquote>
+<p><strong>getgrent</strong>(), <strong>endgrent</strong>():</p>
+<blockquote>
+<p>Since glibc 2.22: _XOPEN_SOURCE &gt;= 500 || _DEFAULT_SOURCE<br />
+Glibc 2.21 and earlier _XOPEN_SOURCE &gt;= 500 || /* Since glibc 2.12: */ _POSIX_C_SOURCE &gt;= 200809L || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE || _SVID_SOURCE</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>The <strong>getgrent</strong>() function returns a pointer to a structure containing the broken-out fields of a record in the group database (e.g., the local group file <em>/etc/group</em>, NIS, and LDAP). The first time <strong>getgrent</strong>() is called, it returns the first entry; thereafter, it returns successive entries.</p>
+<p>The <strong>setgrent</strong>() function rewinds to the beginning of the group database, to allow repeated scans.</p>
+<p>The <strong>endgrent</strong>() function is used to close the group database after all processing has been performed.</p>
+<p>The <em>group</em> structure is defined in <em>&lt;grp.h&gt;</em> as follows:</p>
+<pre><code>struct group {
+    char   *gr_name;        /* group name */
+    char   *gr_passwd;      /* group password */
+    gid_t   gr_gid;         /* group ID */
+    char  **gr_mem;         /* NULL-terminated array of pointers
+                               to names of group members */
+};</code></pre>
+<p>For more information about the fields of this structure, see <strong>group</strong>(5).</p>
+<h1>RETURN VALUE</h1>
+<p>The <strong>getgrent</strong>() function returns a pointer to a <em>group</em> structure, or NULL if there are no more entries or an error occurs.</p>
+<p>Upon error, <em>errno</em> may be set. If one wants to check <em>errno</em> after the call, it should be set to zero before the call.</p>
+<p>The return value may point to a static area, and may be overwritten by subsequent calls to <strong>getgrent</strong>(), <strong>getgrgid</strong>(3), or <strong>getgrnam</strong>(3). (Do not pass the returned pointer to <strong>free</strong>(3).)</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EAGAIN</strong></dt>
+<dd><p>The service was temporarily unavailable; try again later. For NSS backends in glibc this indicates a temporary error talking to the backend. The error may correct itself, retrying later is suggested.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>A signal was caught; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>I/O error.</p>
+</dd>
+<dt><strong>EMFILE</strong></dt>
+<dd><p>The per-process limit on the number of open file descriptors has been reached.</p>
+</dd>
+<dt><strong>ENFILE</strong></dt>
+<dd><p>The system-wide limit on the total number of open files has been reached.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>A necessary input file cannot be found. For NSS backends in glibc this indicates the backend is not correctly configured.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient memory to allocate <em>group</em> structure.</p>
+</dd>
+<dt><strong>ERANGE</strong></dt>
+<dd><p>Insufficient buffer space supplied.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/group</em></dt>
+<dd><p>local group database file</p>
+</dd>
+</dl>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>getgrent</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:grent<br />
+race:grentbuf locale</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>setgrent</strong>(), <strong>endgrent</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Unsafe race:grent locale</td>
+</tr>
+</tbody>
+</table>
+<p>In the above table, <em>grent</em> in <em>race:grent</em> signifies that if any of the functions <strong>setgrent</strong>(), <strong>getgrent</strong>(), or <strong>endgrent</strong>() are used in parallel in different threads of a program, then data races could occur.</p>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, SVr4, 4.3BSD.</p>
+<h1>SEE ALSO</h1>
+<p><strong>fgetgrent</strong>(3), <strong>getgrent_r</strong>(3), <strong>getgrgid</strong>(3), <strong>getgrnam</strong>(3), <strong>getgrouplist</strong>(3), <strong>putgrent</strong>(3), <strong>group</strong>(5)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

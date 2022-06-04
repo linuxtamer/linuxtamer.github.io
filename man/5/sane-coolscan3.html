@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command sane-coolscan3</title><meta name="description" content="Linux command sane-coolscan3 SANE backend for Nikon Coolscan film scanners"><meta name="keywords" content="linux, command, sane-coolscan3, bsd, SANE backend for Nikon Coolscan film scanners"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sane-coolscan3 - SANE backend for Nikon Coolscan film scanners</p>
+<h1>DESCRIPTION</h1>
+<p>The <strong>sane-coolscan3</strong> library implements a SANE (Scanner Access Now Easy) backend that provides access to Nikon Coolscan film scanners. Some functions of this backend should be considered <strong>beta-quality</strong> software. Most functions have been stable for a long time, but of course new development can not and will not function properly from the very first day.</p>
+<p>At present, the following scanners are known to work with this backend:</p>
+<blockquote>
+<pre><code>Model:                       Connection Type
+---------------------------  -------------------
+LS-30 (Coolscan III)         SCSI
+LS-40 ED (Coolscan IV)       USB
+LS-50 ED (Coolscan V)        USB
+LS-2000                      SCSI
+LS-4000 ED                   IEEE 1394
+LS-8000 ED                   IEEE 1394</code></pre>
+</blockquote>
+<p>Please send mail to sane-devel@alioth-lists.debian.net to report successes or failures.</p>
+<h1>OPTIONS</h1>
+<p>The options the backend supports can either be selected through command line options to programs like scanimage or through GUI elements in xscanimage or xsane.</p>
+<p>Valid command line options and their syntax can be listed by using</p>
+<blockquote>
+<p>scanimage --help -d coolscan3:&lt;interface&gt;:&lt;device&gt;</p>
+</blockquote>
+<p>where &lt;interface&gt; and &lt;device&gt; specify the device in question, as in the configuration file (see next section). The -d parameter and its argument can be omitted to obtain information on the first scanner identified. Use the command</p>
+<blockquote>
+<p>scanimage -L</p>
+</blockquote>
+<p>to list all devices recognized by your SANE installation.</p>
+<p>The options should be fully described by the description or tooltips given by frontend. Here is a description of some of the most important options, in the syntax with which they must be supplied to scanimage:</p>
+<dl>
+<dt><em>--frame &lt;n&gt;</em></dt>
+<dd><p>This option specifies which frame to operate on, if a motorized film strip feeder or APS adapter are used. The frame number <em>&lt;n&gt;</em> ranges from 1 to the number of frames available, which is sensed each time the backend is initialized (usually each time you start the frontend).</p>
+</dd>
+<dt><em>--subframe &lt;x&gt;</em></dt>
+<dd><p>This option shifts the scan window by the specified amount (default unit is mm).</p>
+</dd>
+<dt><em>--infrared=yes/no</em></dt>
+<dd><p>If set to "yes", the scanner will read the infrared channel, thus allowing defect removal in software. The infrared image is read during a second scan, with no options altered. The backend must not be restarted between the scans. If you use scanimage, perform a batch scan with batch-count=2 to obtain the IR information.</p>
+</dd>
+<dt><em>--depth &lt;n&gt;</em></dt>
+<dd><p>Here &lt;n&gt; can either be 8 or the maximum number of bits supported by the scanner (10, 12, or 14). It specifies whether or not the scanner reduces the scanned data to 8 bits before sending it to the backend. If 8 bits are used, some information and thus image quality is lost, but the amount of data is smaller compared to higher depths. Also, many imaging programs and image formats cannot handle depths greater than 8 bits.</p>
+</dd>
+<dt><em>--autofocus</em></dt>
+<dd><p>Perform autofocus operation. Unless otherwise specified by the other options ( <em>--focus-on-centre</em> and friends), focusing is performed on the centre of the selected scan area.</p>
+</dd>
+<dt><em>--ae-wb</em></dt>
+<dd>
+</dd>
+<dt><em>--ae</em></dt>
+<dd><p>Perform a pre-scan to calculate exposure values automatically. <em>--ae-wb</em> will maintain the white balance, while <em>--ae</em> will adjust each channel separately.</p>
+</dd>
+<dt><em>--exposure</em></dt>
+<dd><p>Multiply all exposure times with this value. This allows exposure correction without modifying white balance.</p>
+</dd>
+<dt><em>--load</em></dt>
+<dd><p>Load the next slide when using the slide loader.</p>
+</dd>
+<dt><em>--eject</em></dt>
+<dd><p>Eject the film strip or mounted slide when using the slide loader.</p>
+</dd>
+<dt><em>--reset</em></dt>
+<dd><p>Reset scanner. The scanner will perform the same action as when power is turned on: it will eject the film strip and calibrate itself. Use this whenever the scanner refuses to load a film strip properly, as a result of which <em>--eject</em> does not work.</p>
+</dd>
+</dl>
+<h1>CONFIGURATION FILE</h1>
+<p>The configuration file /etc/sane.d/coolscan3.conf specifies the device(s) that the backend will use. Owing to the nature of the supported connection types SCSI, USB, and IEEE 1394, the default configuration file supplied with the SANE distribution should work without being edited.</p>
+<p>Each line in the configuration file is either of the following, where all entries are case-sensitive:</p>
+<dl>
+<dt><em>blank or starting with a '#' character</em></dt>
+<dd><p>These lines are ignored, thus '#' can be used to include comments.</p>
+</dd>
+<dt><em>containing only the word "auto"</em></dt>
+<dd><p>This instructs the backend to probe for a scanner by scanning the buses for devices with know identifiers. This is the action taken when no configuration file is present.</p>
+</dd>
+<dt><em>a line of the form &lt;interface&gt;:&lt;device&gt;</em></dt>
+<dd><p>Here &lt;interface&gt; can be one of "scsi" or "usb", and &lt;device&gt; is the device file of the scanner. Note that IEEE 1394 devices are handled by the SBP-2 module in the kernel and appear to SANE as SCSI devices.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-coolscan3.a</em></dt>
+<dd><p>The static library implementing this backend.</p>
+</dd>
+<dt><em>/usr/lib/x86_64-linux-gnu/sane/libsane-coolscan3.so</em></dt>
+<dd><p>The shared library implementing this backend (present on systems that support dynamic loading).</p>
+</dd>
+<dt><em>/etc/sane.d/coolscan3.conf</em></dt>
+<dd><p>Configuration file for this backend, read each time the backend is initialized.</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<dl>
+<dt><strong>SANE_DEBUG_COOLSCAN3</strong></dt>
+<dd><p>If the library was compiled with debug support enabled, this environment variable controls the debug level for this backend. E.g., a value of 128 requests all debug output to be printed. Smaller levels reduce verbosity.</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p>sane-scsi(5), sane-usb(5), scanimage(1), xscanimage(1), xsane(1)</p>
+<h1>BUGS</h1>
+<p>Currently, the SANE protocol does not allow automatically updating options whenever the hardware changes. Thus the number of choices for the <strong>--frame</strong> option will be fixed when the backend is initialized (usually when the user runs the frontend). In particular, if there is no film strip in the automatic film strip feeder when the backend is initialized, the frame option will not appear at all. Also, restarting the frontend after swapping film adapters is strongly recommended.</p>
+<p>Linux kernels prior to 2.4.19 had a patch that truncated INQUIRY data from IEEE 1394 scanners to 36 bytes, discarding vital information about the scanner. The IEEE 1394 models therefore only work with 2.4.19 or later.</p>
+<p>No real bugs currently known, please report any to the SANE developers' list.</p>
+<h1>AUTHORS</h1>
+<p>coolscan3 written by A. Zummo (a.zummo@towertech.it), based heavily on coolscan2 written by András Major (andras@users.sourceforge.net).</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

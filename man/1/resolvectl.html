@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command resolvectl</title><meta name="description" content="Linux command resolvectl Resolve domain names, IPV4 and IPv6 addresses, DNS resource records, and services; introspect and reconfigure the DNS reso..."><meta name="keywords" content="linux, command, resolvectl, bsd, Resolve domain names, IPV4 and IPv6 addresses, DNS resource records, and services; introspect and reconfigure the DNS reso..."><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>resolvectl, resolvconf - Resolve domain names, IPV4 and IPv6 addresses, DNS resource records, and services; introspect and reconfigure the DNS resolver</p>
+<h1>SYNOPSIS</h1>
+<p><strong>resolvectl</strong> [OPTIONS...] {COMMAND} [NAME...]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>resolvectl</strong> may be used to resolve domain names, IPv4 and IPv6 addresses, DNS resource records and services with the <strong>systemd-resolved.service</strong>(8) resolver service. By default, the specified list of parameters will be resolved as hostnames, retrieving their IPv4 and IPv6 addresses. If the parameters specified are formatted as IPv4 or IPv6 operation the reverse operation is done, and a hostname is retrieved for the specified addresses.</p>
+<p>The programs output contains information about the protocol used for the look-up and on which network interface the data was discovered. It also contains information on whether the information could be authenticated. All data for which local DNSSEC validation succeeds is considered authenticated. Moreover all data originating from local, trusted sources is also reported authenticated, including resolution of the local host name, the "localhost" hostname or all data from /etc/hosts.</p>
+<h1>COMMANDS</h1>
+<p><strong>query</strong> <em>HOSTNAME|ADDRESS</em>...</p>
+<blockquote>
+<p>Resolve domain names, IPv4 and IPv6 addresses.</p>
+</blockquote>
+<p><strong>service</strong> [[<em>NAME</em>] <em>TYPE</em>] <em>DOMAIN</em></p>
+<blockquote>
+<p>Resolve <strong>DNS-SD</strong>[1] and <strong>SRV</strong>[2] services, depending on the specified list of parameters. If three parameters are passed the first is assumed to be the DNS-SD service name, the second the SRV service type, and the third the domain to search in. In this case a full DNS-SD style SRV and TXT lookup is executed. If only two parameters are specified, the first is assumed to be the SRV service type, and the second the domain to look in. In this case no TXT RR is requested. Finally, if only one parameter is specified, it is assumed to be a domain name, that is already prefixed with an SRV type, and an SRV lookup is done (no TXT).</p>
+</blockquote>
+<p><strong>openpgp</strong> <em>EMAIL@DOMAIN</em>...</p>
+<blockquote>
+<p>Query PGP keys stored as <strong>OPENPGPKEY</strong>[3] resource records. Specified e-mail addresses are converted to the corresponding DNS domain name, and any OPENPGPKEY keys are printed.</p>
+</blockquote>
+<p><strong>tlsa</strong> [<em>FAMILY</em>] <em>DOMAIN</em>[:<em>PORT</em>]...</p>
+<blockquote>
+<p>Query TLS public keys stored as <strong>TLSA</strong>[4] resource records. A query will be performed for each of the specified names prefixed with the port and family ("_<em>port</em>._<em>family</em>.<em>domain</em>"). The port number may be specified after a colon (":"), otherwise <strong>443</strong> will be used by default. The family may be specified as the first argument, otherwise <strong>tcp</strong> will be used.</p>
+</blockquote>
+<p><strong>status</strong> [<em>LINK</em>...]</p>
+<blockquote>
+<p>Shows the global and per-link DNS settings currently in effect. If no command is specified, this is the implied default.</p>
+</blockquote>
+<p><strong>statistics</strong></p>
+<blockquote>
+<p>Shows general resolver statistics, including information whether DNSSEC is enabled and available, as well as resolution and validation statistics.</p>
+</blockquote>
+<p><strong>reset-statistics</strong></p>
+<blockquote>
+<p>Resets the statistics counters shown in <strong>statistics</strong> to zero. This operation requires root privileges.</p>
+</blockquote>
+<p><strong>flush-caches</strong></p>
+<blockquote>
+<p>Flushes all DNS resource record caches the service maintains locally. This is mostly equivalent to sending the <strong>SIGUSR2</strong> to the <strong>systemd-resolved</strong> service.</p>
+</blockquote>
+<p><strong>reset-server-features</strong></p>
+<blockquote>
+<p>Flushes all feature level information the resolver learnt about specific servers, and ensures that the server feature probing logic is started from the beginning with the next look-up request. This is mostly equivalent to sending the <strong>SIGRTMIN+1</strong> to the <strong>systemd-resolved</strong> service.</p>
+</blockquote>
+<p><strong>dns</strong> [<em>LINK</em> [<em>SERVER</em>...]], <strong>domain</strong> [<em>LINK</em> [<em>DOMAIN</em>...]], <strong>default-route</strong> [<em>LINK</em> [<em>BOOL</em>...]], <strong>llmnr</strong> [<em>LINK</em> [<em>MODE</em>]], <strong>mdns</strong> [<em>LINK</em> [<em>MODE</em>]], <strong>dnssec</strong> [<em>LINK</em> [<em>MODE</em>]], <strong>dnsovertls</strong> [<em>LINK</em> [<em>MODE</em>]], <strong>nta</strong> [<em>LINK</em> [<em>DOMAIN</em>...]]</p>
+<blockquote>
+<p>Get/set per-interface DNS configuration. These commands may be used to configure various DNS settings for network interfaces. These commands may be used to inform <strong>systemd-resolved</strong> or <strong>systemd-networkd</strong> about per-interface DNS configuration determined through external means. The <strong>dns</strong> command expects IPv4 or IPv6 address specifications of DNS servers to use. Each address can optionally take a port number separated with ":", a network interface name or index separated with "%", and a Server Name Indication (SNI) separated with "#". When IPv6 address is specified with a port number, then the address must be in the square brackets. That is, the acceptable full formats are "111.222.333.444:9953%ifname#example.com" for IPv4 and "[1111:2222::3333]:9953%ifname#example.com" for IPv6. The <strong>domain</strong> command expects valid DNS domains, possibly prefixed with "~", and configures a per-interface search or route-only domain. The <strong>default-route</strong> command expects a boolean parameter, and configures whether the link may be used as default route for DNS lookups, i.e. if it is suitable for lookups on domains no other link explicitly is configured for. The <strong>llmnr</strong>, <strong>mdns</strong>, <strong>dnssec</strong> and <strong>dnsovertls</strong> commands may be used to configure the per-interface LLMNR, MulticastDNS, DNSSEC and DNSOverTLS settings. Finally, <strong>nta</strong> command may be used to configure additional per-interface DNSSEC NTA domains.</p>
+<p>Commands <strong>dns</strong>, <strong>domain</strong> and <strong>nta</strong> can take a single empty string argument to clear their respective value lists.</p>
+<p>For details about these settings, their possible values and their effect, see the corresponding settings in <strong>systemd.network</strong>(5).</p>
+</blockquote>
+<p><strong>revert </strong><em>LINK</em></p>
+<blockquote>
+<p>Revert the per-interface DNS configuration. If the DNS configuration is reverted all per-interface DNS setting are reset to their defaults, undoing all effects of <strong>dns</strong>, <strong>domain</strong>, <strong>default-route</strong>, <strong>llmnr</strong>, <strong>mdns</strong>, <strong>dnssec</strong>, <strong>dnsovertls</strong>, <strong>nta</strong>. Note that when a network interface disappears all configuration is lost automatically, an explicit reverting is not necessary in that case.</p>
+</blockquote>
+<p><strong>log-level</strong> [<em>LEVEL</em>]</p>
+<blockquote>
+<p>If no argument is given, print the current log level of the manager. If an optional argument <em>LEVEL</em> is provided, then the command changes the current log level of the manager to <em>LEVEL</em> (accepts the same values as <strong>--log-level=</strong> described in <strong>systemd</strong>(1)).</p>
+</blockquote>
+<h1>OPTIONS</h1>
+<p><strong>-4</strong>, <strong>-6</strong></p>
+<blockquote>
+<p>By default, when resolving a hostname, both IPv4 and IPv6 addresses are acquired. By specifying <strong>-4</strong> only IPv4 addresses are requested, by specifying <strong>-6</strong> only IPv6 addresses are requested.</p>
+</blockquote>
+<p><strong>-i</strong> <em>INTERFACE</em>, <strong>--interface=</strong><em>INTERFACE</em></p>
+<blockquote>
+<p>Specifies the network interface to execute the query on. This may either be specified as numeric interface index or as network interface string (e.g. "en0"). Note that this option has no effect if system-wide DNS configuration (as configured in /etc/resolv.conf or /etc/systemd/resolve.conf) in place of per-link configuration is used.</p>
+</blockquote>
+<p><strong>-p</strong> <em>PROTOCOL</em>, <strong>--protocol=</strong><em>PROTOCOL</em></p>
+<blockquote>
+<p>Specifies the network protocol for the query. May be one of "dns" (i.e. classic unicast DNS), "llmnr" (<strong>Link-Local Multicast Name Resolution</strong>[5]), "llmnr-ipv4", "llmnr-ipv6" (LLMNR via the indicated underlying IP protocols), "mdns" (<strong>Multicast DNS</strong>[6]), "mdns-ipv4", "mdns-ipv6" (MDNS via the indicated underlying IP protocols). By default the lookup is done via all protocols suitable for the lookup. If used, limits the set of protocols that may be used. Use this option multiple times to enable resolving via multiple protocols at the same time. The setting "llmnr" is identical to specifying this switch once with "llmnr-ipv4" and once via "llmnr-ipv6". Note that this option does not force the service to resolve the operation with the specified protocol, as that might require a suitable network interface and configuration. The special value "help" may be used to list known values.</p>
+</blockquote>
+<p><strong>-t</strong> <em>TYPE</em>, <strong>--type=</strong><em>TYPE</em>, <strong>-c</strong> <em>CLASS</em>, <strong>--class=</strong><em>CLASS</em></p>
+<blockquote>
+<p>Specifies the DNS resource record type (e.g. A, AAAA, MX, ...) and class (e.g. IN, ANY, ...) to look up. If these options are used a DNS resource record set matching the specified class and type is requested. The class defaults to IN if only a type is specified. The special value "help" may be used to list known values.</p>
+</blockquote>
+<p><strong>--service-address=</strong><em>BOOL</em></p>
+<blockquote>
+<p>Takes a boolean parameter. If true (the default), when doing a service lookup with <strong>--service</strong> the hostnames contained in the SRV resource records are resolved as well.</p>
+</blockquote>
+<p><strong>--service-txt=</strong><em>BOOL</em></p>
+<blockquote>
+<p>Takes a boolean parameter. If true (the default), when doing a DNS-SD service lookup with <strong>--service</strong> the TXT service metadata record is resolved as well.</p>
+</blockquote>
+<p><strong>--cname=</strong><em>BOOL</em></p>
+<blockquote>
+<p>Takes a boolean parameter. If true (the default), DNS CNAME or DNAME redirections are followed. Otherwise, if a CNAME or DNAME record is encountered while resolving, an error is returned.</p>
+</blockquote>
+<p><strong>--search=</strong><em>BOOL</em></p>
+<blockquote>
+<p>Takes a boolean parameter. If true (the default), any specified single-label hostnames will be searched in the domains configured in the search domain list, if it is non-empty. Otherwise, the search domain logic is disabled.</p>
+</blockquote>
+<p><strong>--raw</strong>[=payload|packet]</p>
+<blockquote>
+<p>Dump the answer as binary data. If there is no argument or if the argument is "payload", the payload of the packet is exported. If the argument is "packet", the whole packet is dumped in wire format, prefixed by length specified as a little-endian 64-bit number. This format allows multiple packets to be dumped and unambiguously parsed.</p>
+</blockquote>
+<p><strong>--legend=</strong><em>BOOL</em></p>
+<blockquote>
+<p>Takes a boolean parameter. If true (the default), column headers and meta information about the query response are shown. Otherwise, this output is suppressed.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<p><strong>--no-pager</strong></p>
+<blockquote>
+<p>Do not pipe output into a pager.</p>
+</blockquote>
+<h1>COMPATIBILITY WITH RESOLVCONF(8)</h1>
+<p><strong>resolvectl</strong> is a multi-call binary. When invoked as "resolvconf" (generally achieved by means of a symbolic link of this name to the <strong>resolvectl</strong> binary) it is run in a limited <strong>resolvconf</strong>(8) compatibility mode. It accepts mostly the same arguments and pushes all data into <strong>systemd-resolved.service</strong>(8), similar to how <strong>dns</strong> and <strong>domain</strong> commands operate. Note that <strong>systemd-resolved.service</strong> is the only supported backend, which is different from other implementations of this command.</p>
+<p>/etc/resolv.conf will only be updated with servers added with this command when /etc/resolv.conf is a symlink to /run/systemd/resolve/resolv.conf, and not a static file. See the discussion of /etc/resolv.conf handling in <strong>systemd-resolved.service</strong>(8).</p>
+<p>Not all operations supported by other implementations are supported natively. Specifically:</p>
+<p><strong>-a</strong></p>
+<blockquote>
+<p>Registers per-interface DNS configuration data with <strong>systemd-resolved</strong>. Expects a network interface name as only command line argument. Reads <strong>resolv.conf</strong>(5)-compatible DNS configuration data from its standard input. Relevant fields are "nameserver" and "domain"/"search". This command is mostly identical to invoking <strong>resolvectl</strong> with a combination of <strong>dns</strong> and <strong>domain</strong> commands.</p>
+</blockquote>
+<p><strong>-d</strong></p>
+<blockquote>
+<p>Unregisters per-interface DNS configuration data with <strong>systemd-resolved</strong>. This command is mostly identical to invoking <strong>resolvectl revert</strong>.</p>
+</blockquote>
+<p><strong>-f</strong></p>
+<blockquote>
+<p>When specified <strong>-a</strong> and <strong>-d</strong> will not complain about missing network interfaces and will silently execute no operation in that case.</p>
+</blockquote>
+<p><strong>-x</strong></p>
+<blockquote>
+<p>This switch for "exclusive" operation is supported only partially. It is mapped to an additional configured search domain of "~." — i.e. ensures that DNS traffic is preferably routed to the DNS servers on this interface, unless there are other, more specific domains configured on other interfaces.</p>
+</blockquote>
+<p><strong>-m</strong>, <strong>-p</strong></p>
+<blockquote>
+<p>These switches are not supported and are silently ignored.</p>
+</blockquote>
+<p><strong>-u</strong>, <strong>-I</strong>, <strong>-i</strong>, <strong>-l</strong>, <strong>-R</strong>, <strong>-r</strong>, <strong>-v</strong>, <strong>-V</strong>, <strong>--enable-updates</strong>, <strong>--disable-updates</strong>, <strong>--are-updates-enabled</strong></p>
+<blockquote>
+<p>These switches are not supported and the command will fail if used.</p>
+</blockquote>
+<p>See <strong>resolvconf</strong>(8) for details on those command line options.</p>
+<h1>EXAMPLES</h1>
+<p><strong>Example 1. Retrieve the addresses of the "www.0pointer.net" domain</strong></p>
+<blockquote>
+<pre><code>$ resolvectl query www.0pointer.net
+www.0pointer.net: 2a01:238:43ed:c300:10c3:bcf3:3266:da74
+                  85.214.157.71
+
+-- Information acquired via protocol DNS in 611.6ms.
+-- Data is authenticated: no</code></pre>
+</blockquote>
+<p><strong>Example 2. Retrieve the domain of the "85.214.157.71" IP address</strong></p>
+<blockquote>
+<pre><code>$ resolvectl query 85.214.157.71
+85.214.157.71: gardel.0pointer.net
+
+-- Information acquired via protocol DNS in 1.2997s.
+-- Data is authenticated: no</code></pre>
+</blockquote>
+<p><strong>Example 3. Retrieve the MX record of the "yahoo.com" domain</strong></p>
+<blockquote>
+<pre><code>$ resolvectl --legend=no -t MX query yahoo.com
+yahoo.com. IN MX    1 mta7.am0.yahoodns.net
+yahoo.com. IN MX    1 mta6.am0.yahoodns.net
+yahoo.com. IN MX    1 mta5.am0.yahoodns.net</code></pre>
+</blockquote>
+<p><strong>Example 4. Resolve an SRV service</strong></p>
+<blockquote>
+<pre><code>$ resolvectl service _xmpp-server._tcp gmail.com
+_xmpp-server._tcp/gmail.com: alt1.xmpp-server.l.google.com:5269 [priority=20, weight=0]
+                             173.194.210.125
+                             alt4.xmpp-server.l.google.com:5269 [priority=20, weight=0]
+                             173.194.65.125
+                             ...</code></pre>
+</blockquote>
+<p><strong>Example 5. Retrieve a PGP key</strong></p>
+<blockquote>
+<pre><code>$ resolvectl openpgp zbyszek@fedoraproject.org
+d08ee310438ca124a6149ea5cc21b6313b390dce485576eff96f8722._openpgpkey.fedoraproject.org. IN OPENPGPKEY
+        mQINBFBHPMsBEACeInGYJCb+7TurKfb6wGyTottCDtiSJB310i37/6ZYoeIay/5soJjlMyf
+        MFQ9T2XNT/0LM6gTa0MpC1st9LnzYTMsT6tzRly1D1UbVI6xw0g0vE5y2Cjk3xUwAynCsSs
+        ...</code></pre>
+</blockquote>
+<p><strong>Example 6. Retrieve a TLS key ("tcp" and ":443" could be skipped)</strong></p>
+<blockquote>
+<pre><code>$ resolvectl tlsa tcp fedoraproject.org:443
+_443._tcp.fedoraproject.org IN TLSA 0 0 1 19400be5b7a31fb733917700789d2f0a2471c0c9d506c0e504c06c16d7cb17c0
+        -- Cert. usage: CA constraint
+        -- Selector: Full Certificate
+        -- Matching type: SHA-256</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemd-resolved.service</strong>(8), <strong>systemd.dnssd</strong>(5), <strong>systemd-networkd.service</strong>(8), <strong>resolvconf</strong>(8)</p>
+<h1>NOTES</h1>
+<ul>
+<li><p>DNS-SD</p>
+<p>https://tools.ietf.org/html/rfc6763</p></li>
+<li><p>SRV</p>
+<p>https://tools.ietf.org/html/rfc2782</p></li>
+<li><p>OPENPGPKEY</p>
+<p>https://tools.ietf.org/html/rfc7929</p></li>
+<li><p>TLSA</p>
+<p>https://tools.ietf.org/html/rfc6698</p></li>
+<li><p>Link-Local Multicast Name Resolution</p>
+<p>https://tools.ietf.org/html/rfc4795</p></li>
+<li><p>Multicast DNS</p>
+<p>https://www.ietf.org/rfc/rfc6762.txt</p></li>
+</ul>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command systemd-cgtop</title><meta name="description" content="Linux command systemd-cgtop Show top control groups by their resource usage"><meta name="keywords" content="linux, command, systemd-cgtop, bsd, Show top control groups by their resource usage"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>systemd-cgtop - Show top control groups by their resource usage</p>
+<h1>SYNOPSIS</h1>
+<p><strong>systemd-cgtop</strong> [OPTIONS...] [GROUP]</p>
+<h1>DESCRIPTION</h1>
+<p><strong>systemd-cgtop</strong> shows the top control groups of the local Linux control group hierarchy, ordered by their CPU, memory, or disk I/O load. The display is refreshed in regular intervals (by default every 1s), similar in style to <strong>top</strong>(1). If a control group path is specified, shows only the services of the specified control group.</p>
+<p>If <strong>systemd-cgtop</strong> is not connected to a tty, no column headers are printed and the default is to only run one iteration. The <strong>--iterations=</strong> argument, if given, is honored. This mode is suitable for scripting.</p>
+<p>Resource usage is only accounted for control groups in the relevant hierarchy, i.e. CPU usage is only accounted for control groups in the "cpuacct" hierarchy, memory usage only for those in "memory" and disk I/O usage for those in "blkio". If resource monitoring for these resources is required, it is recommended to add the <em>CPUAccounting=1</em>, <em>MemoryAccounting=1</em> and <em>BlockIOAccounting=1</em> settings in the unit files in question. See <strong>systemd.resource-control</strong>(5) for details.</p>
+<p>The CPU load value can be between 0 and 100 times the number of processors the system has. For example, if the system has 8 processors, the CPU load value is going to be between 0% and 800%. The number of processors can be found in "/proc/cpuinfo".</p>
+<p>To emphasize this: unless "CPUAccounting=1", "MemoryAccounting=1" and "BlockIOAccounting=1" are enabled for the services in question, no resource accounting will be available for system services and the data shown by <strong>systemd-cgtop</strong> will be incomplete.</p>
+<h1>OPTIONS</h1>
+<p>The following options are understood:</p>
+<p><strong>-p</strong>, <strong>--order=path</strong></p>
+<blockquote>
+<p>Order by control group path name.</p>
+</blockquote>
+<p><strong>-t</strong>, <strong>--order=tasks</strong></p>
+<blockquote>
+<p>Order by number of tasks/processes in the control group.</p>
+</blockquote>
+<p><strong>-c</strong>, <strong>--order=cpu</strong></p>
+<blockquote>
+<p>Order by CPU load.</p>
+</blockquote>
+<p><strong>-m</strong>, <strong>--order=memory</strong></p>
+<blockquote>
+<p>Order by memory usage.</p>
+</blockquote>
+<p><strong>-i</strong>, <strong>--order=io</strong></p>
+<blockquote>
+<p>Order by disk I/O load.</p>
+</blockquote>
+<p><strong>-b</strong>, <strong>--batch</strong></p>
+<blockquote>
+<p>Run in "batch" mode: do not accept input and run until the iteration limit set with <strong>--iterations=</strong> is exhausted or until killed. This mode could be useful for sending output from <strong>systemd-cgtop</strong> to other programs or to a file.</p>
+</blockquote>
+<p><strong>-r</strong>, <strong>--raw</strong></p>
+<blockquote>
+<p>Format byte counts (as in memory usage and I/O metrics) and CPU time with raw numeric values rather than human-readable numbers.</p>
+</blockquote>
+<p><strong>--cpu=percentage</strong>, <strong>--cpu=time</strong></p>
+<blockquote>
+<p>Controls whether the CPU usage is shown as percentage or time. By default, the CPU usage is shown as percentage. This setting may also be toggled at runtime by pressing the % key.</p>
+</blockquote>
+<p><strong>-P</strong></p>
+<blockquote>
+<p>Count only userspace processes instead of all tasks. By default, all tasks are counted: each kernel thread and each userspace thread individually. With this setting, kernel threads are excluded from the counting and each userspace process only counts as one, regardless how many threads it consists of. This setting may also be toggled at runtime by pressing the P key. This option may not be combined with <strong>-k</strong>.</p>
+</blockquote>
+<p><strong>-k</strong></p>
+<blockquote>
+<p>Count only userspace processes and kernel threads instead of all tasks. By default, all tasks are counted: each kernel thread and each userspace thread individually. With this setting, kernel threads are included in the counting and each userspace process only counts as on one, regardless how many threads it consists of. This setting may also be toggled at runtime by pressing the k key. This option may not be combined with <strong>-P</strong>.</p>
+</blockquote>
+<p><strong>--recursive=</strong></p>
+<blockquote>
+<p>Controls whether the number of processes shown for a control group shall include all processes that are contained in any of the child control groups as well. Takes a boolean argument, which defaults to "yes". If enabled, the processes in child control groups are included, if disabled, only the processes in the control group itself are counted. This setting may also be toggled at runtime by pressing the r key. Note that this setting only applies to process counting, i.e. when the <strong>-P</strong> or <strong>-k</strong> options are used. It has not effect if all tasks are counted, in which case the counting is always recursive.</p>
+</blockquote>
+<p><strong>-n</strong>, <strong>--iterations=</strong></p>
+<blockquote>
+<p>Perform only this many iterations. A value of 0 indicates that the program should run indefinitely.</p>
+</blockquote>
+<p><strong>-1</strong></p>
+<blockquote>
+<p>A shortcut for <strong>--iterations=1</strong>.</p>
+</blockquote>
+<p><strong>-d</strong>, <strong>--delay=</strong></p>
+<blockquote>
+<p>Specify refresh delay in seconds (or if one of "ms", "us", "min" is specified as unit in this time unit). This setting may also be increased and decreased at runtime by pressing the + and - keys.</p>
+</blockquote>
+<p><strong>--depth=</strong></p>
+<blockquote>
+<p>Maximum control group tree traversal depth. Specifies how deep <strong>systemd-cgtop</strong> shall traverse the control group hierarchies. If 0 is specified, only the root group is monitored. For 1, only the first level of control groups is monitored, and so on. Defaults to 3.</p>
+</blockquote>
+<p><strong>-M </strong><em>MACHINE</em>, <strong>--machine=</strong><em>MACHINE</em></p>
+<blockquote>
+<p>Limit control groups shown to the part corresponding to the container <em>MACHINE</em>. This option may not be used when a control group path is specified.</p>
+</blockquote>
+<p><strong>-h</strong>, <strong>--help</strong></p>
+<blockquote>
+<p>Print a short help text and exit.</p>
+</blockquote>
+<p><strong>--version</strong></p>
+<blockquote>
+<p>Print a short version string and exit.</p>
+</blockquote>
+<h1>KEYS</h1>
+<p><strong>systemd-cgtop</strong> is an interactive tool and may be controlled via user input using the following keys:</p>
+<p>h</p>
+<blockquote>
+<p>Shows a short help text.</p>
+</blockquote>
+<p>Space</p>
+<blockquote>
+<p>Immediately refresh output.</p>
+</blockquote>
+<p>q</p>
+<blockquote>
+<p>Terminate the program.</p>
+</blockquote>
+<p>p, t, c, m, i</p>
+<blockquote>
+<p>Sort the control groups by path, number of tasks, CPU load, memory usage, or I/O load, respectively. This setting may also be controlled using the <strong>--order=</strong> command line switch.</p>
+</blockquote>
+<p>%</p>
+<blockquote>
+<p>Toggle between showing CPU time as time or percentage. This setting may also be controlled using the <strong>--cpu=</strong> command line switch.</p>
+</blockquote>
+<p>+, -</p>
+<blockquote>
+<p>Increase or decrease refresh delay, respectively. This setting may also be controlled using the <strong>--delay=</strong> command line switch.</p>
+</blockquote>
+<p>P</p>
+<blockquote>
+<p>Toggle between counting all tasks, or only userspace processes. This setting may also be controlled using the <strong>-P</strong> command line switch (see above).</p>
+</blockquote>
+<p>k</p>
+<blockquote>
+<p>Toggle between counting all tasks, or only userspace processes and kernel threads. This setting may also be controlled using the <strong>-k</strong> command line switch (see above).</p>
+</blockquote>
+<p>r</p>
+<blockquote>
+<p>Toggle between recursively including or excluding processes in child control groups in control group process counts. This setting may also be controlled using the <strong>--recursive=</strong> command line switch. This key is not available if all tasks are counted, it is only available if processes are counted, as enabled with the P or k keys.</p>
+</blockquote>
+<h1>EXIT STATUS</h1>
+<p>On success, 0 is returned, a non-zero failure code otherwise.</p>
+<h1>SEE ALSO</h1>
+<p><strong>systemd</strong>(1), <strong>systemctl</strong>(1), <strong>systemd-cgls</strong>(1), <strong>systemd.resource-control</strong>(5), <strong>top</strong>(1)</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

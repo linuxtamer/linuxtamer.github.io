@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command nfsidmap</title><meta name="description" content="Linux command nfsidmap The NFS idmapper upcall program"><meta name="keywords" content="linux, command, nfsidmap, bsd, The NFS idmapper upcall program"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>nfsidmap - The NFS idmapper upcall program</p>
+<h1>SYNOPSIS</h1>
+<p><strong>nfsidmap [-v] [-t timeout] key desc</strong><br />
+<strong>nfsidmap [-v] [-c]</strong><br />
+<strong>nfsidmap [-v] [-u|-g|-r user]</strong><br />
+<strong>nfsidmap -d</strong><br />
+<strong>nfsidmap -l</strong><br />
+<strong>nfsidmap -h</strong></p>
+<h1>DESCRIPTION</h1>
+<p>The NFSv4 protocol represents the local system's UID and GID values on the wire as strings of the form <em>user@domain</em>. The process of translating from UID to string and string to UID is referred to as "ID mapping."</p>
+<p>The system derives the <em>user</em> part of the string by performing a password or group lookup. The lookup mechanism is configured in <em>/etc/idmapd.conf</em>.</p>
+<p>By default, the <em>domain</em> part of the string is the system's DNS domain name. It can also be specified in <em>/etc/idmapd.conf</em> if the system is multi-homed, or if the system's DNS domain name does not match the name of the system's Kerberos realm.</p>
+<p>The <em>/usr/sbin/nfsidmap</em> program performs translations on behalf of the kernel. The kernel uses the request-key mechanism to perform an upcall. <em>/usr/sbin/nfsidmap</em> is invoked by /sbin/request-key, performs the translation, and initializes a key with the resulting information. The kernel then caches the translation results in the key.</p>
+<p><em>nfsidmap</em> can also clear cached ID map results in the kernel, or revoke one particular key. An incorrect cached key can result in file and directory ownership reverting to "nobody" on NFSv4 mount points.</p>
+<p>In addition, the <strong>-d</strong> and <strong>-l</strong> options are available to help diagnose misconfigurations. They have no effect on the keyring containing ID mapping results.</p>
+<h1>OPTIONS</h1>
+<dl>
+<dt><strong>-c</strong></dt>
+<dd><p>Clear the keyring of all the keys.</p>
+</dd>
+<dt><strong>-d</strong></dt>
+<dd><p>Display the system's effective NFSv4 domain name on <em>stdout</em>.</p>
+</dd>
+<dt><strong>-g user</strong></dt>
+<dd><p>Revoke the gid key of the given user.</p>
+</dd>
+<dt><strong>-h</strong></dt>
+<dd><p>Display usage message.</p>
+</dd>
+<dt><strong>-l</strong></dt>
+<dd><p>Display on <em>stdout</em> all keys currently in the keyring used to cache ID mapping results. These keys are visible only to the superuser.</p>
+</dd>
+<dt><strong>-r user</strong></dt>
+<dd><p>Revoke both the uid and gid key of the given user.</p>
+</dd>
+<dt><strong>-t timeout</strong></dt>
+<dd><p>Set the expiration timer, in seconds, on the key. The default is 600 seconds (10 mins).</p>
+</dd>
+<dt><strong>-u user</strong></dt>
+<dd><p>Revoke the uid key of the given user.</p>
+</dd>
+<dt><strong>-v</strong></dt>
+<dd><p>Increases the verbosity of the output to syslog (can be specified multiple times).</p>
+</dd>
+</dl>
+<h1>CONFIGURING</h1>
+<p>The file <em>/etc/request-key.conf</em> will need to be modified so <em>/sbin/request-key</em> can properly direct the upcall. The following line should be added before a call to keyctl negate:</p>
+<p>create id_resolver * * /usr/sbin/nfsidmap -t 600 %k %d</p>
+<p>This will direct all id_resolver requests to the program <em>/usr/sbin/nfsidmap.</em> The <strong>-t 600</strong> defines how many seconds into the future the key will expire. This is an optional parameter for <em>/usr/sbin/nfsidmap</em> and will default to 600 seconds when not specified.</p>
+<p>The idmapper system uses four key descriptions:</p>
+<p>uid: Find the UID for the given user<br />
+gid: Find the GID for the given group<br />
+user: Find the user name for the given UID<br />
+group: Find the group name for the given GID</p>
+<p>You can choose to handle any of these individually, rather than using the generic upcall program. If you would like to use your own program for a uid lookup then you would edit your request-key.conf so it looks similar to this:</p>
+<p>create id_resolver uid:* * /some/other/program %k %d<br />
+create id_resolver * * /usr/sbin/nfsidmap %k %d</p>
+<p>Notice that the new line was added above the line for the generic program. request-key will find the first matching line and run the corresponding program. In this case, /some/other/program will handle all uid lookups, and /usr/sbin/nfsidmap will handle gid, user, and group lookups.</p>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/idmapd.conf</em></dt>
+<dd><p>ID mapping configuration file</p>
+</dd>
+<dt><em>/etc/request-key.conf</em></dt>
+<dd><p>Request key configuration file</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>idmapd.conf</strong>(5), <strong>request-key</strong>(8)</p>
+<h1>AUTHOR</h1>
+<p>Bryan Schumaker, &lt;bjschuma@netapp.com&gt;</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

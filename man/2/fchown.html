@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command fchown</title><meta name="description" content="Linux command fchown change ownership of a file"><meta name="keywords" content="linux, command, fchown, bsd, change ownership of a file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>chown, fchown, lchown, fchownat - change ownership of a file</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;unistd.h&gt;
+
+int chown(const char *pathname, uid_t owner, gid_t group);
+int fchown(int fd, uid_t owner, gid_t group);
+int lchown(const char *pathname, uid_t owner, gid_t group);
+
+#include &lt;fcntl.h&gt; /* Definition of AT_* constants */
+#include &lt;unistd.h&gt;
+
+int fchownat(int dirfd, const char *pathname,
+ uid_t owner, gid_t group, int flags);</code></pre>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>fchown</strong>(), <strong>lchown</strong>():</p>
+<blockquote>
+<p>/* Since glibc 2.12: */ _POSIX_C_SOURCE &gt;= 200809L || _XOPEN_SOURCE &gt;= 500 || /* Glibc versions &lt;= 2.19: */ _BSD_SOURCE</p>
+</blockquote>
+<p><strong>fchownat</strong>():</p>
+<blockquote>
+<dl>
+<dt>Since glibc 2.10:</dt>
+<dd><p>_POSIX_C_SOURCE &gt;= 200809L</p>
+</dd>
+<dt>Before glibc 2.10:</dt>
+<dd><p>_ATFILE_SOURCE</p>
+</dd>
+</dl>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>These system calls change the owner and group of a file. The <strong>chown</strong>(), <strong>fchown</strong>(), and <strong>lchown</strong>() system calls differ only in how the file is specified:</p>
+<ul>
+<li><p><strong>chown</strong>() changes the ownership of the file specified by <em>pathname</em>, which is dereferenced if it is a symbolic link.</p></li>
+<li><p><strong>fchown</strong>() changes the ownership of the file referred to by the open file descriptor <em>fd</em>.</p></li>
+<li><p><strong>lchown</strong>() is like <strong>chown</strong>(), but does not dereference symbolic links.</p></li>
+</ul>
+<p>Only a privileged process (Linux: one with the <strong>CAP_CHOWN</strong> capability) may change the owner of a file. The owner of a file may change the group of the file to any group of which that owner is a member. A privileged process (Linux: with <strong>CAP_CHOWN</strong>) may change the group arbitrarily.</p>
+<p>If the <em>owner</em> or <em>group</em> is specified as -1, then that ID is not changed.</p>
+<p>When the owner or group of an executable file is changed by an unprivileged user, the <strong>S_ISUID</strong> and <strong>S_ISGID</strong> mode bits are cleared. POSIX does not specify whether this also should happen when root does the <strong>chown</strong>(); the Linux behavior depends on the kernel version, and since Linux 2.2.13, root is treated like other users. In case of a non-group-executable file (i.e., one for which the <strong>S_IXGRP</strong> bit is not set) the <strong>S_ISGID</strong> bit indicates mandatory locking, and is not cleared by a <strong>chown</strong>().</p>
+<p>When the owner or group of an executable file is changed (by any user), all capability sets for the file are cleared.</p>
+<h2>fchownat()</h2>
+<p>The <strong>fchownat</strong>() system call operates in exactly the same way as <strong>chown</strong>(), except for the differences described here.</p>
+<p>If the pathname given in <em>pathname</em> is relative, then it is interpreted relative to the directory referred to by the file descriptor <em>dirfd</em> (rather than relative to the current working directory of the calling process, as is done by <strong>chown</strong>() for a relative pathname).</p>
+<p>If <em>pathname</em> is relative and <em>dirfd</em> is the special value <strong>AT_FDCWD</strong>, then <em>pathname</em> is interpreted relative to the current working directory of the calling process (like <strong>chown</strong>()).</p>
+<p>If <em>pathname</em> is absolute, then <em>dirfd</em> is ignored.</p>
+<p>The <em>flags</em> argument is a bit mask created by ORing together 0 or more of the following values;</p>
+<dl>
+<dt><strong>AT_EMPTY_PATH</strong> (since Linux 2.6.39)</dt>
+<dd><p>If <em>pathname</em> is an empty string, operate on the file referred to by <em>dirfd</em> (which may have been obtained using the <strong>open</strong>(2) <strong>O_PATH</strong> flag). In this case, <em>dirfd</em> can refer to any type of file, not just a directory. If <em>dirfd</em> is <strong>AT_FDCWD</strong>, the call operates on the current working directory. This flag is Linux-specific; define <strong>_GNU_SOURCE</strong> to obtain its definition.</p>
+</dd>
+<dt><strong>AT_SYMLINK_NOFOLLOW</strong></dt>
+<dd><p>If <em>pathname</em> is a symbolic link, do not dereference it: instead operate on the link itself, like <strong>lchown</strong>(). (By default, <strong>fchownat</strong>() dereferences symbolic links, like <strong>chown</strong>().)</p>
+</dd>
+</dl>
+<p>See <strong>openat</strong>(2) for an explanation of the need for <strong>fchownat</strong>().</p>
+<h1>RETURN VALUE</h1>
+<p>On success, zero is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<p>Depending on the filesystem, errors other than those listed below can be returned.</p>
+<p>The more general errors for <strong>chown</strong>() are listed below.</p>
+<dl>
+<dt><strong>EACCES</strong></dt>
+<dd><p>Search permission is denied on a component of the path prefix. (See also <strong>path_resolution</strong>(7).)</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>pathname</em> points outside your accessible address space.</p>
+</dd>
+<dt><strong>ELOOP</strong></dt>
+<dd><p>Too many symbolic links were encountered in resolving <em>pathname</em>.</p>
+</dd>
+<dt><strong>ENAMETOOLONG</strong></dt>
+<dd><p><em>pathname</em> is too long.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>The file does not exist.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Insufficient kernel memory was available.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p>A component of the path prefix is not a directory.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The calling process did not have the required permissions (see above) to change owner and/or group.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The file is marked immutable or append-only. (See <strong>ioctl_iflags</strong>(2).)</p>
+</dd>
+<dt><strong>EROFS</strong></dt>
+<dd><p>The named file resides on a read-only filesystem.</p>
+</dd>
+</dl>
+<p>The general errors for <strong>fchown</strong>() are listed below:</p>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>fd</em> is not a valid open file descriptor.</p>
+</dd>
+<dt><strong>EIO</strong></dt>
+<dd><p>A low-level I/O error occurred while modifying the inode.</p>
+</dd>
+<dt><strong>ENOENT</strong></dt>
+<dd><p>See above.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>See above.</p>
+</dd>
+<dt><strong>EROFS</strong></dt>
+<dd><p>See above.</p>
+</dd>
+</dl>
+<p>The same errors that occur for <strong>chown</strong>() can also occur for <strong>fchownat</strong>(). The following additional errors can occur for <strong>fchownat</strong>():</p>
+<dl>
+<dt><strong>EBADF</strong></dt>
+<dd><p><em>dirfd</em> is not a valid file descriptor.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Invalid flag specified in <em>flags</em>.</p>
+</dd>
+<dt><strong>ENOTDIR</strong></dt>
+<dd><p><em>pathname</em> is relative and <em>dirfd</em> is a file descriptor referring to a file other than a directory.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p><strong>fchownat</strong>() was added to Linux in kernel 2.6.16; library support was added to glibc in version 2.4.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>chown</strong>(), <strong>fchown</strong>(), <strong>lchown</strong>(): 4.4BSD, SVr4, POSIX.1-2001, POSIX.1-2008.</p>
+<p>The 4.4BSD version can be used only by the superuser (that is, ordinary users cannot give away files).</p>
+<p><strong>fchownat</strong>(): POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<h2>Ownership of new files</h2>
+<p>When a new file is created (by, for example, <strong>open</strong>(2) or <strong>mkdir</strong>(2)), its owner is made the same as the filesystem user ID of the creating process. The group of the file depends on a range of factors, including the type of filesystem, the options used to mount the filesystem, and whether or not the set-group-ID mode bit is enabled on the parent directory. If the filesystem supports the <strong>-o grpid</strong> (or, synonymously <strong>-o bsdgroups</strong>) and <strong>-o nogrpid</strong> (or, synonymously <strong>-o sysvgroups</strong>) <strong>mount</strong>(8) options, then the rules are as follows:</p>
+<ul>
+<li><p>If the filesystem is mounted with <strong>-o grpid</strong>, then the group of a new file is made the same as that of the parent directory.</p></li>
+<li><p>If the filesystem is mounted with <strong>-o nogrpid</strong> and the set-group-ID bit is disabled on the parent directory, then the group of a new file is made the same as the process's filesystem GID.</p></li>
+<li><p>If the filesystem is mounted with <strong>-o nogrpid</strong> and the set-group-ID bit is enabled on the parent directory, then the group of a new file is made the same as that of the parent directory.</p></li>
+</ul>
+<p>As at Linux 4.12, the <strong>-o grpid</strong> and <strong>-o nogrpid</strong> mount options are supported by ext2, ext3, ext4, and XFS. Filesystems that don't support these mount options follow the <strong>-o nogrpid</strong> rules.</p>
+<h2>Glibc notes</h2>
+<p>On older kernels where <strong>fchownat</strong>() is unavailable, the glibc wrapper function falls back to the use of <strong>chown</strong>() and <strong>lchown</strong>(). When <em>pathname</em> is a relative pathname, glibc constructs a pathname based on the symbolic link in <em>/proc/self/fd</em> that corresponds to the <em>dirfd</em> argument.</p>
+<h2>NFS</h2>
+<p>The <strong>chown</strong>() semantics are deliberately violated on NFS filesystems which have UID mapping enabled. Additionally, the semantics of all system calls which access the file contents are violated, because <strong>chown</strong>() may cause immediate access revocation on already open files. Client side caching may lead to a delay between the time where ownership have been changed to allow access for a user and the time where the file can actually be accessed by the user on other clients.</p>
+<h2>Historical details</h2>
+<p>The original Linux <strong>chown</strong>(), <strong>fchown</strong>(), and <strong>lchown</strong>() system calls supported only 16-bit user and group IDs. Subsequently, Linux 2.4 added <strong>chown32</strong>(), <strong>fchown32</strong>(), and <strong>lchown32</strong>(), supporting 32-bit IDs. The glibc <strong>chown</strong>(), <strong>fchown</strong>(), and <strong>lchown</strong>() wrapper functions transparently deal with the variations across kernel versions.</p>
+<p>In versions of Linux prior to 2.1.81 (and distinct from 2.1.46), <strong>chown</strong>() did not follow symbolic links. Since Linux 2.1.81, <strong>chown</strong>() does follow symbolic links, and there is a new system call <strong>lchown</strong>() that does not follow symbolic links. Since Linux 2.1.86, this new call (that has the same semantics as the old <strong>chown</strong>()) has got the same syscall number, and <strong>chown</strong>() got the newly introduced number.</p>
+<h1>EXAMPLES</h1>
+<p>The following program changes the ownership of the file named in its second command-line argument to the value specified in its first command-line argument. The new owner can be specified either as a numeric user ID, or as a username (which is converted to a user ID by using <strong>getpwnam</strong>(3) to perform a lookup in the system password file).</p>
+<h2>Program source</h2>
+<pre><code>#include &lt;pwd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    uid_t uid;
+    struct passwd *pwd;
+    char *endptr;
+
+    if (argc != 3 || argv[1][0] == &#39;\0&#39;) {
+        fprintf(stderr, &quot;%s &lt;owner&gt; &lt;file&gt;\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    uid = strtol(argv[1], &amp;endptr, 10);  /* Allow a numeric string */
+
+    if (*endptr != &#39;\0&#39;) {         /* Was not pure numeric string */
+        pwd = getpwnam(argv[1]);   /* Try getting UID for username */
+        if (pwd == NULL) {
+            perror(&quot;getpwnam&quot;);
+            exit(EXIT_FAILURE);
+        }
+
+        uid = pwd-&gt;pw_uid;
+    }
+
+    if (chown(argv[2], uid, -1) == -1) {
+        perror(&quot;chown&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>chgrp</strong>(1), <strong>chown</strong>(1), <strong>chmod</strong>(2), <strong>flock</strong>(2), <strong>path_resolution</strong>(7), <strong>symlink</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

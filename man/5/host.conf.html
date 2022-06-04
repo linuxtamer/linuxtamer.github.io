@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command host.conf</title><meta name="description" content="Linux command host.conf resolver configuration file"><meta name="keywords" content="linux, command, host.conf, bsd, resolver configuration file"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>host.conf - resolver configuration file</p>
+<h1>DESCRIPTION</h1>
+<p>The file <em>/etc/host.conf</em> contains configuration information specific to the resolver library. It should contain one configuration keyword per line, followed by appropriate configuration information. The following keywords are recognized:</p>
+<dl>
+<dt><em>trim</em></dt>
+<dd><p>This keyword may be listed more than once. Each time it should be followed by a list of domains, separated by colons (':'), semicolons (';') or commas (','), with the leading dot. When set, the resolver library will automatically trim the given domain name from the end of any hostname resolved via DNS. This is intended for use with local hosts and domains. (Related note: <em>trim</em> will not affect hostnames gathered via NIS or the <strong>hosts</strong>(5) file. Care should be taken to ensure that the first hostname for each entry in the hosts file is fully qualified or unqualified, as appropriate for the local installation.)</p>
+</dd>
+<dt><em>multi</em></dt>
+<dd><p>Valid values are <em>on</em> and <em>off</em>. If set to <em>on</em>, the resolver library will return all valid addresses for a host that appears in the <em>/etc/hosts</em> file, instead of only the first. This is <em>off</em> by default, as it may cause a substantial performance loss at sites with large hosts files.</p>
+</dd>
+<dt><em>reorder</em></dt>
+<dd><p>Valid values are <em>on</em> and <em>off</em>. If set to <em>on</em>, the resolver library will attempt to reorder host addresses so that local addresses (i.e., on the same subnet) are listed first when a <strong>gethostbyname</strong>(3) is performed. Reordering is done for all lookup methods. The default value is <em>off</em>.</p>
+</dd>
+</dl>
+<h1>ENVIRONMENT</h1>
+<p>The following environment variables can be used to allow users to override the behavior which is configured in <em>/etc/host.conf</em>:</p>
+<dl>
+<dt><strong>RESOLV_HOST_CONF</strong></dt>
+<dd><p>If set, this variable points to a file that should be read instead of <em>/etc/host.conf</em>.</p>
+</dd>
+<dt><strong>RESOLV_MULTI</strong></dt>
+<dd><p>Overrides the <em>multi</em> command.</p>
+</dd>
+<dt><strong>RESOLV_REORDER</strong></dt>
+<dd><p>Overrides the <em>reorder</em> command.</p>
+</dd>
+<dt><strong>RESOLV_ADD_TRIM_DOMAINS</strong></dt>
+<dd><p>A list of domains, separated by colons (':'), semicolons (';') or commas (','), with the leading dot, which will be added to the list of domains that should be trimmed.</p>
+</dd>
+<dt><strong>RESOLV_OVERRIDE_TRIM_DOMAINS</strong></dt>
+<dd><p>A list of domains, separated by colons (':'), semicolons (';') or commas (','), with the leading dot, which will replace the list of domains that should be trimmed. Overrides the <em>trim</em> command.</p>
+</dd>
+</dl>
+<h1>FILES</h1>
+<dl>
+<dt><em>/etc/host.conf</em></dt>
+<dd><p>Resolver configuration file</p>
+</dd>
+<dt><em>/etc/resolv.conf</em></dt>
+<dd><p>Resolver configuration file</p>
+</dd>
+<dt><em>/etc/hosts</em></dt>
+<dd><p>Local hosts database</p>
+</dd>
+</dl>
+<h1>NOTES</h1>
+<p>The following differences exist compared to the original implementation. A new command <em>spoof</em> and a new environment variable <strong>RESOLV_SPOOF_CHECK</strong> can take arguments like <em>off</em>, <em>nowarn</em>, and <em>warn</em>. Line comments can appear anywhere and not only at the beginning of a line.</p>
+<h2>Historical</h2>
+<p>The <strong>nsswitch.conf</strong>(5) file is the modern way of controlling the order of host lookups.</p>
+<p>In glibc 2.4 and earlier, the following keyword is recognized:</p>
+<dl>
+<dt><em>order</em></dt>
+<dd><p>This keyword specifies how host lookups are to be performed. It should be followed by one or more lookup methods, separated by commas. Valid methods are <em>bind</em>, <em>hosts</em>, and <em>nis</em>.</p>
+</dd>
+<dt><strong>RESOLV_SERV_ORDER</strong></dt>
+<dd><p>Overrides the <em>order</em> command.</p>
+</dd>
+</dl>
+<p>Since glibc 2.0.7, and up through glibc 2.24, the following keywords and environment variable have been recognized but never implemented:</p>
+<dl>
+<dt><em>nospoof</em></dt>
+<dd><p>Valid values are <em>on</em> and <em>off</em>. If set to <em>on</em>, the resolver library will attempt to prevent hostname spoofing to enhance the security of <strong>rlogin</strong> and <strong>rsh</strong>. It works as follows: after performing a host address lookup, the resolver library will perform a hostname lookup for that address. If the two hostnames do not match, the query fails. The default value is <em>off</em>.</p>
+</dd>
+<dt><em>spoofalert</em></dt>
+<dd><p>Valid values are <em>on</em> and <em>off</em>. If this option is set to <em>on</em> and the <em>nospoof</em> option is also set, the resolver library will log a warning of the error via the syslog facility. The default value is <em>off</em>.</p>
+</dd>
+<dt><em>spoof</em></dt>
+<dd><p>Valid values are <em>off</em>, <em>nowarn</em>, and <em>warn</em>. If this option is set to <em>off</em>, spoofed addresses are permitted and no warnings will be emitted via the syslog facility. If this option is set to <em>warn</em>, the resolver library will attempt to prevent hostname spoofing to enhance the security and log a warning of the error via the syslog facility. If this option is set to <em>nowarn</em>, the resolver library will attempt to prevent hostname spoofing to enhance the security but not emit warnings via the syslog facility. Setting this option to anything else is equal to setting it to <em>nowarn</em>.</p>
+</dd>
+<dt><strong>RESOLV_SPOOF_CHECK</strong></dt>
+<dd><p>Overrides the <em>nospoof</em>, <em>spoofalert</em>, and <em>spoof</em> commands in the same way as the <em>spoof</em> command is parsed. Valid values are <em>off</em>, <em>nowarn</em>, and <em>warn</em>.</p>
+</dd>
+</dl>
+<h1>SEE ALSO</h1>
+<p><strong>gethostbyname</strong>(3), <strong>hosts</strong>(5), <strong>nsswitch.conf</strong>(5), <strong>resolv.conf</strong>(5), <strong>hostname</strong>(7), <strong>named</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

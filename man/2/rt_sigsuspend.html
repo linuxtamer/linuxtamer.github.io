@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command rt_sigsuspend</title><meta name="description" content="Linux command rt_sigsuspend wait for a signal"><meta name="keywords" content="linux, command, rt_sigsuspend, bsd, wait for a signal"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>sigsuspend, rt_sigsuspend - wait for a signal</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;signal.h&gt;</strong></p>
+<p><strong>int sigsuspend(const sigset_t *</strong><em>mask</em><strong>);</strong></p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>sigsuspend</strong>(): _POSIX_C_SOURCE</p>
+<h1>DESCRIPTION</h1>
+<p><strong>sigsuspend</strong>() temporarily replaces the signal mask of the calling thread with the mask given by <em>mask</em> and then suspends the thread until delivery of a signal whose action is to invoke a signal handler or to terminate a process.</p>
+<p>If the signal terminates the process, then <strong>sigsuspend</strong>() does not return. If the signal is caught, then <strong>sigsuspend</strong>() returns after the signal handler returns, and the signal mask is restored to the state before the call to <strong>sigsuspend</strong>().</p>
+<p>It is not possible to block <strong>SIGKILL</strong> or <strong>SIGSTOP</strong>; specifying these signals in <em>mask</em>, has no effect on the thread's signal mask.</p>
+<h1>RETURN VALUE</h1>
+<p><strong>sigsuspend</strong>() always returns -1, with <em>errno</em> set to indicate the error (normally, <strong>EINTR</strong>).</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p><em>mask</em> points to memory which is not a valid part of the process address space.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>The call was interrupted by a signal; <strong>signal</strong>(7).</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>Normally, <strong>sigsuspend</strong>() is used in conjunction with <strong>sigprocmask</strong>(2) in order to prevent delivery of a signal during the execution of a critical code section. The caller first blocks the signals with <strong>sigprocmask</strong>(2). When the critical code has completed, the caller then waits for the signals by calling <strong>sigsuspend</strong>() with the signal mask that was returned by <strong>sigprocmask</strong>(2) (in the <em>oldset</em> argument).</p>
+<p>See <strong>sigsetops</strong>(3) for details on manipulating signal sets.</p>
+<h2>C library/kernel differences</h2>
+<p>The original Linux system call was named <strong>sigsuspend</strong>(). However, with the addition of real-time signals in Linux 2.2, the fixed-size, 32-bit <em>sigset_t</em> type supported by that system call was no longer fit for purpose. Consequently, a new system call, <strong>rt_sigsuspend</strong>(), was added to support an enlarged <em>sigset_t</em> type. The new system call takes a second argument, <em>size_t sigsetsize</em>, which specifies the size in bytes of the signal set in <em>mask</em>. This argument is currently required to have the value <em>sizeof(sigset_t)</em> (or the error <strong>EINVAL</strong> results). The glibc <strong>sigsuspend</strong>() wrapper function hides these details from us, transparently calling <strong>rt_sigsuspend</strong>() when the kernel provides it.</p>
+<h1>SEE ALSO</h1>
+<p><strong>kill</strong>(2), <strong>pause</strong>(2), <strong>sigaction</strong>(2), <strong>signal</strong>(2), <strong>sigprocmask</strong>(2), <strong>sigwaitinfo</strong>(2), <strong>sigsetops</strong>(3), <strong>sigwait</strong>(3), <strong>signal</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

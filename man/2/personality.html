@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command personality</title><meta name="description" content="Linux command personality set the process execution domain"><meta name="keywords" content="linux, command, personality, bsd, set the process execution domain"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>personality - set the process execution domain</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;sys/personality.h&gt;</strong></p>
+<p><strong>int personality(unsigned long </strong><em>persona</em><strong>);</strong></p>
+<h1>DESCRIPTION</h1>
+<p>Linux supports different execution domains, or personalities, for each process. Among other things, execution domains tell Linux how to map signal numbers into signal actions. The execution domain system allows Linux to provide limited support for binaries compiled under other UNIX-like operating systems.</p>
+<p>If <em>persona</em> is not 0xffffffff, then <strong>personality</strong>() sets the caller's execution domain to the value specified by <em>persona</em>. Specifying <em>persona</em> as 0xffffffff provides a way of retrieving the current persona without changing it.</p>
+<p>A list of the available execution domains can be found in <em>&lt;sys/personality.h&gt;</em>. The execution domain is a 32-bit value in which the top three bytes are set aside for flags that cause the kernel to modify the behavior of certain system calls so as to emulate historical or architectural quirks. The least significant byte is a value defining the personality the kernel should assume. The flag values are as follows:</p>
+<dl>
+<dt><strong>ADDR_COMPAT_LAYOUT</strong> (since Linux 2.6.9)</dt>
+<dd><p>With this flag set, provide legacy virtual address space layout.</p>
+</dd>
+<dt><strong>ADDR_NO_RANDOMIZE</strong> (since Linux 2.6.12)</dt>
+<dd><p>With this flag set, disable address-space-layout randomization.</p>
+</dd>
+<dt><strong>ADDR_LIMIT_32BIT</strong> (since Linux 2.2)</dt>
+<dd><p>Limit the address space to 32 bits.</p>
+</dd>
+<dt><strong>ADDR_LIMIT_3GB</strong> (since Linux 2.4.0)</dt>
+<dd><p>With this flag set, use 0xc0000000 as the offset at which to search a virtual memory chunk on <strong>mmap</strong>(2); otherwise use 0xffffe000.</p>
+</dd>
+<dt><strong>FDPIC_FUNCPTRS</strong> (since Linux 2.6.11)</dt>
+<dd><p>User-space function pointers to signal handlers point (on certain architectures) to descriptors.</p>
+</dd>
+<dt><strong>MMAP_PAGE_ZERO</strong> (since Linux 2.4.0)</dt>
+<dd><p>Map page 0 as read-only (to support binaries that depend on this SVr4 behavior).</p>
+</dd>
+<dt><strong>READ_IMPLIES_EXEC</strong> (since Linux 2.6.8)</dt>
+<dd><p>With this flag set, <strong>PROT_READ</strong> implies <strong>PROT_EXEC</strong> for <strong>mmap</strong>(2).</p>
+</dd>
+<dt><strong>SHORT_INODE</strong> (since Linux 2.4.0)</dt>
+<dd><p>No effects(?).</p>
+</dd>
+<dt><strong>STICKY_TIMEOUTS</strong> (since Linux 1.2.0)</dt>
+<dd><p>With this flag set, <strong>select</strong>(2), <strong>pselect</strong>(2), and <strong>ppoll</strong>(2) do not modify the returned timeout argument when interrupted by a signal handler.</p>
+</dd>
+<dt><strong>UNAME26</strong> (since Linux 3.1)</dt>
+<dd><p>Have <strong>uname</strong>(2) report a 2.6.40+ version number rather than a 3.x version number. Added as a stopgap measure to support broken applications that could not handle the kernel version-numbering switch from 2.6.x to 3.x.</p>
+</dd>
+<dt><strong>WHOLE_SECONDS</strong> (since Linux 1.2.0)</dt>
+<dd><p>No effects(?).</p>
+</dd>
+</dl>
+<p>The available execution domains are:</p>
+<dl>
+<dt><strong>PER_BSD</strong> (since Linux 1.2.0)</dt>
+<dd><p>BSD. (No effects.)</p>
+</dd>
+<dt><strong>PER_HPUX</strong> (since Linux 2.4)</dt>
+<dd><p>Support for 32-bit HP/UX. This support was never complete, and was dropped so that since Linux 4.0, this value has no effect.</p>
+</dd>
+<dt><strong>PER_IRIX32</strong> (since Linux 2.2)</dt>
+<dd><p>IRIX 5 32-bit. Never fully functional; support dropped in Linux 2.6.27. Implies <strong>STICKY_TIMEOUTS</strong>.</p>
+</dd>
+<dt><strong>PER_IRIX64</strong> (since Linux 2.2)</dt>
+<dd><p>IRIX 6 64-bit. Implies <strong>STICKY_TIMEOUTS</strong>; otherwise no effects.</p>
+</dd>
+<dt><strong>PER_IRIXN32</strong> (since Linux 2.2)</dt>
+<dd><p>IRIX 6 new 32-bit. Implies <strong>STICKY_TIMEOUTS</strong>; otherwise no effects.</p>
+</dd>
+<dt><strong>PER_ISCR4</strong> (since Linux 1.2.0)</dt>
+<dd><p>Implies <strong>STICKY_TIMEOUTS</strong>; otherwise no effects.</p>
+</dd>
+<dt><strong>PER_LINUX</strong> (since Linux 1.2.0)</dt>
+<dd><p>Linux.</p>
+</dd>
+<dt><strong>PER_LINUX32</strong> (since Linux 2.2)</dt>
+<dd><p>[To be documented.]</p>
+</dd>
+<dt><strong>PER_LINUX32_3GB</strong> (since Linux 2.4)</dt>
+<dd><p>Implies <strong>ADDR_LIMIT_3GB</strong>.</p>
+</dd>
+<dt><strong>PER_LINUX_32BIT</strong> (since Linux 2.0)</dt>
+<dd><p>Implies <strong>ADDR_LIMIT_32BIT</strong>.</p>
+</dd>
+<dt><strong>PER_LINUX_FDPIC</strong> (since Linux 2.6.11)</dt>
+<dd><p>Implies <strong>FDPIC_FUNCPTRS</strong>.</p>
+</dd>
+<dt><strong>PER_OSF4</strong> (since Linux 2.4)</dt>
+<dd><p>OSF/1 v4. On alpha, clear top 32 bits of iov_len in the user's buffer for compatibility with old versions of OSF/1 where iov_len was defined as. <em>int</em>.</p>
+</dd>
+<dt><strong>PER_OSR5</strong> (since Linux 2.4)</dt>
+<dd><p>Implies <strong>STICKY_TIMEOUTS</strong> and <strong>WHOLE_SECONDS</strong>; otherwise no effects.</p>
+</dd>
+<dt><strong>PER_RISCOS</strong> (since Linux 2.2)</dt>
+<dd><p>[To be documented.]</p>
+</dd>
+<dt><strong>PER_SCOSVR3</strong> (since Linux 1.2.0)</dt>
+<dd><p>Implies <strong>STICKY_TIMEOUTS</strong>, <strong>WHOLE_SECONDS</strong>, and <strong>SHORT_INODE</strong>; otherwise no effects.</p>
+</dd>
+<dt><strong>PER_SOLARIS</strong> (since Linux 2.4)</dt>
+<dd><p>Implies <strong>STICKY_TIMEOUTS</strong>; otherwise no effects.</p>
+</dd>
+<dt><strong>PER_SUNOS</strong> (since Linux 2.4.0)</dt>
+<dd><p>Implies <strong>STICKY_TIMEOUTS</strong>. Divert library and dynamic linker searches to <em>/usr/gnemul</em>. Buggy, largely unmaintained, and almost entirely unused; support was removed in Linux 2.6.26.</p>
+</dd>
+<dt><strong>PER_SVR3</strong> (since Linux 1.2.0)</dt>
+<dd><p>Implies <strong>STICKY_TIMEOUTS</strong> and <strong>SHORT_INODE</strong>; otherwise no effects.</p>
+</dd>
+<dt><strong>PER_SVR4</strong> (since Linux 1.2.0)</dt>
+<dd><p>Implies <strong>STICKY_TIMEOUTS</strong> and <strong>MMAP_PAGE_ZERO</strong>; otherwise no effects.</p>
+</dd>
+<dt><strong>PER_UW7</strong> (since Linux 2.4)</dt>
+<dd><p>Implies <strong>STICKY_TIMEOUTS</strong> and <strong>MMAP_PAGE_ZERO</strong>; otherwise no effects.</p>
+</dd>
+<dt><strong>PER_WYSEV386</strong> (since Linux 1.2.0)</dt>
+<dd><p>Implies <strong>STICKY_TIMEOUTS</strong> and <strong>SHORT_INODE</strong>; otherwise no effects.</p>
+</dd>
+<dt><strong>PER_XENIX</strong> (since Linux 1.2.0)</dt>
+<dd><p>Implies <strong>STICKY_TIMEOUTS</strong> and <strong>SHORT_INODE</strong>; otherwise no effects.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>On success, the previous <em>persona</em> is returned. On error, -1 is returned, and <em>errno</em> is set appropriately.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The kernel was unable to change the personality.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>This system call first appeared in Linux 1.1.20 (and thus first in a stable kernel release with Linux 1.2.0); library support was added in glibc 2.3.</p>
+<h1>CONFORMING TO</h1>
+<p><strong>personality</strong>() is Linux-specific and should not be used in programs intended to be portable.</p>
+<h1>SEE ALSO</h1>
+<p><strong>setarch</strong>(8)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

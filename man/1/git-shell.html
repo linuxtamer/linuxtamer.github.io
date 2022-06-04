@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command git-shell</title><meta name="description" content="Linux command git-shell Restricted login shell for Git-only SSH access"><meta name="keywords" content="linux, command, git-shell, bsd, Restricted login shell for Git-only SSH access"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>git-shell - Restricted login shell for Git-only SSH access</p>
+<h1>SYNOPSIS</h1>
+<pre><code>chsh -s $(command -v git-shell) &lt;user&gt;
+git clone &lt;user&gt;@localhost:/path/to/repo.git
+ssh &lt;user&gt;@localhost</code></pre>
+<h1>DESCRIPTION</h1>
+<p>This is a login shell for SSH accounts to provide restricted Git access. It permits execution only of server-side Git commands implementing the pull/push functionality, plus custom commands present in a subdirectory named <strong>git-shell-commands</strong> in the user’s home directory.</p>
+<h1>COMMANDS</h1>
+<p><em>git shell</em> accepts the following commands after the <strong>-c</strong> option:</p>
+<p><em>git receive-pack &lt;argument&gt;</em>, <em>git upload-pack &lt;argument&gt;</em>, <em>git upload-archive &lt;argument&gt;</em></p>
+<blockquote>
+<p>Call the corresponding server-side command to support the client’s <em>git push</em>, <em>git fetch</em>, or <em>git archive --remote</em> request.</p>
+</blockquote>
+<p><em>cvs server</em></p>
+<blockquote>
+<p>Imitate a CVS server. See <strong>git-cvsserver</strong>(1).</p>
+</blockquote>
+<p>If a <strong>~/git-shell-commands</strong> directory is present, <em>git shell</em> will also handle other, custom commands by running "<strong>git-shell-commands/&lt;command&gt; &lt;arguments&gt;</strong>" from the user’s home directory.</p>
+<h1>INTERACTIVE USE</h1>
+<p>By default, the commands above can be executed only with the <strong>-c</strong> option; the shell is not interactive.</p>
+<p>If a <strong>~/git-shell-commands</strong> directory is present, <em>git shell</em> can also be run interactively (with no arguments). If a <strong>help</strong> command is present in the <strong>git-shell-commands</strong> directory, it is run to provide the user with an overview of allowed actions. Then a "git&gt; " prompt is presented at which one can enter any of the commands from the <strong>git-shell-commands</strong> directory, or <strong>exit</strong> to close the connection.</p>
+<p>Generally this mode is used as an administrative interface to allow users to list repositories they have access to, create, delete, or rename repositories, or change repository descriptions and permissions.</p>
+<p>If a <strong>no-interactive-login</strong> command exists, then it is run and the interactive shell is aborted.</p>
+<h1>EXAMPLES</h1>
+<p>To disable interactive logins, displaying a greeting instead:</p>
+<blockquote>
+<pre><code>$ chsh -s /usr/bin/git-shell
+$ mkdir $HOME/git-shell-commands
+$ cat &gt;$HOME/git-shell-commands/no-interactive-login &lt;&lt;\EOF
+#!/bin/sh
+printf %s\n &quot;Hi $USER! Youve successfully authenticated, but I do not&quot;
+printf %s\n &quot;provide interactive shell access.&quot;
+exit 128
+EOF
+$ chmod +x $HOME/git-shell-commands/no-interactive-login</code></pre>
+</blockquote>
+<p>To enable git-cvsserver access (which should generally have the <strong>no-interactive-login</strong> example above as a prerequisite, as creating the git-shell-commands directory allows interactive logins):</p>
+<blockquote>
+<pre><code>$ cat &gt;$HOME/git-shell-commands/cvs &lt;&lt;\EOF
+if ! test $# = 1 &amp;&amp; test &quot;$1&quot; = &quot;server&quot;
+then
+        echo &gt;&amp;2 &quot;git-cvsserver only handles \&quot;server\&quot;&quot;
+        exit 1
+fi
+exec git cvsserver server
+EOF
+$ chmod +x $HOME/git-shell-commands/cvs</code></pre>
+</blockquote>
+<h1>SEE ALSO</h1>
+<p>ssh(1), <strong>git-daemon</strong>(1), contrib/git-shell-commands/README</p>
+<h1>GIT</h1>
+<p>Part of the <strong>git</strong>(1) suite</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

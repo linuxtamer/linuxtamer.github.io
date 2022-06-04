@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command nptl</title><meta name="description" content="Linux command nptl Native POSIX Threads Library"><meta name="keywords" content="linux, command, nptl, bsd, Native POSIX Threads Library"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>nptl - Native POSIX Threads Library</p>
+<h1>DESCRIPTION</h1>
+<p>NPTL (Native POSIX Threads Library) is the GNU C library POSIX threads implementation that is used on modern Linux systems.</p>
+<h2>NPTL and signals</h2>
+<p>NPTL makes internal use of the first two real-time signals (signal numbers 32 and 33). One of these signals is used to support thread cancellation and POSIX timers (see <strong>timer_create</strong>(2)); the other is used as part of a mechanism that ensures all threads in a process always have the same UIDs and GIDs, as required by POSIX. These signals cannot be used in applications.</p>
+<p>To prevent accidental use of these signals in applications, which might interfere with the operation of the NPTL implementation, various glibc library functions and system call wrapper functions attempt to hide these signals from applications, as follows:</p>
+<ul>
+<li><p><strong>SIGRTMIN</strong> is defined with the value 34 (rather than 32).</p></li>
+<li><p>The <strong>sigwaitinfo</strong>(2), <strong>sigtimedwait</strong>(2), and <strong>sigwait</strong>(3) interfaces silently ignore requests to wait for these two signals if they are specified in the signal set argument of these calls.</p></li>
+<li><p>The <strong>sigprocmask</strong>(2) and <strong>pthread_sigmask</strong>(3) interfaces silently ignore attempts to block these two signals.</p></li>
+<li><p>The <strong>sigaction</strong>(2), <strong>pthread_kill</strong>(3), and <strong>pthread_sigqueue</strong>(3) interfaces fail with the error <strong>EINVAL</strong> (indicating an invalid signal number) if these signals are specified.</p></li>
+<li><p><strong>sigfillset</strong>(3) does not include these two signals when it creates a full signal set.</p></li>
+</ul>
+<h2>NPTL and process credential changes</h2>
+<p>At the Linux kernel level, credentials (user and group IDs) are a per-thread attribute. However, POSIX requires that all of the POSIX threads in a process have the same credentials. To accommodate this requirement, the NPTL implementation wraps all of the system calls that change process credentials with functions that, in addition to invoking the underlying system call, arrange for all other threads in the process to also change their credentials.</p>
+<p>The implementation of each of these system calls involves the use of a real-time signal that is sent (using <strong>tgkill</strong>(2)) to each of the other threads that must change its credentials. Before sending these signals, the thread that is changing credentials saves the new credential(s) and records the system call being employed in a global buffer. A signal handler in the receiving thread(s) fetches this information and then uses the same system call to change its credentials.</p>
+<p>Wrapper functions employing this technique are provided for <strong>setgid</strong>(2), <strong>setuid</strong>(2), <strong>setegid</strong>(2), <strong>seteuid</strong>(2), <strong>setregid</strong>(2), <strong>setreuid</strong>(2), <strong>setresgid</strong>(2), <strong>setresuid</strong>(2), and <strong>setgroups</strong>(2).</p>
+<h1>CONFORMING TO</h1>
+<p>For details of the conformance of NPTL to the POSIX standard, see <strong>pthreads</strong>(7).</p>
+<h1>NOTES</h1>
+<p>POSIX says that any thread in any process with access to the memory containing a process-shared (<strong>PTHREAD_PROCESS_SHARED</strong>) mutex can operate on that mutex. However, on 64-bit x86 systems, the mutex definition for x86-64 is incompatible with the mutex definition for i386, meaning that 32-bit and 64-bit binaries can't share mutexes on x86-64 systems.</p>
+<h1>SEE ALSO</h1>
+<p><strong>credentials</strong>(7), <strong>pthreads</strong>(7), <strong>signal</strong>(7), <strong>standards</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command clock_getcpuclockid</title><meta name="description" content="Linux command clock_getcpuclockid obtain ID of a process CPU-time clock"><meta name="keywords" content="linux, command, clock_getcpuclockid, bsd, obtain ID of a process CPU-time clock"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>clock_getcpuclockid - obtain ID of a process CPU-time clock</p>
+<h1>SYNOPSIS</h1>
+<p><strong>#include &lt;time.h&gt;</strong></p>
+<pre><code>
+int clock_getcpuclockid(pid_t pid, clockid_t *clockid);</code></pre>
+<p>Link with <em>-lrt</em> (only for glibc versions before 2.17).</p>
+<blockquote>
+<p>Feature Test Macro Requirements for glibc (see <strong>feature_test_macros</strong>(7)):</p>
+</blockquote>
+<p><strong>clock_getcpuclockid</strong>():</p>
+<blockquote>
+<p>_POSIX_C_SOURCE &gt;= 200112L</p>
+</blockquote>
+<h1>DESCRIPTION</h1>
+<p>The <strong>clock_getcpuclockid</strong>() function obtains the ID of the CPU-time clock of the process whose ID is <em>pid</em>, and returns it in the location pointed to by <em>clockid</em>. If <em>pid</em> is zero, then the clock ID of the CPU-time clock of the calling process is returned.</p>
+<h1>RETURN VALUE</h1>
+<p>On success, <strong>clock_getcpuclockid</strong>() returns 0; on error, it returns one of the positive error numbers listed in ERRORS.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>ENOSYS</strong></dt>
+<dd><p>The kernel does not support obtaining the per-process CPU-time clock of another process, and <em>pid</em> does not specify the calling process.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>The caller does not have permission to access the CPU-time clock of the process specified by <em>pid</em>. (Specified in POSIX.1-2001; does not occur on Linux unless the kernel does not support obtaining the per-process CPU-time clock of another process.)</p>
+</dd>
+<dt><strong>ESRCH</strong></dt>
+<dd><p>There is no process with the ID <em>pid</em>.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The <strong>clock_getcpuclockid</strong>() function is available in glibc since version 2.2.</p>
+<h1>ATTRIBUTES</h1>
+<p>For an explanation of the terms used in this section, see <strong>attributes</strong>(7).</p>
+<table>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Interface</td>
+<td style="text-align: left;">Attribute</td>
+<td style="text-align: left;">Value</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>clock_getcpuclockid</strong>()</td>
+<td style="text-align: left;">Thread safety</td>
+<td style="text-align: left;">MT-Safe</td>
+</tr>
+</tbody>
+</table>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008.</p>
+<h1>NOTES</h1>
+<p>Calling <strong>clock_gettime</strong>(2) with the clock ID obtained by a call to <strong>clock_getcpuclockid</strong>() with a <em>pid</em> of 0, is the same as using the clock ID <strong>CLOCK_PROCESS_CPUTIME_ID</strong>.</p>
+<h1>EXAMPLES</h1>
+<p>The example program below obtains the CPU-time clock ID of the process whose ID is given on the command line, and then uses <strong>clock_gettime</strong>(2) to obtain the time on that clock. An example run is the following:</p>
+<pre><code>$ ./a.out 1 # Show CPU clock of init process
+CPU-time clock for PID 1 is 2.213466748 seconds</code></pre>
+<h2>Program source</h2>
+<pre><code>#define _XOPEN_SOURCE 600
+#include &lt;stdint.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+
+int
+main(int argc, char *argv[])
+{
+    clockid_t clockid;
+    struct timespec ts;
+
+    if (argc != 2) {
+        fprintf(stderr, &quot;%s &lt;process-ID&gt;\n&quot;, argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    if (clock_getcpuclockid(atoi(argv[1]), &amp;clockid) != 0) {
+        perror(&quot;clock_getcpuclockid&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    if (clock_gettime(clockid, &amp;ts) == -1) {
+        perror(&quot;clock_gettime&quot;);
+        exit(EXIT_FAILURE);
+    }
+
+    printf(&quot;CPU-time clock for PID %s is %jd.%09ld seconds\n&quot;,
+            argv[1], (intmax_t) ts.tv_sec, ts.tv_nsec);
+    exit(EXIT_SUCCESS);
+}</code></pre>
+<h1>SEE ALSO</h1>
+<p><strong>clock_getres</strong>(2), <strong>timer_create</strong>(2), <strong>pthread_getcpuclockid</strong>(3), <strong>time</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

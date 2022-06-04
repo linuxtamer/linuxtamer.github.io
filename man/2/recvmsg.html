@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command recvmsg</title><meta name="description" content="Linux command recvmsg receive a message from a socket"><meta name="keywords" content="linux, command, recvmsg, bsd, receive a message from a socket"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>recv, recvfrom, recvmsg - receive a message from a socket</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+
+ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+ struct sockaddr *src_addr, socklen_t *addrlen);
+
+ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);</code></pre>
+<h1>DESCRIPTION</h1>
+<p>The <strong>recv</strong>(), <strong>recvfrom</strong>(), and <strong>recvmsg</strong>() calls are used to receive messages from a socket. They may be used to receive data on both connectionless and connection-oriented sockets. This page first describes common features of all three system calls, and then describes the differences between the calls.</p>
+<p>The only difference between <strong>recv</strong>() and <strong>read</strong>(2) is the presence of <em>flags</em>. With a zero <em>flags</em> argument, <strong>recv</strong>() is generally equivalent to <strong>read</strong>(2) (but see NOTES). Also, the following call</p>
+<p>recv(sockfd, buf, len, flags);</p>
+<p>is equivalent to</p>
+<p>recvfrom(sockfd, buf, len, flags, NULL, NULL);</p>
+<p>All three calls return the length of the message on successful completion. If a message is too long to fit in the supplied buffer, excess bytes may be discarded depending on the type of socket the message is received from.</p>
+<p>If no messages are available at the socket, the receive calls wait for a message to arrive, unless the socket is nonblocking (see <strong>fcntl</strong>(2)), in which case the value -1 is returned and the external variable <em>errno</em> is set to <strong>EAGAIN</strong> or <strong>EWOULDBLOCK</strong>. The receive calls normally return any data available, up to the requested amount, rather than waiting for receipt of the full amount requested.</p>
+<p>An application can use <strong>select</strong>(2), <strong>poll</strong>(2), or <strong>epoll</strong>(7) to determine when more data arrives on a socket.</p>
+<h2>The flags argument</h2>
+<p>The <em>flags</em> argument is formed by ORing one or more of the following values:</p>
+<dl>
+<dt><strong>MSG_CMSG_CLOEXEC</strong> (<strong>recvmsg</strong>() only; since Linux 2.6.23)</dt>
+<dd><p>Set the close-on-exec flag for the file descriptor received via a UNIX domain file descriptor using the <strong>SCM_RIGHTS</strong> operation (described in <strong>unix</strong>(7)). This flag is useful for the same reasons as the <strong>O_CLOEXEC</strong> flag of <strong>open</strong>(2).</p>
+</dd>
+<dt><strong>MSG_DONTWAIT</strong> (since Linux 2.2)</dt>
+<dd><p>Enables nonblocking operation; if the operation would block, the call fails with the error <strong>EAGAIN</strong> or <strong>EWOULDBLOCK</strong>. This provides similar behavior to setting the <strong>O_NONBLOCK</strong> flag (via the <strong>fcntl</strong>(2) <strong>F_SETFL</strong> operation), but differs in that <strong>MSG_DONTWAIT</strong> is a per-call option, whereas <strong>O_NONBLOCK</strong> is a setting on the open file description (see <strong>open</strong>(2)), which will affect all threads in the calling process and as well as other processes that hold file descriptors referring to the same open file description.</p>
+</dd>
+<dt><strong>MSG_ERRQUEUE</strong> (since Linux 2.2)</dt>
+<dd><p>This flag specifies that queued errors should be received from the socket error queue. The error is passed in an ancillary message with a type dependent on the protocol (for IPv4 <strong>IP_RECVERR</strong>). The user should supply a buffer of sufficient size. See <strong>cmsg</strong>(3) and <strong>ip</strong>(7) for more information. The payload of the original packet that caused the error is passed as normal data via <em>msg_iovec</em>. The original destination address of the datagram that caused the error is supplied via <em>msg_name</em>.</p>
+<p>The error is supplied in a <em>sock_extended_err</em> structure:</p>
+<pre><code>#define SO_EE_ORIGIN_NONE    0
+#define SO_EE_ORIGIN_LOCAL   1
+#define SO_EE_ORIGIN_ICMP    2
+#define SO_EE_ORIGIN_ICMP6   3
+
+struct sock_extended_err
+{
+    uint32_t ee_errno;   /* Error number */
+    uint8_t  ee_origin;  /* Where the error originated */
+    uint8_t  ee_type;    /* Type */
+    uint8_t  ee_code;    /* Code */
+    uint8_t  ee_pad;     /* Padding */
+    uint32_t ee_info;    /* Additional information */
+    uint32_t ee_data;    /* Other data */
+    /* More data may follow */
+};
+
+struct sockaddr *SO_EE_OFFENDER(struct sock_extended_err *);</code></pre>
+<p><em>ee_errno</em> contains the <em>errno</em> number of the queued error. <em>ee_origin</em> is the origin code of where the error originated. The other fields are protocol-specific. The macro <strong>SOCK_EE_OFFENDER</strong> returns a pointer to the address of the network object where the error originated from given a pointer to the ancillary message. If this address is not known, the <em>sa_family</em> member of the <em>sockaddr</em> contains <strong>AF_UNSPEC</strong> and the other fields of the <em>sockaddr</em> are undefined. The payload of the packet that caused the error is passed as normal data.</p>
+<p>For local errors, no address is passed (this can be checked with the <em>cmsg_len</em> member of the <em>cmsghdr</em>). For error receives, the <strong>MSG_ERRQUEUE</strong> flag is set in the <em>msghdr</em>. After an error has been passed, the pending socket error is regenerated based on the next queued error and will be passed on the next socket operation.</p>
+</dd>
+<dt><strong>MSG_OOB</strong></dt>
+<dd><p>This flag requests receipt of out-of-band data that would not be received in the normal data stream. Some protocols place expedited data at the head of the normal data queue, and thus this flag cannot be used with such protocols.</p>
+</dd>
+<dt><strong>MSG_PEEK</strong></dt>
+<dd><p>This flag causes the receive operation to return data from the beginning of the receive queue without removing that data from the queue. Thus, a subsequent receive call will return the same data.</p>
+</dd>
+<dt><strong>MSG_TRUNC</strong> (since Linux 2.2)</dt>
+<dd><p>For raw (<strong>AF_PACKET</strong>), Internet datagram (since Linux 2.4.27/2.6.8), netlink (since Linux 2.6.22), and UNIX datagram (since Linux 3.4) sockets: return the real length of the packet or datagram, even when it was longer than the passed buffer.</p>
+<p>For use with Internet stream sockets, see <strong>tcp</strong>(7).</p>
+</dd>
+<dt><strong>MSG_WAITALL</strong> (since Linux 2.2)</dt>
+<dd><p>This flag requests that the operation block until the full request is satisfied. However, the call may still return less data than requested if a signal is caught, an error or disconnect occurs, or the next data to be received is of a different type than that returned. This flag has no effect for datagram sockets.</p>
+</dd>
+</dl>
+<h2>recvfrom()</h2>
+<p><strong>recvfrom</strong>() places the received message into the buffer <em>buf</em>. The caller must specify the size of the buffer in <em>len</em>.</p>
+<p>If <em>src_addr</em> is not NULL, and the underlying protocol provides the source address of the message, that source address is placed in the buffer pointed to by <em>src_addr</em>. In this case, <em>addrlen</em> is a value-result argument. Before the call, it should be initialized to the size of the buffer associated with <em>src_addr</em>. Upon return, <em>addrlen</em> is updated to contain the actual size of the source address. The returned address is truncated if the buffer provided is too small; in this case, <em>addrlen</em> will return a value greater than was supplied to the call.</p>
+<p>If the caller is not interested in the source address, <em>src_addr</em> and <em>addrlen</em> should be specified as NULL.</p>
+<h2>recv()</h2>
+<p>The <strong>recv</strong>() call is normally used only on a <em>connected</em> socket (see <strong>connect</strong>(2)). It is equivalent to the call:</p>
+<p>recvfrom(fd, buf, len, flags, NULL, 0);</p>
+<h2>recvmsg()</h2>
+<p>The <strong>recvmsg</strong>() call uses a <em>msghdr</em> structure to minimize the number of directly supplied arguments. This structure is defined as follows in <em>&lt;sys/socket.h&gt;</em>:</p>
+<pre><code>struct iovec {                    /* Scatter/gather array items */
+    void  *iov_base;              /* Starting address */
+    size_t iov_len;               /* Number of bytes to transfer */
+};
+
+struct msghdr {
+    void         *msg_name;       /* Optional address */
+    socklen_t     msg_namelen;    /* Size of address */
+    struct iovec *msg_iov;        /* Scatter/gather array */
+    size_t        msg_iovlen;     /* # elements in msg_iov */
+    void         *msg_control;    /* Ancillary data, see below */
+    size_t        msg_controllen; /* Ancillary data buffer len */
+    int           msg_flags;      /* Flags on received message */
+};</code></pre>
+<p>The <em>msg_name</em> field points to a caller-allocated buffer that is used to return the source address if the socket is unconnected. The caller should set <em>msg_namelen</em> to the size of this buffer before this call; upon return from a successful call, <em>msg_namelen</em> will contain the length of the returned address. If the application does not need to know the source address, <em>msg_name</em> can be specified as NULL.</p>
+<p>The fields <em>msg_iov</em> and <em>msg_iovlen</em> describe scatter-gather locations, as discussed in <strong>readv</strong>(2).</p>
+<p>The field <em>msg_control</em>, which has length <em>msg_controllen</em>, points to a buffer for other protocol control-related messages or miscellaneous ancillary data. When <strong>recvmsg</strong>() is called, <em>msg_controllen</em> should contain the length of the available buffer in <em>msg_control</em>; upon return from a successful call it will contain the length of the control message sequence.</p>
+<p>The messages are of the form:</p>
+<pre><code>struct cmsghdr {
+    size_t cmsg_len;    /* Data byte count, including header
+                           (type is socklen_t in POSIX) */
+    int    cmsg_level;  /* Originating protocol */
+    int    cmsg_type;   /* Protocol-specific type */
+/* followed by
+    unsigned char cmsg_data[]; */
+};</code></pre>
+<p>Ancillary data should be accessed only by the macros defined in <strong>cmsg</strong>(3).</p>
+<p>As an example, Linux uses this ancillary data mechanism to pass extended errors, IP options, or file descriptors over UNIX domain sockets. For further information on the use of ancillary data in various socket domains, see <strong>unix</strong>(7) and <strong>ip</strong>(7).</p>
+<p>The <em>msg_flags</em> field in the <em>msghdr</em> is set on return of <strong>recvmsg</strong>(). It can contain several flags:</p>
+<dl>
+<dt><strong>MSG_EOR</strong></dt>
+<dd><p>indicates end-of-record; the data returned completed a record (generally used with sockets of type <strong>SOCK_SEQPACKET</strong>).</p>
+</dd>
+<dt><strong>MSG_TRUNC</strong></dt>
+<dd><p>indicates that the trailing portion of a datagram was discarded because the datagram was larger than the buffer supplied.</p>
+</dd>
+<dt><strong>MSG_CTRUNC</strong></dt>
+<dd><p>indicates that some control data was discarded due to lack of space in the buffer for ancillary data.</p>
+</dd>
+<dt><strong>MSG_OOB</strong></dt>
+<dd><p>is returned to indicate that expedited or out-of-band data was received.</p>
+</dd>
+<dt><strong>MSG_ERRQUEUE</strong></dt>
+<dd><p>indicates that no data was received but an extended error from the socket error queue.</p>
+</dd>
+</dl>
+<h1>RETURN VALUE</h1>
+<p>These calls return the number of bytes received, or -1 if an error occurred. In the event of an error, <em>errno</em> is set to indicate the error.</p>
+<p>When a stream socket peer has performed an orderly shutdown, the return value will be 0 (the traditional "end-of-file" return).</p>
+<p>Datagram sockets in various domains (e.g., the UNIX and Internet domains) permit zero-length datagrams. When such a datagram is received, the return value is 0.</p>
+<p>The value 0 may also be returned if the requested number of bytes to receive from a stream socket was 0.</p>
+<h1>ERRORS</h1>
+<p>These are some standard errors generated by the socket layer. Additional errors may be generated and returned from the underlying protocol modules; see their manual pages.</p>
+<dl>
+<dt><strong>EAGAIN</strong> or <strong>EWOULDBLOCK</strong></dt>
+<dd><p>The socket is marked nonblocking and the receive operation would block, or a receive timeout had been set and the timeout expired before data was received. POSIX.1 allows either error to be returned for this case, and does not require these constants to have the same value, so a portable application should check for both possibilities.</p>
+</dd>
+<dt><strong>EBADF</strong></dt>
+<dd><p>The argument <em>sockfd</em> is an invalid file descriptor.</p>
+</dd>
+<dt><strong>ECONNREFUSED</strong></dt>
+<dd><p>A remote host refused to allow the network connection (typically because it is not running the requested service).</p>
+</dd>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>The receive buffer pointer(s) point outside the process's address space.</p>
+</dd>
+<dt><strong>EINTR</strong></dt>
+<dd><p>The receive was interrupted by delivery of a signal before any data was available; see <strong>signal</strong>(7).</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>Invalid argument passed.</p>
+</dd>
+<dt><strong>ENOMEM</strong></dt>
+<dd><p>Could not allocate memory for <strong>recvmsg</strong>().</p>
+</dd>
+<dt><strong>ENOTCONN</strong></dt>
+<dd><p>The socket is associated with a connection-oriented protocol and has not been connected (see <strong>connect</strong>(2) and <strong>accept</strong>(2)).</p>
+</dd>
+<dt><strong>ENOTSOCK</strong></dt>
+<dd><p>The file descriptor <em>sockfd</em> does not refer to a socket.</p>
+</dd>
+</dl>
+<h1>CONFORMING TO</h1>
+<p>POSIX.1-2001, POSIX.1-2008, 4.4BSD (these interfaces first appeared in 4.2BSD).</p>
+<p>POSIX.1 describes only the <strong>MSG_OOB</strong>, <strong>MSG_PEEK</strong>, and <strong>MSG_WAITALL</strong> flags.</p>
+<h1>NOTES</h1>
+<p>If a zero-length datagram is pending, <strong>read</strong>(2) and <strong>recv</strong>() with a <em>flags</em> argument of zero provide different behavior. In this circumstance, <strong>read</strong>(2) has no effect (the datagram remains pending), while <strong>recv</strong>() consumes the pending datagram.</p>
+<p>The <em>socklen_t</em> type was invented by POSIX. See also <strong>accept</strong>(2).</p>
+<p>According to POSIX.1, the <em>msg_controllen</em> field of the <em>msghdr</em> structure should be typed as <em>socklen_t</em>, and the <em>msg_iovlen</em> field should be typed as <em>int</em>, but glibc currently types both as <em>size_t</em>.</p>
+<p>See <strong>recvmmsg</strong>(2) for information about a Linux-specific system call that can be used to receive multiple datagrams in a single call.</p>
+<h1>EXAMPLES</h1>
+<p>An example of the use of <strong>recvfrom</strong>() is shown in <strong>getaddrinfo</strong>(3).</p>
+<h1>SEE ALSO</h1>
+<p><strong>fcntl</strong>(2), <strong>getsockopt</strong>(2), <strong>read</strong>(2), <strong>recvmmsg</strong>(2), <strong>select</strong>(2), <strong>shutdown</strong>(2), <strong>socket</strong>(2), <strong>cmsg</strong>(3), <strong>sockatmark</strong>(3), <strong>ip</strong>(7), <strong>ipv6</strong>(7), <strong>socket</strong>(7), <strong>tcp</strong>(7), <strong>udp</strong>(7), <strong>unix</strong>(7)</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+

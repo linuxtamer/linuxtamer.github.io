@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang=en-US>
+<head>
+<meta charset=utf-8>
+<title>Linux command migrate_pages</title><meta name="description" content="Linux command migrate_pages move all pages in a process to another set of nodes"><meta name="keywords" content="linux, command, migrate_pages, bsd, move all pages in a process to another set of nodes"><meta name="robots" content="index,follow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container">
+
+<h1>NAME</h1>
+<p>migrate_pages - move all pages in a process to another set of nodes</p>
+<h1>SYNOPSIS</h1>
+<pre><code>#include &lt;numaif.h&gt;
+
+long migrate_pages(int pid, unsigned long maxnode,
+ const unsigned long *old_nodes,
+ const unsigned long *new_nodes);</code></pre>
+<p>Link with <em>-lnuma</em>.</p>
+<h1>DESCRIPTION</h1>
+<p><strong>migrate_pages</strong>() attempts to move all pages of the process <em>pid</em> that are in memory nodes <em>old_nodes</em> to the memory nodes in <em>new_nodes</em>. Pages not located in any node in <em>old_nodes</em> will not be migrated. As far as possible, the kernel maintains the relative topology relationship inside <em>old_nodes</em> during the migration to <em>new_nodes</em>.</p>
+<p>The <em>old_nodes</em> and <em>new_nodes</em> arguments are pointers to bit masks of node numbers, with up to <em>maxnode</em> bits in each mask. These masks are maintained as arrays of unsigned <em>long</em> integers (in the last <em>long</em> integer, the bits beyond those specified by <em>maxnode</em> are ignored). The <em>maxnode</em> argument is the maximum node number in the bit mask plus one (this is the same as in <strong>mbind</strong>(2), but different from <strong>select</strong>(2)).</p>
+<p>The <em>pid</em> argument is the ID of the process whose pages are to be moved. To move pages in another process, the caller must be privileged (<strong>CAP_SYS_NICE</strong>) or the real or effective user ID of the calling process must match the real or saved-set user ID of the target process. If <em>pid</em> is 0, then <strong>migrate_pages</strong>() moves pages of the calling process.</p>
+<p>Pages shared with another process will be moved only if the initiating process has the <strong>CAP_SYS_NICE</strong> privilege.</p>
+<h1>RETURN VALUE</h1>
+<p>On success <strong>migrate_pages</strong>() returns the number of pages that could not be moved (i.e., a return of zero means that all pages were successfully moved). On error, it returns -1, and sets <em>errno</em> to indicate the error.</p>
+<h1>ERRORS</h1>
+<dl>
+<dt><strong>EFAULT</strong></dt>
+<dd><p>Part or all of the memory range specified by <em>old_nodes</em>/<em>new_nodes</em> and <em>maxnode</em> points outside your accessible address space.</p>
+</dd>
+<dt><strong>EINVAL</strong></dt>
+<dd><p>The value specified by <em>maxnode</em> exceeds a kernel-imposed limit. Or, <em>old_nodes</em> or <em>new_nodes</em> specifies one or more node IDs that are greater than the maximum supported node ID. Or, none of the node IDs specified by <em>new_nodes</em> are on-line and allowed by the process's current cpuset context, or none of the specified nodes contain memory.</p>
+</dd>
+<dt><strong>EPERM</strong></dt>
+<dd><p>Insufficient privilege (<strong>CAP_SYS_NICE</strong>) to move pages of the process specified by <em>pid</em>, or insufficient privilege (<strong>CAP_SYS_NICE</strong>) to access the specified target nodes.</p>
+</dd>
+<dt><strong>ESRCH</strong></dt>
+<dd><p>No process matching <em>pid</em> could be found.</p>
+</dd>
+</dl>
+<h1>VERSIONS</h1>
+<p>The <strong>migrate_pages</strong>() system call first appeared on Linux in version 2.6.16.</p>
+<h1>CONFORMING TO</h1>
+<p>This system call is Linux-specific.</p>
+<h1>NOTES</h1>
+<p>For information on library support, see <strong>numa</strong>(7).</p>
+<p>Use <strong>get_mempolicy</strong>(2) with the <strong>MPOL_F_MEMS_ALLOWED</strong> flag to obtain the set of nodes that are allowed by the calling process's cpuset. Note that this information is subject to change at any time by manual or automatic reconfiguration of the cpuset.</p>
+<p>Use of <strong>migrate_pages</strong>() may result in pages whose location (node) violates the memory policy established for the specified addresses (see <strong>mbind</strong>(2)) and/or the specified process (see <strong>set_mempolicy</strong>(2)). That is, memory policy does not constrain the destination nodes used by <strong>migrate_pages</strong>().</p>
+<p>The <em>&lt;numaif.h&gt;</em> header is not included with glibc, but requires installing <em>libnuma-devel</em> or a similar package.</p>
+<h1>SEE ALSO</h1>
+<p><strong>get_mempolicy</strong>(2), <strong>mbind</strong>(2), <strong>set_mempolicy</strong>(2), <strong>numa</strong>(3), <strong>numa_maps</strong>(5), <strong>cpuset</strong>(7), <strong>numa</strong>(7), <strong>migratepages</strong>(8), <strong>numastat</strong>(8)</p>
+<p><em>Documentation/vm/page_migration.rst</em> in the Linux kernel source tree</p>
+<h1>COLOPHON</h1>
+<p>This page is part of release 5.10 of the Linux <em>man-pages</em> project. A description of the project, information about reporting bugs, and the latest version of this page, can be found at https://www.kernel.org/doc/man-pages/.</p>
+<footer style="text-align: center;"><a href="https://blog.tamer.pw" target="_blank">Blog</a> | <a href="https://github.com/linuxtamer" target="_blank">Contact</a></footer>
+</div>
+</body>
+</html>
+
